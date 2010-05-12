@@ -806,19 +806,8 @@ static void guess_references(edview *xx, int seqtop, int seqbot, int pos,
 #endif
 
 static void trace_columns(edview *xx, int cols) {
-    char *edpath;
     Tcl_Interp *interp = EDINTERP(xx->ed);
     char buf[10];
-
-    /*
-     * If we're the bottom half of a join editor, combine traces with the
-     * top half.
-     */
-    if (inJoinMode(xx) && xx->link && xx == xx->link->xx[1]) {
-	edpath = Tk_PathName(EDTKWIN(xx->link->xx[0]->ed));
-    } else {
-	edpath = Tk_PathName(EDTKWIN(xx->ed));
-    }
 
     if (cols < 1) cols = 1;
     if (cols > 4) cols = 4;

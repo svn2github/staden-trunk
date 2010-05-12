@@ -132,7 +132,7 @@ typedef union {
  *        -1 if not
  */
 int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
-    char *s = bam1_aux(b);
+    char *s = (char *)bam1_aux(b);
     int match = 0;
 
     while ((uint8_t *)s < b->data + b->data_len) {
@@ -334,7 +334,7 @@ char *sam_aux_stringify(char *s, int len) {
 #ifdef HAVE_SAMTOOLS
 char *bam_aux_stringify(bam1_t *b, int no_RG) {
     static char str[8192];
-    char *s = bam1_aux(b), *cp = str;
+    char *s = (char *)bam1_aux(b), *cp = str;
     int first = 1;
     int keep;
 
@@ -452,7 +452,7 @@ char *bam_aux_stringify(bam1_t *b, int no_RG) {
  */
 char *bam_aux_filter(bam1_t *b, char **types, int ntypes, int *len) {
     static char str[8192];
-    char *s = bam1_aux(b), *cp = str;
+    char *s = (char *)bam1_aux(b), *cp = str;
     int keep, i;
 
     while ((uint8_t *)s < b->data + b->data_len) {
@@ -1007,7 +1007,6 @@ int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf) {
 int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 		void *data) {
     bam_io_t *bio = (bam_io_t *)data;
-    GapIO *io = bio->io;
     int i, j, k, insertions = 0;
     int np;
 
@@ -1037,8 +1036,6 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 		//printf("Import pads from existing consensus at %d\n",
 		//       pos+1+bio->n_inserts-bio->npads);
 		for (i = 0; i < n; i++) {
-		    const bam_pileup1_t *p = &pl[i];
-		
 		    bio_extend_seq(bio, i, '*', 0);
 		}
 	    }
@@ -1057,7 +1054,6 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 
 	if (j && bio->a->repad /*&& j > np*/) {
 	    /* FIXME: And not already in the originally padded version */
-	    int np1, np2;
 	    np=padtree_pad_at(bio->tree, pos+2);
 
 	    //printf("Insert at %d: j=%d np=%d\n", pos+2+bio->n_inserts, j, np);
@@ -1166,7 +1162,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bam_io_t *bio = (bam_io_t*)calloc(1, sizeof(*bio));
     bam1_t *b;
-    int ret, count = 0;
+    int count = 0;
     bam_plbuf_t *plbuf;
     samfile_t *fp;
     rec_list_t *tmp;
@@ -1208,7 +1204,7 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
      * bio_callback function.
      */
     b = (bam1_t*)calloc(1, sizeof(bam1_t));
-    while ((ret = samread(fp, b)) >= 0) {
+    while (samread(fp, b) >= 0) {
 	if (a->store_unmapped && b->core.flag & BAM_FUNMAP) {
 	    bio_add_unmapped(bio, b);
 	    if ((++count & 0xffff) == 0) {

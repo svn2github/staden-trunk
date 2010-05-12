@@ -721,7 +721,7 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
  */
 int bin_remove_item(GapIO *io, contig_t **c, int type, int rec) {
     bin_index_t *bin;
-    int i, start, end;
+    int start, end;
     int cnum, bnum;
 
     if (-1 == bin_get_item_position(io, type, rec, &cnum, &start, &end,

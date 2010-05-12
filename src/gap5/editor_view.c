@@ -1219,18 +1219,17 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 			nink[0].bg = xx->ed->qual_bg[0]->pixel;
 		    }
 		    if (xx->ed->display_mapping_quality) {
-			int i, qbin;
+			int qbin;
 			qbin = s->mapping_qual / 10;
 			if (qbin < 0) qbin = 0;
 			if (qbin > 9) qbin = 9;
-			for (i = 1; i < ncol && i < MAX_NAME_WIDTH; i++) {
-			    nink[i].sh = sh_bg;
-			    nink[i].bg = xx->ed->qual_bg[qbin]->pixel;
+			for (k = 1; k < ncol && k < MAX_NAME_WIDTH; k++) {
+			    nink[k].sh = sh_bg;
+			    nink[k].bg = xx->ed->qual_bg[qbin]->pixel;
 			}
 		    } else {
-			int i;
-			for (i = 1; i < ncol && i < 1024; i++) {
-			    nink[i].sh = sh_default;
+			for (k = 1; k < ncol && k < 1024; k++) {
+			    nink[k].sh = sh_default;
 			}
 		    }
 		}
@@ -1296,7 +1295,7 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
 
     memset(ink, 0, MAX_DISPLAY_WIDTH * sizeof(*ink));
     if (xx->ed->display_quality) {
-	int i, qbin;
+	int qbin;
 
 	for (i = 0; i < wid; i++) {
 	    qbin = xx->cachedConsensus[i].phred/10;

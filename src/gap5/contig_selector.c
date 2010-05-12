@@ -1162,7 +1162,6 @@ cs_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 		int *cy = (int *)jdata->generic.data;
 		double local_pos;
 		double wx, wy;
-		char cmd[1024];
 		double cx1, cy1;
 
 		CanvasToWorld(cs->canvas, 0, *cy, &wx, &wy);

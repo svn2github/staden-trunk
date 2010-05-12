@@ -98,6 +98,7 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 int sequence_delete_base(GapIO *io, seq_t **s, int pos,
 			 int contig_orient);
 
+int sequence_invalidate_consensus(GapIO *io, seq_t *s);
 
 /*
  * Given a seq_t struct this updates the internal pointers to be valid offsets
@@ -114,5 +115,19 @@ void sequence_reset_ptr(seq_t *s);
  *        -1 on failure
  */
 int  sequence_copy(seq_t *s, seq_t *f);
+
+/*
+ * Moves all annotations attached to a sequence left or right by a certain
+ * amount 'dist'. If dist is negative the annotations move left, otherwise
+ * they move right.
+ *
+ * This is used when moving sequences within the editor, just prior to the
+ * move itself as we only look for annotations covering the current
+ * coordinates.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_move_annos(GapIO *io, seq_t **s, int dist);
 
 #endif /* _TG_SEQUENCE_H_ */

@@ -19,6 +19,9 @@
 #include "search_utils.h"
 #include "sequence_formats.h"
 #include "gap4_compat.h"
+#include "editor_view.h"
+#include "tk-io-reg.h"
+#include "consensus.h"
 
 #define TAG 0
 #define SEQUENCE 1
@@ -117,8 +120,7 @@ void *find_oligo_obj_func1(int job,
 	    llino[0] = io_clnbr(find_oligo->io, cnum[0]);
 	    llino[1] = io_clnbr(find_oligo->io, cnum[1]);
 
-	    join_contig(GetInterp(), find_oligo->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff);
+	    join_contig(find_oligo->io, cnum, llino, pos);
 
 	    break;
 	}
@@ -130,15 +132,13 @@ void *find_oligo_obj_func1(int job,
 	    llino = io_clnbr(find_oligo->io, cnum);
 	    pos   = obj->pos1;
 
-	    edit_contig(GetInterp(), find_oligo->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, 0, NULL);
+	    edit_contig(find_oligo->io, cnum, llino, pos);
 
 	    cnum  = ABS(obj->c2);
 	    llino = io_clnbr(find_oligo->io, cnum);
 	    pos   = obj->pos2;
 
-	    edit_contig(GetInterp(), find_oligo->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, 0, NULL);
+	    edit_contig(find_oligo->io, cnum, llino, pos);
 	    break;
 	}
 
@@ -207,7 +207,7 @@ void *find_oligo_obj_func2(int job,
 
 	case -2: /* default */
 	case 2: /* Invoke contig editor */ {
-	    int cnum, llino, pos, id;
+	    int cnum, llino, pos;
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    find_oligo->current = obj - find_oligo->match;
@@ -1059,7 +1059,6 @@ find_oligo_file(GapIO *io,
 {
     char **ids;
     int nids;
-    char line[8192];
     int i;
     int r = 0; /* ret. code */
 

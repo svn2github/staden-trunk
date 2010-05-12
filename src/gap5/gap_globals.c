@@ -122,7 +122,6 @@ int init_globals(Tcl_Interp *interp) {
     set_dna_lookup(); 	/* general lookup and complementing */
     set_iubc_lookup();	/* iubc codes for restriction enzymes */
 #if 0
-    set_hash8_lookupn();	/* used by word8 hashing */
     set_mask_lookup();  /* used to mask/mark consensus */
 #endif
     init_genetic_code();

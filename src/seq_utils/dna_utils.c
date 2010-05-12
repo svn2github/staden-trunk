@@ -682,7 +682,7 @@ int forta_ ( char *fseq1, char *fseq2, int *slen, char *fname1, char *fname2,
 
 {
     char *seq1, *seq2, *name1, *name2, *title;
-    int i, pos1, pos2;
+    int pos1, pos2;
 
     if ( ! (seq1 = (char *) xmalloc ( sizeof(char) * (*slen) + 1))) {
 		return -1;
@@ -713,7 +713,7 @@ int forta_ ( char *fseq1, char *fseq2, int *slen, char *fname1, char *fname2,
     title[*tlen] = '\0';
     pos1 = *fpos1;
     pos2 = *fpos2;
-    i = list_alignment( seq1, seq2, name1, name2, pos1, pos2, title);
+    list_alignment( seq1, seq2, name1, name2, pos1, pos2, title);
     free ( seq1 );
     free ( seq2 );
     free ( name1 );

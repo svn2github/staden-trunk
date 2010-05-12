@@ -116,8 +116,10 @@ static char *lzma_mem_deflate(char *data, size_t size, size_t *cdata_size) {
 
     /* Single call compression */
     if (LZMA_OK != lzma_easy_buffer_encode(LZMA_LEVEL,
-					   LZMA_CHECK_CRC32, NULL, data,
-					   size, out, cdata_size, out_size))
+					   LZMA_CHECK_CRC32, NULL,
+					   (uint8_t *)data, size,
+					   (uint8_t *)out, cdata_size,
+					   out_size))
     	return NULL;
 
     return out;
@@ -140,7 +142,6 @@ static char *lzma_mem_deflate_lparts(char *data,
 }
 
 static char *lzma_mem_inflate(char *cdata, size_t csize, size_t *size) {
-    size_t inpos = 0, outpos = 0, outsize;
     lzma_stream strm = LZMA_STREAM_INIT;
     size_t out_size = 0, out_pos = 0;
     char *out = NULL;
@@ -152,7 +153,7 @@ static char *lzma_mem_inflate(char *cdata, size_t csize, size_t *size) {
 
     /* Decode loop */
     strm.avail_in = csize;
-    strm.next_in = cdata;
+    strm.next_in = (uint8_t *)cdata;
 
     for (;strm.avail_in;) {
 	if (strm.avail_in > out_size - out_pos) {
@@ -160,12 +161,12 @@ static char *lzma_mem_inflate(char *cdata, size_t csize, size_t *size) {
 	    out = realloc(out, out_size);
 	}
 	strm.avail_out = out_size - out_pos;
-	strm.next_out = &out[out_pos];
+	strm.next_out = (uint8_t *)&out[out_pos];
 
 	r = lzma_code(&strm, LZMA_RUN);
 	if (LZMA_OK != r && LZMA_STREAM_END != r) {
 	    fprintf(stderr, "r=%d\n", r);
-	    fprintf(stderr, "mem=%ld\n", lzma_memusage(&strm));
+	    fprintf(stderr, "mem=%"PRId64"d\n", (int64_t)lzma_memusage(&strm));
 	    return NULL;
 	}
 
@@ -857,7 +858,7 @@ static void btree_del_cache(void *clientdata, HacheData hd) {
 
 static int btree_write(g_io *io, btree_node_t *n) {
     int ret;
-    size_t len, part1, gzlen;
+    size_t len, gzlen;
     size_t parts[4];
     GView v;
     char *data = (char *)btree_node_encode2(n, &len, parts);
@@ -1184,7 +1185,7 @@ int io_database_setopt(void *dbh, io_opt opt, int val) {
 	return 0;
 
     default:
-	fprintf(stderr, "Unknown io_option: %d\n", opt);
+	fprintf(stderr, "Unknown io_option: %d\n", (int)opt);
     }
 
     return -1;
@@ -1847,7 +1848,7 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
 	}
 
 	if (fmt && *cp) {
-	    name = cp;
+	    name = (char *)cp;
 	}
     }
 
@@ -1907,7 +1908,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
 	}
     }
     if (lib->name) {
-	strcpy(cp, lib->name);
+	strcpy((char *)cp, lib->name);
 	cp += strlen(lib->name)+1;
     }
 
@@ -1919,21 +1920,6 @@ static int io_library_write(void *dbh, cached_item *ci) {
     err = g_writev(io, ci->view, vec, 2);
     free(gzout);
     g_flush(io, ci->view);
-
-    if (0) {
-	int i, j;
-
-	puts("\nlibrary\n");
-	for (j = 0; j < 3; j++) {
-	    printf("  type %d\n", j);
-	    for (i = 0; i < 1792; i++) {
-		if (!lib->size_hist[j][i]) continue;
-		printf("        %d\t%f\n", ibin2isize(i),
-		       (double)lib->size_hist[j][i] / ibin_width(i));
-	    }
-	}
-	printf("Rec %d view %d\n", ci->rec, ci->view);
-    }
 
     return err;
 }
@@ -2416,6 +2402,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
 	    /* Write them out, if we have any left */
 	    if (j) {
+		int o;
+
 		if (!bin->track_rec) {
 		    bin->track_rec = allocate(io, GT_Track);
 		    bin->flags |= BIN_BIN_UPDATED;
@@ -2423,9 +2411,10 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
 		v = lock(io, bin->track_rec, G_LOCK_EX);
 
-		nb = io_generic_write_i4(io, v, GT_RecArray, bt,
-					 j * sizeof(GBinTrack));
-		if (nb < 0) err |= 1;
+		if ((o = io_generic_write_i4(io, v, GT_RecArray, bt,
+					     j * sizeof(GBinTrack))) < 0)
+		    err |= 1;
+		nb = o;
 		err |= unlock(io, v);
 
 		wrstats[GT_Track] += nb;
@@ -2637,7 +2626,8 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
     case TRACK_CONS_ARR:
 	for (i = 0; i < track->nitems; i++) {
 	    cstat *c = arrp(cstat, track->data, i);
-	    int i4;
+	    int32_t i4;
+	    uint32_t u4;
 
 	    cp += s72int(cp, &i4); c->base_qual[0] = i4;
 	    cp += s72int(cp, &i4); c->base_qual[1] = i4;
@@ -2645,7 +2635,7 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
 	    cp += s72int(cp, &i4); c->base_qual[3] = i4;
 	    cp += s72int(cp, &i4); c->gap = i4;
 	    cp += s72int(cp, &i4); c->base = i4;
-	    cp += u72int(cp, &c->depth);
+	    cp += u72int(cp, &u4); c->depth = u4;
 	}
 	break;
 
@@ -3125,18 +3115,18 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     switch (seq->format) {
     case SEQ_FORMAT_MAQ:
 	for (i = 0; i < seq_len; i++) {
-	    unsigned char v = base2val_maq[((unsigned char *)seq->seq)[i]];
-	    if (v != 9) {
+	    unsigned char qv = base2val_maq[((unsigned char *)seq->seq)[i]];
+	    if (qv != 9) {
 		if (seq->conf[i] <= 0)
-		    v = 0;
+		    qv = 0;
 		else if (seq->conf[i] >= 64)
-		    v |= 63 << 2;
+		    qv |= 63 << 2;
 		else
-		    v |= seq->conf[i] << 2;
+		    qv |= seq->conf[i] << 2;
 	    } else {
-		v = 0;
+		qv = 0;
 	    }
-	    *cp++ = v;
+	    *cp++ = qv;
 	}
 	break;
 
@@ -3697,7 +3687,6 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 
 	    if (s->trace_name_len) {
 		/* Delta to name */
-		int j;
 		for (j = 0; j < s->name_len && j < s->trace_name_len; j++)
 		    if (s->trace_name[j] != s->name[j])
 			break;

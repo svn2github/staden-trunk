@@ -9,6 +9,7 @@
 
 #include "editor_view.h"
 #include "primlib.h"
+#include "dna_utils.h"
 
 /*
  *----------------------------------------------------------------------------
@@ -26,8 +27,6 @@ Tcl_Obj *edSelectOligoGenerate(edview *xx, int is_fwds, int bkwd_width,
 			       int fwd_width, int avg_read_len,
 			       char *primer_defs) {
     Tcl_Obj *lobj;
-    int seq  = xx->cursor_rec;
-    int pos  = xx->cursor_pos;
     int apos = xx->cursor_apos;
 
     int i, j;

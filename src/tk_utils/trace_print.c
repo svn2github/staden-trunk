@@ -113,7 +113,7 @@ int ps_trace_draw_trace(DNATrace *t, FILE *ps_file) {
     PS_TEXT	*A, *C, *G, *T, *gap, *numbers;
     int		np, np_max, nA, nC, nG, nT, nGap, n_num;
     int		first_base, last_base;
-    int		first_point, last_point, n_points;
+    int		first_point, last_point;
 
     first_base = ((t->ps_trace.first_base <= 0) || (t->ps_trace.first_base >= t->read->NBases))
 	? 0
@@ -123,16 +123,12 @@ int ps_trace_draw_trace(DNATrace *t, FILE *ps_file) {
 	: t->ps_trace.last_base - 1;
     first_point = t->read->basePos[first_base];
     last_point = t->read->basePos[last_base];
-    n_points = last_point - first_point + 1;
 
     y_trans = -1 * (t->ps_options.panel_height + t->ps_options.panel_sep);
     n_translations = 0;
     n_panels = 0;
     page_n = 1;
     np_max = (int) (((double) t->ps_options.panel_width) / t->ps_trace.scale_x);
-    /*
-      for(i = first_point; i < n_points; i += np_max) {
-    */
     for(i = first_point; i <= last_point; i += np_max) {
 	/* Allow for the fact that the last section of trace  */
 	/* may have less points than will fit into one width. */

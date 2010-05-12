@@ -281,7 +281,6 @@ static int TraceCmd(ClientData clientData, Tcl_Interp *interp,
  */
 static int TraceConfigure(Tcl_Interp *interp, DNATrace *tracePtr,
 			  int argc, char **argv, int flags) {
-    int bd;
     Tk_FontMetrics fm;
 
     if (Tk_ConfigureWidget(interp, tracePtr->tkwin, configSpecs,
@@ -366,8 +365,6 @@ static int TraceConfigure(Tcl_Interp *interp, DNATrace *tracePtr,
     }
 
     Tk_GeometryRequest(tracePtr->tkwin, tracePtr->width, tracePtr->height);
-
-    bd = tracePtr->borderWidth;
 
     tracePtr->pos[TRACEP_N].bd = 0;
     tracePtr->pos[TRACEP_S].bd = 0;
@@ -521,14 +518,11 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
     } else if (strcmp(argv[1], "xview") == 0) {
 	int offset = 0, centre = 0;
-	int windowWidth;
 	double f1, f2;
 	int type, count;
 
 	if (!tracePtr->read)
 	    goto release;
-
-	windowWidth = Tk_Width(tracePtr->tkwin) - 2*tracePtr->borderWidth;
 
 	if (argc == 2) { /* Query */
 	    if (tracePtr->disp_width == 0) {

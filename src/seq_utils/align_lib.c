@@ -622,7 +622,7 @@ void print_malign_scores(MALIGN *malign) {
 }
 
 void scale_malign_scores(MALIGN *malign, int start, int end) {
-  int i,j,k;
+  int i,j;
   /* in the alignment routine all these values are added:
    * ie score is score + malign->scores[i][j];
    * even when scores[i][j] is a gap penalty.
@@ -633,7 +633,7 @@ void scale_malign_scores(MALIGN *malign, int start, int end) {
    * with negative from mismatches
    */
 #if 0
-  k = malign->matrix[0][1];
+  int k = malign->matrix[0][1];
   for(i=start;i<=end;i++) {
       for (l=j=0;j<malign->charset_size;j++) {
 	  l += malign->counts[i][j];
@@ -654,7 +654,6 @@ void scale_malign_scores(MALIGN *malign, int start, int end) {
   /* Simple unit based scores with 0 = perfect 1 = wrong. Based on ReAligner */
   /* Scale by 100 to fit in integers */
 #if 1
-  k = malign->matrix[0][1];
   for(i=start;i<=end;i++) {
       int t = 0;
       double s = 0;

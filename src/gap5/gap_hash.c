@@ -10,12 +10,6 @@
 #include "gap_hash.h"
 #include "hash_lib.h"
 
-void set_hash8_lookup(void) {
-    int i;
-    /* this is to keep gap_globals happy: FIXME */
-    i = 0;
-}
-
 int cmpseq_ (
 		   int   *job,		/* the task to perform */
 	           char *sense,		/* the orientation for seq2 */

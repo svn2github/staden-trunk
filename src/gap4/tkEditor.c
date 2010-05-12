@@ -2139,7 +2139,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	goto fail;
     }
 
- release:
     Tcl_Release((ClientData)TKSHEET(ed));
     return result;
 

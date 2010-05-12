@@ -41,6 +41,7 @@
 #include "zfio.h"
 
 #ifdef HAVE_SAMTOOLS
+#include "sam_index.h"
 #include "sam.h"
 #endif
 

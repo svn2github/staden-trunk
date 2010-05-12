@@ -2,6 +2,7 @@
 
 #include <tcl.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include <tg_gio.h>
 #include "export_contigs.h"
@@ -243,7 +244,7 @@ static char *false_name(GapIO *io, seq_t *s, int suffix, int *name_len) {
 
 static int export_header_sam(GapIO *io, FILE *fp,
 			     int cc, contig_list_t *cv) {
-    int nreads = 0, i;
+    int i;
 
     /* Inefficient as we have to loop twice - here and when outputting reads */
     for (i = 0; i < cc; i++) {
@@ -573,11 +574,11 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	    iend = other_st < other_en ? other_st : other_en;
 
 	    if (crec == other_c) {
-		int l, r;
+		int ll, rr;
 		mate_ref = "=";
-		l = (sorig->len >= 0) ? pos : pos - sorig->len - 1;
-		r = comp ? other_st-1 : other_en+1;
-		isize = r-l;
+		ll = (sorig->len >= 0) ? pos : pos - sorig->len - 1;
+		rr = comp ? other_st-1 : other_en+1;
+		isize = rr-ll;
 	    } else {
 		contig_t *oc = cache_search(io, GT_Contig, other_c);
 		mate_ref = oc->name;
@@ -909,6 +910,8 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
 	    ti = fifo_queue_head(tq);
 	}
     }
+
+    return 0;
 }
 
 static int export_contig_baf(GapIO *io, FILE *fp,
@@ -917,11 +920,8 @@ static int export_contig_baf(GapIO *io, FILE *fp,
 						  start, end,
 						  GRANGE_FLAG_ISANY);
     rangec_t *r;
-    int qalloc = 0;
     char *q = NULL, *S = NULL, *cp;
     contig_t *c;
-    char *name;
-    int name_len;
     fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
     fifo_t *fi;
     int last_start = 0;
@@ -1029,7 +1029,7 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	    (s->flags & SEQ_END_MASK) == SEQ_END_FWD ? "Forward" : "Reverse");
 
     fprintf(fp, "SCF_File %.*s\n", 
-	    s->trace_name_len ? s->trace_name_len : strlen(name),
+	    s->trace_name_len ? s->trace_name_len : (int)strlen(name),
 	    s->trace_name_len ? s->trace_name     : name);
 
     //fprintf(fp, "Insert_size %d %d\n", fixme, fixme);
@@ -1108,6 +1108,8 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     if (wrap)
 	fprintf(fp, "\n");
     fprintf(fp, "\n");
+
+    return 0;
 }
 
 static int export_contig_caf(GapIO *io, FILE *fp,
@@ -1116,11 +1118,8 @@ static int export_contig_caf(GapIO *io, FILE *fp,
 						  start, end,
 						  GRANGE_FLAG_ISANY);
     rangec_t *r;
-    int qalloc = 0;
-    char *q = NULL, *S = NULL, *cp;
+    char *q = NULL, *S = NULL;
     contig_t *c;
-    char *name;
-    int name_len;
     fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
     fifo_t *fi;
     int last_start = 0;
@@ -1194,8 +1193,8 @@ static int export_contig_caf(GapIO *io, FILE *fp,
 
     fprintf(fp, "\nBaseQuality : %s\n", c->name);
     for (wrap = i = 0; i < len; i++) {
-	int q = qual[i]+.5;
-	wrap += fprintf(fp, "%d ", q);
+	int qv = qual[i]+.5;
+	wrap += fprintf(fp, "%d ", qv);
 	if (wrap > 60) {
 	    wrap = 0;
 	    fprintf(fp, "\n");
@@ -1243,7 +1242,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
     char *q = NULL, *S = NULL;
     contig_t *c;
     int nreads = 0;
-    int i, j, len, nBS, last, first_base, last_base;
+    int i, j, slen, nBS, last, first_base, last_base;
     char *cons;
     float *qual;
 
@@ -1264,31 +1263,31 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 	    last = r->start + s->right-1;
 	}
     }
-    len = last_base - first_base + 1;
+    slen = last_base - first_base + 1;
 
     fprintf(fp, "\nCO %s %d %d %d U\n",
-	    c->name, len, nreads, nBS);
+	    c->name, slen, nreads, nBS);
 
 
     /* Contig sequence */
-    cons = (char *)xmalloc(len);
-    qual = (float *)xmalloc(len * sizeof(*qual));
+    cons = (char *)xmalloc(slen);
+    qual = (float *)xmalloc(slen * sizeof(*qual));
     calculate_consensus_simple(io, crec, first_base, last_base, cons, qual);
-    for (i = 0; i < len; i += 50) {
-	fprintf(fp, "%.*s\n", len-i > 50 ? 50 : len-i, &cons[i]);
+    for (i = 0; i < slen; i += 50) {
+	fprintf(fp, "%.*s\n", slen-i > 50 ? 50 : slen-i, &cons[i]);
     }
 
     /* Contig Quality */
     fprintf(fp, "\nBQ\n");
-    for (i = j = 0; i < len; i++) {
-	int q;
+    for (i = j = 0; i < slen; i++) {
+	int qv;
 	if (cons[i] == '*')
 	    continue;
 
-	q = qual[i]+0.5;
-	if (q < 0) q = 0;
-	if (q > 97) q = 97;
-	fprintf(fp, " %d", q);
+	qv = qual[i]+0.5;
+	if (qv < 0) qv = 0;
+	if (qv > 97) qv = 97;
+	fprintf(fp, " %d", qv);
 
 	if (++j == 150) {
 	    j = 0;
@@ -1333,7 +1332,6 @@ static int export_contig_ace(GapIO *io, FILE *fp,
     while (r = contig_iter_next(io, ci)) {
 	seq_t *origs, *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	int len = s->len < 0 ? -s->len : s->len;
-	int i;
 
 	origs = s;
 	if (len > qalloc) {
@@ -1505,7 +1503,7 @@ static int export_tags_gff(GapIO *io, FILE *fp,
     /* Export */
     while (r = contig_iter_next(io, ci)) {
 	anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
-	char type[5], type2[5];
+	char type2[5];
 	char *name, *escaped;
 	int st, en;
 

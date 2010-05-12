@@ -571,9 +571,7 @@ void curses_loop(GapIO *io, contig_t **cp, int xpos, int mode) {
     display_gap(io, cp, xpos, ypos, maxy, maxx, mode, qual_cutoff, 1);
 
     for(;;) {
-	int c;
-
-	switch(c = getch()) {
+	switch (getch()) {
 	case '!':
 	    edit_contig_name(io, cp);
 	    break;

@@ -191,7 +191,7 @@ int hash_seq4 ( char *seq, int *hash_values, int seq_len) {
  * the sequence starts with pads. Do not use for now...
  */
 int hash_seq4_padded ( char *seq, int *hash_values, int seq_len) {
-    int i,j,k;
+    int i,j;
     unsigned char uword;
 
     /* Initial word */
@@ -208,7 +208,6 @@ int hash_seq4_padded ( char *seq, int *hash_values, int seq_len) {
     i = 0;
     hash_values[0] = uword;
     printf("hash_values[%d] = %x\n", i, uword);
-    k = seq_len - hash_len + 1;
 
     for (i = 1; i < seq_len && seq[i] == '*'; i++)
 	;
@@ -464,10 +463,10 @@ void hash_dna(char *seq,                                               /* in */
 	      int *last_word,   
 	      int *word_count)
 {
-    int i, start_pos;
+    int start_pos;
 
     start_pos = 1;
-    i = hash_seq4(seq, seq_hash_values, seq_len);
+    hash_seq4(seq, seq_hash_values, seq_len);
     
     store_hash4(seq_hash_values, /* the hash values for each position in a seq */
 		 seq_len, 	/* size of the seq and hash array */
@@ -543,7 +542,7 @@ int search_dna (char *seq,                                             /* in */
 #define MAX_END_SEQ 100
 
 
-    int i,start_pos,num_words;
+    int start_pos,num_words;
     int end_offset;
     char end_seq[MAX_END_SEQ];
     int last_word[SIZE_HASH];
@@ -551,7 +550,7 @@ int search_dna (char *seq,                                             /* in */
     int string_hash_values[SIZE_HASH];
     start_pos = 1;
 
-    i = hash_seq4 ( seq, seq_hash_values, seq_len);
+    hash_seq4 ( seq, seq_hash_values, seq_len);
 
     store_hash4 ( 
 	         seq_hash_values, 	/* the hash values for each position in a seq */
@@ -1191,7 +1190,6 @@ PrintEnzymeByEnzyme(R_Enz *r_enzyme,                                   /* in */
     int *lengths;
     char fbuf[1024], lbuf[1024];
     int fragments_printed = 0;
-    int found;
 
     if (0 == num_enzymes)
       return 1;
@@ -1299,7 +1297,7 @@ PrintEnzymeByEnzyme(R_Enz *r_enzyme,                                   /* in */
      */
     if (do_all) {
 	vmessage("Zero cutters:\n");
-	cnt = j = start = found = 0;
+	cnt = j = start = 0;
 	for (i = 0; i < num_enzymes; i++) {
 	    while ((j < total_matches) && (i == match[j].enz_name)) {
 		cnt++;

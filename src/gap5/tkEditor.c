@@ -428,7 +428,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     Editor *ed = (Editor *)clientData;
     int result = TCL_OK;
     int index;
-    Tcl_Obj *obj;
+    Tcl_Obj *s_obj;
     edview *xx = ed->xx;
 
     static char *optionStrings[] = {
@@ -466,14 +466,14 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     Tcl_Preserve((ClientData)TKSHEET(ed));
 
-    obj = Tcl_NewStringObj(argv[1], -1);
-    Tcl_IncrRefCount(obj);
-    if (Tcl_GetIndexFromObj(interp, obj, optionStrings, "option", 0,
+    s_obj = Tcl_NewStringObj(argv[1], -1);
+    Tcl_IncrRefCount(s_obj);
+    if (Tcl_GetIndexFromObj(interp, s_obj, optionStrings, "option", 0,
 	    &index) != TCL_OK) {
-	Tcl_DecrRefCount(obj);
+	Tcl_DecrRefCount(s_obj);
 	goto fail;
     }
-    Tcl_DecrRefCount(obj);
+    Tcl_DecrRefCount(s_obj);
 
     switch ((enum options)index) {
     default:
@@ -896,7 +896,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	char *select_options[] = {"clear", "from", "to", "get", "set", NULL};
 	enum  select_options     { CLEAR,   FROM,   TO,   GET,   SET};
 	Tcl_Obj *obj;
-	int index;
 
 	if (argc < 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",

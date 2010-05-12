@@ -15,6 +15,7 @@
 #include "tclXkeylist.h"
 #include "gap4_compat.h"
 #include "editor_view.h"
+#include "tk-io-reg.h"
 
 static int counter;
 static int counter_max;
@@ -324,7 +325,6 @@ fij(GapIO *io,
     mobj_fij *FIJMatch;
     int i, id;
     char *val;
-    int ret;
     Contig_parms *contig_list;
     int database_size, number_of_contigs;
     int task_mask;
@@ -384,7 +384,7 @@ fij(GapIO *io,
     if ( p.do_it ) task_mask |= ADDHIDDENDATA;
 
     consensus_length = 0;
-    if ( ret = make_consensus ( task_mask, io, &consensus, NULL,
+    if ( make_consensus ( task_mask, io, &consensus, NULL,
 			  contig_list, number_of_contigs,
 			  &consensus_length,
 			  max_read_length,
@@ -397,11 +397,11 @@ fij(GapIO *io,
 	return -1;
     }
 
-    if ( ret = do_it_fij ( consensus, consensus_length,
-			   word_len,
-			   min_overlap, max_percent_mismatch, compare_mode,
-			   band, gap_open, gap_extend, max_prob, min_match,
-			   max_alignment, contig_list, number_of_contigs ) ) {
+    if ( do_it_fij ( consensus, consensus_length,
+		     word_len,
+		     min_overlap, max_percent_mismatch, compare_mode,
+		     band, gap_open, gap_extend, max_prob, min_match,
+		     max_alignment, contig_list, number_of_contigs ) ) {
 
 	xfree(FIJMatch->match);
 	xfree(FIJMatch);

@@ -2305,8 +2305,6 @@ static void process_discrep(seq_frag *frag, int *num_frags, int from, int to,
     int i, j, k, nevents;
     int nf = *num_frags;
     int qual, type;
-    int highest_type;
-    double highest_product;
     double prob, err, qnorm, product;
     double (*bayesian)[5] = NULL;
     int nbase_types;
@@ -2381,8 +2379,6 @@ static void process_discrep(seq_frag *frag, int *num_frags, int from, int to,
 		double prod_l = 0; 
 
 		qnorm = 0;
-		highest_product = 0;
-		highest_type = 5;
 
 		for (j = 0; j < nbase_types; j++) {
 		    product = 1;

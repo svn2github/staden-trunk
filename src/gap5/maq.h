@@ -12,7 +12,7 @@
 #define PAIRFLAG_NOMATCH 0x40
 #define PAIRFLAG_SW      0x80
 
-int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a);
+int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a);
 
 
 #endif /* _MAQ_H_ */

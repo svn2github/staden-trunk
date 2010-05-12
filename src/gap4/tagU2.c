@@ -1925,6 +1925,8 @@ Array find_tags(GapIO *io, contig_list_t *contigs, int num_contigs,
 	find_tags_contig(io, contigs[i].contig, contigs[i].start,
 			 contigs[i].end, al, itypes, num_t);
     }
+
+#if 0
     printf("%d tags\n", ArrayMax(al));
     for (i = 0; i < ArrayMax(al); i++) {
 	printf("Tag %d, prev %d, next %d, read %d, type %d\n",
@@ -1934,6 +1936,7 @@ Array find_tags(GapIO *io, contig_list_t *contigs, int num_contigs,
 	       arr(anno_ptr, al, i).from,
 	       arr(anno_ptr, al, i).from_type);
     }
+#endif
 
     xfree(itypes);
 

@@ -219,7 +219,7 @@ int hash_seq8n ( char *seq, int *hash_values, int seq_len, int word_length) {
        */
 
     register int i,j,k;
-    int start_base,prev_start_base,end_base,base_index;
+    int start_base,prev_start_base,base_index;
     unsigned short uword;
 
     if ( seq_len < word_length ) return -1;
@@ -251,7 +251,6 @@ int hash_seq8n ( char *seq, int *hash_values, int seq_len, int word_length) {
 
 	    for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
 	    hash_values[start_base] = uword;
-	    end_base = start_base + word_length;
 	    i = start_base;
 	    j = i + word_length - 1;
 
@@ -317,7 +316,7 @@ int hash_seq4n ( char *seq, int *hash_values, int seq_len, int word_length) {
        */
 
     register int i,j,k;
-    int start_base,prev_start_base,end_base,base_index;
+    int start_base,prev_start_base,base_index;
     unsigned char uword;
 
     if ( seq_len < word_length ) return -1;
@@ -349,7 +348,6 @@ int hash_seq4n ( char *seq, int *hash_values, int seq_len, int word_length) {
 
 	    for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
 	    hash_values[start_base] = uword;
-	    end_base = start_base + word_length;
 	    i = start_base;
 	    j = i + word_length - 1;
 
@@ -791,12 +789,12 @@ int block_to_edit_pair ( EDIT_PAIR *edit_pair, int length ) {
 
 int align_bit ( ALIGN_PARAMS *params, OVERLAP *overlap, EDIT_PAIR *edit_pair) {
 
-    int l1, l2, ret;
+    int l1, l2;
 
     l1 = overlap->seq1_len;
     l2 = overlap->seq2_len;
     if ((l1 > 0) && (l2 > 0 )) {
-	if(ret = affine_align(overlap,params)) return -1;
+	if (affine_align(overlap,params)) return -1;
 	if ( update_edit_pair ( edit_pair, overlap)) return -1;
     }
     else {
@@ -1154,7 +1152,7 @@ int sort_len_blocks ( Block_Match *block_match, int matches ) {
 
 int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     int i,j,l,gap_pen,diag_shift,best_score,best_prev,t,tt;
-    int good_blocks, first_block;
+    int good_blocks;
     int *index_ptr = NULL;
     double best_percent;
     int more_shuffling;
@@ -1297,12 +1295,10 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     h->block_match[best_prev].best_score = -1;
 
     good_blocks = 1;
-    first_block = 0;
     for (i=best_prev,j=0;i>-1;) {
 	j = h->block_match[i].prev_block;
 	if (j>-1) {
 	    good_blocks++;
-	    first_block = j;
 	}
 	i=h->block_match[i].prev_block;
     }

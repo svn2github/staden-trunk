@@ -435,7 +435,7 @@ static int64_t wilderness_allocate(dheap_t *h, uint32_t length) {
  *        -1 on failure
  */
 int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
-    int p, pred, porig, htime, hptime;
+    int p, pred, porig;
     uint64_t rover, orig;
 
     /* Round size to the next multiple of 8 after boundary tags */
@@ -453,8 +453,6 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 
     /* Search for the first item in the pool that's big enough */
     porig = p = pool(length);
-    htime = h->timer;
-    hptime = h->next_free_time[p];
     if (!h->pool[p] &&
 	h->next_free_pool[p] &&
 	h->next_free_time[p] == h->timer)
@@ -650,7 +648,8 @@ void heap_check(dheap_t *h) {
 	    pmax--;
 
 	    if (p[i])
-		printf(" pool(%d) = %ld (%d..%d)\n", i, p[i], pmin, pmax);
+		printf(" pool(%d) = %"PRIu64"d (%d..%d)\n",
+		       i, p[i], pmin, pmax);
 
 	    assert(pool(pmin) == i);
 	    assert(pool(pmax) == i);
@@ -674,10 +673,11 @@ void heap_check(dheap_t *h) {
 	    next = be_int8(next);
 
 	    if (len & 1) {
-		printf("%5ld+%4d free prev=%5ld next=%5ld\n",
+		printf("%5"PRIu64"d+%4"PRIu32"d free prev=%5"PRIu64"d "
+		       "next=%5"PRIu64"d\n",
 		       offset, len & ~1, prev, next);
 	    } else {
-		printf("%5ld+%4d used\n", offset, len & ~1);
+		printf("%5"PRIu64"d+%4"PRIu32"d used\n", offset, len & ~1);
 	    }
 
 	    assert(len < 10000000);

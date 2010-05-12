@@ -115,4 +115,13 @@ int bin_get_item_position(GapIO *io, int type, GRec rec,
 			  int *contig, int *start, int *end, int *orient,
 			  int *bin, range_t *r_out, void **i_out);
 
+/*
+ * Adds 'n' to the nseq counter for a bin and all parent bins chaining up
+ * to the root node. 'n' may be negative too.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n);
+
 #endif /* _TG_CONTIG_H_ */

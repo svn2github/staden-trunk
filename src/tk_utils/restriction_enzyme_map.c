@@ -103,7 +103,6 @@ plot_renz_matches(Tcl_Interp *interp,
 {
     char cmd[1024];
     int item;
-    int seq_len;
     int offset;
     int y_offset;
     int t_offset;
@@ -118,8 +117,6 @@ plot_renz_matches(Tcl_Interp *interp,
 
     t_offset = text_offset;
     y_offset = yoffset;
-
-    seq_len = ruler->end - ruler->start + 1;
 
     /* for each selected enzyme, display its name and cut sites */
     for (item = 0; item < num_enzymes; item++) {

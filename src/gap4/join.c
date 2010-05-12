@@ -824,7 +824,7 @@ void joinDB(EdStruct *xx[2], GapIO *io) {
     int relx;
     int i;
     int cl, cr;
-    int st[2];
+    enum States st[2];
 
     cl = DBI_contigNum(xx[0]);
     cr = DBI_contigNum(xx[1]);

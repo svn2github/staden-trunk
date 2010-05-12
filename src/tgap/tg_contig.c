@@ -480,8 +480,8 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 
 	while (hi = HacheTableIterNext(h, iter)) {
 	    HacheItem *pair;
-	    int i = hi->data.i;
 	    int p;
+	    i = hi->data.i;
 	    assert(i < count && i >= 0);
 
 	    pair = HacheTableSearch(h, (char *)&r[i].pair_rec, sizeof(r[i].rec));
@@ -576,7 +576,7 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 static int sort_range_by_x(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
     const rangec_t *r2 = (const rangec_t *)v2;
-    int d, m1, m2;
+    int d;
 
     /* By X primarily */
     if ((d = r1->start - r2->start))
@@ -584,10 +584,13 @@ static int sort_range_by_x(const void *v1, const void *v2) {
     
 #if 0
     /* And then by unmapped first, mapped second */
-    m1 = (r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ;
-    m2 = (r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ;
-    if (m1 != m2)
-	return m2 - m1;
+    {
+	int m1, m2;
+	m1 = (r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ;
+	m2 = (r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ;
+	if (m1 != m2)
+	    return m2 - m1;
+    }
 #endif
 
     /* And finally by recno. */
@@ -678,7 +681,7 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 	}
 
 	if ((node = SPLAY_MIN(XTREE, &xtree)) != NULL && r[i].start >= node->x) {
-	    int try_cull = 0;
+	    //int try_cull = 0;
 
 	    /* We found a node, but is there a smaller Y in the YTREE? */
 	    curr = SPLAY_MIN(YTREE, &ytree);
@@ -696,12 +699,12 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 		    if (node->y > curr->y) {
 			SPLAY_REMOVE(XTREE, &xtree, node);
 			SPLAY_INSERT(YTREE, &ytree, node);
-			try_cull = 1;
+			//try_cull = 1;
 			node = curr;
 		    } else {
 			SPLAY_REMOVE(XTREE, &xtree, curr);
 			SPLAY_INSERT(YTREE, &ytree, curr);
-			try_cull = 1;
+			//try_cull = 1;
 		    }
 		    curr = next;
 		}
@@ -1521,7 +1524,6 @@ static int contig_get_track2(GapIO *io, int bin_num, int start, int end,
      */
     if (!(end < NMIN(0, bin->size-1) || start > NMAX(0, bin->size-1)) &&
 	!(bin->size / RD_ELEMENTS > bpv && bin->size > RD_ELEMENTS)) {
-	int i;
 	track_t *t;
 
 	printf("*query\n");
@@ -1556,19 +1558,19 @@ static int contig_get_track2(GapIO *io, int bin_num, int start, int end,
 	bin_index_t *ch;
 	if (!bin->child[i]) {
 	    /* No data available, so fill with zero values */
-	    int len, nitems, j, offset;
+	    int len, nitems, j, offset2;
 
 	    if (i == 0 && bin->child[1]) {
 		ch = get_bin(io, bin->child[1]);
 		len = bin->size - ch->size;
-		offset = 0;
+		offset2 = 0;
 	    } else if (i == 1 && bin->child[0]) {
 		ch = get_bin(io, bin->child[0]);
 		len = bin->size - ch->size;
-		offset = ch->size;
+		offset2 = ch->size;
 	    } else {
 		len = bin->size;
-		offset = 0;
+		offset2 = 0;
 	    }
 	    nitems = len / bpv;
 
@@ -1577,7 +1579,7 @@ static int contig_get_track2(GapIO *io, int bin_num, int start, int end,
 		    *alloc = *alloc ? *alloc * 2 : 16;
 		    *tv = (tvalues_t *)realloc(*tv, *alloc * sizeof(**tv));
 		}
-		(*tv)[count].pos = NORM((double)j * len / nitems + offset);
+		(*tv)[count].pos = NORM((double)j * len / nitems + offset2);
 		(*tv)[count].val = 0;
 		count++;
 	    }
@@ -1615,7 +1617,7 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
     tvalues_t *tv = NULL;
     int alloc = 0, count = 0;
     double last_pos;
-    int last_val, bin_off;
+    int bin_off;
     int *data, *data3;
     bin_index_t *start_bin;
     int start_bin_rec;
@@ -1657,8 +1659,7 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
     }
 
     /* And now we need to resample it to fit our required resolution */
-    last_pos = tv[0].pos;
-    last_val = tv[0].val;
+
     /*
      * All elements in tvalues are higher resolution than bpv, but in
      * theory no more than double. Hence a simple linear downsample is
@@ -1737,7 +1738,6 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
  */
 int contig_destroy(GapIO *io, int rec) {
     int i, j;
-    reg_delete rd;
 
     printf("Destroy contig rec %d\n", rec);
     io->contig_order = cache_rw(io, io->contig_order);

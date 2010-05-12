@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "depad_seq_tree.h"
+#include "consensus.h"
 
 /* Comparison function for sorting the tree */
 static int pad_count_cmp(struct pad_count *p1, struct pad_count *p2) {

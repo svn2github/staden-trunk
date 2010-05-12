@@ -1201,15 +1201,12 @@ int get_identifiers (char *file_name,
    4 seek to start of file failed!
    */
 
-    char entry_name[256];
     FILE *file_ptr;
     int fmt;
     int cnt = 0;
     char **identifier = NULL;
     int array_size = 0;
     char line[MAX_SEQ_LINE];
-
-    entry_name[0] = '\0';
 
     if (NULL == (file_ptr = my_fopen ( file_name, "r" )))
 	return 1;

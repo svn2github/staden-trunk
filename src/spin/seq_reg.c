@@ -641,7 +641,7 @@ void seq_register_dump(void) {
     for (c = 0; c < ArrayMax(sequence_reg); c++) {
 
 	printf("sequence %d\n", c);
-	printf("num funcs!! %d \n", seq_Nfuncs(c));
+	printf("num funcs!! %d \n", (int)seq_Nfuncs(c));
 	n = seq_Nfuncs(c);
 	r = ArrayBase(seq_reg, seq_func_array(c));
 

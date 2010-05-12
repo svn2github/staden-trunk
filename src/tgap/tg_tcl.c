@@ -143,7 +143,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_CONTIG,    IO_SEQUENCE,    IO_DATABASE,    IO_ANNO_ELE,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
 	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
-	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,
+	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE
     };
 
     if (objc < 2) {
@@ -543,7 +543,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_START,      GET_END,        GET_LEN,        GET_LENGTH,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
-	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,
+	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP
     };
 
     if (objc < 2) {
@@ -560,6 +560,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     case DELETE:
 	Tcl_DeleteCommandFromToken(interp,
 				   Tcl_GetCommandFromObj(interp, objv[0]));
+
 	break;
 
     case IO:
@@ -910,7 +911,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_CONF,       GET_CONF4,      GET_CONTIG,     GET_POSITION,
 	GET_ORIENT,     GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
-	GET_CLIPS,      SET_CLIPS,      MOVE_ANNOS,
+	GET_CLIPS,      SET_CLIPS,      MOVE_ANNOS
     };
 
     if (objc < 2) {
@@ -1781,7 +1782,7 @@ static int database_cmd(ClientData clientData, Tcl_Interp *interp,
 
     enum options {
 	GET_NUM_CONTIGS,     FLUSH,   GET_NUM_LIBRARIES,
-	GET_LIBRARY_REC,
+	GET_LIBRARY_REC
     };
 
     if (objc < 2) {

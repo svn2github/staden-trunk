@@ -17,7 +17,7 @@ static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
     if (pto == cto->rec) {
 	/* Parent is a contig */
 	if (bin->rec != cto->bin)
-	    printf("Destroy old bin for contig %d (bin %d). New root=%d\n",
+	    printf("Destroy old bin for contig %d (bin %u). New root=%d\n",
 		   cto->rec, cto->bin, bin->rec);
 	cto->bin = bin->rec;
 	cto->start = 1;
@@ -129,7 +129,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 				int level, int pleft, int pright,
 				int child_no, int complement,
 				int *left_end, int *right_start) {
-    int i, f_a, f_b, rbin;
+    int i, j, f_a, f_b, rbin;
     bin_index_t *bin = get_bin(io, bin_num), *bin_dup ;
     int bin_min, bin_max;
     int nseqs;
@@ -331,7 +331,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	break_contig_reparent_seqs(io, bin_dup);
 
 	if (bin_dup->rng) {
-	    int i, j, n = ArrayMax(bin_dup->rng);
+	    int n = ArrayMax(bin_dup->rng);
 	    for (i = j = 0; i < n; i++) {
 		range_t *r = arrp(range_t, bin_dup->rng, i), *r2;
 		if (r->flags & GRANGE_FLAG_UNUSED)
@@ -356,9 +356,9 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    bin_dup->start_used = bin_dup->end_used = 0;
 
 	if (bin->rng) {
-	    int i, j, n = ArrayMax(bin->rng);
+	    int n = ArrayMax(bin->rng);
 	    for (i = j = 0; i < n; i++) {
-		range_t *r = arrp(range_t, bin->rng, i), *r2;
+		range_t *r = arrp(range_t, bin->rng, i);
 		if (r->flags & GRANGE_FLAG_UNUSED)
 		    continue;
 
@@ -372,7 +372,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	}
     } else {
 	/* Range array covers pos, so split in two */
-	int i, j, n, nl = 0, nr = 0;
+	int n, nl = 0, nr = 0;
 	int lmin = bin->size, lmax = 0, rmin = bin->size, rmax = 0;
 
 	printf("%*sDUP %d, SPLIT array\n", level*4, "", bin_dup->rec);
@@ -619,7 +619,7 @@ int break_contig(GapIO *io, int crec, int cpos) {
 	return -1;
     printf("Break in contig %d, pos %d\n", crec, cpos);
 
-    printf("Existing left bin = %d, right bin = %d\n",
+    printf("Existing left bin = %u, right bin = %u\n",
 	   cl->bin, cr->bin);
 
     cache_incr(io, cl);
@@ -661,7 +661,7 @@ int break_contig(GapIO *io, int crec, int cpos) {
     //    remove_redundant_bins(io, cl);
     //    remove_redundant_bins(io, cr);
 
-    printf("Final left bin = %d, right bin = %d\n", cl->bin, cr->bin);
+    printf("Final left bin = %u, right bin = %u\n", cl->bin, cr->bin);
 
     /* Empty contig? If so remove it completely */
     if (cl->bin == 0) {

@@ -1104,7 +1104,6 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
  */
 int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
     seq_t *n;
-    int alen;
     int comp = 0;
     size_t extra_len = sequence_extra_len(*s);
 
@@ -1240,4 +1239,6 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
     free(r);
 
     cache_decr(io, *s);
+
+    return 0;
 }

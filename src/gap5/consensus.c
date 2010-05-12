@@ -102,8 +102,7 @@ int calculate_consensus_simple2(GapIO *io, int contig, int start, int end,
 
 int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 			       char *con, float *qual) {
-    int i, j, nr;
-    consensus_t q[CONS_BLOCK_SIZE];
+    int i, nr;
     rangec_t *r;
     contig_t *c;
     int left;
@@ -126,7 +125,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
     left = start;
     for (i = 0; i < nr; i++) {
 	bin_index_t *bin;
-	int f_a, f_b;
+	//int f_a, f_b;
 
 	/* Skip entirely overlapping bins */
 	if (r[i].end < left)
@@ -143,15 +142,14 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 					qual ? &qual[left-start] : NULL); 
 	}
 
-	f_a = r[i].pair_start;
-	f_b = r[i].pair_end;
+	//f_a = r[i].pair_start;
+	//f_b = r[i].pair_end;
 
 	//	if (bin->rng /* && !(end < NMIN(bin->start_used, bin->end_used) ||
 	//		        start > NMAX(bin->start_used, bin->end_used)) */
 	//            ) {
 	if (1) {
 	    seq_t *s, *dup_s = NULL, seq;
-	    char *tmp_cons = NULL;
 	    range_t *cons_r = NULL;
 	    int n;
 	    int bstart, bend; /* consensus start/end in this bin */
@@ -633,7 +631,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     double (*cvec)[4]; /* cvec[0-3] = A,C,G,T */
     double (*pvec)[2]; /* pvec[0] = gap, pvec[1] = base */
     int *depth;
-    cstat *cs;
+    //cstat *cs;
  
     /* log overcall, log one minus overcall, etc */
     lover    = log(slx_overcall_prob);
@@ -650,8 +648,6 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	return -1;
 
     if (!lookup_done) {
-	int i;
-
 	/* Character code */
 	memset(lookup, 5, 256);
 	lookup_done = 1;
@@ -771,7 +767,6 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     for (i = 0; i < len; i++) {
 	double probs[6], tot2[4], max;
 	double pad_prob, base_prob;
-	int j;
 
 	/* Gap or base? Work out pad probability initially */
 	/* For this the sum differences is basically the log-odds score */

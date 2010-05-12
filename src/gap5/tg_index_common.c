@@ -79,7 +79,7 @@ void bttmp_file_close(bttmp_t *tmp) {
  * adding to the name index at a later stage.
  */
 void bttmp_file_store(bttmp_t *tmp,  size_t name_len, char *name, int rec) {
-    fprintf(tmp->fp, "%.*s %d\n", name_len, name, rec);
+    fprintf(tmp->fp, "%.*s %d\n", (int)name_len, name, rec);
 }
 
 /* Sort the temporary file, and rewind to start */
@@ -187,8 +187,7 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname,
     /* Pair existed already */
     if (!new) {
 	pair_loc_t *po = (pair_loc_t *)hi->data.p;
-	
-	bin_index_t *bo;
+	//bin_index_t *bo;
 	
 	/* We found one so update r_out now, before flush */
 	r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
@@ -281,7 +280,6 @@ int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     range_t r, *r_out;
     int recno;
     bin_index_t *bin;
-    HacheItem *hi;
     static int fake_recno = 1;
     int comp;
 
@@ -431,7 +429,6 @@ void complete_pairs(GapIO *io) {
     int current_bin = -1;
     char line[100];
     int rec_count = 0;
-    int flush = 1;
     
     rewind(fp);
     
@@ -492,7 +489,7 @@ int parse_data_type(char *type) {
 	    data_type = DATA_BLANK;
 	else
 	    fprintf(stderr, "Ignoring unknown data_type '%.*s'\n",
-		    cp ? cp-type : strlen(type), type);
+		    (int)(cp ? cp-type : strlen(type)), type);
 
 	type = cp ? cp+1 : NULL;
     } while (type);

@@ -202,7 +202,6 @@ static int align(edview *xx0, int pos0, int len0,
 
     char *ol0,*ol1, *cons0, *cons1;
     OVERLAP *overlap;
-    int ierr;
     char PAD_SYM = '.';
     int  *depad_to_pad0, *dp0, *depad_to_pad1, *dp1;
     int *S, *res;
@@ -233,7 +232,7 @@ static int align(edview *xx0, int pos0, int len0,
     if (NULL == (overlap = create_overlap())) return -1;
     init_overlap (overlap, ol0, ol1, len0, len1);
 
-    if(-1 == (ierr =  align_contigs (overlap, fixed_left, fixed_right))) {
+    if(-1 == align_contigs (overlap, fixed_left, fixed_right)) {
 	xfree(ol0);
 	xfree(ol1);
 	destroy_overlap(overlap);
@@ -274,6 +273,7 @@ static int align(edview *xx0, int pos0, int len0,
 
     /* Clip right end */
     {
+	/* FIXME: should this be shadowed or not? */
 	int pos0 = 0, pos1 = 0;
 	int *s = S;
 
@@ -384,7 +384,6 @@ static int align(edview *xx0, int pos0, int len0,
 int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     int left0,right0;
     int left1,right1;
-    int length0,length1;
     int offset, ret;
     int overlapLength;
     int len0,len1;
@@ -401,8 +400,6 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     /* Compute overlap position and sizes */
     consensus_valid_range(xx2[0]->io, xx2[0]->cnum, &l0, &r0);
     consensus_valid_range(xx2[1]->io, xx2[1]->cnum, &l1, &r1);
-    length0 = r0-l0+1;
-    length1 = r1-l1+1;
 
     /*
      * dash => actual sequence

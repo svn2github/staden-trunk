@@ -11,6 +11,7 @@
 #include "tcl_utils.h"
 #include "tk-io-reg.h"
 #include "gap4_compat.h"
+#include "consensus.h"
 
 /*
  * ============================================================================
@@ -303,15 +304,13 @@ void csmatch_join_to(GapIO *io, int contig, reg_join *j, mobj_repeat *r,
 void csmatch_complement(GapIO *io, int contig, mobj_repeat *r,
 			HTablePtr T[], char *cs_plot) {
     int n, i;
-    int clen;
-    int ustart, uend, delta;
+    int ustart, uend;
 
     /*
      * The contig pivots around used (clipped) start..end, rather than
      * the extended cutoff start to end.
      */
     consensus_valid_range(io, contig, &ustart, &uend);
-    clen = uend - ustart+1;
 
     n = r->num_match;
     for (i = 0; i < n; i++) {

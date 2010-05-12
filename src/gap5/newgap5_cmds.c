@@ -39,6 +39,17 @@
 #include "gap_range.h"
 #include "depth_track.h"
 
+#include "maq.h"
+#include "ace.h"
+#include "baf.h"
+#include "tg_index_common.h"
+
+#ifdef HAVE_SAMTOOLS
+#include "sam_index.h"
+#include "sam.h"
+#endif
+
+
 #ifdef VALGRIND
 #    include <valgrind/memcheck.h>
 #endif
@@ -535,7 +546,6 @@ UpdateContigOrder(ClientData clientData,
 {
     contig_list_t *contig_array = NULL;
     int num_contigs = 0;
-    int *contigs;
 
     update_order_arg args;
     cli_args a[] = {
@@ -1411,10 +1421,6 @@ tcl_import_reads(ClientData clientData,
 	       Tcl_Obj *CONST objv[])
 {
     ir_arg args;
-    contig_list_t *contig_array = NULL;
-    int num_contigs = 0;
-    Tcl_DString input_params;
-    char *name1;
     int fmt;
 
     /* Parse arguments */

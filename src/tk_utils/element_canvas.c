@@ -257,7 +257,7 @@ void canvas_scrollregion(Tcl_Interp *interp,
     } 
 
     if (e->orientation & VERTICAL) {
-	int ht, region;
+	int ht;
 
 	w_y1 = e->c->row[e->row_index]->total.min;
 	w_y2 = e->c->row[e->row_index]->total.max;
@@ -267,11 +267,6 @@ void canvas_scrollregion(Tcl_Interp *interp,
 	/* need to turn scrollregion round */
 	win_height = e->element_height(interp, e->win);
 	ht = p_y2 - p_y1;
-	region = ht - win_height;
-	/*
-	p_y1 -= region;
-	p_y2 -= region;
-	*/
     }
 
     /* no x scale */
@@ -337,7 +332,7 @@ void canvas_scroll_y(Tcl_Interp *interp,
     char cmd[1024];
     double wx;
     int i, j, k;
-    double y1, y2;
+    double y1;
     Tcl_Obj *get_coords[3];
     Tcl_Obj *set_coords[5];
     double coords[4];
@@ -377,7 +372,6 @@ void canvas_scroll_y(Tcl_Interp *interp,
 		}
 		Tcl_DecrRefCount(cobj);
 		y1 = e->element_y(interp, e->win, coords[1]);
-		y2 = e->element_y(interp, e->win, coords[3]);
 
 		set_coords[0] = Tcl_NewStringObj(e->win, -1);
 		set_coords[1] = Tcl_NewStringObj("coords", -1);

@@ -24,8 +24,8 @@
  * Find suitable oligos using Primlib with current parameter settings.
  * Return number of oligos found (or -1 for error).
  */
-int edSelectOligoGenerate(edview *xx, int sense, int bkwd_width,
-			  int fwd_width, int avg_read_len, char *pdefs);
+Tcl_Obj *edSelectOligoGenerate(edview *xx, int sense, int bkwd_width,
+			       int fwd_width, int avg_read_len, char *pdefs);
 
 /*
  * We cycle through the oligo list

@@ -597,7 +597,6 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
 			  GTimeStamp edtime)
 {
     GImage old_image;
-    GCardinal old_allocated; /* space allocated for previous image */
     int err;
     Index *ind;
     
@@ -618,7 +617,6 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
      */
     ind = g_read_index(gfile, rec);
     old_image = ind->aux_image;
-    old_allocated = ind->aux_allocated;
     
     /* need to update idx image + time */
     ind->aux_image = image;
@@ -1426,13 +1424,13 @@ int g_lock_file_N_(GDB *gdb, GClient c, GFileN file_N)
  */
 {
     GFile *gfile;
-    Client *client;
+    //Client *client;
 
     /* check arguments */
     if (gdb==NULL || check_client(gdb,c))
 	return gerr_set(GERR_INVALID_ARGUMENTS);
     gfile = gdb->gfile;
-    client = arrp(Client,gdb->client,c);
+    //client = arrp(Client,gdb->client,c);
 
     /* check there is no outstanding lock on this file */
     if (gfile->flock_status == G_FLOCK_LOCKED) return gerr_set(GERR_WOULD_BLOCK);
@@ -1457,7 +1455,6 @@ int g_unlock_file_N_(GDB *gdb, GClient c, GFileN file_N)
  *
  */
 {
-    int err;
     GFile *gfile;
 
     /* check arguments */
@@ -1469,8 +1466,8 @@ int g_unlock_file_N_(GDB *gdb, GClient c, GFileN file_N)
     if (gfile->flock_client != c ||
 	gfile->flock_status != G_FLOCK_LOCKED) return gerr_set(GERR_INVALID_ARGUMENTS);
 
-    /* save error */
-    err =  g_unlock_views(gdb,gfile->flock_view);
+     g_unlock_views(gdb,gfile->flock_view);
+
     /*
      * If the error is serious enough to do something about,
      * it would have been handled in the g_unlock_views() routine itself!!

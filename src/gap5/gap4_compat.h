@@ -43,3 +43,5 @@ void bell(void);
  *        -1 for failure
  */
 int complement_contig(GapIO *io, int crec);
+
+void bell(void);

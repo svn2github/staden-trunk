@@ -429,7 +429,7 @@ int read_aux_index_swapped32_(int fd, void *idxv, int num)
 int read_aux_index_swapped64_(int fd, void *idxv, int num)
 {
     AuxIndex *idx = idxv;
-    int err, i, ret;
+    int i, ret;
     AuxIndex *swapped;
 
     /* LOW LEVEL IO HERE */

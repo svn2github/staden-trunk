@@ -700,7 +700,7 @@ int cache_flush(GapIO *io) {
      */
     if (io->base) {
 	for (i = 0; i < h->nbuckets; i++) {
-	    HacheItem *hi, *next;
+	    HacheItem *next;
 	    for (hi = h->bucket[i]; hi; hi = next) {
 		HacheData data;
 		cached_item *ci = hi->data.p;
@@ -718,17 +718,17 @@ int cache_flush(GapIO *io) {
 		    HacheItem *htmp;
 		    seq_block_t *bn = (seq_block_t *)&ci->data;
 		    seq_block_t *bo;
-		    int i;
+		    int j;
 
 		    htmp = HacheTableSearch(io->base->cache,
 					    hi->key, hi->key_len);
 		    bo = (seq_block_t *)&((cached_item *)htmp->data.p)->data;
 
-		    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
-			if (!bn->seq[i]) {
-			    bn->seq[i] = bo->seq[i];
-			    if (bn->seq[i])
-				bn->seq[i]->block = bn;
+		    for (j = 0; j < SEQ_BLOCK_SZ; j++) {
+			if (!bn->seq[j]) {
+			    bn->seq[j] = bo->seq[j];
+			    if (bn->seq[j])
+				bn->seq[j]->block = bn;
 			}
 		    }
 
@@ -739,17 +739,17 @@ int cache_flush(GapIO *io) {
 		    HacheItem *htmp;
 		    anno_ele_block_t *bn = (anno_ele_block_t *)&ci->data;
 		    anno_ele_block_t *bo;
-		    int i;
+		    int j;
 
 		    htmp = HacheTableSearch(io->base->cache,
 					    hi->key, hi->key_len);
 		    bo = (anno_ele_block_t *)&((cached_item *)htmp->data.p)->data;
 
-		    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
-			if (!bn->ae[i]) {
-			    bn->ae[i] = bo->ae[i];
-			    if (bn->ae[i])
-				bn->ae[i]->block = bn;
+		    for (j = 0; j < ANNO_ELE_BLOCK_SZ; j++) {
+			if (!bn->ae[j]) {
+			    bn->ae[j] = bo->ae[j];
+			    if (bn->ae[j])
+				bn->ae[j]->block = bn;
 			}
 		    }
 		    break;
@@ -939,7 +939,7 @@ int cache_flush(GapIO *io) {
 	memset(sz,        0, 100*sizeof(size_t));
 
 	for (i = 0; i < h->nbuckets; i++) {
-	    HacheItem *hi, *next;
+	    HacheItem *next;
 	    for (hi = h->bucket[i]; hi; hi = next) {
 		HacheData data;
 		cached_item *ci = hi->data.p;
@@ -1486,7 +1486,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	case GT_Seq: {
 	    seq_block_t *b = (seq_block_t *)&ci_new->data;
 	    seq_t *os  = (seq_t *)&sub_ci->data, *s;
-	    int sub_rec = os->rec & (SEQ_BLOCK_SZ-1);
+	    //int sub_rec = os->rec & (SEQ_BLOCK_SZ-1);
 
 	    /* Already duplicated? */
 	    if (b->seq[os->idx]) {
@@ -1520,7 +1520,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	case GT_AnnoEle: {
 	    anno_ele_block_t *b = (anno_ele_block_t *)&ci_new->data;
 	    anno_ele_t *oe  = (anno_ele_t *)&sub_ci->data, *e;
-	    int sub_rec = oe->rec & (ANNO_ELE_BLOCK_SZ-1);
+	    //int sub_rec = oe->rec & (ANNO_ELE_BLOCK_SZ-1);
 
 	    /* Already duplicated? */
 	    if (b->ae[oe->idx]) {

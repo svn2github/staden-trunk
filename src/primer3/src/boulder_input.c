@@ -116,7 +116,7 @@ read_record(const program_args *prog_args,
 
     /* non-local error recovery */
     perr->system_errno = 0;
-    perr->local_errno = 0;
+    perr->local_errno = PR_ERR_NONE;
     perr->error_msg = NULL;
     if (setjmp(perr->jmpenv) != 0)
 	return 0;
@@ -438,8 +438,9 @@ read_record(const program_args *prog_args,
 	jump_append_new_chunk(perr, &pa->glob_err, 
 	    "Contradiction in primer_task definition");
     else if(pick_internal_oligo == 1) 
-	  pa->primer_task = 1;
-    else if(pick_internal_oligo == 0)pa->primer_task = 0;
+	pa->primer_task = pick_pcr_primers_and_hyb_probe;
+    else if(pick_internal_oligo == 0)
+	pa->primer_task = pick_pcr_primers;
 
 
     /* Adjust base indexes in sa. */

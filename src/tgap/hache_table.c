@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
+#include <ctype.h>
+
 #include "os.h"
 #include "hache_table.h"
 
@@ -810,6 +812,8 @@ int HacheTableRehash(HacheTable *h, HacheItem *hi, char *key, int key_len) {
     /* Add to new loc */
     hi->next = h->bucket[hv];
     h->bucket[hv] = hi;
+
+    return 0;
 }
 
 
@@ -996,7 +1000,7 @@ HacheItem *HacheTableSearch(HacheTable *h, char *key, int key_len) {
 	dummy.p = NULL;
 
 	/* Allocate storage in hash table */
-	HacheItem *hi = HacheTableAdd(h, key, key_len, dummy, NULL);
+	hi = HacheTableAdd(h, key, key_len, dummy, NULL);
 	if (!hi)
 	    return NULL;
 
@@ -1135,7 +1139,7 @@ void HacheTableStats(HacheTable *h, FILE *fp) {
     var /= h->nbuckets;
     /* sd = sqrt(var); */
 
-    fprintf(fp, "Nbuckets  = %d\n", h->nbuckets);
+    fprintf(fp, "Nbuckets  = %u\n", h->nbuckets);
     fprintf(fp, "Nused     = %d\n", h->nused);
     fprintf(fp, "Avg chain = %f\n", avg);
     fprintf(fp, "Chain var.= %f\n", var);

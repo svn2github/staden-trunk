@@ -66,7 +66,7 @@ enum line_type {
     an=CC2('a','n'),
     lo=CC2('l','o'),
     at=CC2('a','t'),
-    tx=CC2('t','x'),
+    tx=CC2('t','x')
 };
 
 typedef struct {
@@ -530,7 +530,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    char *len = baf_block_value(b, LL);
 	    char *txt = baf_block_value(b, TX);
 	    char *at  = baf_block_value(b, AT);
-	    int pos;
+	    int an_pos;
 	    bin_index_t *bin;
 
 	    if (!(a->data_type & DATA_ANNO))
@@ -540,29 +540,29 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 		unescape_line(txt);
 
 	    if (!loc) {
-		pos = last_obj_pos;
+		an_pos = last_obj_pos;
 	    } else {
 		if (*loc == '@') {
-		    pos = atoi(loc+1);
+		    an_pos = atoi(loc+1);
 		} else {
 		    if (at && *at == 'C') {
 			if (last_obj_orient == 0)
-			    pos = last_cnt_pos + atoi(loc)-1;
+			    an_pos = last_cnt_pos + atoi(loc)-1;
 			else
-			    pos = last_cnt_pos - (atoi(loc)-1)
+			    an_pos = last_cnt_pos - (atoi(loc)-1)
 				- (len ? atoi(len)-1 : 0);
 		    } else {
 			if (last_obj_orient == 0)
-			    pos = last_obj_pos + atoi(loc)-1;
+			    an_pos = last_obj_pos + atoi(loc)-1;
 			else
-			    pos = last_obj_pos - (atoi(loc)-1)
+			    an_pos = last_obj_pos - (atoi(loc)-1)
 				- (len ? atoi(len)-1 : 0);
 		    }
 		}
 	    }
 
-	    r.start = pos;
-	    r.end = pos + (len ? atoi(len)-1 : 0);
+	    r.start = an_pos;
+	    r.end = an_pos + (len ? atoi(len)-1 : 0);
 
 	    //r.mqual    = last_obj_type;  /* obj_type */
 	    r.mqual = str2type(typ);

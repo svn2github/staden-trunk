@@ -2109,7 +2109,7 @@ static int findPrevDiscrepancy (EdStruct *xx, int value)
 int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 {
     int found = 0;
-    int group_mode = xx->group_mode;
+    editor_sort_t group_mode = xx->group_mode;
 
     /*
      * The "Group templates" option causes sequencesInRegion to return
@@ -2117,7 +2117,7 @@ int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
      * positional order, so we temporarily disable this while looking for
      * matches.
      */
-    xx->group_mode = 0;
+    xx->group_mode = POSITION;
 
     if (forwards) {
 	if (strcmp(type, "name") == 0)

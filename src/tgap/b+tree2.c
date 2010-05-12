@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include "b+tree2.h"
+#include "tg_utils.h"
 
 char *btree_check(btree_t *t, btree_node_t *n, char *pleaf);
 
@@ -289,9 +290,9 @@ static int redist(btree_t *t, btree_node_t *to, btree_node_t *from,
 	to->keys[i] = from->keys[j]; from->keys[j] = NULL;
 	to->chld[i] = from->chld[j]; from->chld[j] = 0;
 	if (!to->leaf && to->chld[i]) {
-	    btree_node_t *c = btree_node_get(t->cd, to->chld[i]);
-	    c->parent = to->rec;
-	    btree_node_put(t->cd, c);
+	    btree_node_t *n = btree_node_get(t->cd, to->chld[i]);
+	    n->parent = to->rec;
+	    btree_node_put(t->cd, n);
 	}
     }
 
@@ -732,7 +733,8 @@ btree_node_t *btree_node_decode2(unsigned char *buf) {
 
     bufp = &buf[12];
     for (i = 0; i < n->used; i++) {
-	bufp += u72int(bufp, &n->chld[i]);
+	uint32_t i4;
+	bufp += u72int(bufp, &i4); n->chld[i] = i4;
     }
 
     /* And finally the variable sizes elements - the keys */

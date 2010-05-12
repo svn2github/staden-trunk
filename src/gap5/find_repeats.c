@@ -12,6 +12,7 @@
 #include "gap_hash.h"
 #include "gap4_compat.h"
 #include "editor_view.h"
+#include "tk-io-reg.h"
 
 /*
  * Match callback.

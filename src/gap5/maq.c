@@ -93,7 +93,7 @@ static int parse_maqmap_aux(tg_args *a,
  * pair_reads, if true, attempts to identify read pairs (based on duplicate
  * sequence names) and points them at each other.
  */
-int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
+int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
     gzFile dat_fp;
     maqmap_t *mm;
     maqmap64_t m64;
@@ -143,7 +143,7 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	int paired;
 	int is_pair = 0;
 	library_t *lib = NULL;
-	const char *LB = dat_fn;
+	char *LB = dat_fn;
 	HacheData hd;
 	int new = 0;
 
@@ -209,7 +209,7 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	    }
 	    cache_incr(io, c);
 	    curr_contig = m128.seqid;
-	    fprintf(stderr, "++ Processing contig %d\n", m128.seqid);
+	    fprintf(stderr, "++ Processing contig %d\n", (int)m128.seqid);
 	}
 
 

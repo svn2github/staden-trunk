@@ -134,7 +134,7 @@ static void   set_dpal_args(dpal_args *);
 #define GC_CLAMP              0
 #define LIBERAL_BASE          0
 #define PICK_INTERNAL_OLIGO   0
-#define PRIMER_TASK           0
+#define PRIMER_TASK           pick_pcr_primers
 #define INTERNAL_OLIGO_OPT_SIZE   20
 #define INTERNAL_OLIGO_MIN_SIZE   18
 #define INTERNAL_OLIGO_MAX_SIZE   27
@@ -683,7 +683,7 @@ primer3_create(void)
     state->best_pairs.num_pairs = 0;
 
     state->err.system_errno = 0;
-    state->err.local_errno = 0;
+    state->err.local_errno = PR_ERR_NONE;
     state->err.error_msg = NULL;
 
     /* Allocate and initialise alignment buffers */

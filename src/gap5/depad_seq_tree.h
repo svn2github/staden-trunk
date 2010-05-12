@@ -25,5 +25,6 @@ pad_count_t *depad_consensus(GapIO *io, int crec);
 char *repad_seq_tree(char *seq, pad_count_t *tree);
 void depad_seq_tree_free(pad_count_t *tree);
 int get_padded_coord(pad_count_t *tree, int unpadded);
+int padtree_pad_at(pad_count_t *tree, int pos);
 
 #endif /* _DEPAD_SEQ_TREE_H_ */
