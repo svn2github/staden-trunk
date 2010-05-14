@@ -180,32 +180,37 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
     case YRANGE: {
 	char buf[1024];
 	double wx0, wy0, wx1, wy1;
-    	int width, height;
+//    	int width, height;
 	double top, bottom;
+	double wx_start, wx_end, wy_start, wy_end;
 
 	GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
-   	RasterWinSize(t->raster, &width, &height);
-
-//    	printf("TD Raster wx0 %f wx1 %f wy0 %f wy1 %f\n", wx0, wx1, wy0, wy1);
-//	printf("TD Y min %d Y max %d\n", t->ymin, t->ymax);
-//	printf("TD width %d height %d\n", width, height);
+    	RasterGetWorldScroll(t->raster, &wx_start, &wy_start, &wx_end, &wy_end); 
+//   	RasterWinSize(t->raster, &width, &height);
 	
-//	top    = (wy0 - t->ymin - 10) / (t->ymax - t->ymin + 20);
-//	bottom = (wy1 - t->ymin - 10) / (t->ymax - t->ymin + 20); 
-
+/*
+    	printf("TD Raster wx0 %f wx1 %f wy0 %f wy1 %f\n", wx0, wx1, wy0, wy1);
+	printf("TD Y min %d Y max %d\n", t->ymin, t->ymax);
+    	printf("TD wx_start %f wx_end %f wy_start %f wy_end %f\n", wx_start, wx_end, wy_start, wy_end);
+	printf("TD width %d height %d\n", width, height);
+*/
+    	
 	if (t->ymax == 0 || wy1 == 0) {
 	    top = 0;
 	    bottom = 1;
 	} else {
-	    top = wy0 / (t->ymax + 10); // +10 to give a margin at the bottom
-	    bottom = wy1 / (t->ymax + 10) ;
+	    top = (wy0 - wy_start) / (t->ymax - wy_start);
+	    bottom = (wy1 - wy_start) / (t->ymax - wy_start);
+	    
+	    if (top < 0) {
+	    	top = 0;
+	    }
 	    
 	    if (bottom > 1) {
 	    	bottom = 1;
 	    }
 	}
     	
-	
 //	printf("TD top %f bottom %f\n", top, bottom);
 	
 	sprintf(buf, "%f %f", top, bottom);
@@ -775,8 +780,10 @@ int template_replot(template_disp_t *t) {
 	    ny1 = t->ymax + 10;
     }
     last_zoom = t->yzoom;
-    //if (ny0 > 0) ny0 = 0;
-    //if (ny1 < 400) ny1 = 400;
+    
+    if (ny0 > 0) ny0 = 0;
+    if (ny1 < 400) ny1 = 400;
+    
     wx0 = contig_get_start(&t->contig) - 10;
     wx1 = contig_get_end(&t->contig) + 10;
     RasterSetWorldScroll(t->raster,  wx0,  ny0,  wx1,  ny1);

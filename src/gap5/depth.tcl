@@ -440,13 +440,6 @@ proc add_separator {w height} {
     global $w
     incr ${w}(ntracks)
     set tnum [set ${w}(ntracks)]
-#    lappend ${w}(tracks) $tnum
-#    set t $w.track$tnum
-#    global $t
-#
-#    set ${t}(w)      $w
-#    set ${t}(num)    $tnum
-#    set ${t}(height) $height
     
     grid rowconfigure $w $tnum -minsize $height -weight 0
 }
@@ -891,7 +884,6 @@ proc redraw_plot {w {track_types {}} args} {
 
     set ${w}(RedrawPending) $tracks
     after idle [list redraw_plot_doit $w]
-#    redraw_plot_doit $w
 }
 
 
@@ -1205,7 +1197,10 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	}
 	
     	$r world $x1 $Y1 $x2 $Y2
-    	redraw_plot $w seq_seqs
+	
+    	# need to redraw and do it now, simple redraw_plot
+	# stacks up redraw but does not do it.
+	redraw_plot_doit $w
     }
 }
 
