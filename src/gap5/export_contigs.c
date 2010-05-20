@@ -378,24 +378,49 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	 * are consistent, for whatever meaning "consistent" has in this
 	 * context?
 	 */
-	if (r->pair_rec) flag |= 0x03;
+	if (r->flags & GRANGE_FLAG_TYPE_PAIRED) {
+	    flag |= 0x01; /* paired */
+	    if (!r->pair_rec) {
+		flag |= 0x08; /* mate unmapped */
+	    } else {
+		/*
+		 * Mate may still be unmapped, need to check.
+		 * See "fixmates" code below.
+		 */
+	    }
+	}
 
 	/* strand */
-	if (sorig->len < 0)  flag |= 0x10;
+	if (sorig->len < 0)  flag |= 0x10; /* reverse strand */
 
 	/*
 	 * 1st/2nd in pair. This is not quite the same as the fwd/rev flags
 	 * we store I think as we may have fwd/fwd pairs under some
 	 * protocols. Is this true?
 	 */
-	if (r->pair_rec) {
-	    if ((r->flags & GRANGE_FLAG_END_MASK) !=
-		(r->flags & GRANGE_FLAG_PEND_MASK)) {
+	if (flag & 0x01) {
+	    /* if ((r->flags & GRANGE_FLAG_END_MASK) !=
+	       (r->flags & GRANGE_FLAG_PEND_MASK)) */ {
 		/* Paired data with differing flags, so it's likely valid */
 		if ((r->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_REV)
-		    flag |= 0x40;
-		else
 		    flag |= 0x80;
+		else
+		    flag |= 0x40;
+
+		/*
+		 * FIXME: need to check read-group library to know what the
+		 * expected orientation is for a proper pair.
+		 * This also doesn't take into account distance, or even
+		 * which comes first. Ie  --> <--  vs  <-- -->
+		 */
+		if ((r->flags & GRANGE_FLAG_END_MASK) !=
+		    (r->flags & GRANGE_FLAG_PEND_MASK)) {
+		    /* Opposite orientations */
+		    //flag |= 0x02; /* proper pair */
+		}
+
+		if (r->flags & GRANGE_FLAG_COMP2)
+		    flag |= 0x20; /* mate complemented */
 	    }
 	}
 
@@ -586,7 +611,12 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	    }
 
 	    if (!comp)
-		flag |= 0x20; /* strand of mate */
+		flag |=  0x20; /* strand of mate */
+
+	    /* FIXME: Can also check here if proper pair, based on
+	     * library type.
+	     */
+
 	    if ((pair_r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ) {
 		flag |=  0x08; /* mate unmapped */
 		flag &= ~0x02; /* proper pair */

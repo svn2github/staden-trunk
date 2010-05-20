@@ -24,6 +24,7 @@ typedef struct {
     int crec;
     int pos;
     int orient;
+    int flags;
 } pair_loc_t;
 
 /* --------------------------------------------------------------------------
@@ -180,6 +181,7 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname,
     pl->pos    = seq->len >= 0 ? seq->pos : seq->pos - seq->len - 1;
     pl->idx    = seq->bin_index;
     pl->orient = seq->len < 0;
+    pl->flags  = seq->flags;
     hd.p = pl;
 
     hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
@@ -193,10 +195,14 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname,
 	r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
 	r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 	r_out->pair_rec = po->rec;
+	if ((po->flags & SEQ_END_MASK) == SEQ_END_REV)
+	    r_out->flags |= GRANGE_FLAG_PEND_REV;
+	if (po->flags & SEQ_COMPLEMENTED)
+	    r_out->flags |= GRANGE_FLAG_COMP2;
 	
 	if (!a->fast_mode) {
 	    /* TEMP - move later*/
-	    fprintf(fp, "%d %d %d\n", po->bin, po->idx, pl->rec);
+	    fprintf(fp, "%d %d %d %d\n", po->bin, po->idx, pl->rec, pl->flags);
 	
 	    if (po->bin > max_bin) max_bin = po->bin;
 	    
@@ -433,9 +439,9 @@ void complete_pairs(GapIO *io) {
     rewind(fp);
     
     while (fgets(line, 100, fp)) {
-    	int bin, idx, rec;
+    	int bin, idx, rec, flags;
 	
-        sscanf(line, "%d %d %d", &bin, &idx, &rec);
+        sscanf(line, "%d %d %d %d", &bin, &idx, &rec, &flags);
 	
 	if (bin != current_bin) {
 
@@ -454,6 +460,10 @@ void complete_pairs(GapIO *io) {
 	ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
 	ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 	ro->pair_rec = rec;
+	if ((flags & SEQ_END_MASK) == SEQ_END_REV)
+	    ro->flags |= GRANGE_FLAG_PEND_REV;
+	if (flags & SEQ_COMPLEMENTED)
+	    ro->flags |= GRANGE_FLAG_COMP2;
 	
 	rec_count++;
 

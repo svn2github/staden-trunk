@@ -680,8 +680,8 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     memcpy(s.sam_aux, aux, s.aux_len);
 
     /* Create the range, save the sequence */
-    flags = GRANGE_FLAG_TYPE_SINGLE;
     paired = (b->core.flag & BAM_FPAIRED) ? 1 : 0;
+    flags = paired ? GRANGE_FLAG_TYPE_PAIRED : GRANGE_FLAG_TYPE_SINGLE;
 
     if (b->core.flag & BAM_FREAD1)
 	s.flags |= SEQ_END_FWD;
@@ -891,8 +891,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     memcpy(s.sam_aux, aux, s.aux_len);
 
     /* Create the range, save the sequence */
-    flags = GRANGE_FLAG_TYPE_SINGLE;
     paired = (b->core.flag & BAM_FPAIRED) ? 1 : 0;
+    flags = paired ? GRANGE_FLAG_TYPE_PAIRED : GRANGE_FLAG_TYPE_SINGLE;
 
     if (b->core.flag & BAM_FREAD1)
 	s.flags |= SEQ_END_FWD;
