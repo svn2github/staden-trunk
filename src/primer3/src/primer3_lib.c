@@ -123,6 +123,8 @@ static void   set_dpal_args(dpal_args *);
 #define MAX_GC             80.0
 #define SALT_CONC          50.0
 #define DNA_CONC           50.0
+#define MG_CONC             1.5
+#define DNTP_CONC           0.8
 #define NUM_NS_ACCEPTED       0
 #define MAX_POLY_X            5
 #define SELF_ANY            800
@@ -145,6 +147,8 @@ static void   set_dpal_args(dpal_args *);
 #define INTERNAL_OLIGO_MAX_GC     80.0
 #define INTERNAL_OLIGO_SALT_CONC         50.0
 #define INTERNAL_OLIGO_DNA_CONC          50.0
+#define INTERNAL_OLIGO_MG_CONC            1.5
+#define INTERNAL_OLIGO_DNTP_CONC          0.8
 #define INTERNAL_OLIGO_NUM_NS               0
 #define INTERNAL_OLIGO_MAX_POLY_X           5 
 #define INTERNAL_OLIGO_SELF_ANY          1200
@@ -225,6 +229,8 @@ set_default_global_primer_args(primer_args *a)
     a->max_gc           = MAX_GC;
     a->salt_conc        = SALT_CONC;
     a->dna_conc         = DNA_CONC;
+    a->mg_conc          = MG_CONC;
+    a->dntp_conc        = DNTP_CONC;
     a->num_ns_accepted  = NUM_NS_ACCEPTED;
     a->self_any         = SELF_ANY;
     a->self_end         = SELF_END;
@@ -267,6 +273,8 @@ set_default_global_primer_args(primer_args *a)
     a->io_max_poly_x      = INTERNAL_OLIGO_MAX_POLY_X;
     a->io_salt_conc       = INTERNAL_OLIGO_SALT_CONC;
     a->io_dna_conc        = INTERNAL_OLIGO_DNA_CONC;
+    a->io_mg_conc         = INTERNAL_OLIGO_MG_CONC;
+    a->io_dntp_conc       = INTERNAL_OLIGO_DNTP_CONC;
     a->io_num_ns_accepted = INTERNAL_OLIGO_NUM_NS;
     a->io_self_any        = INTERNAL_OLIGO_SELF_ANY;
     a->io_self_end        = INTERNAL_OLIGO_SELF_END;
@@ -1351,9 +1359,13 @@ oligo_param(pa, h, l, state, sa, stats)
 
     substr(seq,j,k-j+1,s1);
     if(OT_LEFT == l || OT_RIGHT == l) 
-      h->temp = seqtm(s1, pa->dna_conc, pa->salt_conc, MAX_NN_TM_LENGTH);
+      h->temp = seqtm(s1, pa->dna_conc, pa->salt_conc, 
+		      pa->mg_conc, pa->dntp_conc,
+		      MAX_NN_TM_LENGTH);
     else
-      h->temp = seqtm(s1, pa->io_dna_conc, pa->io_salt_conc, MAX_NN_TM_LENGTH);
+      h->temp = seqtm(s1, pa->io_dna_conc, pa->io_salt_conc,
+		      pa->io_mg_conc, pa->io_dntp_conc,
+		      MAX_NN_TM_LENGTH);
     if (((l == OT_LEFT || l == OT_RIGHT) && h->temp < pa->min_tm)
 	|| (l==OT_INTL && h->temp<pa->io_min_tm)) {
 	h->ok = OV_TM_LOW;
@@ -2454,12 +2466,12 @@ data_control(primer_state *state, primer_args *pa, seq_args *sa)
 	      "Illegal value for internal oligo complementarity restrictions");
 	  return 1;
     }
-    if(pa->salt_conc<=0||pa->dna_conc<=0){
+    if(pa->salt_conc<=0||pa->dna_conc<=0||pa->mg_conc<0||pa->dntp_conc<0){
 	  jump_append_new_chunk(&state->err, &pa->glob_err,
 	      "Illegal value for primer salt or dna concentration");
 	  return 1;
     }
-    if(pa->io_salt_conc<=0||pa->io_dna_conc<=0){
+    if(pa->io_salt_conc<=0||pa->io_dna_conc<=0||pa->io_mg_conc<0||pa->io_dntp_conc<0){
 	  jump_append_new_chunk(&state->err, &pa->glob_err,
 	      "Illegal value for internal oligo salt or dna concentration");
 	  return 1;

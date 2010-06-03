@@ -38,7 +38,9 @@ double long_seq_tm(const char *seq, int start, int length, double salt_conc);
     Proc. Natl. Acad. Sci. USA, vol 83, page 3748. */
 double oligotm(const  char *seq, /* The sequence. */
                double dna_conc,  /* DNA concentration (nanomolar). */
-               double salt_conc  /* Salt concentration (millimolar). */
+               double salt_conc, /* Salt concentration (millimolar). */
+	       double Mg_conc,   /* Magnesium concentration (millimolar). */
+	       double dNTP_conc  /* dNTP concentration (millimolar). */
 	       );
 
 /* Return the delta G of disruption of oligo using the nearest neighbor model;
@@ -50,6 +52,8 @@ double oligodg(const char *oligo);
 double seqtm(const  char *seq,  /* The sequence. */
              double dna_conc,   /* DNA concentration (nanomolar). */
              double salt_conc,  /* Salt concentration (millimolar). */
+	     double Mg_conc,    /* Magnesium concentration (millimolar). */
+	     double dNTP_conc,  /* dNTP concentration (millimolar). */
              int    nn_max_len  /* The maximum sequence length for using the
 				   nearest neighbor model (as implemented
 				   in oligotm. For sequences longer

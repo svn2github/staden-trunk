@@ -19,21 +19,21 @@ void primlib_set_args(primlib_state *state, primlib_args *args) {
     if (!state || !args)
 	return;
 
-    if (args->min_tm)
+    if (args->min_tm >= 0)
 	state->p3args.min_tm = args->min_tm;
     if (args->max_tm)
 	state->p3args.max_tm = args->max_tm;
     if (args->opt_tm)
 	state->p3args.opt_tm = args->opt_tm;
 
-    if (args->min_gc)
+    if (args->min_gc >= 0)
 	state->p3args.min_gc = args->min_gc;
     if (args->max_gc)
 	state->p3args.max_gc = args->max_gc;
     if (args->opt_gc)
 	state->p3args.opt_gc_content = args->opt_gc;
 
-    if (args->min_len)
+    if (args->min_len >= 0)
 	state->p3args.primer_min_size = (int)args->min_len;
     if (args->max_len)
 	state->p3args.primer_max_size = (int)args->max_len;
@@ -43,20 +43,24 @@ void primlib_set_args(primlib_state *state, primlib_args *args) {
     if (args->max_end_stability)
 	state->p3args.max_end_stability = args->max_end_stability;
 
-    if (args->salt_conc)
+    if (args->salt_conc >= 0)
 	state->p3args.salt_conc = args->salt_conc;
-    if (args->dna_conc)
-	state->p3args.dna_conc = args->dna_conc;
+    if (args->dna_conc >= 0)
+	state->p3args.dna_conc  = args->dna_conc;
+    if (args->mg_conc >= 0)
+	state->p3args.mg_conc   = args->mg_conc;
+    if (args->dntp_conc >= 0)
+	state->p3args.dntp_conc = args->dntp_conc;
 
     if (args->self_any)
 	state->p3args.self_any = (short)args->self_any * 100;
     if (args->self_end)
 	state->p3args.self_end = (short)args->self_end * 100;
 
-    if (args->gc_clamp)
+    if (args->gc_clamp >= 0)
 	state->p3args.gc_clamp = args->gc_clamp;
 
-    if (args->max_poly_x)
+    if (args->max_poly_x >= 0)
 	state->p3args.max_poly_x = args->max_poly_x;
 
     if (args->num_return)
@@ -75,6 +79,7 @@ primlib_state *primlib_create(void)
     /*state->p3args.primer_task = pick_hyb_probe_only;*/
     state->p3args.primer_task = pick_left_only;
     state->p3args.liberal_base = 1; /* converts - to N */
+    state->p3args.explain_flag = 1;
     state->p3state = primer3_create();
 
     return state;
@@ -95,6 +100,8 @@ primlib_choose(primlib_state *state, char *seq)
     sa.incl_l = strlen(seq);
     sa.incl_s = state->p3args.first_base_index;
 
+    puts(seq);
+
     memset(&state->p3args.glob_err, 0, sizeof(state->p3args.glob_err));
     if (0 != primer3_choose(state->p3state, &state->p3args, &sa)) {
 	if (sa.error.data || state->p3args.glob_err.data) {
@@ -109,6 +116,23 @@ primlib_choose(primlib_state *state, char *seq)
 	state->nprimers = 0;
 	return -1;
     }
+
+    vfuncheader("Choose primers");
+    vmessage("Considered\t%d\n", sa.left_expl.considered);
+    vmessage("- No ORF\t%d\n",     sa.left_expl.no_orf);
+    vmessage("- Compl_any\t%d\n",  sa.left_expl.compl_any);
+    vmessage("- Compl_end\t%d\n",  sa.left_expl.compl_end);
+    vmessage("- Repeat\t%d\n",     sa.left_expl.repeat);
+    vmessage("- Low temp\t%d\n",   sa.left_expl.temp_min);
+    vmessage("- High temp\t%d\n",  sa.left_expl.temp_max);
+    vmessage("- Stability\t%d\n",  sa.left_expl.stability);
+    vmessage("- Many Ns\t%d\n",    sa.left_expl.ns);
+    vmessage("- Bad GC\t%d\n",     sa.left_expl.gc);
+    vmessage("- GC clamp\t%d\n",   sa.left_expl.gc_clamp);
+    vmessage("- Poly X\t%d\n",     sa.left_expl.poly_x);
+    vmessage("- Seq qual\t%d\n",   sa.left_expl.seq_quality);
+    vmessage("- Excluded\t%d\n",   sa.left_expl.excluded);
+    vmessage("OK\t\t%d\n",         sa.left_expl.ok);
 
     /* Convert primer3 results to primlib data structures */
     state->nprimers = state->p3state->n_f;
@@ -200,6 +224,12 @@ static void primlib_set_arg_by_str(primlib_args *args,
 	args->max_end_stability = atof(tmpbuf);
     } else if (strncmp(name, "salt_conc", name_len) == 0) {
 	args->salt_conc = atof(tmpbuf);
+    } else if (strncmp(name, "dna_conc", name_len) == 0) {
+	args->dna_conc = atof(tmpbuf);
+    } else if (strncmp(name, "mg_conc", name_len) == 0) {
+	args->mg_conc = atof(tmpbuf);
+    } else if (strncmp(name, "dntp_conc", name_len) == 0) {
+	args->dntp_conc = atof(tmpbuf);
     } else if (strncmp(name, "self_any", name_len) == 0) {
 	args->self_any = atof(tmpbuf);
     } else if (strncmp(name, "self_end", name_len) == 0) {
@@ -235,6 +265,16 @@ primlib_args *primlib_str2args(char *str) {
 
     if (NULL == (args = calloc(1, sizeof(*args))))
 	return NULL;
+
+    args->salt_conc  = -1;
+    args->dna_conc   = -1;
+    args->mg_conc    = -1;
+    args->dntp_conc  = -1;
+    args->gc_clamp   = -1;
+    args->max_poly_x = -1;
+    args->min_gc     = -1;
+    args->min_tm     = -1;
+    args->min_len    = -1;
     
     state = name_start;
     cp = str;

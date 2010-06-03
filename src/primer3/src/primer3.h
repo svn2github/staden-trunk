@@ -324,6 +324,8 @@ typedef struct primargs {
     double min_gc;
     double salt_conc;
     double dna_conc;
+    double mg_conc;
+    double dntp_conc;
 
     double io_opt_tm;
     double io_min_tm;
@@ -333,6 +335,8 @@ typedef struct primargs {
     double io_min_gc;
     double io_salt_conc;
     double io_dna_conc;
+    double io_mg_conc;
+    double io_dntp_conc;
 
     double outside_penalty; /* Multiply this value times the number of NTs
                              * from the 3' end to the the (unique) target to

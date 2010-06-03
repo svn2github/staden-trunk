@@ -16,6 +16,8 @@ typedef struct {
     double max_end_stability;
     double salt_conc;
     double dna_conc;
+    double mg_conc;
+    double dntp_conc;
     double self_any;
     double self_end;
     double gc_clamp;

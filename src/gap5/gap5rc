@@ -506,6 +506,10 @@ set_def PRIMER.self_any 5
 set_def PRIMER.self_end 3
 set_def PRIMER.gc_clamp 1
 set_def PRIMER.max_end_stability 9
+set_def PRIMER.dna_conc 50;   # nanomolar
+set_def PRIMER.salt_conc 50;  # millimolar
+set_def PRIMER.mg_conc 1.5;   # millimolar
+set_def PRIMER.dntp_conc 0.8; # millimolar
 
 #-----------------------------------------------------------------------------
 # Our options

@@ -206,6 +206,8 @@ read_record(const program_args *prog_args,
 	    COMPARE_FLOAT("PRIMER_MAX_GC", pa->max_gc);
 	    COMPARE_FLOAT("PRIMER_SALT_CONC", pa->salt_conc);
 	    COMPARE_FLOAT("PRIMER_DNA_CONC", pa->dna_conc);
+	    COMPARE_FLOAT("PRIMER_MG_CONC", pa->mg_conc);
+	    COMPARE_FLOAT("PRIMER_DNTP_CONC", pa->dntp_conc);
 	    COMPARE_INT("PRIMER_NUM_NS_ACCEPTED", pa->num_ns_accepted);
 	    COMPARE_INT("PRIMER_PRODUCT_OPT_SIZE", pa->product_opt_size);
 	    COMPARE_ALIGN_SCORE("PRIMER_SELF_ANY", pa->self_any);
@@ -244,6 +246,8 @@ read_record(const program_args *prog_args,
             COMPARE_FLOAT("PRIMER_INTERNAL_OLIGO_MAX_GC", pa->io_max_gc);
 	    COMPARE_FLOAT("PRIMER_INTERNAL_OLIGO_SALT_CONC",pa->io_salt_conc);
             COMPARE_FLOAT("PRIMER_INTERNAL_OLIGO_DNA_CONC", pa->io_dna_conc);
+	    COMPARE_FLOAT("PRIMER_INTERNAL_OLIGO_MG_CONC",pa->io_mg_conc);
+            COMPARE_FLOAT("PRIMER_INTERNAL_OLIGO_DNTP_CONC", pa->io_dntp_conc);
 	    COMPARE_INT("PRIMER_INTERNAL_OLIGO_NUM_NS", pa->io_num_ns_accepted);
 	    COMPARE_INT("PRIMER_INTERNAL_OLIGO_MIN_QUALITY", pa->io_min_quality);
 

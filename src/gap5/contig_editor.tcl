@@ -1890,9 +1890,38 @@ proc editor_oligo_dialog {ed} {
 	    -bd 0 \
 	    -default $pdefs(gc_clamp)
 
+    frame $t.p3.conc -bd 0
+    entrybox $t.p3.conc.dna \
+	-title "DNA concentration (nM)" \
+	-width 5 \
+	-default $pdefs(dna_conc) \
+	-type {CheckFloatRange 0.01 1000000}
+
+    entrybox $t.p3.conc.salt \
+	-title "Salt concentration (mM)" \
+	-width 5 \
+	-default $pdefs(salt_conc) \
+	-type {CheckFloatRange 10 1000}
+
+    entrybox $t.p3.conc.mg \
+	-title "Magnesium concentration (mM)" \
+	-width 5 \
+	-default $pdefs(mg_conc) \
+	-type {CheckFloatRange 0 1000000}
+
+    entrybox $t.p3.conc.dntp \
+	-title "Total dNTP concentration (mM)" \
+	-width 5 \
+	-default $pdefs(dntp_conc) \
+	-type {CheckFloatRange 0 1000000}
+
+    pack $t.p3.conc.dna $t.p3.conc.salt $t.p3.conc.mg $t.p3.conc.dntp \
+	-fill x -side bottom
+
     pack $t.p3.gc.label -side left 
     pack $t.p3.gc.max $t.p3.gc.opt $t.p3.gc.min -side right 
-    pack $t.p3.tm $t.p3.length $t.p3.gc $t.p3.gc_clamp -side bottom -fill x
+    pack $t.p3.conc $t.p3.tm $t.p3.length $t.p3.gc $t.p3.gc_clamp \
+	-side bottom -fill x
 
     okcancelhelp $t.but \
 	-bd 2 -relief groove \
@@ -1927,6 +1956,11 @@ proc editor_oligo_report {ed t} {
     set pdefs(max_gc) [entrybox_get $t.p3.gc.max]
 
     set pdefs(gc_clamp) [yes_no_get $t.p3.gc_clamp]
+
+    set pdefs(dna_conc)  [entrybox_get $t.p3.conc.dna]
+    set pdefs(salt_conc) [entrybox_get $t.p3.conc.salt]
+    set pdefs(mg_conc)   [entrybox_get $t.p3.conc.mg]
+    set pdefs(dntp_conc) [entrybox_get $t.p3.conc.dntp]
 
     set p3_params [array get pdefs]
     eval keylset primer_defs $p3_params
