@@ -724,6 +724,7 @@ proc editor_save {w} {
 proc editor_join {w} {
     upvar \#0 $w opt
 
+    # Gather location information about the join
     foreach ed $opt(all_editors) {
 	if {[$ed save] != 0} {
 	    bell
@@ -731,7 +732,34 @@ proc editor_join {w} {
 	}
     }
 
-    $ed join
+    set ed [lindex $opt(all_editors) 0]
+
+    if {[catch {foreach {len mis} [$ed join_mismatch] break}]} {
+	set ret [tk_messageBox \
+		     -icon error \
+		     -message "Contigs do not overlap." \
+		     -title "Error" \
+		     -type ok \
+		     -parent $w]
+	return
+    }
+
+    set ret [tk_messageBox \
+		 -icon question \
+		 -message [format "Overlap length:\t\t%d\nPercentage mismatch:\t%5.2f%%\n\nMake join?" $len [expr {(100.0*$mis)/$len}]] \
+		 -title "Join and quit Editor?" \
+		 -type yesnocancel \
+		 -parent $w]
+
+    if {$ret == "cancel"} return
+
+    if {$ret == "yes"} {
+	puts "*** Joining ***"
+	# $ed join
+    } else {
+	puts "*** Not joining ***"
+    }
+
     editor_exit $w
 }
 
@@ -2034,6 +2062,20 @@ proc editor_oligo_select {ed tl} {
     foreach {score start end gc temp seq} $line {}
 
     $ed select set $start $end
+
+    global .Selection
+    set .Selection $seq
+    selection own .
+    selection handle . editor_oligo_handle_selection
+
+    # For Windows...
+    clipboard clear
+    clipboard append $seq
+}
+
+proc editor_oligo_handle_selection {offset maxbytes} {
+    global .Selection
+    return [string range ${.Selection} $offset $maxbytes]
 }
 
 

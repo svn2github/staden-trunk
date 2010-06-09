@@ -3,6 +3,7 @@
  * Contains functions for the Join Editor "align" and "join" buttons.
  */
 #include <tg_gio.h>
+#include <assert.h>
 
 #include "editor_view.h"
 #include "align_lib.h"
@@ -422,11 +423,11 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 	left1 = xx2[1]->cursor_apos;
     } else {
 	if (offset < 0) {
-	    left0 = l0-offset+l1-1;
+	    left0 = l1-offset;
 	    left1 = l1;
 	} else {
 	    left0 = l0;
-	    left1 = 11+offset+l0-1;
+	    left1 = l0+offset;
 	}
     }
 
@@ -468,6 +469,7 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 
     len0 = right0 - left0+1;
     len1 = right1 - left1+1;
+
     if (len0 <= 0 || len1 <= 0)
 	return 0;
 
@@ -492,6 +494,111 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     edview_redraw(xx2[1]);
 
     return ret;
+}
+
+/*
+ * Returns the length and number of consensus mismatches for an overlap.
+ * This is copied from the start of the edJoinAlign code.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int edJoinMismatch(edview *xx, int *len, int *mismatch) {
+    int left0,right0;
+    int left1,right1;
+    int offset, ret;
+    int overlapLength;
+    int len0,len1;
+    int shift = 0;
+    edview **xx2;
+    char *c0, *c1;
+    int i;
+
+    int l0, l1, r0, r1; /* contig used extents */
+
+    *len = 0;
+    *mismatch = 0;
+
+    if (!xx->link)
+	return -1;
+    xx2 = xx->link->xx;
+    offset = xx2[1]->displayPos - xx2[0]->displayPos;
+
+    /*
+     * dash => actual sequence
+     * dots => contig range (start to end)
+     *
+     *                  l1\            /r1
+     * 1:            ......------------....
+     *                     ||||||||||||
+     * 0:  ......-------------------------------......
+     *        l0/                               \r0
+     *           <--------->
+     *            (-offset)
+     *
+     *  If l1 left of l0 then offset is +ve.
+     */
+
+    /* Compute overlap position and sizes */
+    consensus_valid_range(xx2[0]->io, xx2[0]->cnum, &l0, &r0);
+    consensus_valid_range(xx2[1]->io, xx2[1]->cnum, &l1, &r1);
+
+    /* Set left0/left1 */
+    if (offset+l0 < l1) {
+	left0 = l1-offset;
+	left1 = l1;
+    } else {
+	left0 = l0;
+	left1 = l0+offset;
+    }
+
+    if (offset+r0 > r1) {
+	/* as in example above, r0 right of r1 */
+	right0 = r1-offset;
+	right1 = r1;
+    } else {
+	right0 = r0;
+	right1 = r0+offset;
+    }
+
+    overlapLength = right0 - left0+1;
+
+    /* No overlap => error */
+    if (overlapLength <= 0)
+	return -1;
+
+    if (left0 < l0) left0 = l0;
+    if (left1 < l1) left1 = l1;
+
+    if (right0 > r0) right0 = r0;
+    if (right1 > r1) right1 = r1;
+
+    len0 = right0 - left0+1;
+    len1 = right1 - left1+1;
+
+    if (len0 <= 0 || len1 <= 0)
+	return -1;
+
+    assert(len0 == len1);
+
+    c0 = xmalloc(len0+1);
+    c1 = xmalloc(len1+1);
+    calculate_consensus_simple(xx2[0]->io, xx2[0]->cnum, left0, right0,
+			       c0, NULL);
+    calculate_consensus_simple(xx2[1]->io, xx2[1]->cnum, left1, right1,
+			       c1, NULL);
+
+    *mismatch = 0;
+    for (i = 0; i < len0; i++) {
+	if (c0[i] != c1[i])
+	    (*mismatch)++;
+    }
+    *len = len0;
+
+    free(c0);
+    free(c1);
+
+    return 0;
 }
 
 #define NORM(x) (f_a * (x) + f_b)

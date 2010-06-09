@@ -439,7 +439,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"cursor_up",     "cursor_down",  "cursor_left",  "cursor_right",
 	"read_start",    "read_start2",  "read_end",     "read_end2",
 	"get_template_seqs", "edits_made", "link_to",    "lock",
-	"join_align",	 "join",          "select",	 "edit_annotation",
+	"join_align",	 "join_mismatch","join",         "join_offset",
+	"select",	 "edit_annotation",
 	"cursor_id",     "get_cursor",	  "search",
 	"decr_contig",   "incr_contig",   "select_oligo",
 	NULL
@@ -452,7 +453,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
-	_JOIN_ALIGN,     _JOIN,          _SELECT,	 _EDIT_ANNOTATION,
+	_JOIN_ALIGN,     _JOIN_MISMATCH, _JOIN,          _JOIN_OFFSET,
+	_SELECT,	 _EDIT_ANNOTATION,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,
 	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO
     };
@@ -888,8 +890,34 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	break;
     }
 
+    case _JOIN_MISMATCH: {
+	int len, mismatch;
+
+	if (argc != 2) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " join_mismatch\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	result = (0 == edJoinMismatch(ed->xx, &len, &mismatch))
+	    ? TCL_OK
+	    : TCL_ERROR;
+	vTcl_SetResult(interp, "%d %d", len, mismatch);
+	break;
+    }
+
     case _JOIN:
 	result = edJoin(ed->xx) == 0 ? TCL_OK : TCL_ERROR;
+	break;
+
+    case _JOIN_OFFSET:
+	if (!xx->link) {
+	    result = TCL_ERROR;
+	    break;
+	}
+
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(xx->link->lockOffset));
 	break;
 
     case _SELECT: {
