@@ -1181,6 +1181,12 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     
     if {$ymax <= $Y1} {
     	puts "Out of range $ymax $Y1"
+
+	if {$ymax == $Y1 && $ymax == 0} {
+	    # Prevent an infinite loop triggered here when there is no
+	    # data to display.
+	    return
+	}
 	
 	# bring the range back to normal range
 	set diff [expr {$ymax - $Y2}]
