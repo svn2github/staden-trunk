@@ -231,7 +231,7 @@ int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
 }
 #endif /* HAVE_SAMTOOLS */
 
-char *sam_aux_stringify(char *s, int len) {
+char *sam_aux_stringify_old(char *s, int len) {
     static char str[8192];
     char *cp = str, *s_end = s+len;
     int first = 1;
@@ -331,8 +331,513 @@ char *sam_aux_stringify(char *s, int len) {
     return str;
 }
 
+static char *append_int(char *cp, int i) {
+    int j, k = 0;
+
+    if (i < 0) {
+	*cp++ = '-';
+	i = -i;
+    } else if (i == 0) {
+	*cp++ = '0';
+	return cp;
+    }
+
+    if (i < 1000)
+	goto b1;
+    if (i < 100000)
+	goto b2;
+    if (i < 100000000)
+	goto b3;
+
+    j = i / 1000000000;
+    if (j || k) *cp++ = j + '0', k=1, i %= 1000000000;
+
+    j = i / 100000000;
+    if (j || k) *cp++ = j + '0', k=1, i %= 100000000;
+    
+ b3:
+    j = i / 10000000;
+    if (j || k) *cp++ = j + '0', k=1, i %= 10000000;
+    
+    j = i / 1000000;
+    if (j || k) *cp++ = j + '0', k=1, i %= 1000000;
+    
+    j = i / 100000;
+    if (j || k) *cp++ = j + '0', k=1, i %= 100000;
+    
+ b2:
+    j = i / 10000;
+    if (j || k) *cp++ = j + '0', k=1, i %= 10000;
+
+    j = i / 1000;
+    if (j || k) *cp++ = j + '0', k=1, i %= 1000;
+
+ b1:
+    j = i / 100;
+    if (j || k) *cp++ = j + '0', k=1, i %= 100;
+
+    j = i / 10;
+    if (j || k) *cp++ = j + '0', k=1, i %= 10;
+
+    if (i || k) *cp++ = i + '0';
+
+    return cp;
+}
+
+#define APPEND_FMT(fmt) \
+    *cp++ = s[0]; \
+    *cp++ = s[1]; \
+    *cp++ = ':'; \
+    *cp++ = (fmt); \
+    *cp++ = ':';
+
+/* Experiments to speed up printf */
+#if 0
+
+/* A basic printf without a lot of the %-10 or %5.5 etc field width
+ * specifiers.
+ * It is, however, much faster.
+ */
+#define EVEN_SIMPLER
+int fast_fprintf(FILE *fp, char *fmt, ...) {
+    char *cp, c;
+    long l;
+    int i;
+    double d; 
+    char tmp[128], *ct;
+    va_list ap;
+
+    va_start(ap, fmt);
+
+    for (cp = fmt; *cp; cp++) {
+	switch(*cp) {
+
+	/* A format specifier */
+	case '%': {
+	    char *endp;
+	    long conv_len1=0, conv_len2=0, conv_len=0;
+	    signed int arg_size;
+
+	    cp++;
+#ifndef EVEN_SIMPLER
+	    /* Firstly, strip the modifier flags (+-#0 and [space]) */
+	    for(; c=*cp;) {
+		if ('#' == c)
+		    ;
+		else if ('-' == c || '+' == c || ' ' == c)
+		    ;
+		else
+		    break;
+	    }
+
+	    /* Width specifier */
+	    if (*cp >= '0' && *cp <= '9') {
+		for (l = 0; *cp >= '0' && *cp <= '9'; cp++)
+		    l = l*10 + *cp - '0';
+		conv_len = conv_len1 = l;
+	    } else if (*cp == '*') {
+		conv_len = conv_len1 = (int)va_arg(ap, int);
+		cp++;
+	    }
+#endif
+
+	    /* Precision specifier */
+	    if ('.' == *cp) {
+		cp++;
+		for (l = 0; *cp >= '0' && *cp <= '9'; cp++)
+		    l = l*10 + *cp - '0';
+		conv_len2 = l;
+		if (*cp == '*') {
+		    conv_len2 = (int)va_arg(ap, int);
+		    cp++;
+		}
+		conv_len = MAX(conv_len1, conv_len2);
+	    }
+
+#ifndef EVEN_SIMPLER
+	    /* Short/long identifier */
+	    if ('h' == *cp) {
+		arg_size = -1; /* short */
+		cp++;
+	    } else if ('l' == *cp) {
+		arg_size = 1; /* long */
+		cp++;
+	    } else {
+		arg_size = 0; /* int */
+	    }
+#endif
+
+	    /* The actual type */
+	    switch (*cp) {
+	    case '%':
+		/*
+		 * Not real ANSI I suspect, but we'll allow for the
+		 * completely daft "%10%" example.
+		 */
+		putc('%', fp);
+		break;
+
+	    case 'd':
+	    case 'i':
+	    case 'u':
+		/* Remember: char and short are sent as int on the stack */
+		if (arg_size == -1)
+		    l = (long)va_arg(ap, int);
+		else if (arg_size == 1)
+		    l = va_arg(ap, long); 
+		else 
+		    l = (long)va_arg(ap, int);
+
+		ct = append_int(tmp, (int)l);
+		*ct++ = 0;
+		fputs(tmp, fp);
+		break;
+
+	    case 'c':
+		i = va_arg(ap, int);
+		putc(i, fp);
+		break;
+
+	    case 'f':
+		d = va_arg(ap, double);
+		fprintf(fp, "%f", d);
+		break;
+
+	    case 'e':
+	    case 'E':
+	    case 'g':
+	    case 'G':
+		d = va_arg(ap, double);
+		fprintf(fp, "%g", d);
+		break;
+
+	    case 'p':
+	    case 'x':
+	    case 'X':
+		l = (long)va_arg(ap, void *);
+		puts("TODO");
+		break;
+
+	    case 'n':
+		/* produces no output */
+		break;
+
+	    case 's': {
+		char *s = (char *)va_arg(ap, char *);
+		if (conv_len2) {
+		    fwrite(s, conv_len2, 1, fp);
+		} else
+		    fputs(s, fp);
+		break;
+	    }
+
+	    default:
+		/* wchar_t types of 'C' and 'S' aren't supported */
+		puts("TODO");
+	    }
+	    
+	}
+
+	case '\0':
+	    break;
+
+	default:
+	    putc(*cp, fp);
+	}
+    }
+
+    va_end(ap);
+    
+    return 0;
+}
+
+/* Max 8k of output */
+int faster_fprintf(FILE *fp, char *fmt, ...) {
+    char *cp, c;
+    long l;
+    int i;
+    double d; 
+    char tmp[128], *ct;
+    va_list ap;
+    char max_line[8192], *out = max_line;
+
+    va_start(ap, fmt);
+
+    for (cp = fmt; *cp; cp++) {
+	switch(*cp) {
+
+	/* A format specifier */
+	case '%': {
+	    char *endp;
+	    long conv_len1=0, conv_len2=0, conv_len=0;
+	    signed int arg_size;
+
+	    cp++;
+
+#ifndef EVEN_SIMPLER
+	    /* Firstly, strip the modifier flags (+-#0 and [space]) */
+	    for(; c=*cp;) {
+		if ('#' == c)
+		    ;
+		else if ('-' == c || '+' == c || ' ' == c)
+		    ;
+		else
+		    break;
+	    }
+
+	    /* Width specifier */
+	    if (*cp >= '0' && *cp <= '9') {
+		for (l = 0; *cp >= '0' && *cp <= '9'; cp++)
+		    l = l*10 + *cp - '0';
+		conv_len = conv_len1 = l;
+	    } else if (*cp == '*') {
+		conv_len = conv_len1 = (int)va_arg(ap, int);
+		cp++;
+	    }
+#endif
+
+	    /* Precision specifier */
+	    if ('.' == *cp) {
+		cp++;
+		for (l = 0; *cp >= '0' && *cp <= '9'; cp++)
+		    l = l*10 + *cp - '0';
+		conv_len2 = l;
+		if (*cp == '*') {
+		    conv_len2 = (int)va_arg(ap, int);
+		    cp++;
+		}
+		conv_len = MAX(conv_len1, conv_len2);
+	    }
+
+#ifndef EVEN_SIMPLER
+	    /* Short/long identifier */
+	    if ('h' == *cp) {
+		arg_size = -1; /* short */
+		cp++;
+	    } else if ('l' == *cp) {
+		arg_size = 1; /* long */
+		cp++;
+	    } else {
+		arg_size = 0; /* int */
+	    }
+#endif
+
+	    /* The actual type */
+	    switch (*cp) {
+	    case '%':
+		/*
+		 * Not real ANSI I suspect, but we'll allow for the
+		 * completely daft "%10%" example.
+		 */
+		*out++ = '%';
+		break;
+
+	    case 'd':
+	    case 'i':
+	    case 'u':
+		/* Remember: char and short are sent as int on the stack */
+		if (arg_size == -1)
+		    l = (long)va_arg(ap, int);
+		else if (arg_size == 1)
+		    l = va_arg(ap, long); 
+		else 
+		    l = (long)va_arg(ap, int);
+
+		out = append_int(out, (int)l);
+		break;
+
+	    case 'c':
+		i = va_arg(ap, int);
+		*out++ = i;
+		break;
+
+	    case 'f':
+		d = va_arg(ap, double);
+		out += sprintf(out, "%f", d);
+		break;
+
+	    case 'e':
+	    case 'E':
+	    case 'g':
+	    case 'G':
+		d = va_arg(ap, double);
+		out += sprintf(out, "%g", d);
+		break;
+
+	    case 'p':
+	    case 'x':
+	    case 'X':
+		l = (long)va_arg(ap, void *);
+		puts("TODO");
+		break;
+
+	    case 'n':
+		/* produces no output */
+		break;
+
+	    case 's': {
+		char *s = (char *)va_arg(ap, char *);
+		if (conv_len2) {
+		    //memcpy(out, s, conv_len2);
+		    //out += conv_len2;
+
+		    //strncpy(out, s, conv_len2);
+		    //out += MIN(conv_len2, strnlen(s));
+
+		    while(conv_len2 && *s) {
+		        *out++ = *s++;
+		        conv_len2--;
+		    }
+		} else {
+		    //strcpy(out, s);
+		    //out += strlen(s);
+
+		    while(*s) *out++ = *s++;
+		}
+		//		if (conv_len2) {
+		//		    fwrite(s, conv_len2, 1, fp);
+		//		} else
+		//		    fputs(s, fp);
+		break;
+	    }
+
+	    default:
+		/* wchar_t types of 'C' and 'S' aren't supported */
+		puts("TODO");
+	    }
+	    
+	}
+
+	case '\0':
+	    break;
+
+	default:
+	    *out++ = *cp;
+	}
+    }
+
+    *out = 0;
+    fwrite(max_line, 1, out-max_line, fp);
+
+    va_end(ap);
+    
+    return 0;
+}
+#endif
+
+char *sam_aux_stringify(char *s, int len) {
+    static char str[8192];
+    char *cp = str, *s_end = s+len;
+    int first = 1;
+
+    //write(2, s, (int)(b->data + b->data_len - (uint8_t *)s));
+
+    while (s < s_end) {
+	if (first)
+	    first = 0;
+	else
+	    *cp++ = '\t';
+
+	switch (s[2]) {
+	case 'A':
+	    APPEND_FMT('A');
+	    *cp++ = s[3];
+	    s+=4;
+	    break;
+
+	case 'C':
+	    APPEND_FMT('i');
+	    cp = append_int(cp, *(uint8_t *)(s+3));
+	    s+=4;
+	    break;
+
+	case 'c':
+	    APPEND_FMT('i');
+	    cp = append_int(cp, *(int8_t *)(s+3));
+	    s+=4;
+	    break;
+
+	case 'S':
+	    {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		APPEND_FMT('i');
+		cp = append_int(cp, *(uint16_t *)tmp);
+	    }
+	    s+=5;
+	    break;
+
+	case 's':
+	    {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		APPEND_FMT('i');
+		cp = append_int(cp, *(int16_t *)tmp);
+	    }
+	    s+=5;
+	    break;
+
+	case 'I':
+	    {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		APPEND_FMT('i');
+		cp = append_int(cp, *(uint32_t *)tmp);
+	    }
+	    s+=7;
+	    break;
+
+	case 'i':
+	    {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		APPEND_FMT('i');
+		cp = append_int(cp, *(int32_t *)tmp);
+	    }
+	    s+=7;
+	    break;
+
+	case 'f':
+	    {
+		float f;
+		memcpy(&f, s+3, 4);
+		APPEND_FMT('f');
+		cp += sprintf(cp, "%f", f);
+	    }
+	    s+=7;
+	    break;
+
+	case 'd':
+	    {
+		double d;
+		memcpy(&d, s+3, 8);
+		APPEND_FMT('f');
+		cp += sprintf(cp, "%f", d);
+	    }
+	    s+=11;
+	    break;
+
+	case 'Z': case 'H':
+	    APPEND_FMT(s[2]);
+	    s+=3;
+	    while (*s)
+		*cp++ = *s++;
+	    s++;
+	    break;
+
+	default:
+	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
+	    return NULL;
+	}
+    }
+
+    *cp = 0;
+
+    return str;
+}
+
 #ifdef HAVE_SAMTOOLS
-char *bam_aux_stringify(bam1_t *b, int no_RG) {
+char *bam_aux_stringify_old(bam1_t *b, int no_RG) {
     static char str[8192];
     char *s = (char *)bam1_aux(b), *cp = str;
     int first = 1;
@@ -430,6 +935,135 @@ char *bam_aux_stringify(bam1_t *b, int no_RG) {
 		cp += sprintf(cp, "%c%c:%c:%s", s[0], s[1], s[2], s+3);
 	    s+=3;
 	    while (*s++);
+	    break;
+
+	default:
+	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
+	    return NULL;
+	}
+    }
+
+    *cp = 0;
+
+    return str;
+}
+
+char *bam_aux_stringify(bam1_t *b, int no_RG) {
+    static char str[8192];
+    char *s = (char *)bam1_aux(b), *cp = str;
+    int first = 1;
+    int keep;
+
+    no_RG = 1;
+
+    //write(2, s, (int)(b->data + b->data_len - (uint8_t *)s));
+
+    while ((uint8_t *)s < b->data + b->data_len) {
+
+	keep = (no_RG && s[0] == 'R' && s[1] == 'G') ? 0 : 1;
+	if (keep) {
+	    if (first)
+		first = 0;
+	    else
+		*cp++ = '\t';
+	}
+
+	switch (s[2]) {
+	case 'A':
+	    if (keep) {
+		APPEND_FMT('A');
+		*cp++ = s[3];
+	    }
+	    s+=4;
+	    break;
+
+	case 'C':
+	    if (keep) {
+		APPEND_FMT('i');
+		cp = append_int(cp, *(uint8_t *)(s+3));
+	    }
+	    s+=4;
+	    break;
+
+	case 'c':
+	    if (keep) {
+		APPEND_FMT('i');
+		cp = append_int(cp, *(int8_t *)(s+3));
+	    }
+	    s+=4;
+	    break;
+
+	case 'S':
+	    if (keep) {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		APPEND_FMT('i');
+		cp = append_int(cp, *(uint16_t *)tmp);
+	    }
+	    s+=5;
+	    break;
+
+	case 's':
+	    if (keep) {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		APPEND_FMT('i');
+		cp = append_int(cp, *(int16_t *)tmp);
+	    }
+	    s+=5;
+	    break;
+
+	case 'I':
+	    if (keep) {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		APPEND_FMT('i');
+		cp = append_int(cp, *(uint32_t *)tmp);
+	    }
+	    s+=7;
+	    break;
+
+	case 'i':
+	    if (keep) {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		APPEND_FMT('i');
+		cp = append_int(cp, *(int32_t *)tmp);
+	    }
+	    s+=7;
+	    break;
+
+	case 'f':
+	    if (keep) {
+		float f;
+		memcpy(&f, s+3, 4);
+		APPEND_FMT('f');
+		cp += sprintf(cp, "%f", f);
+	    }
+	    s+=7;
+	    break;
+
+	case 'd':
+	    if (keep) {
+		double d;
+		memcpy(&d, s+3, 8);
+		APPEND_FMT('f');
+		cp += sprintf(cp, "%f", d);
+	    }
+	    s+=11;
+	    break;
+
+	case 'Z': case 'H':
+	    if (keep) {
+		APPEND_FMT(s[2]);
+		s+=3;
+		while (*s)
+		    *cp++ = *s++;
+		s -= 3;
+	    }
+	    s+=3;
+	    if (!keep)
+		while (*s++);
 	    break;
 
 	default:

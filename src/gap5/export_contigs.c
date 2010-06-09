@@ -327,6 +327,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	int last_lrec = -1;
 	int mqual;
 	char *cigar_tmp;
+	char rg_buf[1024], *aux_ptr;
 
 	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ &&
 	    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISUMSEQ)
@@ -639,7 +640,26 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	    cigar_tmp = cigar;
 	}
 
-	fprintf(fp, "%.*s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%.*s\t%.*s",
+	if (s->parent_type == GT_Library) {
+	    if (last_lrec != s->parent_rec) {
+		last_lrec  = s->parent_rec;
+		lib = cache_search(io, GT_Library, s->parent_rec);
+	    }
+	    if (lib->name)
+		sprintf(rg_buf, "\tRG:Z:%s", lib->name);
+	    else
+		sprintf(rg_buf, "\tRG:Z:rg#%d", lib->rec);
+	} else {
+	    *rg_buf = 0;
+	}
+
+	if (s->aux_len)
+	    aux_ptr = sam_aux_stringify(s->sam_aux, s->aux_len);
+	else
+	    aux_ptr = "";
+
+	/* Can try fast_printf() instead - see sam_index.c */
+	fprintf(fp, "%.*s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%.*s\t%.*s%s%s%s\n",
 		tname_len, tname,
 		flag,
 		c->name,
@@ -650,23 +670,10 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 		iend,
 		isize,
 		len, S,
-		len, Q);
-
-	if (s->parent_type == GT_Library) {
-	    if (last_lrec != s->parent_rec) {
-		last_lrec  = s->parent_rec;
-		lib = cache_search(io, GT_Library, s->parent_rec);
-	    }
-	    if (lib->name)
-		fprintf(fp, "\tRG:Z:%s", lib->name);
-	    else
-		fprintf(fp, "\tRG:Z:rg#%d", lib->rec);
-	}
-
-	if (s->aux_len)
-	    fprintf(fp, "\t%s", sam_aux_stringify(s->sam_aux, s->aux_len));
-
-	fprintf(fp, "\n");
+		len, Q,
+		rg_buf,
+		aux_ptr && *aux_ptr ? "\t" : "",
+		aux_ptr);
 
 	if (s != sorig)
 	    free(s);
@@ -1421,9 +1428,13 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
     int i;
     FILE *fp;
     
-    if (NULL == (fp = fopen(fn, "w"))) {
-	perror(fn);
-	return -1;
+    if (0 == strcmp(fn, "-")) {
+	fp = stdout;
+    } else {
+	if (NULL == (fp = fopen(fn, "w"))) {
+	    perror(fn);
+	    return -1;
+	}
     }
 
     /* Header */
@@ -1473,7 +1484,8 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 	}
     }
 
-    fclose(fp);
+    if (fp != stdout)
+	fclose(fp);
 
     return 0;
 }
