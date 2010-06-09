@@ -521,6 +521,12 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
 
 	if ((*rargv)[j].end == INT_MAX || (*rargv)[j].end > en)
 	    (*rargv)[j].end = en;
+
+	if ((*rargv)[j].start > en)
+	    (*rargv)[j].start = en;
+
+	if ((*rargv)[j].end < st)
+	    (*rargv)[j].end = st;
     }
 
     /* Check for failures */
