@@ -1525,6 +1525,49 @@ tcl_import_reads(ClientData clientData,
     return TCL_OK;
 }
 
+int tcl_consensus_valid_range(ClientData clientData, Tcl_Interp *interp,
+			      int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc, i;
+    contig_list_t *rargv;
+    list2_arg args;
+    Tcl_Obj *res;
+
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    vfuncheader("complement contig");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    /* create contig name array */
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    if (rargc == 0) {
+        xfree(rargv);
+        return TCL_OK;
+    }
+
+    res = Tcl_NewListObj(0, NULL);
+    for (i = 0; i < rargc; i++) {
+	Tcl_Obj *l = Tcl_NewListObj(0, NULL);
+	int crec = rargv[i].contig, start, end;
+
+	consensus_valid_range(args.io, crec, &start, &end);
+	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(crec));
+	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(start));
+	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(end));
+	Tcl_ListObjAppendElement(interp, res, l);
+    }
+    Tcl_SetObjResult(interp, res);
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
 #ifdef VALGRIND
 tcl_leak_check(ClientData clientData,
 	       Tcl_Interp *interp,
@@ -1718,6 +1761,10 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "import_reads",
 			 tcl_import_reads,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "consensus_valid_range",
+			 tcl_consensus_valid_range,
 			 (ClientData) NULL, NULL);
 
 #ifdef VALGRIND
