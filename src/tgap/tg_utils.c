@@ -17,16 +17,15 @@
  * Returns the number of bytes written to 'out'
  */
 int int2u7(uint32_t in, unsigned char *out) {
-    int n = 0;
+    unsigned char *cp = out;
 
-    out[0] = in & 0x7f;
     while (in >= 128) {
-	out[n++] |= 128;
+	*cp++ = (in & 0x7f) | 0x80;
 	in >>= 7;
-	out[n] = in & 0x7f;
     }
+    *cp++ = in;
 
-    return n+1;
+    return cp-out;
 }
 
 /*
@@ -37,17 +36,16 @@ int int2u7(uint32_t in, unsigned char *out) {
  */
 int u72int(unsigned char *u7, uint32_t *out) {
     uint32_t ret = 0;
-    int b = 0;
+    int b = 0, c = 0;
 
-    ret |= *u7 & 0x7f;
-    while (*u7 & 0x80) {
-	u7++;
-	b += 7;
-	ret |= (*u7 & 0x7f) << b;
+    ret = *u7 & 0x7f;
+    while (*u7++ & 0x80) {
+	c++;
+	ret |= (*u7 & 0x7f) << (b += 7);
     }
 
     *out = ret;
-    return b/7+1;
+    return c+1;
 }
 
 /*
@@ -65,17 +63,16 @@ int u72int(unsigned char *u7, uint32_t *out) {
  * Returns the number of bytes written to 'out'
  */
 int int2s7(int32_t in, unsigned char *out) {
-    int n = 0;
+    unsigned char *cp = out;
     uint32_t u = (ABS(in) << 1) | (in < 0);
 
-    out[0] = u & 0x7f;
     while (u >= 128) {
-	out[n++] |= 128;
+	*cp++ = (u & 0x7f) | 0x80;
 	u >>= 7;
-	out[n] = u & 0x7f;
     }
+    *cp++ = u;
 
-    return n+1;
+    return cp-out;
 }
 
 /*
@@ -85,16 +82,15 @@ int int2s7(int32_t in, unsigned char *out) {
  * Returns the number of bytes read from u7.
  */
 int s72int(unsigned char *u7, int32_t *out) {
-    uint32_t ret = 0;
-    int b = 0;
+    uint32_t ret;
+    int b = 0, c = 0;
 
-    ret |= *u7 & 0x7f;
-    while (*u7 & 0x80) {
-	u7++;
-	b += 7;
-	ret |= (*u7 & 0x7f) << b;
+    ret = *u7 & 0x7f;
+    while (*u7++ & 0x80) {
+	c++;
+	ret |= (*u7 & 0x7f) << (b += 7);
     }
 
     *out = (ret & 1) ? -(ret >> 1) : (ret >> 1);
-    return b/7+1;
+    return c+1;
 }
