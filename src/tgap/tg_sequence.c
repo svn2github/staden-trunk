@@ -516,19 +516,19 @@ void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf) {
 
     middle = seq_len/2;
     if (nconf == 1) {
-	for ( i = 0, j = seq_len-1; i < middle; i++, j--) {
-	    temp = complementary_base [ (unsigned char) seq[i] ];
+	for ( i = 0, j = seq_len-1; i < j; i++, j--) {
+	    temp = (unsigned char) seq[i];
 	    seq[i] = complementary_base [ (unsigned char) seq[j] ];
-	    seq[j] = temp;
+	    seq[j] = complementary_base [ temp ];
 	    temp = conf[i];
 	    conf[i] = conf[j];
 	    conf[j] = temp;
 	}
     } else if (nconf == 4) {
-	for ( i = 0, j = seq_len-1; i < middle; i++, j--) {
-	    temp = complementary_base [ (unsigned char) seq[i] ];
+	for ( i = 0, j = seq_len-1; i < j; i++, j--) {
+	    temp = (unsigned char) seq[i];
 	    seq[i] = complementary_base [ (unsigned char) seq[j] ];
-	    seq[j] = temp;
+	    seq[j] = complementary_base [ temp ];
 	    t[0] = conf[i*4+0];
 	    t[1] = conf[i*4+1];
 	    t[2] = conf[i*4+2];

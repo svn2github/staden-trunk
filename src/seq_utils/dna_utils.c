@@ -582,9 +582,9 @@ void complement_seq ( char *seq, int seq_len ) {
 
     middle = seq_len/2;
     for ( i = 0, j = seq_len-1; i < middle; i++, j--) {
-	temp = complementary_base [ (unsigned char) seq[i] ];
+	temp = (unsigned char) seq[i];
 	seq[i] = complementary_base [ (unsigned char) seq[j] ];
-	seq[j] = temp;
+	seq[j] = complementary_base [ temp ];
     }
 
     if ( seq_len % 2 )
