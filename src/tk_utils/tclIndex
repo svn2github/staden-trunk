@@ -541,3 +541,4 @@ set auto_index(element_select_result) [list source [file join $dir element_canva
 set auto_index(element_set_result) [list source [file join $dir element_canvas.tcl]]
 set auto_index(element_move_result) [list source [file join $dir element_canvas.tcl]]
 set auto_index(element_drop_result) [list source [file join $dir element_canvas.tcl]]
+set auto_index(xcombo) [list source [file join $dir xcombo.tcl]]
