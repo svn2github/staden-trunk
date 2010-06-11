@@ -754,10 +754,7 @@ proc editor_join {w} {
     if {$ret == "cancel"} return
 
     if {$ret == "yes"} {
-	puts "*** Joining ***"
-	# $ed join
-    } else {
-	puts "*** Not joining ***"
+	$ed join
     }
 
     editor_exit $w
@@ -1519,6 +1516,8 @@ proc editor_name_select {w where} {
 proc U_tag_change {w rec new_a} {
     set io [$w io]
 
+    puts [info level [info level]]
+
     #-- Get existing tag
     set old_a ""
     if {$rec != -1} {
@@ -1656,7 +1655,6 @@ proc tag_editor_create {w} {
     global $w
     set rec -1
     
-    puts [$w select get]
     foreach {otype orec start end} [$w select get] break;
 
     global .Tag.$rec
@@ -1729,7 +1727,6 @@ proc tag_editor_callback {w rec cmd args} {
 proc editor_menu {w x y} {
     upvar $w opt
 
-    puts $opt(top).menubar.commands
     tk_popup $opt(top).menubar.commands \
 	[expr $x+[winfo rootx $w]] [expr $y+[winfo rooty $w]]
 }
@@ -2017,9 +2014,14 @@ proc editor_oligo_report {ed t} {
     # Now actually do-it
     set w $ed.oligos
     xtoplevel $w
+    global $w
+    catch {unset $w}
+
     if {![winfo exists $w.list]} {
 	wm geometry $w 640x400
 	wm title $w "Oligos"
+
+	# The main list
 	tablelist $w.list \
 	    -columns { 8 "Score" \
 		      10 "Start" \
@@ -2036,32 +2038,133 @@ proc editor_oligo_report {ed t} {
 	grid rowconfigure $w 0 -weight 1
 	grid columnconfigure $w 0 -weight 1
 	grid $w.list $w.yscroll -sticky nsew
+
+	# Further details on the active primer
+	set d [frame $w.details]
+	label $d.seq_l           -text "Sequence:"                 -anchor w
+	label $d.seq_r           -textvariable ${w}(sequence)      -anchor w
+	label $d.temp_l          -text "Melting temp.:"            -anchor w
+	label $d.temp_r          -textvariable ${w}(temperature)   -anchor e
+	label $d.self_any_l      -text "Self-any:"                 -anchor w
+	label $d.self_any_r      -textvariable ${w}(self_any)      -anchor e
+	label $d.self_end_l      -text "Self-end:"                 -anchor w
+	label $d.self_end_r      -textvariable ${w}(self_end)      -anchor e
+	label $d.end_stability_l -text "End stability:"            -anchor w
+	label $d.end_stability_r -textvariable ${w}(end_stability) -anchor e
+
+	grid columnconfigure $d 0 -weight 0
+	grid columnconfigure $d 1 -weight 1
+	grid columnconfigure $d 2 -minsize 20
+	grid columnconfigure $d 3 -weight 0
+	grid columnconfigure $d 4 -weight 1
+
+	grid $d.seq_l           -row 0 -column 0 -sticky nsew
+	grid $d.seq_r           -row 0 -column 3 -columnspan 2 -sticky nsew
+	grid $d.self_any_l      $d.self_any_r      x \
+	     $d.temp_l          $d.temp_r          -sticky nsew
+	grid $d.self_end_l      $d.self_end_r      x \
+	     $d.end_stability_l $d.end_stability_r -sticky nsew
+
+	xcombo $d.name \
+	    -text "Seq.name to tag" \
+	    -textvariable ${w}(read) \
+	    -valuesvariable ${w}(read_values)
+
+	xcombo $d.template \
+	    -text "Template name" \
+	    -textvariable ${w}(template) \
+	    -valuesvariable ${w}(template_values)
+
+	grid $d.name - x $d.template - -sticky nsew
+	grid $d - -sticky nsew
+
+
+	# Add and close buttons
+	set d [frame $w.buttons -bd 2 -relief groove]
+	button $d.add \
+	    -text "Add annotation" \
+	    -command "editor_oligo_add $ed $w"
+	button $d.close \
+	    -text "Close" \
+	    -command "unset $w; destroy $w"
+
+	pack $d.add $d.close -side left -expand 1
+	grid $d - -sticky nsew
     } else {
-	$w.list delete 1 end
+	$w.list delete 0 end
     }
 
-    puts $direction
     set oligos [$ed select_oligo $direction \
 		    $search_ahead_val $search_back_val \
 		    $read_length_val $p3_params]
 
     foreach oligo $oligos {
-	foreach {st en seq qual gc temp} $oligo break;
-	$w.list insert end [list [format %6.2f $qual] $st $en \
-				 [format %5.1f $gc] \
-				 [format %5.1f $temp] $seq]
+	array set o $oligo
+	$w.list insert end [list [format %6.2f $o(quality)] \
+				$o(start) \
+				$o(end) \
+				[format %5.1f $o(GC)] \
+				[format %5.1f $o(temperature)] \
+				$o(sequence)]
+	set ${w}(line_$o(sequence)) $oligo
     }
 
-    bind $w.list <<TablelistSelect>> "+editor_oligo_select $ed %W"
+    bind $w.list <<TablelistSelect>> "+editor_oligo_select $ed %W $w"
 
     return 0
 }
 
-proc editor_oligo_select {ed tl} {
+proc editor_oligo_select {ed tl w} {
+    global $w
+
     set line [$tl get [$tl curselection]]
     foreach {score start end gc temp seq} $line {}
+    array set $w [set ${w}(line_$seq)]
 
     $ed select set $start $end
+
+    # Obtain a list of overlapping reads. Ideally we need to find
+    # overlapping templates instead - more work to do here.
+    set io [$ed io]
+    set c [$io get_contig [$ed contig_rec]]
+    set name_list "(consensus)"
+    set temp_list ""
+
+    foreach x [$c seqs_in_range $start $end] {
+	foreach {x_st x_en x_rec} $x break
+	if {$x_st <= $start && $x_en >= $end} {
+
+	    # Adjust for clipped region
+	    set r [$io get_seq $x_rec]
+	    foreach {cl cr} [$r get_clips] break
+
+	    if {[$r get_orient] == 0} {
+		set c_st [expr {$x_st+$cl-1}]
+		set c_en [expr {$x_st+$cr-1}]
+	    } else {
+		set c_st [expr {$x_en-$cr+1}]
+		set c_en [expr {$x_en-$cl+1}]
+	    }
+
+	    lappend ${w}(rname_[$r get_name]) $x_rec
+
+	    if {$c_st <= $start && $c_en >= $end} {
+		lappend name_list [$r get_name]
+	    }
+	    lappend temp_list [regsub {\.[^.]*$} [$r get_name] {}]
+	    
+	    $r delete
+	}
+    }
+    $c delete
+
+    # Update GUI
+    set ${w}(read) [lindex $name_list 0]
+    set ${w}(read_values)  $name_list
+
+    set ${w}(template) [lindex $temp_list 0]
+    set ${w}(template_values)  $temp_list
+
 
     global .Selection
     set .Selection $seq
@@ -2076,6 +2179,86 @@ proc editor_oligo_select {ed tl} {
 proc editor_oligo_handle_selection {offset maxbytes} {
     global .Selection
     return [string range ${.Selection} $offset $maxbytes]
+}
+
+proc editor_oligo_add {ed w} {
+    global $w
+
+    # Get record number(s) for name (maybe multiple seqs with this name)
+    set read [set ${w}(read)]
+
+    if {[info exists ${w}(rname_$read)]} {
+	set recs [set ${w}(rname_$read)]
+    } else {
+	# User typed in another name not listed. We'll need to verify it.
+	# FIXME: shouldn't be necessary?
+
+	set recs {}
+    }
+
+    set use_rec ""
+    set offset 0
+    foreach rec $recs {
+	set r [[$ed io] get_seq $rec]
+
+	set pos [$r get_position]
+	set len [$r get_length]
+	foreach {cl cr} [$r get_clips] break
+	$r delete
+
+	if {$len >= 0} {
+	    set r_st [expr {$pos+$cl-1}]
+	    set r_en [expr {$pos+$cl-1}]
+	} else {
+	    set r_st [expr {$pos-$len-$cr}]
+	    set r_en [expr {$pos-$len-$cl}]
+	}
+
+	puts $read->$rec->$r_st..$r_en
+
+	# Ideal case
+	if {[set ${w}(start)] >= $r_st && [set ${w}(end)] <= $r_en} {
+	    set use_rec $rec
+	    set offset -$pos
+	    break;
+	}
+
+	# Next-best in cutoff data, but keep searching
+	set r_st $pos
+	set r_en [expr {$pos+abs($len)-1}]
+	puts "$r_st,$r_en vs [set ${w}(start)],[set ${w}(end)]"
+	if {[set ${w}(start)] >= $r_st && [set ${w}(end)] <= $r_en} {
+	    set use_rec $rec
+	    set offset -$pos
+	}
+    }
+
+    if {$use_rec == ""} {
+	# Consensus
+	set d(orec) [$ed contig_rec]
+	set d(otype) 17
+	set d(start)   [set ${w}(start)]
+	set d(end)     [set ${w}(end)]
+    } else {
+	# Sequences
+	set d(orec) $use_rec
+	set d(otype) 18
+	set d(start)   [expr {[set ${w}(start)]+$offset}]
+	set d(end)     [expr {[set ${w}(end)]+$offset}]
+    }
+
+    set d(type)    "OLIG"
+    set d(strand)  0
+
+    set d(anno)    "Sequence	[set ${w}(sequence)]
+Template	[set ${w}(template)]
+GC		[set ${w}(GC)]
+Temperature	[set ${w}(temperature)]
+Score		[set ${w}(quality)]
+Date_picked	[clock format [clock seconds]]
+Oligoname	??"
+
+    U_tag_change $ed -1 [array get d]
 }
 
 

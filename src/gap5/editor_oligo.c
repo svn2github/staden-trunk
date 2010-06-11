@@ -128,18 +128,56 @@ Tcl_Obj *edSelectOligoGenerate(edview *xx, int is_fwds, int bkwd_width,
 		en2 = j;
 	}
 
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("start", -1));
 	Tcl_ListObjAppendElement(xx->interp, l,
 				 Tcl_NewIntObj(st2+left));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("end", -1));
 	Tcl_ListObjAppendElement(xx->interp, l,
 				 Tcl_NewIntObj(en2+left));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("sequence", -1));
 	Tcl_ListObjAppendElement(xx->interp, l,
 				 Tcl_NewStringObj(&consensus[st], en-st+1));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("quality", -1));
 	Tcl_ListObjAppendElement(xx->interp, l,
 				 Tcl_NewDoubleObj(state->primers[i].quality));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("GC", -1));
 	Tcl_ListObjAppendElement(xx->interp, l,
 				 Tcl_NewDoubleObj(state->primers[i].gc_content));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("temperature", -1));
 	Tcl_ListObjAppendElement(xx->interp, l,
-				 Tcl_NewDoubleObj(state->primers[i].temp));
+				 Tcl_NewDoubleObj(((int)(state->primers[i].temp * 100))/100.0));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("end_stability", -1));
+	Tcl_ListObjAppendElement(xx->interp, l,
+				 Tcl_NewDoubleObj(state->primers[i].end_stability));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("self_any", -1));
+	Tcl_ListObjAppendElement(xx->interp, l,
+				 Tcl_NewDoubleObj(state->primers[i].self_any / 100.0));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("self_end", -1));
+	Tcl_ListObjAppendElement(xx->interp, l,
+				 Tcl_NewDoubleObj(state->primers[i].self_end / 100.0));
+
+	Tcl_ListObjAppendElement(xx->interp, l, 
+				 Tcl_NewStringObj("self_end", -1));
+	Tcl_ListObjAppendElement(xx->interp, l,
+				 Tcl_NewDoubleObj(state->primers[i].self_end / 100.0));
+
 	Tcl_ListObjAppendElement(xx->interp, lobj, l);
     }
 
