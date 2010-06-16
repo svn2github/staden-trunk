@@ -301,18 +301,6 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 			    mq = r->mqual < r->pair_mqual ? r->pair_mqual : r->mqual;
 			    break;
 		    }
-		    
-		    /* more depth plot, span this time */
-		    r_sta = (sta - bx_conv) * ax_conv; // world to raster conversion
-		    r_end = (end - bx_conv) * ax_conv;
-
-		    if (r_sta < 0)  	   r_sta = 0;
-		    if (r_end >= gr->width) r_end = gr->width - 1;
-
-		    for (j = r_sta; j <= r_end; j++) {
-	    		gr->depth[j].s++;
-		    	if (gr->depth[j].s > gr->max_height) gr->max_height = gr->depth[j].s;
-		    }
 	    	}
 	    } else {
 	    	mq = r->mqual;
@@ -376,7 +364,8 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    /* Readings too? */
 	    if (gr->new_filter.c_mode == 3) {
 	    
-		col = (r->flags & GRANGE_FLAG_COMP1) ? fwd_col : rev_col;
+		col = (r->flags & GRANGE_FLAG_END_MASK)
+		    == GRANGE_FLAG_END_FWD ? fwd_col : rev_col;
 
 		if (r->start == tl->x[0]) {
 		    tl->x[1]   = r->end;
@@ -391,7 +380,8 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		
 		if (r->pair_rec && (r->pair_start || r->pair_end)) {
 		
-		    col = (r->flags & GRANGE_FLAG_COMP2) ? fwd_col : rev_col;
+		    col = (r->flags & GRANGE_FLAG_PEND_MASK)
+			== GRANGE_FLAG_PEND_FWD ? fwd_col : rev_col;
 
 		    if (r->pair_start == tl->x[0]) {
 			tl->x[1]   = r->pair_end;
