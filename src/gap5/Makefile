@@ -1,6 +1,5 @@
 LIBS = gap5
 PROGS = $(PROGBINS)
-PROGBINS= tg_index tg_view
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
@@ -161,11 +160,17 @@ install:
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap5
 	cp $(S)/gap5rc $(S)/gap5rc_menu_full $(INSTALLETC)
 	cp $(PROGLIBS) $(INSTALLLIB)
-	cp $(PROGBINS) $(INSTALLBIN)
+	cp tg_view $(INSTALLBIN)/tg_view.bin
+	cp tg_index $(INSTALLBIN)/tg_index.bin
+	cp $(S)/tg_index $(INSTALLBIN)
+	cp $(S)/tg_view $(INSTALLBIN)
+	cp $(S)/gap5_consensus $(INSTALLBIN)
+	cp $(S)/gap5_export $(INSTALLBIN)
 
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(S)/gap5 \
-	   $(S)/gap5rc $(S)/gap5rc_menu_full $(DIRNAME)
+	   $(S)/gap5rc $(S)/gap5rc_menu_full $(S)/gap5_export \
+	   $(S)/gap5_consensus $(S)/tg_index $(S)/tg_view $(DIRNAME)
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
