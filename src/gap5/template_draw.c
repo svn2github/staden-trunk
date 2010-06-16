@@ -104,7 +104,7 @@ int add_colour(image_t *image, unsigned int red, unsigned int green, unsigned in
 
     	map = (u_int32_t *)(image->map_col);
     	map[image->colour_count] = get_colour32(image, red, green, blue);
-    } if (image->depth >= 15) {
+    } else if (image->depth >= 15) {
     	u_int16_t *map;
 
     	if (image->colour_count == image->colour_size) {
