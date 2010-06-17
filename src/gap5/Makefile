@@ -1,5 +1,5 @@
 LIBS = gap5
-PROGS = $(PROGBINS)
+PROGS = tg_index tg_view
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
