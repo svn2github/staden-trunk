@@ -471,49 +471,45 @@ proc yscale_seq {w t height} {
     set ys [set ${t}(yscale)]
     yscale_resize $ys $height
 
-    set w1 [expr {0.9 * 60}]
-    set w2 [expr {0.7 * 60}]
-    set w3 [expr {0.45 * 60}]
-    set w3a [expr {0.4 * 60}]
-    set w4 [expr {0.3 * 60}]
-    set w4a [expr {0.2 * 60}]
-    set w5 [expr {0.1 * 60}]
-    
-    set td [set ${t}(track)]
+    set w1 [expr {0.1 * 60}]
+    set w2 [expr {0.2 * 60}]
+    set w3 [expr {0.3 * 60}]
+    set w4 [expr {0.4 * 60}]
+    set w5 [expr {0.45 * 60}]
+    set w6 [expr {0.7 * 60}]
 
-    set ymax [$td ymax]
-    set ymin [$td ymin]
+    set td [set ${t}(track)]
     set zoom [$td yz]
-    
-    set yoffset [set ${t}(YOffset)]
-    
-    set ymode [$td configure -ymode]
-    set ylog  [set ${t}(YLog)]
-    set strands [set ${t}(SeparateStrands)]
     
     if {$zoom == 0} {
     	set zoom 1
     }
 
-    $ys create line $w5 0 $w5 $height
+    set ymode [$td configure -ymode]
+    set ylog  [set ${t}(YLog)]
+    set strands [set ${t}(SeparateStrands)]
     
-    set max $height
-    set min 0
-
+    # vertical base line
+    $ys create line $w1 0 $w1 $height
+    
     set y1 [set ${t}(y1)]
     
-    set i    $min
-    set val  $min
-    incr max $y1
-    set jump 1
-    set step 10
-    
     if {$ylog && $ymode != 1} {
-    	set midway -$y1
+	set max $height
+	set min 0
+
+	set i    $min
+	set val  $min
+	incr max [expr {abs($y1)}]
+	set jump 1
+	set step 10
+    	set yoffset [set ${t}(YOffset)]
 	
 	if {$strands} {
 	    set midway [expr {($height / 2) - $y1}]
-   	    $ys create line $w5 $midway $w2 $midway
+   	    $ys create line $w1 $midway $w6 $midway
+	} else {
+    	    set midway [expr {int(-$y1)}]
 	}
 	
 	while {$i < $max} {
@@ -521,8 +517,8 @@ proc yscale_seq {w t height} {
  	    set idown   [expr {$i + $midway}]
 	    set iup [expr {$midway - $i}]
 	    
-    	    $ys create line $w5 $idown $w4 $idown
-    	    $ys create line $w5 $iup $w4 $iup
+    	    $ys create line $w1 $idown $w3 $idown
+    	    $ys create line $w1 $iup $w3 $iup
 	    
 	    if {$val == $step} {
 		set jump $step
@@ -530,11 +526,11 @@ proc yscale_seq {w t height} {
 
 		foreach {fmt num} [number_format $val] break
 
-   		$ys create line $w5 $idown $w3a $idown
-		$ys create text $w3 $idown -anchor w -text [format $fmt $num]
+   		$ys create line $w1 $idown $w4 $idown
+		$ys create text $w5 $idown -anchor w -text [format $fmt $num]
 
-    	    	$ys create line $w5 $iup $w3a $iup
-		$ys create text $w3 $iup -anchor w -text [format $fmt $num]
+    	    	$ys create line $w1 $iup $w4 $iup
+		$ys create text $w5 $iup -anchor w -text [format $fmt $num]
 	    }
 
 	    incr val $jump
@@ -548,62 +544,123 @@ proc yscale_seq {w t height} {
 	    set i [expr {int($new)}]
 	}
     } elseif {!$ylog && $ymode != 1} {
-    
-    	set zoom [expr {1 / $zoom}]
-    	set max [expr {($height + $y1) * $zoom}]
-	set min [expr {$y1 * $zoom}]
+	# zoom   - zoom value (default 0.5)
+	# y1     - offset (canvas coords)
+	# height - window height (canvas)
 	
-	if {$min < 0} {
-	    set min 0
+	# min - lower value on screen (world)   = y1 * (1 / zoom)
+	# max - highest value on screen (world) = (height + y1) * (1 /zoom)
+	 
+	# initially 0 point will be at height / 2 for separate strands
+	
+	set offset      0
+	set down_strand 0
+	set up_strand   0
+	    
+	if {$strands} {
+            set offset [expr {($height / 2) - $y1}]
+	    
+	    if {$offset <= 0} {
+		set down_strand 1
+	    } elseif {$offset > $height} {
+		set up_strand 1
+	    } else {
+		set down_strand 1
+		set up_strand 1
+	    }
+	} else {
+	    set down_strand 1
 	}
 	
-	set midway $y1
+	set zoom [expr {1 / $zoom}]
 	
 	if {$strands} {
-	    set midway [expr {($height / 2) - $y1}]
-   	    $ys create line $w5 $midway $w2 $midway
-	    set min 0
+	    set midway [expr {$height / 2}]
+	
+	    if {$down_strand && $up_strand} {
+		set min 0
+		set max [expr {$height * $zoom}]
+	    } elseif {$down_strand} {
+		set min [expr {($y1 - $midway) * $zoom}]
+		set max [expr {($midway + $y1) * $zoom}]
+	    } else {
+	    	# up strand
+		set max [expr {($midway - $y1) * $zoom}]
+		set min [expr {($midway - $y1 - $height) * $zoom}]
+	    }
+	} else {
+	    set offset [expr {$y1 * -1}]
+	    set min [expr {$y1 * $zoom}]
+	    set max [expr {($height + $y1) * $zoom}]
 	}
 	
-    	foreach {min step p1 pstep fmt} [nice_num $min [expr {$max - $min + 1}] 0] break
+        foreach {min step p1 pstep fmt} [nice_num $min [expr {$max - $min + 1}] 0] break
 	set dist [expr {$step / $zoom}]
+	
+	if {$down_strand} {
 
-	for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step}]; set j [expr {$j + $pstep}]} {
-    	    set yi [expr {($i / $zoom) + $midway}]
-	    set yiu [expr {$midway - ($i / $zoom)}]
-	    
-	    $ys create line $w5 $yi $w3a $yi
-	    $ys create line $w5 $yiu $w3a $yiu
-	    
-	    if {$dist < 200 && $j != 0} {
-		$ys create text $w3 $yi  -anchor w -text [format $fmt $j]
-		$ys create text $w3 $yiu -anchor w -text [format $fmt $j]
+	    for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step}]; set j [expr {$j + $pstep}]} {
+    		set yi [expr {($i / $zoom) + $offset}]
+
+		$ys create line $w1 $yi $w4 $yi
+
+		if {$dist < 200 && $j != 0} {
+		    $ys create text $w5 $yi  -anchor w -text [format $fmt $j]
+		}
+	    }
+
+	    set step2 [expr {$step / 2.0}]
+	    set pstep2 [expr {$pstep / 2.0}]
+	    for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step2}]; set j [expr {$j + $pstep2}]} {
+    		set yi [expr {($i / $zoom) + $offset}]
+
+		$ys create line $w1 $yi $w3 $yi
+
+		if {$dist >= 200} {
+		    $ys create text $w5 $yi  -anchor w -text [format $fmt $j]
+		}
+	    }
+
+	    set step3 [expr {$step / 10.0}]
+	    for {set i $min} {$i < $max} {set i [expr {$i + $step3}]} {
+    		set yi [expr {($i / $zoom) + $offset}]
+
+		$ys create line $w1 $yi $w2 $yi
 	    }
 	}
 
-	set step2 [expr {$step / 2.0}]
-	set pstep2 [expr {$pstep / 2.0}]
-	for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step2}]; set j [expr {$j + $pstep2}]} {
-    	    set yi [expr {($i / $zoom) + $midway}]
-	    set yiu [expr {$midway - ($i / $zoom)}]
+	if {$up_strand} {
 
-	    $ys create line $w5 $yi $w4 $yi
-	    $ys create line $w5 $yiu $w4 $yiu
+	    for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step}]; set j [expr {$j + $pstep}]} {
+    		set yi [expr {$offset - ($i / $zoom)}]
 
-	    if {$dist >= 200} {
-		$ys create text $w3 $yi  -anchor w -text [format $fmt $j]
-		$ys create text $w3 $yiu -anchor w -text [format $fmt $j]
+		$ys create line $w1 $yi $w4 $yi
+
+		if {$dist < 200 && $j != 0} {
+		    $ys create text $w5 $yi  -anchor w -text [format $fmt $j]
+		}
+	    }
+
+	    set step2 [expr {$step / 2.0}]
+	    set pstep2 [expr {$pstep / 2.0}]
+	    for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step2}]; set j [expr {$j + $pstep2}]} {
+    		set yi [expr {$offset - ($i / $zoom)}]
+
+		$ys create line $w1 $yi $w3 $yi
+
+		if {$dist >= 200} {
+		    $ys create text $w5 $yi  -anchor w -text [format $fmt $j]
+		}
+	    }
+
+	    set step3 [expr {$step / 10.0}]
+	    for {set i $min} {$i < $max} {set i [expr {$i + $step3}]} {
+    		set yi [expr {$offset - ($i / $zoom)}]
+
+		$ys create line $w1 $yi $w2 $yi
 	    }
 	}
-
-	set step3 [expr {$step / 10.0}]
-	for {set i $min} {$i < $max} {set i [expr {$i + $step3}]} {
-    	    set yi [expr {($i / $zoom) + $midway}]
-	    set yiu [expr {$midway - ($i / $zoom)}]
-
-	    $ys create line $w5 $yi $w4a $yi
-	    $ys create line $w5 $yiu $w4a $yiu
-	}
+	    	
     } 
 }
 
@@ -670,23 +727,16 @@ proc yscale_depth {w t height} {
     global $w $t
     
     set ys [set ${t}(yscale)]
-    
-
     yscale_resize $ys $height
     
-    # this might change radically
-    set w1 [expr {0.9 * 60}]
-    set w2 [expr {0.7 * 60}]
-    set w3 [expr {0.45 * 60}]
-    set w3a [expr {0.4 * 60}]
-    set w4 [expr {0.3 * 60}]
-    set w4a [expr {0.2 * 60}]
-    set w5 [expr {0.1 * 60}]
+    set w1 [expr {0.1 * 60}]
+    set w2 [expr {0.2 * 60}]
+    set w3 [expr {0.3 * 60}]
+    set w4 [expr {0.45 * 60}]
+    set w5 [expr {0.4 * 60}]
 
     set td [set ${t}(track)]
 
-    set ymax [$td ymax]
-    set ymin [$td ymin]
     set zoom [$td yz]
     
     if {$zoom == 0} {
@@ -695,49 +745,44 @@ proc yscale_depth {w t height} {
     
     set zoom [expr {1 / $zoom}] 
     
-#    set max [expr {$ymax * $zoom}]
-#    set min [expr {$ymin * $zoom}]
-
-#   This works okay for resizing depth, not for fixed/manual zoom
+    # This works okay for resizing depth, not for fixed/manual zoom
     set max [expr {$height * $zoom}]
     set min 0
 
-    
     foreach {min step p1 pstep fmt} [nice_num $min [expr {$max - $min + 1}] 0] break
-    
 
-    # draw scale from the bottom up (0 bottom)
-    set max 0
-    set min [expr {$height * $zoom}]
-    set step [expr {$step * -1}]
-    set pstep [expr {$pstep * -1}]
-     
+    # draw scale from the bottom up (0 bottom), clumsy though
     
     set dist [expr {$step / $zoom}]
     
-    $ys create line $w5 0 $w5 $height
+    $ys create line $w1 0 $w1 $height
     
-    for {set i $min; set j $p1} {$i > $max} {set i [expr {$i + $step}]; set j [expr {$j + $pstep}]} {
-	$ys create line $w5 [expr {$i / $zoom}] $w3a [expr {$i / $zoom}]
+    for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step}]; set j [expr {$j + $pstep}]} {
+    	set yi [expr {$height - ($i / $zoom)}]
+	$ys create line $w1 $yi $w5 $yi
+
 	if {$dist < 200} {
-	    $ys create text $w3 [expr {$i / $zoom}] -anchor w \
-		-text [format $fmt [expr {$j * -1}]]
+	    $ys create text $w4 $yi -anchor w -text [format $fmt $j]
 	}
     }
 
     set step2 [expr {$step / 2.0}]
     set pstep2 [expr {$pstep / 2.0}]
-    for {set i $min; set j $p1} {$i > $max} {set i [expr {$i + $step2}]; set j [expr {$j + $pstep2}]} {
-	$ys create line $w5 [expr {$i / $zoom}] $w4 [expr {$i / $zoom}]
+    
+    for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step2}]; set j [expr {$j + $pstep2}]} {
+    	set yi [expr {$height - ($i / $zoom)}]
+ 	$ys create line $w1 $yi $w3 $yi
+	
 	if {$dist >= 200} {
-	    $ys create text $w3 [expr {$i / $zoom}] -anchor w \
-		-text [format $fmt [expr {$j * -1}]]
+	    $ys create text $w4 $yi -anchor w -text [format $fmt $j]
 	}
     }
     
     set step3 [expr {$step / 10.0}]
-    for {set i $min} {$i > $max} {set i [expr {$i + $step3}]} {
-	$ys create line $w5 [expr {$i / $zoom}] $w4a [expr {$i / $zoom}]
+    
+    for {set i $min} {$i < $max} {set i [expr {$i + $step3}]} {
+    	set yi [expr {$height - ($i / $zoom)}]
+	$ys create line $w1 $yi $w2 $yi
     }
 } 
 
@@ -1180,11 +1225,10 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     yscale_seq $w $t $nheight
     
     if {$ymax <= $Y1} {
-    	puts "Out of range $ymax $Y1"
+    	puts "Out of range (max) $ymax (y1) $Y1 (y2) $Y2"
 
-	if {$ymax == $Y1 && $ymax == 0} {
-	    # Prevent an infinite loop triggered here when there is no
-	    # data to display.
+	# check for no data
+	if {$ymax == 0 && $Y1 == 0} {
 	    return
 	}
 	
@@ -1656,7 +1700,7 @@ proc seq_seqs_filter_apply {w t f keep} {
 	}
     }
 
-    redraw_plot $w seq_seqs
+    redraw_plot $w
 }
 
 
@@ -1676,7 +1720,7 @@ proc seq_seqs_filter_cancel {w t f} {
     }
 
     destroy $f
-    redraw_plot $w seq_seqs
+    redraw_plot $w
 }
 
 

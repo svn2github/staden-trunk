@@ -415,8 +415,8 @@ int depth_track_replot(depth_track_t *t) {
     tk_RasterClear(t->raster);
     RasterWinSize(t->raster, &width, &height);
     GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
-//    printf("DT Height %f to %f height %d\n", wy0, wy1, height);
- //   printf("DT Width  %f to %f width  %d\n", wx0, wx1, width);
+//  printf("DT Height %f to %f height %d\n", wy0, wy1, height);
+//  printf("DT Width  %f to %f width  %d\n", wx0, wx1, width);
     
     wx0 -= tsize; /* we use some of the reads beyond the window size */
     wx1 += tsize;
@@ -430,7 +430,6 @@ int depth_track_replot(depth_track_t *t) {
 	}
 	
 	force_change = 1;
-	
     }
     
 

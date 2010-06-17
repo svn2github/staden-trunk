@@ -201,8 +201,6 @@ int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double new
 	    	gr->width = width;
 		gr->depth = (gap_depth_t *)realloc(gr->depth, width * sizeof(gap_depth_t));
 	    }
-	    
-	    memset(gr->depth, 0, gr->width * sizeof(gap_depth_t));
 	}
 	
 	changed = 1;
@@ -221,6 +219,7 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
     	update_filter(gr);
     	gr->ntl = 0;
     	gr->max_height = 0;
+	memset(gr->depth, 0, gr->width * sizeof(gap_depth_t));
 	
 	for (i = 0; i < gr->nr; i++) {
 	    int sta, end;
