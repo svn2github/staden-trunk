@@ -225,7 +225,9 @@ static char *escape_C_string(char *str) {
  */
 typedef struct fifo {
     struct fifo *next;
+    struct fifo *prev;
     rangec_t r; /* Make this a generic payload? */
+    int clipped_pos;
 } fifo_t;
 
 typedef struct {
@@ -258,17 +260,20 @@ static void fifo_queue_destroy(fifo_queue_t *f) {
     free(f);
 }
 
-static void fifo_queue_push(fifo_queue_t *f, rangec_t *r) {
+static fifo_t *fifo_queue_push(fifo_queue_t *f, rangec_t *r) {
     fifo_t *i = malloc(sizeof(*i));
 
     i->r    = *r;
     i->next = NULL;
+    i->prev = f->tail;
 
     if (!f->head)
 	f->head = i;
     if (f->tail)
 	f->tail->next = i;
     f->tail = i;
+
+    return i;
 }
 
 static fifo_t *fifo_queue_head(fifo_queue_t *f) {
@@ -276,9 +281,10 @@ static fifo_t *fifo_queue_head(fifo_queue_t *f) {
 }
 
 static fifo_t *fifo_queue_pop(fifo_queue_t *f) {
-    fifo_t *i;
+    fifo_t *i, *n;
 
     i = f->head;
+    n = i->next;
 
     if (f->head)
 	f->head = f->head->next;
@@ -286,7 +292,62 @@ static fifo_t *fifo_queue_pop(fifo_queue_t *f) {
     if (f->head == NULL)
 	f->tail = NULL;
 
+    if (n)
+	n->prev = NULL;
+
     return i;
+}
+
+/* Generalised swap the place of two fifo queue members (untested) */
+static void fifo_queue_swap(fifo_queue_t *f, fifo_t *a, fifo_t *b) {
+    fifo_t *ap = a->prev, *an = a->next;
+    fifo_t *bp = b->prev, *bn = b->next;
+
+    if (ap != b) {
+	b->prev = ap;
+	if (ap)
+	    ap->next = b;
+    } else {
+	a->next = b;
+	b->prev = a;
+    }
+    
+    if (an != b) {
+	b->next = an;
+	if (an)
+	    an->prev = b;
+    } else {
+	a->prev = b;
+	b->next = a;
+    }
+
+    if (bp != a) {
+	a->prev = bp;
+	if (bp)
+	    bp->next = a;
+    } else {
+	a->prev = b;
+	b->next = a;
+    }
+
+    if (bn != a) {
+	a->next = bn;
+	if (bn)
+	    bn->prev = a;
+    } else {
+	a->next = b;
+	b->prev = a;
+    }
+
+    if (f->head == a)
+	f->head = b;
+    else if (f->head == b)
+	f->head = a;
+
+    if (f->tail == a)
+	f->tail = b;
+    else if (f->tail == b)
+	f->tail = a;
 }
 
 /*
@@ -766,9 +827,28 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	: 0;
 
     while (r = contig_iter_next(io, ci)) {
+	int i;
+
 	/* Add new items to fifo */
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-	    fifo_queue_push(fq, r);
+	    seq_t *s;
+	    fifo_t *fi, *fl;
+
+	    fi = fifo_queue_push(fq, r);
+
+	    /* Compute clipped start */
+	    s = cache_search(io, GT_Seq, fi->r.rec);
+	    if ((s->len >= 0) ^ fi->r.comp) {
+		fi->clipped_pos = fi->r.start + s->left-1;
+	    } else {
+		fi->clipped_pos = fi->r.start + (ABS(s->len) - s->right);
+	    }
+
+	    /* Sort by clipped left-end */
+	    while ((fl = fi->prev) && fi->clipped_pos < fl->clipped_pos) {
+		fifo_queue_swap(fq, fi, fl);
+	    }
+
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    fifo_queue_push(tq, r);
