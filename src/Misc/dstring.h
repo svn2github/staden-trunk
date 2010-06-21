@@ -91,6 +91,9 @@ int dstring_prependf(dstring_t *ds, const char *fmt, ...);
 int dstring_append(dstring_t *ds, const char *str);
 int dstring_nappend(dstring_t *ds, const char *str, size_t len);
 int dstring_appendf(dstring_t *ds, const char *fmt, ...);
+int dstring_append_char(dstring_t *ds, char c);
+int dstring_append_int(dstring_t *ds, int i);
+void dstring_empty(dstring_t *ds);
 
 
 /*

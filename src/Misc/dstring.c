@@ -52,6 +52,16 @@ char *dstring_str(const dstring_t *ds) {
 }
 
 /*
+ * Empties a dstring without freeing the contents. Ie sets it to contain
+ * a blank string.
+ */
+void dstring_empty(dstring_t *ds) {
+    ds->length = 0;
+    if (ds->str)
+	*ds->str = 0;
+}
+
+/*
  * Force the memory allocated for a dstring to be at least length characters
  * long. (The allocated length will include 1 more to allow for the nul
  * termination.)
@@ -229,6 +239,77 @@ int dstring_prependf(dstring_t *ds, const char *fmt, ...) {
  */
 int dstring_append(dstring_t *ds, const char *str) {
     return dstring_insert(ds, ds->length, str);
+}
+
+/*
+ * Adds a single character to the end of the string.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int dstring_append_char(dstring_t *ds, char c) {
+    return dstring_ninsert(ds, ds->length, &c, 1);
+}
+
+/*
+ * Adds an integer to the end of the string, turning it to printable ascii.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int dstring_append_int(dstring_t *ds, int i) {
+    char buf[50], *cp = buf;
+    int j, k = 0;
+
+    if (i == 0) {
+	*cp++ = '0';
+    } else {
+	if (i < 0) {
+	    *cp++ = '-';
+	    i = -i;
+	}
+
+	if (i < 1000)
+	    goto b1;
+	if (i < 100000)
+	    goto b2;
+	if (i < 100000000)
+	    goto b3;
+
+	j = i / 1000000000;
+	if (j || k) *cp++ = j + '0', k=1, i %= 1000000000;
+
+	j = i / 100000000;
+	if (j || k) *cp++ = j + '0', k=1, i %= 100000000;
+    
+    b3:
+	j = i / 10000000;
+	if (j || k) *cp++ = j + '0', k=1, i %= 10000000;
+    
+	j = i / 1000000;
+	if (j || k) *cp++ = j + '0', k=1, i %= 1000000;
+    
+	j = i / 100000;
+	if (j || k) *cp++ = j + '0', k=1, i %= 100000;
+    
+    b2:
+	j = i / 10000;
+	if (j || k) *cp++ = j + '0', k=1, i %= 10000;
+
+	j = i / 1000;
+	if (j || k) *cp++ = j + '0', k=1, i %= 1000;
+
+    b1:
+	j = i / 100;
+	if (j || k) *cp++ = j + '0', k=1, i %= 100;
+
+	j = i / 10;
+	if (j || k) *cp++ = j + '0', k=1, i %= 10;
+
+	if (i || k) *cp++ = i + '0';
+    }
+
+    return dstring_ninsert(ds, ds->length, buf, cp-buf);
 }
 
 /*
