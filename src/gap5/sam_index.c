@@ -24,7 +24,7 @@
  * Uncomment this if you want sam auxillary tags to be added as tag in
  * gap5.
  */
-/* #define SAM_AUX_AS_TAG */
+//#define SAM_AUX_AS_TAG
 
 typedef struct {
     bam1_t *b;
@@ -122,6 +122,125 @@ typedef union {
 } bam_aux_t;
 
 /*
+ * An iterator on bam aux fields. NB: This code is not reentrant or multi-
+ * thread capable. The values returned are valid until the next call to
+ * this function.
+ * key:  points to an array of 2 characters (eg "RG", "NM")
+ * type: points to an address of 1 character (eg 'Z', 'i')
+ * val:  points to an address of a bam_aux_t union.
+ *
+ * Pass in *iter_handle as NULL to initialise the search and then
+ * pass in the modified value on each subsequent call to continue the search.
+ *
+ * Returns 0 if the next value is valid, setting key, type and val.
+ *        -1 when no more found.
+ */
+int bam_aux_iter(bam1_t *b, char **iter_handle,
+		 char *key, char *type, bam_aux_t *val) {
+    char *s;
+
+    if (!iter_handle || !*iter_handle) {
+	s = (char *)bam1_aux(b);
+    } else {
+	s = *iter_handle;
+    }
+
+    if ((uint8_t *)s >= b->data + b->data_len)
+	return -1;
+
+    key[0] = s[0];
+    key[1] = s[1];
+    
+    switch (s[2]) {
+    case 'A':
+	if (type) *type = 'A';
+	if (val) val->i = *(s+3);
+	s+=4;
+	break;
+
+    case 'C':
+	if (type) *type = 'i';
+	if (val) val->i = *(uint8_t *)(s+3);
+	s+=4;
+	break;
+
+    case 'c':
+	if (type) *type = 'i';
+	if (val) val->i = *(int8_t *)(s+3);
+	s+=4;
+	break;
+
+    case 'S':
+	if (type) *type = 'i';
+	if (val) {
+	    char tmp[2]; /* word aligned data */
+	    tmp[0] = s[3]; tmp[1] = s[4];
+	    val->i = *(uint16_t *)tmp;
+	}
+	s+=5;
+	break;
+
+    case 's':
+	if (type) *type = 'i';
+	if (val) {
+	    char tmp[2]; /* word aligned data */
+	    tmp[0] = s[3]; tmp[1] = s[4];
+	    val->i = *(int16_t *)tmp;
+	}
+	s+=5;
+	break;
+
+    case 'I':
+	if (type) *type = 'i';
+	if (val) {
+	    char tmp[4]; /* word aligned data */
+	    tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+	    val->i = *(uint32_t *)tmp;
+	}
+	s+=7;
+	break;
+
+    case 'i':
+	if (type) *type = 'i';
+	if (val) {
+	    char tmp[4]; /* word aligned data */
+	    tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+	    val->i = *(int32_t *)tmp;
+	}
+	s+=7;
+	break;
+
+    case 'f':
+	if (type) *type = 'f';
+	if (val) memcpy(&val->f, s+3, 4);
+	s+=7;
+	break;
+
+    case 'd':
+	if (type) *type = 'd';
+	if (val) memcpy(&val->d, s+3, 8);
+	s+=11;
+	break;
+
+    case 'Z': case 'H':
+	if (type) *type = s[2];
+	s+=3;
+	if (val) val->s = s;
+	while (*s++);
+	break;
+
+    default:
+	fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
+	return -1;
+    }
+
+    if (iter_handle)
+	*iter_handle = s;
+
+    return 0;
+}
+
+/*
  * Searches for 'key' in the bam auxillary tags.
  *
  * If found, key type and value are filled out in the supplied
@@ -132,103 +251,17 @@ typedef union {
  *        -1 if not
  */
 int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
-    char *s = (char *)bam1_aux(b);
-    int match = 0;
+    char *h = NULL;
+    char k[2];
 
-    while ((uint8_t *)s < b->data + b->data_len) {
-	if (s[0] == key[0] && s[1] == key[1])
-	    match = 1;
-
-	switch (s[2]) {
-	case 'A':
-	    if (type) *type = 'A';
-	    if (val) val->i = *(s+3);
-	    s+=4;
-	    break;
-
-	case 'C':
-	    if (type) *type = 'i';
-	    if (val) val->i = *(uint8_t *)(s+3);
-	    s+=4;
-	    break;
-
-	case 'c':
-	    if (type) *type = 'i';
-	    if (val) val->i = *(int8_t *)(s+3);
-	    s+=4;
-	    break;
-
-	case 'S':
-	    if (type) *type = 'i';
-	    if (val) {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
-		val->i = *(uint16_t *)tmp;
-	    }
-	    s+=5;
-	    break;
-
-	case 's':
-	    if (type) *type = 'i';
-	    if (val) {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
-		val->i = *(int16_t *)tmp;
-	    }
-	    s+=5;
-	    break;
-
-	case 'I':
-	    if (type) *type = 'i';
-	    if (val) {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		val->i = *(uint32_t *)tmp;
-	    }
-	    s+=7;
-	    break;
-
-	case 'i':
-	    if (type) *type = 'i';
-	    if (val) {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		val->i = *(int32_t *)tmp;
-	    }
-	    s+=7;
-	    break;
-
-	case 'f':
-	    if (type) *type = 'f';
-	    if (val) memcpy(&val->f, s+3, 4);
-	    s+=7;
-	    break;
-
-	case 'd':
-	    if (type) *type = 'd';
-	    if (val) memcpy(&val->d, s+3, 8);
-	    s+=11;
-	    break;
-
-	case 'Z': case 'H':
-	    if (type) *type = s[2];
-	    s+=3;
-	    if (val) val->s = s;
-	    while (*s++);
-	    break;
-
-	default:
-	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
-	    return -1;
-	}
-
-	if (match)
+    while (0 == bam_aux_iter(b, &h, k, type, val)) {
+	if (k[0] == key[0] && k[1] == key[1])
 	    return 0;
-
     }
 
     return -1;
 }
+
 #endif /* HAVE_SAMTOOLS */
 
 char *sam_aux_stringify_old(char *s, int len) {
@@ -1412,6 +1445,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     int name_len;
     char *aux;
     char *filter[] = {"RG"};
+    char *handle, aux_key[2];
 
     if (snum < 0 || snum >= bio->nseq)
 	return -1;
@@ -1590,6 +1624,52 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	e->bin = bin->rec;
     }
 #endif
+
+    /* Add tags */
+    handle = NULL;
+    while (0 == bam_aux_iter(b, &handle, aux_key, &type, &val)) {
+	range_t r;
+	anno_ele_t *e;
+	bin_index_t *bin;
+	char *tokens[4], *cp, *tag_text, tag_type[5];
+	int ntok;
+	int tag_pos, tag_len;
+
+	if (!(aux_key[0] == 'Z' && (aux_key[1] == 's' || aux_key[1] == 'c')))
+	    continue;
+
+	tokens[0] = val.s;
+	for (ntok = 1, cp = val.s; *cp && ntok < 4; cp++) {
+	    if (*cp == '|') {
+		*cp = 0;
+		tokens[ntok++] = cp+1;
+	    }
+	}
+
+	/* Parse it */
+	tag_type[0] = tag_type[1] = tag_type[2] = tag_type[3] = '-';
+	tag_type[4] = 0;
+	strncpy(tag_type, tokens[0], 4);
+	tag_pos  = ntok >= 2 ? atoi(tokens[1]) : 0;
+	tag_len  = ntok >= 3 ? atoi(tokens[2]) : 0;
+	tag_text = ntok >= 4 ? (unescape_line(tokens[3]),tokens[3]) : NULL;
+
+	/* Create the tag */
+	r.mqual    = str2type(tag_type);
+	r.start    = tag_pos-1 + s.pos;
+	r.end      = tag_pos-1 + s.pos + tag_len-1;
+	r.pair_rec = (aux_key[1] == 'c') ? bio->c->rec : recno;
+	r.flags    = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+	r.rec      = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual,
+				  tag_text);
+
+	/* Link it to a bin */
+	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
+	e = cache_rw(bio->io, e);
+
+	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL);
+	e->bin = bin->rec;
+    }
 
     /* Tidy up */
     if (bs->seq)  free(bs->seq);

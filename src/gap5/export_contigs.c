@@ -220,6 +220,76 @@ static char *escape_C_string(char *str) {
 }
 
 /*
+ * A FIFO queue. We stack up sequences in here until we have sufficient
+ * data to punt the entire thing out including all the annotations.
+ */
+typedef struct fifo {
+    struct fifo *next;
+    rangec_t r; /* Make this a generic payload? */
+} fifo_t;
+
+typedef struct {
+    fifo_t *head;
+    fifo_t *tail;
+} fifo_queue_t;
+
+static fifo_queue_t *fifo_queue_create(void) {
+    fifo_queue_t *f = malloc(sizeof(*f));
+
+    if (!f)
+	return NULL;
+
+    f->head = NULL;
+    f->tail = NULL;
+
+    return f;
+}
+
+static void fifo_queue_destroy(fifo_queue_t *f) {
+    fifo_t *i, *n;
+
+    if (!f)
+	return;
+
+    for (i = f->head; i; i = n) {
+	n = i->next;
+	free(i);
+    }
+    free(f);
+}
+
+static void fifo_queue_push(fifo_queue_t *f, rangec_t *r) {
+    fifo_t *i = malloc(sizeof(*i));
+
+    i->r    = *r;
+    i->next = NULL;
+
+    if (!f->head)
+	f->head = i;
+    if (f->tail)
+	f->tail->next = i;
+    f->tail = i;
+}
+
+static fifo_t *fifo_queue_head(fifo_queue_t *f) {
+    return f->head;
+}
+
+static fifo_t *fifo_queue_pop(fifo_queue_t *f) {
+    fifo_t *i;
+
+    i = f->head;
+
+    if (f->head)
+	f->head = f->head->next;
+
+    if (f->head == NULL)
+	f->tail = NULL;
+
+    return i;
+}
+
+/*
  * Computes and returns a false name for when the sequence has no read name.
  * This is just the record number of the sequence or it's pair (whatever is
  * lowest), optionally with a suffix.
@@ -265,15 +335,391 @@ static int export_header_sam(GapIO *io, FILE *fp,
 	int lrec = arr(GCardinal, io->library, i);
 	library_t *lib = cache_search(io, GT_Library, lrec);
 	if (lib->name) {
-	    fprintf(fp, "@RG\tID:%s\tLB:%s\n", lib->name, lib->name);
+	    fprintf(fp, "@RG\tID:%s\tSM:%s\tLB:%s\n",
+		    lib->name, "unknown", lib->name);
 	} else {
 	    char buf[100];
 	    sprintf(buf, "rg#%d", lib->rec);
-	    fprintf(fp, "@RG\tID:%s\tLB:%s\n", buf, buf);
+	    fprintf(fp, "@RG\tID:SM:%s\t%s\tLB:%s\n",
+		    buf, "unknown", buf);
 	}
     }
 
     return 0;
+}
+
+/*
+ * Exports a single sam sequence, marrying up annotations to the appropriate
+ * sequences and adding these in auxillary tags.
+ *
+ * We use Zs:Z:type|pos|len|comment and Zc:Z: for these.
+ */
+static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
+			  int fixmates, int crec, contig_t *c, int offset) {
+    seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec), *sorig = s;
+    int len = s->len < 0 ? -s->len : s->len, olen = len;
+
+    char *tname, *cp;
+    int i, j, flag, tname_len, pos;
+    int left, right, op, oplen, cglen;
+    int iend, isize;
+    char *mate_ref;
+    library_t *lib = NULL;
+    int last_lrec = -1;
+    int mqual;
+    char *cigar_tmp;
+    char rg_buf[1024], *aux_ptr;
+
+    fifo_t *last, *ti;
+
+    /* Sequence and quality buffers */
+    static int qalloc = 0;
+    static char *Q = NULL, *S = NULL;
+
+    /* Cigar encoding */
+    static int cg_alloc = 0;
+    static char *cigar = NULL;
+
+    /* A single SAM line */
+    static dstring_t *ds = NULL;
+
+
+    /*--- Reserve enough memory */
+    if (len > qalloc) {
+	qalloc = len;
+	Q = realloc(Q, qalloc);
+	S = realloc(S, qalloc);
+    }
+
+    
+    /*--- Complement sequence if needed */
+    if ((s->len < 0) ^ fi->r.comp) {
+	s = dup_seq(s);
+	complement_seq_t(s);
+    }
+
+    /*--- Depad sequence/qual */
+    for (i = j = 0; i < len; i++) {
+	int v = '!' + s->conf[i];
+	if (v < '!') v = '!';
+	if (v > 255) v = 255;
+	Q[j] = v;
+
+	if (s->seq[i] == '-')
+	    S[j++] = 'n';
+	else if (s->seq[i] != '*')
+	    S[j++] = s->seq[i];
+	/* else gap */
+    }
+    len = j;
+
+
+    /*--- Best guess at template name */
+    tname = s->name;
+    tname_len = s->name_len;
+
+    if (tname_len == 0)
+	tname = false_name(io, s, 0, &tname_len);
+
+    if (cp = strchr(s->name, '/'))
+	tname_len = cp-s->name;
+
+
+
+    /*--- Compute SAM flag field */
+    flag = 0;
+	
+    /*
+     * Is this correct? Does "mapped in a proper pair" mean they
+     * are consistent, for whatever meaning "consistent" has in this
+     * context?
+     */
+    if (fi->r.flags & GRANGE_FLAG_TYPE_PAIRED) {
+	flag |= 0x01; /* paired */
+	if (!fi->r.pair_rec) {
+	    flag |= 0x08; /* mate unmapped */
+	} else {
+	    /*
+	     * Mate may still be unmapped, need to check.
+	     * See "fixmates" code below.
+	     */
+	}
+    }
+
+    /* strand */
+    if (sorig->len < 0)  flag |= 0x10; /* reverse strand */
+
+    /*
+     * 1st/2nd in pair. This is not quite the same as the fwd/rev flags
+     * we store I think as we may have fwd/fwd pairs under some
+     * protocols. Is this true?
+     */
+    if (flag & 0x01) {
+	/* if ((fi->r.flags & GRANGE_FLAG_END_MASK) !=
+	   (fi->r.flags & GRANGE_FLAG_PEND_MASK)) */ {
+	       /* Paired data with differing flags, so it's likely valid */
+	       if ((fi->r.flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_REV)
+		   flag |= 0x80;
+	       else
+		   flag |= 0x40;
+
+	       /*
+		* FIXME: need to check read-group library to know what the
+		* expected orientation is for a proper pair.
+		* This also doesn't take into account distance, or even
+		* which comes first. Ie  --> <--  vs  <-- -->
+		*/
+	       if ((fi->r.flags & GRANGE_FLAG_END_MASK) !=
+		   (fi->r.flags & GRANGE_FLAG_PEND_MASK)) {
+		   /* Opposite orientations */
+		   //flag |= 0x02; /* proper pair */
+	       }
+
+	       if (fi->r.flags & GRANGE_FLAG_COMP2)
+		   flag |= 0x20; /* mate complemented */
+	   }
+    }
+
+
+    /*--- Generate cigar string. */
+    pos = fi->r.start;
+    cp = cigar;
+    left  = s->left-1;
+    right = s->right;
+    pos += left;
+	
+    op = 'S'; oplen = 0;
+    cglen = 0;
+
+    for (i = j = 0; i < olen; i++) {
+	//printf("%c %c\n", s->seq[i], cons[pos+i-c->start]);
+	if (cp - cigar + 50 > cg_alloc) {
+	    ptrdiff_t d = cp-cigar;
+	    cg_alloc += 100;
+	    cigar = realloc(cigar, cg_alloc);
+	    cp = cigar + d;
+	}
+
+	if (s->seq[i] == '*') {
+	    if (op != 'S') {
+		if (op != 'D' && oplen > 0) {
+		    cp += sprintf(cp, "%d%c", oplen, op);
+		    cglen += oplen;
+		    oplen = 0;
+		}
+		op = 'D';
+		oplen++;
+	    }
+	    /* else, gap in soft-clips.
+	     * Right now this causes tview to fail an assertion though.
+	     */
+	} else if (i < left) {
+	    if (op != 'S' && oplen) {
+		cp += sprintf(cp, "%d%c", oplen, op);
+		if (op != 'D') cglen += oplen;
+		oplen = 0;
+	    }
+	    op = 'S';
+	    oplen++;
+	} else if (i >= left && i < right) {
+	    if (op != 'M' && oplen) {
+		cp += sprintf(cp, "%d%c", oplen, op);
+		if (op != 'D') cglen += oplen;
+		oplen = 0;
+	    }
+	    op = 'M';
+	    oplen++;
+	} else {
+	    if (op != 'S' && oplen) {
+		/* Switching from deletion to 'S' breaks tview */
+		if (op != 'D') {
+		    cp += sprintf(cp, "%d%c", oplen, op);
+		    if (op != 'D') cglen += oplen;
+		}
+		oplen = 0;
+	    }
+	    op = 'S';
+	    oplen++;
+	}
+
+	j++;
+    }
+    if (oplen > 0) {
+	if (cp - cigar + 50 > cg_alloc) {
+	    ptrdiff_t d = cp-cigar;
+	    cg_alloc += 100;
+	    cigar = realloc(cigar, cg_alloc);
+	    cp = cigar + d;
+	}
+
+	cp += sprintf(cp, "%d%c", oplen, op);
+	if (op != 'D') cglen += oplen;
+    }
+
+    assert(cglen == len);
+
+    /* Sam cannot handle gaps at the end of sequences */
+    if (*(cp-1) == 'D') {
+	cp-=2;
+	while(*cp >= '0' && *cp <= '9')
+	    cp--;
+	cp++;
+	*cp = 0;
+    }
+
+
+    /*--- Compute insert sizes */
+    if (fixmates && fi->r.pair_rec) {
+	int other_c, other_st, other_en, other_dir, comp;
+	seq_t *pair_s;
+	range_t pair_r;
+
+	sequence_get_position2(io, fi->r.pair_rec, &other_c, &other_st,
+			       &other_en, &other_dir, &pair_r, &pair_s);
+
+	comp = (pair_s->len >= 0) ^ other_dir;
+	cache_decr(io, pair_s);
+	    
+	iend = other_st < other_en ? other_st : other_en;
+
+	if (crec == other_c) {
+	    int ll, rr;
+	    mate_ref = "=";
+	    ll = (sorig->len >= 0) ? pos : pos - sorig->len - 1;
+	    rr = comp ? other_st-1 : other_en+1;
+	    isize = rr-ll;
+	} else {
+	    contig_t *oc = cache_search(io, GT_Contig, other_c);
+	    mate_ref = oc->name;
+	    isize = 0;
+	}
+
+	if (!comp)
+	    flag |=  0x20; /* strand of mate */
+
+	/* FIXME: Can also check here if proper pair, based on
+	 * library type.
+	 */
+
+	if ((pair_r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ) {
+	    flag |=  0x08; /* mate unmapped */
+	    flag &= ~0x02; /* proper pair */
+	    isize = 0;
+	}
+    } else {
+	iend = 0;
+	isize = 0;
+	mate_ref = "*";
+    }
+
+    if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ) {
+	flag |=  0x04; /* query unmapped */
+	flag &= ~0x02; /* proper pair */
+	mqual = 0;
+	cigar_tmp = "*";
+	isize = 0;
+    } else {
+	mqual = fi->r.mqual;
+	cigar_tmp = cigar;
+    }
+
+    if (ds)
+	dstring_empty(ds);
+    else
+	ds = dstring_create(NULL);
+
+    dstring_appendf(ds, "%.*s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%.*s\t%.*s",
+		    tname_len, tname,
+		    flag,
+		    c->name,
+		    pos+offset,
+		    mqual,
+		    cigar_tmp,
+		    mate_ref,
+		    iend,
+		    isize,
+		    len, S,
+		    len, Q);
+
+
+    /*--- Aux strings */
+    if (s->parent_type == GT_Library) {
+	if (last_lrec != s->parent_rec) {
+	    last_lrec  = s->parent_rec;
+	    lib = cache_search(io, GT_Library, s->parent_rec);
+	}
+	if (lib->name)
+	    sprintf(rg_buf, "\tRG:Z:%s", lib->name);
+	else
+	    sprintf(rg_buf, "\tRG:Z:rg#%d", lib->rec);
+
+	dstring_append(ds, rg_buf);
+    } else {
+	*rg_buf = 0;
+    }
+
+    if (s->aux_len) {
+	aux_ptr = sam_aux_stringify(s->sam_aux, s->aux_len);
+	dstring_append(ds, aux_ptr);
+    }
+
+    /*--- Attach tags for this sequence too */
+    for (last = NULL, ti = fifo_queue_head(tq); ti;) {
+	anno_ele_t *a;
+	char type[5];
+
+	if (ti->r.start > fi->r.end)
+	    break;
+
+	if (ti->r.pair_rec != fi->r.rec && ti->r.pair_rec != crec) {
+	    last = ti;
+	    ti = ti->next;
+	    continue;
+	}
+
+	/* Tag is for this seq. */
+	a = cache_search(io, GT_AnnoEle, ti->r.rec);
+	if (ti->r.pair_rec == crec)
+	    dstring_append(ds, "\tZc:Z:");
+	else
+	    dstring_append(ds, "\tZs:Z:");
+	dstring_append(ds, type2str(ti->r.mqual, type));
+	if ((s->len >= 0) ^ fi->r.comp) {
+	    dstring_appendf(ds, "|%d|%d|", ti->r.start - (fi->r.start-1),
+			    ti->r.end - ti->r.start+1);
+	} else {
+	    dstring_appendf(ds, "|%d|%d|", ABS(s->len)+1 -
+			    (ti->r.end - (fi->r.start-1)),
+			    ti->r.end - ti->r.start+1);
+	}
+	if (a->comment && *a->comment) {
+	    char *escaped = escape_C_string(a->comment);
+	    dstring_append(ds, escaped);
+	    free(escaped);
+	}
+
+	/* Remove ti from the list (NB fifo is wrong abstract type) */
+	if (last) {
+	    last->next = ti->next;
+	    if (tq->tail == ti)
+		tq->tail = last;
+	    free(ti);
+	    ti = last->next;
+	} else {
+	    fifo_queue_pop(tq);
+	    free(ti);
+	    ti = fifo_queue_head(tq);
+	}
+    }
+
+
+    /*--- Finally output it */
+    dstring_append_char(ds, '\n');
+    fputs(dstring_str(ds), fp);
+
+    if (s != sorig)
+	free(s);
+
 }
 
 static int export_contig_sam(GapIO *io, FILE *fp,
@@ -293,6 +739,10 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     char *cons;
     int last_start;
 #endif
+    /* Seq fragment and tag queues */
+    fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
+    fifo_t *fi;
+    int last_start = 0;
 
     c = (contig_t *)cache_search(io, GT_Contig, crec);
     cache_incr(io, c);
@@ -316,368 +766,36 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	: 0;
 
     while (r = contig_iter_next(io, ci)) {
-	seq_t *s, *sorig;
-	char *tname, *cp;
-	int len, olen;
-	int i, j, flag, tname_len, pos;
-	int left, right, op, oplen, cglen;
-	int iend, isize;
-	char *mate_ref;
-	library_t *lib = NULL;
-	int last_lrec = -1;
-	int mqual;
-	char *cigar_tmp;
-	char rg_buf[1024], *aux_ptr;
-
-	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ &&
-	    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISUMSEQ)
-	    continue;
-
-	sorig = s = (seq_t *)cache_search(io, GT_Seq, r->rec);
-	olen = len = s->len < 0 ? -s->len : s->len;
-
-	if ((s->len < 0) ^ r->comp) {
-	    s = dup_seq(s);
-	    complement_seq_t(s);
+	/* Add new items to fifo */
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	    fifo_queue_push(fq, r);
+	    last_start = r->start;
+	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	    fifo_queue_push(tq, r);
 	}
 
-	if (len > qalloc) {
-	    qalloc = len;
-	    Q = realloc(Q, qalloc);
-	    S = realloc(S, qalloc);
-	}
-
-	/* Best guess at template name */
-	tname = s->name;
-	tname_len = s->name_len;
-
-	if (tname_len == 0)
-	    tname = false_name(io, s, 0, &tname_len);
-
-	if (cp = strchr(s->name, '/'))
-	    tname_len = cp-s->name;
-
-	/* Depad sequence/qual */
-	for (i = j = 0; i < len; i++) {
-	    int v = '!' + s->conf[i];
-	    if (v < '!') v = '!';
-	    if (v > 255) v = 255;
-	    Q[j] = v;
-
-	    if (s->seq[i] == '-')
-		S[j++] = 'n';
-	    else if (s->seq[i] != '*')
-		S[j++] = s->seq[i];
-	    /* else gap */
-	}
-	len = j;
-
-	flag = 0;
-	
-	/*
-	 * Is this correct? Does "mapped in a proper pair" mean they
-	 * are consistent, for whatever meaning "consistent" has in this
-	 * context?
-	 */
-	if (r->flags & GRANGE_FLAG_TYPE_PAIRED) {
-	    flag |= 0x01; /* paired */
-	    if (!r->pair_rec) {
-		flag |= 0x08; /* mate unmapped */
+	/* And pop off when they're history */
+	while (fi = fifo_queue_head(fq)) {
+	    if (fi->r.end < last_start) {
+		fifo_queue_pop(fq);
+		sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset);
+		free(fi);
 	    } else {
-		/*
-		 * Mate may still be unmapped, need to check.
-		 * See "fixmates" code below.
-		 */
+		break;
 	    }
 	}
-
-	/* strand */
-	if (sorig->len < 0)  flag |= 0x10; /* reverse strand */
-
-	/*
-	 * 1st/2nd in pair. This is not quite the same as the fwd/rev flags
-	 * we store I think as we may have fwd/fwd pairs under some
-	 * protocols. Is this true?
-	 */
-	if (flag & 0x01) {
-	    /* if ((r->flags & GRANGE_FLAG_END_MASK) !=
-	       (r->flags & GRANGE_FLAG_PEND_MASK)) */ {
-		/* Paired data with differing flags, so it's likely valid */
-		if ((r->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_REV)
-		    flag |= 0x80;
-		else
-		    flag |= 0x40;
-
-		/*
-		 * FIXME: need to check read-group library to know what the
-		 * expected orientation is for a proper pair.
-		 * This also doesn't take into account distance, or even
-		 * which comes first. Ie  --> <--  vs  <-- -->
-		 */
-		if ((r->flags & GRANGE_FLAG_END_MASK) !=
-		    (r->flags & GRANGE_FLAG_PEND_MASK)) {
-		    /* Opposite orientations */
-		    //flag |= 0x02; /* proper pair */
-		}
-
-		if (r->flags & GRANGE_FLAG_COMP2)
-		    flag |= 0x20; /* mate complemented */
-	    }
-	}
-
-	pos = r->start;
-
-	//puts(s->name);
-
-	/* Generate cigar string. */
-	cp = cigar;
-	left  = s->left-1;
-	right = s->right;
-	pos += left;
-	
-	op = 'S'; oplen = 0;
-	cglen = 0;
-#if 1
-	for (i = j = 0; i < olen; i++) {
-	    //printf("%c %c\n", s->seq[i], cons[pos+i-c->start]);
-	    if (cp - cigar + 50 > cg_alloc) {
-		ptrdiff_t d = cp-cigar;
-		cg_alloc += 100;
-		cigar = realloc(cigar, cg_alloc);
-		cp = cigar + d;
-	    }
-
-	    if (s->seq[i] == '*') {
-		if (op != 'S') {
-		    if (op != 'D' && oplen > 0) {
-			cp += sprintf(cp, "%d%c", oplen, op);
-			cglen += oplen;
-			oplen = 0;
-		    }
-		    op = 'D';
-		    oplen++;
-		}
-		/* else, gap in soft-clips.
-		 * Right now this causes tview to fail an assertion though.
-		 */
-	    } else if (i < left) {
-		if (op != 'S' && oplen) {
-		    cp += sprintf(cp, "%d%c", oplen, op);
-		    if (op != 'D') cglen += oplen;
-		    oplen = 0;
-		}
-		op = 'S';
-		oplen++;
-	    } else if (i >= left && i < right) {
-		if (op != 'M' && oplen) {
-		    cp += sprintf(cp, "%d%c", oplen, op);
-		    if (op != 'D') cglen += oplen;
-		    oplen = 0;
-		}
-		op = 'M';
-		oplen++;
-	    } else {
-		if (op != 'S' && oplen) {
-		    /* Switching from deletion to 'S' breaks tview */
-		    if (op != 'D') {
-			cp += sprintf(cp, "%d%c", oplen, op);
-			if (op != 'D') cglen += oplen;
-		    }
-		    oplen = 0;
-		}
-		op = 'S';
-		oplen++;
-	    }
-
-	    j++;
-	}
-	if (oplen > 0) {
-	    if (cp - cigar + 50 > cg_alloc) {
-		ptrdiff_t d = cp-cigar;
-		cg_alloc += 100;
-		cigar = realloc(cigar, cg_alloc);
-		cp = cigar + d;
-	    }
-
-	    cp += sprintf(cp, "%d%c", oplen, op);
-	    if (op != 'D') cglen += oplen;
-	}
-#endif
-
-#if 0
-	for (i = last_start; i<pos; i++) {
-	    if (cons[i-c->start] == '*')
-		offset--;
-	}
-	last_start = pos;
-	if (left) {
-	    cp += sprintf(cp, "%dS", left);
-	    cglen = left;
-	}
-	for (i = left; i < right; i++) {
-	    char cb = cons[pos+i-c->start];
-	    char sb = s->seq[i];
-
-	    if (cp - cigar + 50 > cg_alloc) {
-		ptrdiff_t d = cp-cigar;
-		cg_alloc += 100;
-		cigar = realloc(cigar, cg_alloc);
-		cp = cigar + d;
-	    }
-
-	    if (cb == '*' && sb == '*') {
-		continue;
-	    }
-
-	    if (cb == '*') {
-		if (op != 'I') {
-		    if (oplen > 0)
-			cp += sprintf(cp, "%d%c", oplen, op);
-		    if (op != 'D')
-			cglen += oplen;
-		    oplen = 0;
-		    op = cglen ? 'I' : 'S';
-		}
-		oplen++;
-
-	    } else if (sb == '*') {
-		if (op != 'D') {
-		    if (oplen > 0)
-			cp += sprintf(cp, "%d%c", oplen, op);
-		    cglen += oplen;
-		    oplen = 0;
-		    op = 'D';
-		}
-		oplen++;
-
-	    } else {
-		if (op != 'M') {
-		    if (oplen > 0)
-			cp += sprintf(cp, "%d%c", oplen, op);
-		    if (op != 'D')
-			cglen += oplen;
-		    oplen = 0;
-		    op = 'M';
-		}
-		oplen++;
-	    }
-	}
-	if (oplen > 0) {
-	    if (op != 'D')
-		cp += sprintf(cp, "%d%c", oplen, op);
-	    cglen += oplen;
-	}
-	if (olen-right) {
-	    cp += sprintf(cp, "%dS", olen-right);
-	    cglen += olen-right;
-	}
-	//puts(cigar);
-#endif
-
-	assert(cglen == len);
-
-	/* Sam cannot handle gaps at the end of sequences */
-	if (*(cp-1) == 'D') {
-	    cp-=2;
-	    while(*cp >= '0' && *cp <= '9')
-		cp--;
-	    cp++;
-	    *cp = 0;
-	}
-
-	/* Compute insert sizes */
-	if (fixmates && r->pair_rec) {
-	    int other_c, other_st, other_en, other_dir, comp;
-	    seq_t *pair_s;
-	    range_t pair_r;
-
-	    sequence_get_position2(io, r->pair_rec, &other_c, &other_st,
-				   &other_en, &other_dir, &pair_r, &pair_s);
-
-	    comp = (pair_s->len >= 0) ^ other_dir;
-	    cache_decr(io, pair_s);
-	    
-	    iend = other_st < other_en ? other_st : other_en;
-
-	    if (crec == other_c) {
-		int ll, rr;
-		mate_ref = "=";
-		ll = (sorig->len >= 0) ? pos : pos - sorig->len - 1;
-		rr = comp ? other_st-1 : other_en+1;
-		isize = rr-ll;
-	    } else {
-		contig_t *oc = cache_search(io, GT_Contig, other_c);
-		mate_ref = oc->name;
-		isize = 0;
-	    }
-
-	    if (!comp)
-		flag |=  0x20; /* strand of mate */
-
-	    /* FIXME: Can also check here if proper pair, based on
-	     * library type.
-	     */
-
-	    if ((pair_r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ) {
-		flag |=  0x08; /* mate unmapped */
-		flag &= ~0x02; /* proper pair */
-		isize = 0;
-	    }
-	} else {
-	    iend = 0;
-	    isize = 0;
-	    mate_ref = "*";
-	}
-
-	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ) {
-	    flag |=  0x04; /* query unmapped */
-	    flag &= ~0x02; /* proper pair */
-	    mqual = 0;
-	    cigar_tmp = "*";
-	    isize = 0;
-	} else {
-	    mqual = r->mqual;
-	    cigar_tmp = cigar;
-	}
-
-	if (s->parent_type == GT_Library) {
-	    if (last_lrec != s->parent_rec) {
-		last_lrec  = s->parent_rec;
-		lib = cache_search(io, GT_Library, s->parent_rec);
-	    }
-	    if (lib->name)
-		sprintf(rg_buf, "\tRG:Z:%s", lib->name);
-	    else
-		sprintf(rg_buf, "\tRG:Z:rg#%d", lib->rec);
-	} else {
-	    *rg_buf = 0;
-	}
-
-	if (s->aux_len)
-	    aux_ptr = sam_aux_stringify(s->sam_aux, s->aux_len);
-	else
-	    aux_ptr = "";
-
-	/* Can try fast_printf() instead - see sam_index.c */
-	fprintf(fp, "%.*s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%.*s\t%.*s%s%s%s\n",
-		tname_len, tname,
-		flag,
-		c->name,
-		pos+offset,
-		mqual,
-		cigar_tmp,
-		mate_ref,
-		iend,
-		isize,
-		len, S,
-		len, Q,
-		rg_buf,
-		aux_ptr && *aux_ptr ? "\t" : "",
-		aux_ptr);
-
-	if (s != sorig)
-	    free(s);
     }
+
+    /* Flush the rest of queues */
+    while (fi = fifo_queue_head(fq)) {
+	fifo_queue_pop(fq);
+	sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset);
+	free(fi);
+    }
+
+    fifo_queue_destroy(fq);
+    fifo_queue_destroy(tq);
+
     contig_iter_del(ci);
     cache_decr(io, c);
 
@@ -775,76 +893,6 @@ static int export_contig_fasta(GapIO *io, FILE *fp,
     return 0;
 }
 
-/*
- * A FIFO queue. We stack up sequences in here until we have sufficient
- * data to punt the entire thing out including all the annotations.
- */
-typedef struct fifo {
-    struct fifo *next;
-    rangec_t r; /* Make this a generic payload? */
-} fifo_t;
-
-typedef struct {
-    fifo_t *head;
-    fifo_t *tail;
-} fifo_queue_t;
-
-static fifo_queue_t *fifo_queue_create(void) {
-    fifo_queue_t *f = malloc(sizeof(*f));
-
-    if (!f)
-	return NULL;
-
-    f->head = NULL;
-    f->tail = NULL;
-
-    return f;
-}
-
-static void fifo_queue_destroy(fifo_queue_t *f) {
-    fifo_t *i, *n;
-
-    if (!f)
-	return;
-
-    for (i = f->head; i; i = n) {
-	n = i->next;
-	free(i);
-    }
-    free(f);
-}
-
-static void fifo_queue_push(fifo_queue_t *f, rangec_t *r) {
-    fifo_t *i = malloc(sizeof(*i));
-
-    i->r    = *r;
-    i->next = NULL;
-
-    if (!f->head)
-	f->head = i;
-    if (f->tail)
-	f->tail->next = i;
-    f->tail = i;
-}
-
-static fifo_t *fifo_queue_head(fifo_queue_t *f) {
-    return f->head;
-}
-
-static fifo_t *fifo_queue_pop(fifo_queue_t *f) {
-    fifo_t *i;
-
-    i = f->head;
-
-    if (f->head)
-	f->head = f->head->next;
-
-    if (f->head == NULL)
-	f->tail = NULL;
-
-    return i;
-}
-
 static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec);
     int len = s->len < 0 ? -s->len : s->len;
@@ -931,6 +979,7 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
 	if (a->comment && *a->comment) {
 	    char *escaped = escape_C_string(a->comment);
 	    fprintf(fp, "TX=%s\n", escaped);
+	    free(escaped);
 	}
 	fprintf(fp, "\n");
 
@@ -988,6 +1037,7 @@ static int export_contig_baf(GapIO *io, FILE *fp,
 		if (a->comment && *a->comment) {
 		    char *escaped = escape_C_string(a->comment);
 		    fprintf(fp, "TX=%s\n", escaped);
+		    free(escaped);
 		}
 		fprintf(fp, "\n");
 
@@ -1107,6 +1157,7 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	if (a->comment && *a->comment) {
 	    char *escaped = escape_C_string(a->comment);
 	    fprintf(fp, " \"%s\"\n", escaped);
+	    free(escaped);
 	} else {
 	    fprintf(fp, "\n");
 	}

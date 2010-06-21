@@ -585,3 +585,27 @@ int tg_index_file_type (char *fn) {
 
     return '?';
 }
+
+
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Relaces \n with newline and \\ with \.
+ * Modifies the line in-situ as it can never grow.
+ */
+void unescape_line(char *txt) {
+    char *cp;
+    for (cp = txt; *txt; txt++) {
+	if (*txt != '\\') {
+	    *cp++ = *txt;
+	} else {
+	    if (*++txt == 'n')
+		*cp++ = '\n';
+	    else
+		*cp++ = *txt;
+	}
+    }
+    *cp++ = 0;
+}
+
+

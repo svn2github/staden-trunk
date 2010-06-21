@@ -39,6 +39,8 @@ int parse_data_type(char *type);
 
 int tg_index_file_type (char *fn);
 
+void unescape_line(char *txt);
+
 #endif
 
 

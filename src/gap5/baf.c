@@ -204,26 +204,6 @@ line_t *get_line(zfp *fp, line_t *in) {
 }
 
 
-/*
- * Relaces \n with newline and \\ with \.
- * Modifies the line in-situ as it can never grow.
- */
-void unescape_line(char *txt) {
-    char *cp;
-    for (cp = txt; *txt; txt++) {
-	if (*txt != '\\') {
-	    *cp++ = *txt;
-	} else {
-	    if (*++txt == 'n')
-		*cp++ = '\n';
-	    else
-		*cp++ = *txt;
-	}
-    }
-    *cp++ = 0;
-}
-
-
 baf_block *baf_next_block(zfp *fp) {
     line_t *l;
     baf_block *b;
