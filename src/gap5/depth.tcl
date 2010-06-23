@@ -1550,8 +1550,8 @@ proc invoke_editor {w t x} {
 	puts x=$x
 	edit_contig \
 	    -io $io \
-	    -contig [set ${w}(cnum)] \
-	    -readng [set ${w}(cnum)] \
+	    -contig  [set ${w}(cnum)] \
+	    -reading [set ${w}(cnum)] \
 	    -pos $x
     }
 }

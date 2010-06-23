@@ -303,13 +303,20 @@ proc contig_register_callback {ed type id args} {
 
 	GENERIC {
 	    if {$ed != [set ${w}(curr_editor)]} return
-	    foreach {component state} [lindex $args 2] {
+	    foreach {component arg1 arg2 arg3} [lindex $args 2] {
 		switch $component {
 		    "undo" {
-			$w.toolbar.undo configure -state $state
+			$w.toolbar.undo configure -state $arg1
 		    }
 		    "redo" {
-			#$w.toolbar.redo configure -state $state
+			#$w.toolbar.redo configure -state $arg1
+		    }
+		    "set_cursor" {
+			if {[$ed contig_rec] == $arg1} {
+			    $ed set_cursor 17 $arg1 $arg2
+			} else {
+			    $ed set_cursor 18 $arg1 $arg2
+			}
 		    }
 		}
 	    }
@@ -326,7 +333,11 @@ proc contig_register_callback {ed type id args} {
 	    # EDIT: Removed " || $arg(id) == 0"
 	    if {[set ${ed}(reg)] != $arg(sent_by) && \
 		    ($arg(id) == [$ed cursor_id])} {
-		$ed set_cursor 17 [set ${w}(contig)] $arg(abspos)
+		if {[$ed contig_rec] == $arg(seq)} {
+		    $ed set_cursor 17 $arg(seq) $arg(abspos)
+		} else {
+		    $ed set_cursor 18 $arg(seq) $arg(pos)
+		}
 	    }
 	}
 
@@ -476,6 +487,32 @@ proc join_contig {args} {
     eval contig_editor [next_editor] $args
 }
 
+# Move or create an editor at contig rec, cursor rec and position.
+proc create_or_move_editor {io contig cursor_rec cursor_pos} {
+    # Look for an existing editor
+    set found 0
+    foreach result [result_names -io $io] {
+	foreach {crec id name} $result break;
+	if {$name == "Contig Editor" && $crec == $contig} {
+	    set found $id
+	    break
+	}
+    }
+
+    # If found, send a cursor movement event
+    if {$found} {
+	contig_notify -io $io -cnum $contig -type GENERIC \
+	    -args [list TASK_GENERIC "" data "set_cursor $cursor_rec $cursor_pos"]
+    } else {
+	# Not found, so launch a new editor
+	edit_contig \
+	    -io      $io \
+	    -contig  $contig \
+	    -reading "#$cursor_rec" \
+	    -pos     $cursor_pos
+    }
+}
+
 #-----------------------------------------------------------------------------
 # Internally usable functions.
 #-----------------------------------------------------------------------------
@@ -526,8 +563,12 @@ proc contig_editor {w args} {
     #set opt(contig) [contig_order_to_number -io $opt(-io) -order 0]
     set opt(contig) $opt(-contig)
     if {[info exists opt(-reading)]} {
-	set opt(-reading) [$opt(io) seq_name2rec $opt(-reading)]
-	if {$opt(-reading) == -1} { set opt(-reading) 0 }
+	if {[regexp {^\#([0-9]+)$} $opt(-reading) _dummy rec]} {
+	    set opt(-reading) $rec
+	} else {
+	    set opt(-reading) [$opt(io) seq_name2rec $opt(-reading)]
+	    if {$opt(-reading) == -1} { set opt(-reading) 0 }
+	}
     } else {
 	set opt(-reading) 0
     }
@@ -969,6 +1010,9 @@ proc editor_pane {top w above ind arg_array} {
 
     # Force scrollbar to be set to the correct size.
     $w.name.sheet xview moveto 0.0
+
+    # Force the editing cursor to be visible
+    eval $ed set_cursor [$ed get_cursor relative] 1
 
     return $ed
 }
@@ -2273,21 +2317,62 @@ bind EdNames <Any-Motion> {update_brief %W 1 @%x @%y}
 bind Editor <Any-Motion> {update_brief %W 0 @%x @%y}
 
 # Jump to read-pair
-bind EdNames <3> {
+bind EdNames <<menu>> {
     global %W
 
     set ed [set %W(ed)]
-    foreach {type rec pos} [$ed get_number @%x @%y] break
+
+    foreach {type rec pos} [%W get_number @%x @%y] break
     if {![info exists type]} {
 	return
     }
-
-    if {$type == 18} {
-	set other_end [$ed get_template_seqs $rec]
-	if {[llength $other_end] != 1} return
-	set s [[$ed io] get_seq $other_end]
-	$ed set_cursor 18 $other_end 1
+    if {$type != 18} {
+	return
     }
+    
+    create_popup %W.m "Commands for sequence \#$rec"
+    %W.m add command \
+	-label "Copy name to clipboard" \
+	-command "editor_name_select $ed {$type $rec $pos}"
+
+    # Create the goto... menu
+    #%W.m add cascade -label "Goto..." -menu %W.m.goto
+    #menu %W.m.goto
+    set other_end [$ed get_template_seqs $rec]
+    if {[llength $other_end] >= 1} {
+	%W.m add separator
+	foreach rec $other_end {
+	    set s [[$ed io] get_seq $rec]
+	    set pos [$s get_position]
+
+	    set sc [$s get_contig]
+
+	    # Get the base contig IO
+	    set crec [$ed contig_rec]
+	    upvar \#0 contigIO_$crec cio
+	    set base_io $cio(base)
+
+	    if {$sc == [$ed contig_rec]} {
+		%W.m add command \
+		    -label "Goto [$s get_name] (@ $pos)" \
+		    -command "$ed set_cursor 18 $rec 0"
+	    } else {
+		set c [[$ed io] get_contig $sc]
+		set cname [$c get_name]
+		$c delete
+
+		%W.m add command \
+		    -label "Goto [$s get_name] (Contig '$cname' @ $pos)" \
+		    -command "create_or_move_editor $base_io $sc $rec 0"
+	    }
+
+	    $s delete
+	}
+    }
+
+    tk_popup %W.m [expr %X-20] [expr %Y-10]
+
+    # $ed set_cursor 18 $other_end 1
 }
 
 bind Editor <<select>> {

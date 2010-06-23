@@ -606,10 +606,16 @@ cursor_t *create_contig_cursor(GapIO *io, int contig, int private, int sent_by)
 /*
  * Given a cursor identifier, return the cursor structure or NULL if not
  * found. We only look in the specific contig number.
+ *
+ * id of -1 implies use the first cursor in this contig.
+ *
  */
 cursor_t *find_contig_cursor(GapIO *io, int contig, int id)
 {
     cursor_t *gc;
+
+    if (id == -1)
+	return io_cursor_get(io, contig);
 
     for (gc = io_cursor_get(io, contig); gc && gc->id != id; gc = gc->next);
 
