@@ -463,7 +463,7 @@ static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     for (i = j = 0; i < len; i++) {
 	int v = '!' + s->conf[i];
 	if (v < '!') v = '!';
-	if (v > 255) v = 255;
+	if (v > '~') v = '~';
 	Q[j] = v;
 
 	if (s->seq[i] == '-')
