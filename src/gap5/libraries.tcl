@@ -15,7 +15,7 @@ package require Plotchart
 	set mean    [$lib get_insert_size]
 	set sd      [$lib get_insert_sd]
 	set count   [$lib get_count]
-	set type [lindex [list unknown sanger solexa solid 454] $type]
+	set type [lindex [list unknown sanger illumina solid 454] $type]
 	
 	# Find most likely library orientation
 	set max 0
