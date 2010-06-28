@@ -16,6 +16,7 @@
 #define _IOLIB 2
 #include "bam.h"
 #include "sam.h"
+#include "sam_header.h"
 #include "faidx.h"
 #include "bam_maqcns.h"
 #include "depad_seq_tree.h"
@@ -62,7 +63,111 @@ typedef struct {
     tg_args *a;
     struct PAD_COUNT *tree; /* re-padding */
     int last_tid;
+    void *rg2pl_hash;
 } bam_io_t;
+
+
+/*
+ * Converts a string from the read-group PL field to a constant STECH_*
+ * value for sequencing technology.
+ * str may be null in which case STECH_UNKNOWN is returned.
+ */
+int stech_str2int(const char *str) {
+    if (!str)
+	return STECH_UNKNOWN;
+
+    if (strcasecmp(str, "ILLUMINA") == 0)
+	return STECH_SOLEXA;
+    if (strcasecmp(str, "SOLEXA") == 0)
+	return STECH_SOLEXA;
+
+    if (strcasecmp(str, "ABI") == 0)
+	return STECH_SANGER;
+    if (strcasecmp(str, "CAPILLARY") == 0)
+	return STECH_SANGER;
+    if (strcasecmp(str, "SANGER") == 0)
+	return STECH_SANGER;
+
+    if (strcasecmp(str, "454") == 0)
+	return STECH_454;
+    if (strcasecmp(str, "LS454") == 0)
+	return STECH_454;
+
+    if (strcasecmp(str, "SOLID") == 0)
+	return STECH_SOLID;
+
+    return STECH_UNKNOWN;
+}
+
+/*
+ * Attempts to guess a sequencing technology based on sequence name.
+ * This is far from ideal and is also a bit Sanger Institute centric.
+ */
+int stech_guess_by_name(char *str) {
+    size_t l;
+    char *cp;
+    int colons;
+
+    if (!str || !*str)
+	return STECH_UNKNOWN;
+
+    l = strlen(str);
+
+    /* 454 follow a rigid pattern, [0-9A-Z]{14}, first 7 being the plate */
+    if (l == 14) {
+	int i;
+	for (i = 0; i < l; i++) {
+	    if (!isalnum(str[i]))
+		break;
+	}
+	if (i == l)
+	    return STECH_454;
+    }
+
+    /* SOLID appear to start VAB_ (vendor = AB) */
+    if (strncmp(str, "VAB_", 4) == 0)
+	return STECH_SOLID;
+
+    /*
+     * Illumina tend to start with machine-name followed by lane, run,
+     * tile, x, y and possibly #index. We look for 4 colons or for
+     * machine name IL[0-9]+.
+     */
+    if (strncmp(str, "IL", 2) == 0 && isdigit(str[2]))
+	return STECH_SOLEXA;
+
+    colons = 0;
+    cp = str;
+    do {
+	cp = strchr(cp, ':');
+	if (cp) {
+	    colons++;
+	    cp++;
+	}
+    } while(cp);
+
+    if (colons == 4) {
+	return STECH_SOLEXA;
+    }
+
+    
+    /*
+     * Sanger capillary sequences tend to be template_name.[pq][0-9]k.
+     * Very sanger specific, but there's just too much variation.
+     */
+    cp = strchr(str, '.');
+    if (cp) {
+	if (cp[1] == 'p' || cp[1] == 'q') {
+	    if (isdigit(cp[2])) {
+		if (cp[3] == 'k') {
+		    return STECH_SANGER;
+		}
+	    }
+	}
+    }
+
+    return STECH_UNKNOWN;
+}
 
 
 int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf);
@@ -1245,6 +1350,7 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     int i, flags, recno;
     int paired, is_pair = 0;
     char *filter[] = {"RG"};
+    int stech;
 
     bio->count++;
 
@@ -1256,8 +1362,10 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     /* Fetch read-group and pretend it's a library for now */
     if (0 == bam_aux_find(b, "RG", &type, &val) && type == 'Z') {
 	LB = val.s;
+	stech = stech_str2int(sam_tbl_get(bio->rg2pl_hash, LB));
     } else {
 	LB = bio->fn;
+	stech = STECH_UNKNOWN;
     }
 
     hd.p = NULL;
@@ -1268,6 +1376,8 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
 
 	lrec = library_new(bio->io, (char *)LB);
 	lib = get_lib(bio->io, lrec);
+	lib = cache_rw(bio->io, lib);
+	lib->machine = stech;
 	hi->data.p = lib;
 	cache_incr(bio->io, lib);
     }
@@ -1301,7 +1411,7 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     //s.pos = b->core.pos+1;
     s.len = b->core.l_qseq;
     s.rec = 0;
-    s.seq_tech = STECH_SOLEXA;
+    s.seq_tech = stech != STECH_UNKNOWN ? stech : stech_guess_by_name(name);
     s.flags = 0;
     s.left  = 1;
     s.right = s.len;
@@ -1446,6 +1556,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     char *aux;
     char *filter[] = {"RG"};
     char *handle, aux_key[2];
+    int stech;
 
     if (snum < 0 || snum >= bio->nseq)
 	return -1;
@@ -1458,8 +1569,10 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     /* Fetch read-group and pretend it's a library for now */
     if (0 == bam_aux_find(b, "RG", &type, &val) && type == 'Z') {
 	LB = val.s;
+	stech = stech_str2int(sam_tbl_get(bio->rg2pl_hash, LB));
     } else {
 	LB = bio->fn;
+	stech = STECH_UNKNOWN;
     }
 
     hd.p = NULL;
@@ -1470,6 +1583,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 
 	lrec = library_new(bio->io, (char *)LB);
 	lib = get_lib(bio->io, lrec);
+	lib = cache_rw(bio->io, lib);
+	lib->machine = stech;
 	hi->data.p = lib;
 	cache_incr(bio->io, lib);
     }
@@ -1513,7 +1628,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.rec = bs->rec;
     s.pos = bs->pos;
     s.len = bs->seq_len;
-    s.seq_tech = STECH_SOLEXA;
+    s.seq_tech = stech != STECH_UNKNOWN ? stech : stech_guess_by_name(name);
     s.flags = 0;
     s.left = bs->left+1;
     s.parent_type = 0;
@@ -1909,6 +2024,9 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     fp = samopen(fn, mode, NULL);
     assert(fp);
     bio->header = fp->header;
+    if (!bio->header->dict)
+	bio->header->dict = sam_header_parse2(bio->header->text);
+    bio->rg2pl_hash = sam_header2tbl(bio->header->dict, "RG", "ID", "PL");
     plbuf = bam_plbuf_init(bio_callback, bio);
     //bam_plbuf_set_mask(plbuf, BAM_DEF_MASK /* or BAM_FUNMAP? */);
     bam_plbuf_set_mask(plbuf, 0 /* or BAM_DEF_MASK, or BAM_FUNMAP? */);
@@ -1963,6 +2081,8 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     putchar('\n');
     bam_plbuf_push(0, plbuf);
     bam_plbuf_destroy(plbuf);
+    if (bio->rg2pl_hash)
+	sam_tbl_destroy(bio->rg2pl_hash);
 
     cache_flush(io);
     vmessage("Loaded %d of %d sequences\n", bio->count, count);
