@@ -985,7 +985,7 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 		    seq_t *s = cache_search(io, GT_Seq, r[i].rec);
 		    r[i].seq_tech = s->seq_tech;
 		} else {
-		    r[i].seq_tech = 0;
+		    r[i].seq_tech = -1;
 		}
 	    }
 	}
@@ -1005,11 +1005,15 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 
 		do {
 		    start = i;
-		    last = r[i].seq_tech;
+
+		    /* Find first real sequence (non-tag) seq_tech */
+		    for (last = r[i].seq_tech; last == -1 && i < n; i++)
+			last = r[i].seq_tech;
 
 		    /* Break into continuous technology fragment */
-		    while (i < n && r[i].seq_tech == last)
-			i++;
+		    while (i < n && (r[i].seq_tech == last ||
+				     r[i].seq_tech == -1))
+			   i++;
 
 		    /* Allocate Y and shift down */
 		    compute_ypos(&r[start], i - start, job & CSIR_ALLOCATE_Y);
