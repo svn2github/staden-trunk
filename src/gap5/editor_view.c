@@ -1644,6 +1644,72 @@ static void cursor_notify(edview *xx) {
     contig_notify(xx->io->base, xx->cnum, (reg_data *)&cn);
 }
 
+/*
+ * Returns  1 if seq is visible in the current editor position.
+ *          0 if not.
+ *
+ * It may also fill out the 'new_y' (if non-null) value to indicate
+ * the preferred new displayYPos parameter. This is set to -1 when
+ * there is no point in changing it as 'seq' will never be visible
+ * (it's not overlapping this X coord).
+ */
+int edview_seq_visible(edview *xx, int seq, int *new_y) {
+    int i, y_pos, vis = 0;
+    int sheight = xx->displayHeight - xx->y_seq_end - xx->y_seq_start;
+	
+    edview_visible_items(xx, xx->displayPos,
+			 xx->displayPos + xx->displayWidth);
+
+    if (new_y)
+	*new_y = xx->displayYPos;
+
+    for (i = 0; i < xx->nr; i++) {
+	if (xx->r[i].rec == seq) {
+	    y_pos = xx->r[i].y;
+	    vis = 1;
+	    if (y_pos == -1) {
+		/* tag? */
+		return 1;
+	    }
+	    break;
+	}
+    }
+
+    if (!vis) {
+	if (new_y)
+	    *new_y = -1;
+	return 0;
+    }
+
+    /* seq is above, scroll so this is the first row */
+    if (y_pos < xx->displayYPos) {
+	if (new_y)
+	    *new_y = y_pos;
+	return 0;
+    }
+
+    /* seq is below, scroll so this is the last row */
+    if (y_pos >= xx->displayYPos + sheight) {
+	if (new_y)
+	    *new_y = y_pos - sheight + 1;;
+	return 0;
+    }
+
+    /* Otherwise it's already on-screen */
+    if (new_y)
+	*new_y = y_pos;
+    return 1;
+}
+
+/*
+ * This is called by an editor xview method - ie the X scrollbar. It also
+ * gets called programmatically on other conditions (such as making the
+ * editing cursor visibile).
+ *
+ * We attempt to make sure that sequences that were previously visible on
+ * screen are now also visible on screen (where possible). To achieve
+ * this we may have to adjust the Y scrollbar position too.
+ */
 int set_displayPos(edview *xx, int pos) {
     char buf[100];
     int i, ret = 0;
@@ -1654,11 +1720,31 @@ int set_displayPos(edview *xx, int pos) {
 	xx = xx->link->xx[0];
 
     for (i = 0; i < 2; i++) {
+	int new_y, vis_rec1, vis_rec2, vis_pos;
+	int sheight;
+	int vis_cur;
+
 	xx2[i] = xx;
 
 	if (!xx)
 	    break;
 
+	sheight = xx->displayHeight - xx->y_seq_end - xx->y_seq_start;
+
+	edview_visible_items(xx, xx->displayPos,
+			     xx->displayPos + xx->displayWidth);
+	/*
+	 * Pick an appropriate sequence to try and keep track of.
+	 * This is one we'll attempt to keep visible before and after
+	 * scrolling.
+	 */
+	vis_cur = edview_seq_visible(xx, xx->cursor_rec, NULL);
+
+	edview_item_at_pos(xx, xx->y_seq_start,
+			   0, 0, 0, 1, &vis_rec1, &vis_pos);
+	edview_item_at_pos(xx, xx->displayHeight - xx->y_seq_end - 1,
+			   0, 0, 0, 1, &vis_rec2, &vis_pos);
+	    
 	xx->displayPos += delta;
 
 	sprintf(buf, "%d", pos);
@@ -1668,6 +1754,45 @@ int set_displayPos(edview *xx, int pos) {
 	xx->refresh_flags = ED_DISP_XSCROLL;
 	if (i == 1)
 	    xx->refresh_flags |= ED_DISP_NO_DIFFS;
+
+	/* Try and ensure 'vis_rec' is still visible */
+	if (!edview_seq_visible(xx, vis_rec1, &new_y)) {
+	    if (new_y == -1) {
+		if (edview_seq_visible(xx, vis_rec2, &new_y)) {
+		    /* Already visible, but new_y is bottom loc */
+		    new_y -= sheight-1;
+		}
+	    }
+
+	    if (new_y != -1) {
+		xx->displayYPos = new_y;
+		xx->refresh_flags |= ED_DISP_YSCROLL;
+	    }
+	} else {
+	    /* Still visible, but potentially changed Y */
+	    if (new_y != -1 && new_y != xx->displayYPos) {
+		xx->displayYPos = new_y;
+		xx->refresh_flags |= ED_DISP_YSCROLL;
+	    }
+	}
+
+	/* If editing cursor was visible, ensure it still is too */
+	if (vis_cur) {
+	    if (!edview_seq_visible(xx, xx->cursor_rec, &new_y)) {
+		xx->displayYPos = new_y;
+		xx->refresh_flags |= ED_DISP_YSCROLL;
+	    }
+	}
+
+	if (xx->displayYPos + sheight > xx->nr) {
+	    xx->displayYPos = xx->nr - sheight;
+	    xx->refresh_flags |= ED_DISP_YSCROLL;
+	}
+
+	if (xx->displayYPos < 0) {
+	    xx->displayYPos = 0;
+	    xx->refresh_flags |= ED_DISP_YSCROLL;
+	}
 
 	xx = (xx->link && xx->link->locked)
 	    ? xx->link->xx[1] : NULL;
@@ -1950,7 +2075,7 @@ int edCursorLeft(edview *xx) {
     }
 
     cursor_notify(xx);
-    if (!showCursor(xx, 0, 1)) {
+    if (!showCursor(xx, 0, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
     }
@@ -1986,7 +2111,7 @@ int edCursorRight(edview *xx) {
     }
 
     cursor_notify(xx);
-    if (!showCursor(xx, 0, 1)) {
+    if (!showCursor(xx, 0, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
     }
@@ -2021,7 +2146,7 @@ int edReadStart(edview *xx) {
 
     edSetApos(xx);
 
-    if (!showCursor(xx, 0, 1)) {
+    if (!showCursor(xx, 0, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
     }
@@ -2061,7 +2186,7 @@ int edReadEnd(edview *xx) {
 
     edSetApos(xx);
 
-    if (!showCursor(xx, 0, 1)) {
+    if (!showCursor(xx, 0, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
     }
@@ -2080,7 +2205,7 @@ int edContigStart(edview *xx) {
     xx->cursor_apos = xx->cursor_pos;
 
     cursor_notify(xx);
-    if (!showCursor(xx, 0, 1)) {
+    if (!showCursor(xx, 0, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
     }
@@ -2095,7 +2220,7 @@ int edContigEnd(edview *xx) {
     xx->cursor_apos = xx->cursor_pos;
 
     cursor_notify(xx);
-    if (!showCursor(xx, 0, 1)) {
+    if (!showCursor(xx, 0, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
     }
