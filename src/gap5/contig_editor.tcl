@@ -1378,11 +1378,7 @@ proc editor_move_seq {w where direction} {
     set pos  [$seq get_position]
     $seq delete
 
-    store_undo $w \
-	[list \
-	     [list C_SET $type $rec $_pos] \
-	     [list T_MOVE $rec [expr {-$direction}]] \
-	     [list B_MOVE $rec $pos] ] {}
+    set upos $pos; # copy for undo
 
     $w decr_contig
 
@@ -1397,6 +1393,12 @@ proc editor_move_seq {w where direction} {
     $seq delete
 
     $w incr_contig
+
+    store_undo $w \
+	[list \
+	     [list C_SET $type $rec $_pos] \
+	     [list T_MOVE $rec [expr {-$direction}]] \
+	     [list B_MOVE $rec $upos] ] {}
 
     # A bit obscure, but it ensures edSetApos() is called in C, keeping
     # cached absolute and relative positions in sync after the move.
@@ -1426,10 +1428,8 @@ proc editor_clip_seq {w where end} {
     set orient [$seq get_orient]
 
     foreach {l r} [$seq get_clips] break;
-    store_undo $w \
-	[list \
-	     [list B_CUT $rec $l $r] \
-	     [list C_SET $type $rec $pos]] {}
+    set ul $l
+    set ur $r
 
     switch $end {
 	l {
@@ -1455,6 +1455,10 @@ proc editor_clip_seq {w where end} {
     }
     $seq delete
 
+    store_undo $w \
+	[list \
+	     [list B_CUT $rec $ul $ur] \
+	     [list C_SET $type $rec $pos]] {}
     $w redraw
 }
 
