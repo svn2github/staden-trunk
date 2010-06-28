@@ -306,6 +306,9 @@ typedef struct {
     int y;     /* nominal display position, not stored on disc */
     int pair_ind; /* -1 if not found, or index into array of rangec_t */
     /* Move library here? */
+
+    /* Derived fields, placed here to make sorting easier */
+    int seq_tech;
 } rangec_t;
 
 typedef struct {

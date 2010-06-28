@@ -77,7 +77,7 @@ rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 #define CSIR_SORT_BY_Y            (1<<4)
 #define CSIR_COUNT_ONLY           (1<<5)
 #define CSIR_LEAVES_ONLY          (1<<6)
-
+#define CSIR_SORT_BY_SEQ_TECH     (1<<7)
 
 
 

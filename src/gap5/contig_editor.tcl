@@ -298,7 +298,12 @@ proc contig_register_callback {ed type id args} {
 
 	CHILD_EDIT -
 	LENGTH {
+	    $ed clear_visibility_cache
 	    $ed redraw
+	    # A bit obscure, but it ensures edSetApos() is called in C,
+	    # keeping cached absolute and relative positions in sync
+	    # incase the edit was moving a sequence.
+	    eval $ed set_cursor [$ed get_cursor relative]
 	}
 
 	GENERIC {
@@ -1399,10 +1404,6 @@ proc editor_move_seq {w where direction} {
 	     [list C_SET $type $rec $_pos] \
 	     [list T_MOVE $rec [expr {-$direction}]] \
 	     [list B_MOVE $rec $upos] ] {}
-
-    # A bit obscure, but it ensures edSetApos() is called in C, keeping
-    # cached absolute and relative positions in sync after the move.
-    eval $w set_cursor [$w get_cursor relative]
 
     $w redraw
 }

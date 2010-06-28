@@ -440,7 +440,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"read_start",    "read_start2",  "read_end",     "read_end2",
 	"get_template_seqs", "edits_made", "link_to",    "lock",
 	"join_align",	 "join_mismatch","join",         "join_offset",
-	"select",	 "edit_annotation",
+	"select",	 "edit_annotation",  "clear_visibility_cache",
 	"cursor_id",     "get_cursor",	  "search",
 	"decr_contig",   "incr_contig",   "select_oligo",
 	NULL
@@ -454,8 +454,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
 	_JOIN_ALIGN,     _JOIN_MISMATCH, _JOIN,          _JOIN_OFFSET,
-	_SELECT,	 _EDIT_ANNOTATION,
-	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,
+	_SELECT,	 _EDIT_ANNOTATION,  _CLEAR_VISIBILITY_CACHE,
+	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	
 	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO
     };
 
@@ -1096,6 +1096,13 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 		       
 	break;
     }
+
+    case _CLEAR_VISIBILITY_CACHE:
+	if (xx->r)
+	    free(xx->r);
+	xx->r = NULL;
+
+	break;
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));

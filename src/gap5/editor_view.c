@@ -302,6 +302,7 @@ char *edGetBriefTag(edview *xx, int anno_ele, char *format) {
  * %C   C confidence log-odds (raw for probability value)
  * %G   G confidence log-odds (raw for probability value)
  * %T   T confidence log-odds (raw for probability value)
+ * %V   Vendor/platform
  *
  * Additionally specifying %<number><format> forces AT MOST that many
  * characters to be displayed.
@@ -527,8 +528,31 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 		add_number(status_buf, &j, l1, l2, s->mapping_qual);
 	    }
 	    break;
-	    
 
+	case 'V':
+	    if (raw) {
+		add_number(status_buf, &j, l1, l2, s->seq_tech);
+	    } else {
+		switch(s->seq_tech) {
+		case STECH_SANGER:
+		    add_string(status_buf, &j, l1, l2, "Sanger");
+		    break;
+		case STECH_SOLEXA:
+		    add_string(status_buf, &j, l1, l2, "Illumina");
+		    break;
+		case STECH_SOLID:
+		    add_string(status_buf, &j, l1, l2, "SOLiD");
+		    break;
+		case STECH_454:
+		    add_string(status_buf, &j, l1, l2, "454");
+		    break;
+		default:
+		    add_string(status_buf, &j, l1, l2, "unknown");
+		    break;
+		}
+	    }
+	    break;
+	    
 	default:
 	    status_buf[j++] = format[i];
 	}
@@ -755,8 +779,11 @@ int edview_visible_items(edview *xx, int start, int end) {
 	? CSIR_ALLOCATE_Y_MULTIPLE
 	: CSIR_ALLOCATE_Y_SINGLE;
 
+    /* sort... */
+    mode |= CSIR_SORT_BY_SEQ_TECH;
+
     /* Always reload for now as we can't spot edits yet */
-    if (0 && xx->r && xx->r_start == start && xx->r_end == end)
+    if (xx->r && xx->r_start == start && xx->r_end == end)
 	return 0;
 
     /* Query sequences */
@@ -768,7 +795,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 				  CSIR_SORT_BY_Y | mode, &xx->nr);
     if (!xx->r)
 	return -1;
-    
+
     /* Work out Y dimension */
     xx->max_height = 0;
     for (i = 0; i < xx->nr; i++) {
