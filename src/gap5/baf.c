@@ -512,6 +512,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    char *at  = baf_block_value(b, AT);
 	    int an_pos;
 	    bin_index_t *bin;
+	    int anno_obj_type;
 
 	    if (!(a->data_type & DATA_ANNO))
 		break;
@@ -519,13 +520,16 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    if (txt)
 		unescape_line(txt);
 
+	    anno_obj_type = (at && *at == 'C') ? GT_Contig : GT_Seq;
+		
+
 	    if (!loc) {
 		an_pos = last_obj_pos;
 	    } else {
 		if (*loc == '@') {
 		    an_pos = atoi(loc+1);
 		} else {
-		    if (at && *at == 'C') {
+		    if (anno_obj_type == GT_Contig) {
 			if (last_obj_orient == 0)
 			    an_pos = last_cnt_pos + atoi(loc)-1;
 			else
@@ -544,16 +548,15 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    r.start = an_pos;
 	    r.end = an_pos + (len ? atoi(len)-1 : 0);
 
-	    //r.mqual    = last_obj_type;  /* obj_type */
 	    r.mqual = str2type(typ);
-	    r.pair_rec = (at && *at == 'C')
+	    r.pair_rec = (anno_obj_type == GT_Contig)
 		? last_cnt_rec
 		: last_obj_rec;
 
 	    r.flags = GRANGE_FLAG_ISANNO;
-	    if (GT_Seq == last_obj_type)
+	    if (GT_Seq == anno_obj_type)
 		r.flags |= GRANGE_FLAG_TAG_SEQ;
-	    r.rec = anno_ele_new(io, 0, last_obj_type, last_obj_rec, 0,
+	    r.rec = anno_ele_new(io, 0, anno_obj_type, r.pair_rec, 0,
 				 str2type(typ), txt);
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);
