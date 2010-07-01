@@ -1315,7 +1315,7 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
 
     /* Editor panel */
 
-    calculate_consensus(xx->io, xx->cnum, pos, pos+wid, xx->cachedConsensus);
+    calculate_consensus(xx->io, xx->cnum, pos, pos+wid-1, xx->cachedConsensus);
     for (i = 0; i < wid; i++) {
 	xx->displayedConsensus[i] = "ACGT*N"[xx->cachedConsensus[i].call];
     }
@@ -1756,8 +1756,8 @@ int set_displayPos(edview *xx, int pos) {
 	    xx->refresh_flags |= ED_DISP_NO_DIFFS;
 
 	/* Try and ensure 'vis_rec' is still visible */
-	if (!edview_seq_visible(xx, vis_rec1, &new_y)) {
-	    if (new_y == -1) {
+	if (vis_rec1 == -1 || !edview_seq_visible(xx, vis_rec1, &new_y)) {
+	    if (new_y == -1 && vis_rec2 != -1) {
 		if (edview_seq_visible(xx, vis_rec2, &new_y)) {
 		    /* Already visible, but new_y is bottom loc */
 		    new_y -= sheight-1;
@@ -2325,6 +2325,9 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
     int type = -1;
     int best_delta = INT_MAX;
     //    int exact = (name && xx->ed->stack_mode) || !name;
+
+    if (rec) *rec = -1;
+    if (pos) *pos =  0;
 
     /* Special case - the reserve row numbers */
     if (row == xx->y_cons) {
