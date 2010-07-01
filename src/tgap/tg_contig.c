@@ -572,7 +572,10 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 }
 
 
-/* Sort comparison function for range_t; sort by ascending position */
+/*
+ * Sort comparison function for range_t; sort by ascending position of
+ * object start position.
+ */
 static int sort_range_by_x(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
     const rangec_t *r2 = (const rangec_t *)v2;
@@ -593,6 +596,23 @@ static int sort_range_by_x(const void *v1, const void *v2) {
     }
 #endif
 
+    /* And finally by recno. */
+    return r1->rec - r2->rec;
+}
+
+/*
+ * Sort comparison function for range_t; sort by ascending position of
+ * object end position.
+ */
+static int sort_range_by_x_end(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    int d;
+
+    /* By X primarily */
+    if ((d = r1->end - r2->end))
+	return d;
+    
     /* And finally by recno. */
     return r1->rec - r2->rec;
 }
@@ -990,7 +1010,9 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 	    }
 	}
 
-	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
+	if (job & CSIR_SORT_BY_XEND) {
+	    qsort(r, *count, sizeof(*r), sort_range_by_x_end);
+	} else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
 	    if (job & CSIR_SORT_BY_SEQ_TECH) {
 		qsort(r, *count, sizeof(*r), sort_range_by_tech_x);
 	    } else {
@@ -1051,7 +1073,9 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 	    pair_rangec(io, r, *count);
 	}
 
-	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
+	if (job & CSIR_SORT_BY_XEND) {
+	    qsort(r, *count, sizeof(*r), sort_range_by_x_end);
+	} else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
 	    qsort(r, *count, sizeof(*r), sort_range_by_x);
 	}
 
@@ -1084,7 +1108,9 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISANNO);
 
     if (r) {
-	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+	if (job & CSIR_SORT_BY_XEND)
+	    qsort(r, *count, sizeof(*r), sort_range_by_x_end);
+	else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
 	    qsort(r, *count, sizeof(*r), sort_range_by_x);
 
 	if (job & CSIR_ALLOCATE_Y)
@@ -1216,7 +1242,9 @@ rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
     *count = contig_cons_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0);
 
-    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+    if (job & CSIR_SORT_BY_XEND)
+	qsort(r, *count, sizeof(*r), sort_range_by_x_end);
+    else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
 	qsort(r, *count, sizeof(*r), sort_range_by_x);
 
     return r;
@@ -1308,7 +1336,9 @@ rangec_t *contig_bins_in_range(GapIO *io, contig_t **c, int start, int end,
 				   &r, &alloc, 0, 0, min_size,
 				   job & CSIR_LEAVES_ONLY);
     
-    if (job & CSIR_SORT_BY_X)
+    if (job & CSIR_SORT_BY_XEND)
+	qsort(r, *count, sizeof(*r), sort_range_by_x_end);
+    else if (job & CSIR_SORT_BY_X)
 	qsort(r, *count, sizeof(*r), sort_range_by_x);
 
     return r;
@@ -1385,13 +1415,13 @@ static int range_populate(GapIO *io, contig_iterator *ci,
     ci->end = end;
     if (ci->type == GRANGE_FLAG_ISSEQ)
 	ci->r = contig_seqs_in_range(io, &c, start, end,
-				     CSIR_SORT_BY_X, &ci->nitems);
+				     ci->sort_mode, &ci->nitems);
     else if (ci->type == GRANGE_FLAG_ISANNO)
 	ci->r = contig_anno_in_range(io, &c, start, end,
-				     CSIR_SORT_BY_X, &ci->nitems);
+				     ci->sort_mode, &ci->nitems);
     else
 	ci->r = contig_items_in_range(io, &c, start, end,
-				      CSIR_SORT_BY_X, &ci->nitems);
+				      ci->sort_mode, &ci->nitems);
 
     ci->index = 0;
     return 0;
@@ -1415,6 +1445,11 @@ void contig_iter_del(contig_iterator *ci) {
  *
  * 'whence' may be either CITER_FIRST or CITER_LAST and it controls whether
  * we start the iteration point from the beginning or end of the list.
+ * In addition to this we can add CITER_ISTART or CITER_IEND to whence to
+ * control whether we wish to sort our data by item start or end coordinate.
+ * CITER_ISTART is the default mode.  (This is particularly useful if we wish
+ * to step through sequences in reverse order based on when they become
+ * visible.)
  *
  * The start and end parameters dictate the initial region to query. We
  * may specify them as either coordinates or use CITER_CSTART and CITER_CEND
@@ -1449,11 +1484,14 @@ contig_iterator *contig_iter_new_by_type(GapIO *io, int cnum, int auto_extend,
     ci->auto_extend = auto_extend;
     ci->first_r = 1;
     ci->type = type;
+    ci->sort_mode = (whence & CITER_SE_MASK) == CITER_IEND
+	? CSIR_SORT_BY_XEND
+	: CSIR_SORT_BY_X;
 
     ci->cstart = start == CITER_CSTART ? c->start : start;
     ci->cend   =   end == CITER_CEND   ? c->end   : end;
 
-    if (whence == CITER_FIRST) {
+    if ((whence & CITER_FL_MASK) == CITER_FIRST) {
 	start = ci->cstart;
 	end   = start + 9999;
     } else {
@@ -1466,7 +1504,7 @@ contig_iterator *contig_iter_new_by_type(GapIO *io, int cnum, int auto_extend,
 	return NULL;
     }
 
-    if (whence == CITER_LAST) {
+    if ((whence & CITER_FL_MASK) == CITER_LAST) {
 	ci->index = ci->nitems-1;
     }
 

@@ -74,10 +74,11 @@ rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 #define CSIR_ALLOCATE_Y \
     (CSIR_ALLOCATE_Y_SINGLE | CSIR_ALLOCATE_Y_MULTIPLE)
 #define CSIR_SORT_BY_X            (1<<3)
+#define CSIR_SORT_BY_XEND         (1<<8)
 #define CSIR_SORT_BY_Y            (1<<4)
+#define CSIR_SORT_BY_SEQ_TECH     (1<<7)
 #define CSIR_COUNT_ONLY           (1<<5)
 #define CSIR_LEAVES_ONLY          (1<<6)
-#define CSIR_SORT_BY_SEQ_TECH     (1<<7)
 
 
 
@@ -100,10 +101,17 @@ typedef struct {
     int auto_extend; /* whether to extend past cstart..cend */
     int first_r;     /* True if r[] is our first search */
     int type;
+    int sort_mode;   /* either CSIR_SORT_BY_X or CSIR_SORT_BY_XEND */
 } contig_iterator;
 
-#define CITER_FIRST  0
-#define CITER_LAST   1
+#define CITER_FIRST   0
+#define CITER_LAST    1
+#define CITER_FL_MASK 1
+
+#define CITER_ISTART  0
+#define CITER_IEND    2
+#define CITER_SE_MASK 2
+
 #define CITER_CSTART INT_MIN
 #define CITER_CEND   INT_MAX
 
