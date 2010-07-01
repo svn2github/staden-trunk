@@ -9,6 +9,50 @@
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
+/*
+ * Compute the visible statr position of a contig. This isn't just the extents
+ * of start_used / end_used in the bins as this can included invisible
+ * data such as cached consensus sequences.
+ */
+int contig_visible_start(GapIO *io, int crec) {
+    rangec_t *r;
+    contig_iterator *ci;
+
+    ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST | CITER_ISTART,
+				 CITER_CSTART, CITER_CEND,
+				 GRANGE_FLAG_ISANY);
+    
+    while (r = contig_iter_prev(io, ci)) {
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS)
+	    continue;
+	return r->start;
+    }
+
+    return 0;
+}
+
+/*
+ * Compute the visible end position of a contig. This isn't just the extents
+ * of start_used / end_used in the bins as this can included invisible
+ * data such as cached consensus sequences.
+ */
+int contig_visible_end(GapIO *io, int crec) {
+    rangec_t *r;
+    contig_iterator *ci;
+
+    ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
+				 CITER_CSTART, CITER_CEND,
+				 GRANGE_FLAG_ISANY);
+    
+    while (r = contig_iter_prev(io, ci)) {
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS)
+	    continue;
+	return r->end;
+    }
+
+    return 0;
+}
+
 static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
 				 contig_t *cfrom, int pfrom,
 				 contig_t *cto,   int pto,
@@ -127,11 +171,10 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 				contig_t *cl, contig_t *cr,
 				int bin_num, int pos, int offset,
 				int level, int pleft, int pright,
-				int child_no, int complement,
-				int *left_end, int *right_start) {
+				int child_no, int complement) {
     int i, j, f_a, f_b, rbin;
     bin_index_t *bin = get_bin(io, bin_num), *bin_dup ;
-    int bin_min, bin_max;
+    //int bin_min, bin_max;
     int nseqs;
 
     cache_incr(io, bin);
@@ -165,8 +208,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	bin->flags &= ~BIN_CONS_VALID;
     }
 
-    bin_min = bin->rng ? NMIN(bin->start_used, bin->end_used) : offset;
-    bin_max = bin->rng ? NMAX(bin->start_used, bin->end_used) : offset;
+    //bin_min = bin->rng ? NMIN(bin->start_used, bin->end_used) : offset;
+    //bin_max = bin->rng ? NMAX(bin->start_used, bin->end_used) : offset;
 
     /*
      * Add to right parent if this bin is to the right of pos,
@@ -186,9 +229,6 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 				       child_no))
 	    return -1;
 
-	if (*right_start > bin_min)
-	    *right_start = bin_min;
-
 	bin_incr_nseq(io, bin, nseqs);
 	cache_decr(io, bin);
 
@@ -204,8 +244,6 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 	//if (0 != break_contig_move_bin(io, bin, cr, pright, cl, pleft, child_no))
 	//return -1;
-	if (*left_end < bin_max)
-	    *left_end = bin_max;
 
 	bin_incr_nseq(io, bin, nseqs);
 	cache_decr(io, bin);
@@ -324,9 +362,6 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    bin->flags |= BIN_BIN_UPDATED;
 	}
 
-	if (*right_start > NMIN(bin->start_used, bin->end_used))
-	    *right_start = NMIN(bin->start_used, bin->end_used);
-
 	bin->start_used = bin->end_used = 0;
 	break_contig_reparent_seqs(io, bin_dup);
 
@@ -348,9 +383,6 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
     } else if (NMAX(bin->start_used, bin->end_used) < pos) {
 	/* Range array already in left contig, so do nothing */
 	printf("%*sMOVE Array to left\n", level*4, "");
-
-	if (*left_end < NMAX(bin->start_used, bin->end_used))
-	    *left_end = NMAX(bin->start_used, bin->end_used);
 
 	if (bin_dup)
 	    bin_dup->start_used = bin_dup->end_used = 0;
@@ -507,15 +539,6 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		bin_dup->end_used   = 0;
 	    }
 	}
-
-	if (lmin < lmax) {
-	    if (*left_end < NMAX(bin->start_used, bin->end_used))
-		*left_end = NMAX(bin->start_used, bin->end_used);
-	}
-	if (bin_dup && rmin < rmax) {
-	    if (*right_start > NMIN(bin_dup->start_used, bin_dup->end_used))
-		*right_start = NMIN(bin_dup->start_used, bin_dup->end_used);
-	}
     }
 
 
@@ -529,8 +552,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	if (0 != break_contig_recurse(io, h, cl, cr, bin->child[i], pos,
 				      NMIN(ch->pos, ch->pos + ch->size-1),
 				      level+1, pleft, pright,
-				      i, complement,
-				      left_end, right_start))
+				      i, complement))
 	    return -1;
     }
 
@@ -629,14 +651,13 @@ int break_contig(GapIO *io, int crec, int cpos) {
     do_comp = bin->flags & BIN_COMPLEMENTED;
     cache_decr(io, bin);
 
-    left_end = 0;
-    right_start = INT_MAX;
     break_contig_recurse(io, h, cl, cr,
 			 contig_get_bin(&cl), cpos, contig_offset(io, &cl),
-			 0, cl->rec, cr->rec, 0, 0, &left_end, &right_start);
+			 0, cl->rec, cr->rec, 0, 0);
 
-    printf("New left end = %d, right start = %d\n",
-	   left_end, right_start);
+    /* Recompute end positions */
+    left_end    = contig_visible_end(io, cl->rec);
+    right_start = contig_visible_start(io, cr->rec);
 
     /* Ensure start/end positions of contigs work out */
     bin = cache_rw(io, get_bin(io, cr->bin));
