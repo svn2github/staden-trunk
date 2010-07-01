@@ -315,14 +315,12 @@ static void extend_array (sheet_array *a, int r, int c)
 	:(r<=(*a)->rows*2)
 	    ?(*a)->rows*2
 	    :r+EXTEND_ROWS_GUESS;
-    if (newr > SHEET_MAX_ROWS) newr= SHEET_MAX_ROWS;
 
     newc = (c<=(*a)->cols)
 	?(*a)->cols
 	:(c<=(*a)->cols*2)
 	    ?(*a)->cols*2
 	    :c+EXTEND_COLS_GUESS;
-    if (newc > SHEET_MAX_COLS) newc= SHEET_MAX_COLS;
 
     if (newr!=(*a)->rows || newc!=(*a)->cols) {
 	b = create_array(newr,newc,(*a)->size);

@@ -33,9 +33,6 @@ typedef int SheetHilight;
 #define HOP_OR(S,D) ((S | D) & HOP_MASK)
 #define HOP_NOT(S)  ((!S) & HOP_MASK)
 
-#define SHEET_MAX_COLS  512
-#define SHEET_MAX_ROWS  1024
-
 /* define unique representation types not found in <X11/StringDefs.h> */
 
 typedef struct {
