@@ -1,3 +1,9 @@
+*	BUG: creating tags (2 on the consensus together?) sometimes
+        causes the editor to not believe an edit is made and we can
+        quit without getting a dialogue to save. However it really has
+        edited data, just not saved.
+	A case of using the base $io instead of child $io?
+
 *   	BUG: On some Template Track settings the scale does not work 
     	correctly.  Separate strands and linear scales are the worst 
 	offenders.
