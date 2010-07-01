@@ -205,8 +205,8 @@ static char *escape_C_string(char *str) {
 	    break;
 	    
 	case 1:
-	    sprintf(&new[ni], "%03o", c);
-	    ni+=3;
+	    sprintf(&new[ni], "\\%03o", c);
+	    ni+=4;
 	    break;
 
 	default:
@@ -218,6 +218,150 @@ static char *escape_C_string(char *str) {
 
     return new;
 }
+
+/*
+ * Allocates and returns an escaped version of str. This relaces quotes,
+ * newlines, and other non-printable characters with %02X hex encoded
+ * versions as required by html, gff, etc.
+ *
+ * 'escape' is a string of additional characters that must be escaped
+ * for this string, in addition to obvious unprintables and percent.
+ * It may be specified as NULL.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+static char *escape_hex_string(char *str, char *escape) {
+    size_t l = strlen(str);
+    size_t new_l = l*1.1+10;
+    char *new = malloc(new_l);
+    size_t oi, ni;
+    static int type[256];
+    static int type_init = 0;
+    int i;
+
+    /* A once-only lookup table to speed up the loop below */
+    if (!type_init) {
+	for (i = 0; i < 256; i++) {
+	    if (isprint(i) && i != '%') {
+		/* directly printable */
+		type[i] = 0;
+	    } else {
+		/* hex escape */
+		type[i] = 1;
+	    }
+	}
+	type_init = 1;
+    }
+
+
+    /* Per call modifications to the basic escape rules */
+    for (i = 0; i < 256; i++) {
+	type[i] &= 1;
+    }
+
+    if (escape) {
+	while (*escape) {
+	    type[(unsigned char)*escape] |= 2;
+	    escape++;
+	}
+    }
+
+
+    if (!new)
+	return NULL;
+
+    for (oi = ni = 0; oi < l; oi++) {
+	char c = str[oi];
+
+	/* Make enough room */
+	if (ni + 4 >= new_l) {
+	    new_l = new_l * 1.2 + 10;
+	    if (NULL == (new = realloc(new, new_l)))
+		return NULL;
+	}
+
+	if (type[(unsigned char)c]) {
+	    sprintf(&new[ni], "%%%02X", c);
+	    ni+=3;
+	} else {
+	    new[ni++] = c;
+	}
+    }
+    new[ni++] = 0;
+
+    return new;
+}
+
+/*
+ * Reversal of the escape_hex_string above.
+ *
+ * Returns a copy of the escaped string on success
+ *         NULL on failure.
+ *
+ * The pointer returned is owned by this function and is valid until the
+ * next call (so it is not reentrant). DO NOT FREE the result.
+ */
+static char *unescape_hex_string(char *str) {
+    static char *ret = NULL;
+    static size_t ret_sz = 0;
+    static int hex[256];
+    static int hex_init = 0;
+    size_t l;
+    char *out;
+
+
+    if (!str)
+	return NULL;
+    
+
+    /* Initialise lookup tables */
+    if (!hex_init) {
+	int i;
+	memset(hex, 0, 256*sizeof(*hex));
+	for (i = 0; i <= 9; i++) {
+	    hex['0'+i] = i;
+	}
+	for (i = 0; i <= 5; i++) {
+	    hex['a'+i] = 10+i;
+	    hex['A'+i] = 10+i;
+	}
+
+	hex_init = 1;
+    }
+
+
+    /* Alloc memory */
+    l = strlen(str);
+    if (l >= ret_sz) {
+	ret_sz = l+1;
+	ret = realloc(ret, ret_sz);
+	if (!ret) {
+	    return NULL;
+	    ret_sz = 0;
+	}
+    }
+
+
+    /* Decode */
+    out = ret;
+    while (*str) {
+	if (*str == '%') {
+	    if (!str[1]) {
+		fprintf(stderr,"Truncated %% code in unescape_hex_string()\n");
+		return NULL;
+	    }
+	    *out++ = (hex[str[1]]<<4) | hex[str[2]];
+	    str += 3;
+	} else {
+	    *out++ = *str++;
+	}
+    }
+    *out++ = 0;
+
+    return ret;
+}
+
 
 /*
  * A FIFO queue. We stack up sequences in here until we have sufficient
@@ -732,7 +876,8 @@ static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	if (ti->r.start > fi->r.end)
 	    break;
 
-	if (ti->r.pair_rec != fi->r.rec && ti->r.pair_rec != crec) {
+	if (ti->r.pair_rec != fi->r.rec &&
+	    (ti->r.flags & GRANGE_FLAG_TAG_SEQ)) {
 	    last = ti;
 	    ti = ti->next;
 	    continue;
@@ -740,10 +885,10 @@ static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
 	/* Tag is for this seq. */
 	a = cache_search(io, GT_AnnoEle, ti->r.rec);
-	if (ti->r.pair_rec == crec)
-	    dstring_append(ds, "\tZc:Z:");
-	else
+	if (ti->r.flags & GRANGE_FLAG_TAG_SEQ)
 	    dstring_append(ds, "\tZs:Z:");
+	else
+	    dstring_append(ds, "\tZc:Z:");
 	dstring_append(ds, type2str(ti->r.mqual, type));
 	if ((s->len >= 0) ^ fi->r.comp) {
 	    dstring_appendf(ds, "|%d|%d|", ti->r.start - (fi->r.start-1),
@@ -1103,7 +1248,7 @@ static int export_contig_baf(GapIO *io, FILE *fp,
 	    fifo_queue_push(fq, r);
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	    if (r->pair_rec == crec) {
+	    if (!(r->flags & GRANGE_FLAG_TAG_SEQ)) {
 		/* Contig tag */
 		anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
 		char type[5];
@@ -1112,7 +1257,6 @@ static int export_contig_baf(GapIO *io, FILE *fp,
 		fprintf(fp, "LO=@%d\n", r->start);
 		if (r->start != r->end)
 		    fprintf(fp, "LL=%d\n", r->end - r->start + 1);
-		fprintf(fp, "AN=%s\n", type2str(r->mqual, type));
 
 		if (a->comment && *a->comment) {
 		    char *escaped = escape_C_string(a->comment);
@@ -1304,7 +1448,7 @@ static int export_contig_caf(GapIO *io, FILE *fp,
 	    fifo_queue_push(fq, r);
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	    if (r->pair_rec == crec) {
+	    if (!(r->flags & GRANGE_FLAG_TAG_SEQ)) {
 		/* Contig tag */
 		/* FIXME: to do still */
 	    } else {
@@ -1627,6 +1771,7 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 
 static int export_header_tags_gff(GapIO *io, FILE *fp,
 				  int cc, contig_list_t *cv) {
+    fprintf(fp, "##gff-version 3\n");
     return 0;
 }
 
@@ -1677,7 +1822,7 @@ static int export_tags_gff(GapIO *io, FILE *fp,
     while (r = contig_iter_next(io, ci)) {
 	anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
 	char type2[5];
-	char *name, *escaped;
+	char *name, *ename, *etype;
 	int st, en;
 
 	cache_incr(io, a);
@@ -1686,15 +1831,32 @@ static int export_tags_gff(GapIO *io, FILE *fp,
 	    int seq_start, seq_end;
 	    seq_t *s;
 
-	    sequence_get_position(io, r->pair_rec, NULL,
-				  &seq_start, &seq_end, NULL);
+	    if (r->flags & GRANGE_FLAG_TAG_SEQ) {
+		/* Seq tag */
+		sequence_get_position(io, r->pair_rec, NULL,
+				      &seq_start, &seq_end, NULL);
 
-	    st = r->start - seq_start;
-	    en = r->end - seq_start;
+		st = r->start - seq_start;
+		en = r->end - seq_start;
 
-	    s = cache_search(io, GT_Seq, r->pair_rec);
-	    name = s->name;
+		s = cache_search(io, GT_Seq, r->pair_rec);
+		name = s->name;
+	    } else {
+		/* Consensus tag */
+		name = c->name;
+
+		st = r->start;
+		en = r->end;
+
+		if (unpadded) {
+		    if (st >= c->start && st <= c->end)
+			st = map[st - c->start];
+		    if (en >= c->start && en <= c->end)
+			en = map[en - c->start];
+		}
+	    }
 	} else {
+	    /* Tag as if on consensus, regardless whether it already is */
 	    name = c->name;
 
 	    st = r->start;
@@ -1710,20 +1872,23 @@ static int export_tags_gff(GapIO *io, FILE *fp,
 	}
 
 	assert(st <= en);
-
+	
+	ename = escape_hex_string(name, "!#&'(),/\\=<>{}[]`~");
+	etype = escape_hex_string(type2str(r->mqual, type2), ",=;");
 	if (a->comment && *a->comment) {
-	    escaped = escape_C_string(a->comment);
+	    char *escaped = escape_hex_string(a->comment, ",=;");
 
-	    fprintf(fp, "%s\tgap5\t%s\t%d\t%d\t.\t.\t.\tAnno \"%s\"\n",
-		    name, type2str(r->mqual, type2),
+	    fprintf(fp, "%s\tgap5\tremark\t%d\t%d\t.\t.\t.\ttype=%s,Note=%s\n",
+		    ename,
 		    st, en,
-		    escaped);
+		    etype, escaped);
 	    free(escaped);
 	} else {
-	    fprintf(fp, "%s\tgap5\t%s\t%d\t%d\t.\t.\t.\n",
-		    name, type2str(r->mqual, type2),
-		    st, en);
+	    fprintf(fp, "%s\tgap5\tremark\t%d\t%d\t.\t.\t.\ttype=%s\n",
+		    ename, st, en, etype);
 	}
+	free(ename);
+	free(etype);
 
 	cache_decr(io, a);
     }

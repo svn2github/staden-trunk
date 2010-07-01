@@ -818,11 +818,20 @@ int edview_visible_items(edview *xx, int start, int end) {
 	if ((xx->r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 	    continue;
 
+	/*
+	 * Work around a bug (or design flaw?) in break_contig.
+	 * When breaking a contig we need to reparent our tags to a new
+	 * contig record. This isn't feasible as tags shouldn't "know"
+	 * which contigs they're in. Instead we use the flag.
+	 */
+	if (!(xx->r[i].flags & GRANGE_FLAG_TAG_SEQ))
+	    key = xx->cnum;
+
 	hd.i = i;
 	HacheTableAdd(xx->anno_hash, (char *)&key, sizeof(key), hd, NULL);
     }
 
-#if 0
+#if 1
     puts("");
     for (i = 0; i < xx->nr; i++) {
 	int rec;
