@@ -1916,8 +1916,12 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 		 * The following fails if we have a previous sequence that
 		 * ended on a deletion. Eg CIGAR string 36M1D. This causes
 		 * samtools tview to break too.
+		 *
+		 * 2/7/2010: It also fails when dealing with split reads
+		 * using [0-9]+N CIGAR entries. We omit this assertion for
+		 * now until we can implement spliced alignments better.
 		 */
-		assert(i == i2);
+		//assert(i == i2);
 	    }
 
 	    if (p->is_del) {
@@ -2037,6 +2041,8 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
      */
     b = (bam1_t*)calloc(1, sizeof(bam1_t));
     while (samread(fp, b) >= 0) {
+	int k;
+
 	if (a->store_unmapped && b->core.flag & BAM_FUNMAP) {
 	    bio_add_unmapped(bio, b);
 	    if ((++count & 0xffff) == 0) {
@@ -2053,6 +2059,8 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	 * Allocate a record number now, so they're used in the same order
 	 * as the input data regardless of whether the read is mapped or
 	 * unmapped.
+	 *
+	 * Note, for spliced alignments we may need multiple record numbers.
 	 */
 	if (NULL == (tmp = xmalloc(sizeof(*tmp))))
 	    return -1;
@@ -2069,6 +2077,24 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	    tmp->rec = fake_recno++;
 	} else {
 	    tmp->rec = sequence_new_from(bio->io, NULL);
+	}
+
+	for (k = 0; k < b->core.n_cigar; k++) {
+	    int op = bam1_cigar(b)[k] & BAM_CIGAR_MASK;
+	    if (op == BAM_CREF_SKIP) {
+		if (NULL == (tmp = xmalloc(sizeof(*tmp))))
+		    return -1;
+		tmp->next = NULL;
+		bio->rec_tail->next = tmp;
+		bio->rec_tail = tmp;
+
+		if (bio->a->data_type == DATA_BLANK) {
+		    static int fake_recno = 1;
+		    tmp->rec = fake_recno++;
+		} else {
+		    tmp->rec = sequence_new_from(bio->io, NULL);
+		}
+	    }
 	}
 
 	bam_plbuf_push(b, plbuf);
