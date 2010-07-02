@@ -68,7 +68,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     
 
     # Bottom control panel
-    set bc [frame $w.bcontrol -bd 0 -bg blue]
+    set bc [frame $w.bcontrol -bd 0]
     grid columnconfigure $w 0 -weight 0
     grid columnconfigure $w 1 -weight 1
     grid $bc -column 1 -row 999 -sticky nsew
@@ -891,7 +891,11 @@ proc remove_plot {w track_type} {
 	global $t
 	
 	set comp [string compare $track_type [set ${t}(func)]]
-	
+
+    	# width needs to be set so the raster can be resized
+	# there is a width check in the seq_seqs proc (and equivalents)	
+    	set ${t}(width)  1
+
 	if {$comp == 0} {
 	    grid remove $w.yscale$id
 	    grid remove $t
@@ -900,6 +904,7 @@ proc remove_plot {w track_type} {
 	}
     }
     
+    update idletasks
     redraw_plot $w
 }
 
@@ -955,8 +960,6 @@ proc redraw_plot_doit {w} {
     foreach id $tracks {
 	set t $w.track$id
 	global $t
-
-	#parray $t
 
 	set d [set ${t}(canvas)]
 	set y1 [set ${t}(y1)]
@@ -1157,6 +1160,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
     if {[info exists ${t}(width)]} {
     	update idletasks
+	
 	$r configure -width [winfo width $d] -height [winfo height $d]
     }
 
@@ -1249,7 +1253,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     	$r world $x1 $Y1 $x2 $Y2
 	
     	# need to redraw and do it now, simple redraw_plot
-	# stacks up redraw but does not do it.
+	# stacks up redraw but does not.
 	redraw_plot_doit $w
     }
 }
@@ -2061,11 +2065,6 @@ proc CreateTemplateDisplay {io cnum} {
     add_separator $pwin 1
     add_plot $pwin depth_track 150  1 1 -bd 0 -relief raised
     add_plot $pwin seq_ruler    50  0 0 -bd 0 -relief raised
-    
-    # return geo control to window
-    # delay so internal windows can size properly
-    # a "horrible hack" but will do for now
-    after 200 "wm geometry $pwin {}"
 }
 
 
