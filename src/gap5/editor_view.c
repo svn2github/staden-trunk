@@ -831,7 +831,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 	HacheTableAdd(xx->anno_hash, (char *)&key, sizeof(key), hd, NULL);
     }
 
-#if 1
+#if 0
     puts("");
     for (i = 0; i < xx->nr; i++) {
 	int rec;
