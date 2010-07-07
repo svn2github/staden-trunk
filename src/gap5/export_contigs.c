@@ -119,7 +119,7 @@ int tcl_export_tags(ClientData clientData, Tcl_Interp *interp,
     else
 	return TCL_ERROR;
 
-    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    active_list_contigs_extended(args.io, args.inlist, &rargc, &rargv);
 
     res = export_tags(args.io, rargc, rargv, format_code,
 		      args.consensus, args.unpadded, args.outfile);
@@ -1878,7 +1878,7 @@ static int export_tags_gff(GapIO *io, FILE *fp,
 	if (a->comment && *a->comment) {
 	    char *escaped = escape_hex_string(a->comment, ",=;");
 
-	    fprintf(fp, "%s\tgap5\tremark\t%d\t%d\t.\t.\t.\ttype=%s,Note=%s\n",
+	    fprintf(fp, "%s\tgap5\tremark\t%d\t%d\t.\t.\t.\ttype=%s;Note=%s\n",
 		    ename,
 		    st, en,
 		    etype, escaped);
