@@ -30,6 +30,10 @@ int active_list_readings(GapIO *io, char *list, int *argc, int **argv);
 int active_list_contigs(GapIO *io, char *list,
 			int *argc, contig_list_t **argv);
 
+/* As above, but include cutoff data at ends of contig */
+int active_list_contigs_extended(GapIO *io, char *list,
+				 int *argc, contig_list_t **argv);
+
 /*
  * Splits a list into argc & argv.
  * Returns 0 for success, -1 for failure.

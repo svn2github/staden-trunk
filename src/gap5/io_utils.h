@@ -119,6 +119,8 @@ int lget_gel_num(GapIO *io, int listArgc, char **listArgv,
 		 int *rargc, int **rargv);
 int lget_contig_num(GapIO *io, int listArgc, char **listArgv,
 		    int *rargc, contig_list_t **rargv);
+int lget_contig_num2(GapIO *io, int listArgc, char **listArgv,
+		     int *rargc, contig_list_t **rargv);
 int *to_contigs_only(int num_contigs, contig_list_t *cl);
 
 char *get_read_name(GapIO *io, int number);

@@ -420,8 +420,9 @@ int lget_gel_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
  *         -1 for failure
  * and the number and values of contigs in argc and argv.
  */
-int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
-		    int *rargc, contig_list_t **rargv) {      /* OUTPUT list */
+static int lget_contig_num_base(GapIO *io,
+				int listArgc, char **listArgv,       /* IN  */
+				int *rargc, contig_list_t **rargv) { /* OUT */
     int i, j, count=0;
     char *p;
 
@@ -510,25 +511,6 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
     }
 
 
-    /* Set ranges */
-    for (j=0; j<listArgc; j++) {
-	int st, en;
-
-	consensus_valid_range(io, (*rargv)[j].contig, &st, &en);
-
-	if ((*rargv)[j].start == INT_MAX || (*rargv)[j].start < st)
-	    (*rargv)[j].start = st;
-
-	if ((*rargv)[j].end == INT_MAX || (*rargv)[j].end > en)
-	    (*rargv)[j].end = en;
-
-	if ((*rargv)[j].start > en)
-	    (*rargv)[j].start = en;
-
-	if ((*rargv)[j].end < st)
-	    (*rargv)[j].end = st;
-    }
-
     /* Check for failures */
     for (i=j=0; j<listArgc; j++) {
 	if ((*rargv)[j].contig > 0) {
@@ -537,6 +519,71 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
     }
 
     *rargc = i;
+    return 0;
+}
+
+/* Full extent of contigs including cutoff data */
+int lget_contig_num2(GapIO *io, int listArgc, char **listArgv,
+		     int *rargc, contig_list_t **rargv) {
+    int ret, i;
+
+    ret = lget_contig_num_base(io, listArgc, listArgv, rargc, rargv);
+    if (ret != 0)
+	return ret;
+
+    /* Set ranges */
+    for (i=0; i<*rargc; i++) {
+	contig_t *c;
+	int st, en;
+
+	c = cache_search(io, GT_Contig, (*rargv)[i].contig);
+	st = c->start;
+	en = c->end;
+
+	if ((*rargv)[i].start == INT_MAX || (*rargv)[i].start < st)
+	    (*rargv)[i].start = st;
+
+	if ((*rargv)[i].end == INT_MAX || (*rargv)[i].end > en)
+	    (*rargv)[i].end = en;
+
+	if ((*rargv)[i].start > en)
+	    (*rargv)[i].start = en;
+
+	if ((*rargv)[i].end < st)
+	    (*rargv)[i].end = st;
+    }
+
+    return 0;
+}
+
+/* As above, but clipped to only the used portion of a contig */
+int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
+		    int *rargc, contig_list_t **rargv) {      /* OUTPUT list */
+    int ret, i;
+
+    ret = lget_contig_num_base(io, listArgc, listArgv, rargc, rargv);
+    if (ret != 0)
+	return ret;
+
+    /* Set ranges */
+    for (i=0; i<*rargc; i++) {
+	int st, en;
+
+	consensus_valid_range(io, (*rargv)[i].contig, &st, &en);
+
+	if ((*rargv)[i].start == INT_MAX || (*rargv)[i].start < st)
+	    (*rargv)[i].start = st;
+
+	if ((*rargv)[i].end == INT_MAX || (*rargv)[i].end > en)
+	    (*rargv)[i].end = en;
+
+	if ((*rargv)[i].start > en)
+	    (*rargv)[i].start = en;
+
+	if ((*rargv)[i].end < st)
+	    (*rargv)[i].end = st;
+    }
+
     return 0;
 }
 

@@ -204,6 +204,15 @@ int active_list_contigs(GapIO *io, char *list,
     return lget_contig_num(io, active_list_argc, active_list_argv, argc, argv);
 }
 
+/* As above, but include cutoff data at ends of contig */
+int active_list_contigs_extended(GapIO *io, char *list,
+				 int *argc, contig_list_t **argv) {
+    if (-1 == set_active_list(list))
+	return -1;
+
+    return lget_contig_num2(io, active_list_argc, active_list_argv,
+			    argc, argv);
+}
 
 /*
  *----------------------------------------------------------------------------
