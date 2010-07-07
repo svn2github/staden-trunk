@@ -520,8 +520,10 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    if (txt)
 		unescape_line(txt);
 
-	    anno_obj_type = (at && *at == 'C') ? GT_Contig : GT_Seq;
-		
+	    if (last_obj_type == GT_Contig || (at && *at == 'C'))
+		anno_obj_type = GT_Contig;
+	    else
+		anno_obj_type = GT_Seq;
 
 	    if (!loc) {
 		an_pos = last_obj_pos;
