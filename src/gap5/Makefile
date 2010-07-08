@@ -97,6 +97,7 @@ GAP5=\
 	break_contig.o \
 	export_contigs.o \
 	find_oligo.o \
+	import_gff.o \
 	$(CEDITOR) \
 	$(TG_INDEX)
 

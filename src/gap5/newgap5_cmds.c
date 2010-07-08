@@ -34,6 +34,7 @@
 #include "break_contig.h"
 #include "template_display.h"
 #include "export_contigs.h"
+#include "import_gff.h"
 #include "find_oligo.h"
 #include "tg_index_common.h"
 #include "gap_range.h"
@@ -1753,6 +1754,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "export_tags",
 			 tcl_export_tags,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "import_gff",
+			 tcl_import_gff,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "find_oligo",
