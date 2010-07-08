@@ -1841,6 +1841,35 @@ static int export_tags_gff(GapIO *io, FILE *fp,
 
 		s = cache_search(io, GT_Seq, r->pair_rec);
 		name = s->name;
+
+		if (unpadded) {
+		    int i, len = s->len < 0 ? -s->len : s->len;
+		    int npads;
+		    int dupped = 0;
+
+		    /*--- Complement sequence if needed */
+		    if ((s->len < 0) ^ r->comp) {
+			s = dup_seq(s);
+			complement_seq_t(s);
+			dupped = 1;
+		    }
+
+		    /*--- Compensate for padding in sequence */
+		    for (i = npads = 0; i < len && i < st; i++) {
+			if (s->seq[i] == '*')
+			    npads++;
+		    }
+		    st -= npads;
+		    for (; i < len && i < en; i++) {
+			if (s->seq[i] == '*')
+			    npads++;
+		    }
+		    en -= npads;
+
+		    if (dupped)
+			free(s);
+		}
+
 	    } else {
 		/* Consensus tag */
 		name = c->name;
