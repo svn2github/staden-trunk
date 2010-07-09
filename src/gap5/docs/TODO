@@ -144,6 +144,19 @@
 	Suggest we create a bin_add_range_to() function that takes an
 	existing bin and avoids the call to find bin for range.
 
+	9th July 2010: One case where this may help is when trying to
+	export sequence/tag data over a defined region. Say we want to
+	output between 1kb and 2kb. We find all sequences overlapping
+	this region (the seqs themselves being having extents of say
+	800bp-2200bp). However some of these seqs may have tags for
+	that sequence that are outside the 1-2kb range. Eg a tag in
+	pos 900bp and 2100bp in above example.
+
+	If the tags are in the same bin as the seq then it may help to
+	know that our range query doesn't need to be extended into
+	other bins, but may need to go outside the defined query
+	boundaries within the bins to pick up associated tags.
+
 *	When adding data in pair mode (tg_index -p), try using a 2
         pass affair. We observe that it slows down linearly and grows
         memory linearly. This is due to random scattering of
