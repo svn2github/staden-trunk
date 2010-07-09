@@ -1,3 +1,545 @@
+2010-06-28  jkbonfield
+
+	* gap5/editor_view.c: Attempted to improve the positioning of the
+	  Y scrollbar when scrolling around in X. This is somewhat tricky
+	  to get right, especially when multiple sequences are packed in a
+	  line as the Y coordinates of them jump around a lot
+	  anyway. However our method is as follows.
+	  
+	  - Attempt to keep the top sequence still in the top position
+	  after scrolling, adjusting Y scrollbar as necessary.
+	  
+	  - If top sequence is no longer overlapping, repeat for bottom
+	  sequence.
+	  
+	  - If the editing cursor was on screen before, and is still
+	  within X-bounds of the new scrolled position, it should be still
+	  be visible after.
+	  
+	  Also fixed horizontal cursor movement keys (eg left/right
+	  arrows) so that they also checked to make sure the cursor is
+	  visible.  Previously it didn't snap back to visibility if the X
+	  cursor position was still on screen but it had been manually
+	  scrolled off the top of bottom.
+
+	* tgap/tg_contig.c: Fixed bug in Y-allocation by sequence
+	  technology type - we now exclude tags during this. Previously we
+	  chose Y ranges too large.
+
+	* gap5/contig_editor.tcl, gap5/editor_view.c, gap5/gap5rc,
+	  gap5/tkEditor.c, tgap/tg_contig.c, tgap/tg_contig.h,
+	  tgap/tg_struct.h: Added a CSIR_SORT_BY_SEQ_TECH flag for the
+	  contig_items_in_range function. This required adding seq_tech to
+	  the rangec_t struct (in-memory, not on-disk version) too. Should
+	  this be added to on-disk struct at some stage for efficiency?
+	  
+	  For now the editor always passes this flag in so capillary
+	  sequences are always on top. I need to make this adjustable.
+	  
+	  The editor also no longer calls contig_items_in_range
+	  continually (even on mouse overs) as it now correctly tracks
+	  edits and so caches this data.
+	  
+	  Finally the seq_tech field can now be (and is) displayed in the
+	  brief status line of the editor.
+
+	* gap5/sam_index.c: Fill out sequencing technology field from
+	  read-group PL string. Also attempt to guess this from sequence
+	  names when no read-group is available, although this is highly
+	  error prone.
+
+	* gap5/libraries.tcl: Changed solexa for illumina in output
+
+	* gap5/contig_editor.tcl: Moved the calls to store_undo when
+	  adjusting read clip points or read positions to after the edit
+	  takes place.
+	  
+	  This fixes a redisplay bug in other copies of the editor window
+	  as it is the store_undo code that sends the event message around
+	  to redisplay.
+
+2010-06-23  jkbonfield
+
+	* gap5/export_contigs.c: Fixed SAM quality strings to cap at
+	  quality 94 (ASCII ~ after adding 33). This prevents Picard from
+	  throwing an error.
+
+	* gap5/contig_editor.tcl, gap5/depth.tcl, tgap/tg_register.c: Added
+	  a context sensitive menu to the sequence name panel in the
+	  editor.
+	  
+	  This sports a "Goto ..." function to jump to other reads on this
+	  same template, even when they're in another contig (it'll bring
+	  up a new editor).
+
+2010-06-21  jkbonfield
+
+	* gap5/export_contigs.c: SAM output is now sorted by clipped
+	  position instead of unclipped position, removing the need to
+	  convert from sam to bam and then run samtools sort.
+
+	* gap5/baf.c, gap5/export_contigs.c, gap5/sam_index.c,
+	  gap5/tg_index_common.c, gap5/tg_index_common.h: Added
+	  experimental tag support to the SAM format, both for export and
+	  import.
+	  
+	  This uses Zc (consensus) and Zs (sequence) SAM auxillary tag
+	  records.
+
+	* Misc/dstring.c, Misc/dstring.h: Added more functions to append
+	  single characters, an integer (in ascii form) or to zero (empty)
+	  a string for reuse again.
+
+2010-06-17  awhitwham
+
+	* gap5/depth.tcl, gap5/depth_track.c, gap5/gap_range.c: Fixed some
+	  of the template display's scrolling bugs.
+
+2010-06-17  jkbonfield
+
+	* gap5/Makefile: Added back PROGS definition as it prevented any
+	  targets from being built. Oops.
+
+2010-06-16  jkbonfield
+
+	* gap5/Makefile, gap5/gap5_consensus, gap5/gap5_consensus.tcl,
+	  gap5/gap5_export, gap5/gap5_export.tcl, gap5/tg_index,
+	  gap5/tg_view: Added wrapper scripts for tg_index and tg_view so
+	  they set the correct LD_LIBRARY_PATH environment without
+	  explicitly requiring the user to source staden.profile.
+	  
+	  Also added (with wrappers) gap5_consensus and gap5_export
+	  command line toos to dump out data from a gap5 database
+	  non-interactively.
+
+	* gap5/gap.tcl, gap5/tg_index.c, gap5/tg_view.c: Bumped gap5
+	  version to 1.2.9 for local test release
+
+	* gap5/gap_range.c: Removed some extra depth code that appeared to
+	  add template depth on to sequence depth. I'm not sure of the
+	  intent for this original code, but I'm sure we'll find out
+	  sooner or later. (Right now it's less bugged than before
+	  though.)
+	  
+	  Changed the colouring of reads to use the true forward/reverse
+	  sequence attributes instead of uncomplemented / complemented
+	  status.
+
+	* gap5/template_draw.c: Fixed a colour allocation bug causing
+	  colour number 18 to end up as blue instead of grey.
+
+2010-06-11  jkbonfield
+
+	* gap5/contig_editor.tcl, gap5/editor_oligo.c: Improvements to the
+	  primer selection interface. It can now create tags.
+	  
+	  Also applied a minor fix to the Join button reenabling it and
+	  removing the debug message.
+
+	* tk_utils/tclIndex, tk_utils/xcombo.tcl: Added a basic combobox
+	  as an alternative to the one in tk8.5 (as it's not as common as
+	  8.4 yet) or iwidgets (which I'd prefer to not have a dependency
+	  on given lack of improvements to it).
+
+2010-06-09  jkbonfield
+
+	* gap5/export_contigs.c, gap5/sam_index.c: Sped up SAM export. The
+	  [sb]am_aux_stringify functions now generate the string form
+	  directly rather than using dozens of sprintf calls. Also
+	  implemented a trial version of a faster fprintf implementation,
+	  although right now it is unused.
+	  
+	  Finally, the sam export function now permits saving to final "-"
+	  to signify stdout. This is of no use in the GUI, but will be
+	  useful when scripting gap5.
+
+	* gap5/gap4_compat.c: Sanitised lget_contig_num - given broken
+	  input with start or end positions off the end of the contig, we
+	  now clip correctly.
+
+	* gap5/contig_editor.tcl, gap5/editor_join.c, gap5/tkEditor.c:
+	  Updated the "Join" button in the editor to display the overlap
+	  length and percentage mismatch. We now also get a question
+	  confirmed whether we wish to make the join.
+	  
+	  Also bug fixed the "align" button. It had an error in computing
+	  the coordinates of the overlap when one or both contigs did not
+	  start at base position 1.
+
+	* gap5/newgap5_cmds.c: Added a Tcl interface to
+	  consensus_valid_range: this returns the used
+	  (akas "clipped") portion of a contig.
+
+	* gap5/depth.tcl: Minor tweak to prevent an infinite loop when the
+	  template display is initially brought up on a region with no
+	  visible data.
+
+	* tgap/tg_utils.c, tgap/tg_utils.h: Updated the [us]72int and
+	  int2[us]7 functions so that they're faster
+	  (maybe 30% or so, depending on compiler and options). Also
+	  implemented macro equivalents which are faster still, although
+	  as yet these aren't used.
+
+	* seq_utils/dna_utils.c, tgap/tg_sequence.c: Replaced complementing
+	  functions with a marginally faster version.
+
+2010-06-03  jkbonfield
+
+	* gap5/contig_editor.tcl, gap5/gap5rc, gap5/primlib.c,
+	  gap5/primlib.h, primer3/src/boulder_input.c,
+	  primer3/src/oligotm.c, primer3/src/oligotm.h,
+	  primer3/src/primer3.h, primer3/src/primer3_lib.c: Updated the
+	  primer3 melting temperature calculation to take into account the
+	  more recent formulae described in SantaLucia et al 1998, and
+	  Ahsen et al 1999 (see source for full refs).  These are enabled
+	  via a #define and by default are turned on.
+	  
+	  For Gap5 (not gap4 currently), the extra parameters required are
+	  now configurable too, along with a few more of the existing
+	  parameters.
+
+2010-05-20  jkbonfield
+
+	* gap5/export_contigs.c, gap5/sam_index.c, gap5/tg_index_common.c:
+	  Improvements to SAM support, both input and output.
+	  
+	  - We now correctly populate the COMP2 (other pair complemented)
+	  range flag. Improved on PAIRED flag too.
+	  
+	  - PEND_REV flags (other end reverse) are now also set during
+	  tg_index of sam.
+	  
+	  - When exporting, we now attempt to set the strand fields
+	  better.  (This fixes a bug where export to sam and reimport lost
+	  some of the strand information.)
+
+2010-05-14  awhitwham
+
+	* gap5/docs/TODO: Added a couple of template display bugs.
+
+	* gap5/depth.tcl, gap5/template_display.c: Improved y scrolling on
+	  the template track.
+
+2010-05-12  jkbonfield
+
+	* gap4/join.c, gap4/searchUtils.c, gap4/tagU2.c, gap4/tkEditor.c,
+	  gap5/ace.c, gap5/baf.c, gap5/break_contig.c, gap5/consensus.c,
+	  gap5/contig_selector.c, gap5/cs-object.c, gap5/depad_seq_tree.c,
+	  gap5/depad_seq_tree.h, gap5/do_fij.c, gap5/docs/TODO,
+	  gap5/editor_join.c, gap5/editor_oligo.c, gap5/editor_oligo.h,
+	  gap5/editor_search.c, gap5/editor_view.c, gap5/export_contigs.c,
+	  gap5/fij.c, gap5/find_oligo.c, gap5/find_repeats.c,
+	  gap5/gap4_compat.h, gap5/gap_globals.c, gap5/gap_hash.c,
+	  gap5/hash_lib.c, gap5/maq.c, gap5/maq.h, gap5/newgap5_cmds.c,
+	  gap5/qual.c, gap5/sam_index.c, gap5/tg_index.c,
+	  gap5/tg_index_common.c, gap5/tg_view.c, gap5/tkEditor.c,
+	  gap5/tman_interface.c, primer3/src/boulder_input.c,
+	  primer3/src/primer3_lib.c, seq_utils/align_lib.c,
+	  seq_utils/dna_utils.c, seq_utils/renz_utils.c,
+	  seq_utils/sequence_formats.c, spin/seq_reg.c, tgap/b+tree2.c,
+	  tgap/g-alloc.c, tgap/g-io.c, tgap/g-request.c,
+	  tgap/hache_table.c, tgap/tg_bin.c, tgap/tg_bin.h,
+	  tgap/tg_cache.c, tgap/tg_contig.c, tgap/tg_gio.h,
+	  tgap/tg_iface_g.c, tgap/tg_sequence.c, tgap/tg_sequence.h,
+	  tgap/tg_tcl.c, tk_utils/element_canvas.c,
+	  tk_utils/restriction_enzyme_map.c, tk_utils/tkTrace.c,
+	  tk_utils/trace_print.c: Mass tidy up of minor compilation warning
+	  issues.
+	  
+	  These cover unused variables, variable names shadowing "parent"
+	  ones, missing prototypes, enum lists ending with comma, etc.
+
+2010-05-12  awhitwham
+
+	* gap5/depth_track.c, gap5/gap_range.c, gap5/template_display.c:
+	  Code tidy to get rid of some warnings.
+
+2010-05-12  jkbonfield
+
+	* mutscan/Makefile, mutscan/staden.h, tracediff/Makefile,
+	  tracediff/staden.h: A few more tweaks when building with icc with
+	  regards to os.h
+
+2010-05-11  jkbonfield
+
+	* Misc/os.h, abi/Makefile, abi/abiIO.h, eba/Makefile, eba/conf.c,
+	  eba/qual.c, gap4/seqInfo.c, get_scf_field/get_scf_field.c,
+	  hetins/Makefile, hetins/hetins.c, init_exp/init_exp.c,
+	  polyA_clip/polyA_clip.c, polyA_clip/seqInfo.c, qclip/consen.c,
+	  qclip/seqInfo.c, qclip/seqInfo.h, stops/Makefile, stops/stops.c,
+	  tk_utils/misc.c, tk_utils/tkTrace.c, tk_utils/tkTraceComp.c,
+	  tk_utils/tkTraceDisp.c, tk_utils/tkTraceIO.c,
+	  tk_utils/trace_print.c: Forced use of the Staden Package <os.h>
+	  instead of relying on picking up one from an io_lib
+	  installation.
+	  
+	  The key difference is that the local one will honour
+	  HAVE_CONFIG_H and pick up little vs big endian definitions from
+	  our autoconf derived values, while including a remote io_lib one
+	  will not. (This should still work, but it requires the
+	  auto-detection macros based on processor type instead.)
+
+	* gap5/docs/TODO:
+
+	* gap5/docs/TODO:
+
+	* gap5/map_reads.tcl, gap5/newgap5_cmds.c, gap5/sam_index.c,
+	  tgap/tg_iface.h, tgap/tg_iface_g.c: Improved Mapped Assembly.
+	  When we ask to index sequence names, if a name index doesn't
+	  already exist we create it.
+	  
+	  In the process of this we extended the database interface to add
+	  an index creation method; fixed memory dup/free issues with the
+	  btree code (harmless change); fixed uninitialised variables
+	  (store unmapped data / aux records) for sam input via this
+	  route; and moved some of the puts statements to use vmessage so
+	  they appear in the editor window instead of stdout.
+
+2010-05-11  awhitwham
+
+	* tgap/tg_contig.c, tk_utils/tkRaster.c, tk_utils/tkRaster.h: More
+	  changes to improve the template display.
+
+	* gap5/Makefile, gap5/depth.tcl, gap5/depth_track.c,
+	  gap5/depth_track.h, gap5/gap5rc_menu_full, gap5/gap_range.c,
+	  gap5/gap_range.h, gap5/newgap5_cmds.c, gap5/template_display.c,
+	  gap5/template_display.h: Improvements to the template display.
+
+2010-05-10  jkbonfield
+
+	* gap5/gap.tcl: Fixed error with starting gap5 -ro and not
+	  specifying a database name.
+
+2010-05-07  jkbonfield
+
+	* gap5/contig_editor.tcl, gap5/editor_view.c, gap5/editor_view.h,
+	  gap5/gap5rc, gap5/gap5rc_menu_full, gap5/tkEditor.c: Added draft
+	  of primer picking within the contig editor. This still needs
+	  more work and currently just lists primers rather than picking
+	  templates for them and adding tags.
+
+2010-05-06  jkbonfield
+
+	* gap5/editor_oligo.c, gap5/editor_oligo.h: First draft of oligo
+	  selection code within the editor.
+
+	* gap5/primlib.c, gap5/primlib.h: Added primer3 wrapper layer code.
+
+2010-05-05  jkbonfield
+
+	* tgap/tg_library.h: Added missing prototype
+
+	* tgap/tg_tcl.c: Protection against NULL tc->contig when destroying
+	  the command.
+
+	* convert/Makefile, global.mk, mutlib/Makefile, mutscan/Makefile,
+	  prefinish/Makefile, seq_utils/Makefile, seqed/Makefile,
+	  spin/Makefile, spin2/Makefile, tgap/Makefile, tk_utils/Makefile,
+	  tracediff/Makefile, trev/Makefile: We're now more explicit about
+	  our library dependencies. This should aid compilation on MacOS X
+	  and Windows (untested).
+	  
+	  Also made sure that for TCL only we add $(TCL_LIB) and for
+	  Tcl/Tk both we use only $(TK_LIB) and not both. This is because
+	  adding @TCL_LIBS@ and @TK_LIBS@ to the system.mk.in has lead to
+	  some dependent libraries being specified twice if we explicitly
+	  ask to use both $(TCL_LIB) and $(TK_LIB). For libieee.a this
+	  causes problems due to a global version symbol, causing a link
+	  error.
+
+	* ac_stubs/ax_lib_curses.m4, configure.in, gap5/Makefile,
+	  gap5/docs/DONE, gap5/docs/TODO, gap5/tg_view.c,
+	  staden_config.h.in, system.mk.in, tgap/tg_library.c: Added
+	  curses/ncurses to autoconf. It now detects which is installed on
+	  the system automatically and allows an alternative path to be
+	  specified too.
+
+	* ac_stubs/ax_lib_lzma.m4: Misc cut and paste errors of samtools &
+	  libz instead of lzma.
+
+2010-04-29  jkbonfield
+
+	* gap4/list_contigs.tcl, gap5/contig_selector.tcl, gap5/gap.tcl,
+	  gap5/gap5rc_menu_full, gap5/list_contigs.tcl,
+	  gap5/ng_fb_cmds.tcl: Improvements to read-only mode.
+	  
+	  We no longer allow Save Contig Order from the List Contig
+	  windows to be tried when we opened a database in read-only
+	  mode. (It didn't work as it was caught later on, but
+	  ungracefully.)
+
+2010-04-28  jkbonfield
+
+	* gap5/break_contig.c: Commented out the remove_redundant_bins()
+	  call in break contig for now as this does not correctly shift
+	  the start coordinate when removing the parent bin and leaving
+	  only a right-child bin.
+	  
+	  (This still needs fixing, but without the optimisation in place
+	  we at least get correct results once again.)
+
+	* gap5/docs/DONE, gap5/docs/TODO:
+
+	* Misc/Makefile, abi/Makefile, convert/Makefile,
+	  copy_reads/Makefile, eba/Makefile, find_renz/Makefile,
+	  g/Makefile, gap4/Makefile, gap5/Makefile, global.mk,
+	  haplo/Makefile, make_weights/Makefile, mutlib/Makefile,
+	  polyA_clip/Makefile, prefinish/Makefile, qclip/Makefile,
+	  screen_seq/Makefile, seq_utils/Makefile, spin/Makefile,
+	  stops/Makefile, tgap/Makefile, tk_utils/Makefile,
+	  tracediff/Makefile, vector_clip/Makefile: Fixed the "make
+	  depend" code so that it works when run from a sub-directory
+	  rather than only just in the top-level checkout.
+	  
+	  This commit also includes the results of running this - ie
+	  makefiles with updated dependencies.
+
+	* Misc/getfile.c, Misc/misc.h, Misc/os.h, Misc/parse_db.c,
+	  abi/abiIO.c, abi/getABIfield.c, alf/alfsplit.c, convert/bapIO.c,
+	  convert/dapIO.c, convert/flat_sd.c, find_renz/find_renz.c,
+	  g/freetree.c, g/g-db.c, g/g-request.c, gap4/actf.c,
+	  gap4/consen.c, gap4/edCommands.c, gap4/extract.c,
+	  gap4/gap-create.c, gap4/newgap_cmds.c, gap4/tagU2.c,
+	  gap5/actf.c, gap5/export_contigs.c, gap5/newgap5_cmds.c,
+	  gap5/tg_index_common.c, make_weights/make_weights.c,
+	  mutlib/align.cpp, mutlib/read_matrix.cpp, mutscan/main.cpp,
+	  polyA_clip/polyA_clip.c, prefinish/finish.c,
+	  prefinish/finish_walk.c, qclip/qclip.c, screen_seq/screen_seq.c,
+	  seq_utils/genetic_code.c, seq_utils/read_matrix.c,
+	  seq_utils/renz_utils.c, seq_utils/sequence_formats.c,
+	  spin/codon_content.c, spin/emboss_input_funcs.c,
+	  spin/nip_cmds.c, spin/readpam.c, spin/seq_reg_cmds.c,
+	  spin/splice_search.c, spin/tkSeqedUtils.c, stops/stops.c,
+	  tgap/b+tree2.c, tgap/g-alloc.c, tgap/g-files.c, tgap/g-io.c,
+	  tgap/g-request.c, tgap/tg_contig.c, tgap/zfio.c,
+	  tk_utils/capture.c, tk_utils/postscript.c,
+	  tk_utils/text_output.c, tracediff/main.cpp,
+	  vector_clip/vector_clip.c: Fixed various large file support
+	  issues for linux.
+	  
+	  These include additional includes of <staden_config.h> and use of
+	  fseeko in place of fseek.
+
+	* g/g-files.c: When opening in read-only mode we no longer attempt
+	  to register items with the freetree structure. This is only a
+	  minor speedup, but more importantly it allows us to use copy_db
+	  to attempt to recover some corrupted databases.
+
+2010-04-20  jkbonfield
+
+	* gap5/gap4_compat.c: Fixed contig_name_to_number to recognise
+	  "=<recno>" syntax.
+
+2010-04-19  jkbonfield
+
+	* gap5/contig_editor.tcl: Added auto-scrolling when selecting a
+	  region (underlining it). Also enabled shift+click to extend a
+	  selection.
+
+	* gap5/gap.tcl: Fixed Database Information output.
+
+	* gap5/libraries.tcl, gap5/tclIndex: Updated the List Libraries
+	  window to use Plotchart. It now has axis and things, but needs
+	  more work still.
+
+2010-04-14  jkbonfield
+
+	* gap5/contig_selector.c, gap5/contig_selector.h,
+	  gap5/newgap5_cmds.c, gap5/tk-io-reg.h: Added back
+	  tk_matchresult_configure function, now in contig_selector.c.
+	  This fixes an error when trying to configure a contig comparator
+	  plot, such as changing colour or line width.
+
+	* gap5/contig_selector.c, gap5/contig_selector.h,
+	  gap5/contig_selector.tcl, gap5/cs-object.c, gap5/fij.c,
+	  gap5/find_oligo.c, gap5/find_repeats.c, gap5/gap5rc_menu_full,
+	  gap5/newgap5_cmds.c, gap5/result_manager.tcl, gap5/tk-io-reg.h:
+	  The contig order can now be saved, from both the contig selector
+	  and contig list windows. Furthermore we can now move contigs
+	  around in the contig selector.
+	  
+	  The "show diagonal" and "Clear all" commands work in the contig
+	  selector.
+	  
+	  The results manager and the results menu in the contig selector
+	  now update properly.
+
+	* tgap/tg_register.c: Remove old debugging output
+
+	* gap5/do_fij.c: Remove duplicates from the contig_list[] as we go
+	  through it. These occured when doing single vs all as the single
+	  contig is in the list twice (as first and then later on in the
+	  "all" bit).
+
+	* gap5/depad_seq_tree.c, gap5/map_reads.tcl, gap5/newgap5_cmds.c:
+	  The Map Reads dialogues now have an option whether to index the
+	  sequence names (and this was renamed from -no_tree to
+	  -index_names at the API level).
+	  
+	  Also fixed a bug with the tg_index -g mode, where the input bam
+	  file is assumed to have been aligned against an ungapped copy of
+	  the contig already in the gap5 DB. We failed to take into
+	  account that contigs may not start at base 1.
+
+	* gap5/editor_search.c, gap5/editor_search.tcl, gap5/gap5rc: Added
+	  by-annotation and by-tag-type search methods to the contig
+	  editor. Also fixed searching by name so it no longer tried to
+	  jump to sequence names that are found in another contig.
+	  
+	* tgap/tg_iface_g.c: Fixed a bug when writing out SeqBlocks
+	  containing a mixture of data with libraries and without
+	  libraries. (This can happen when writing the cached consensus to
+	  a db generated from a bam file.)
+	  
+	  We incorrectly handled the no-library cases, causing corrupt
+	  data to be written to the DB when the first read in a block was
+	  missing.
+
+	* gap4/gap-tcl.c: Fixed a memory corruption when using tcl in
+	  debugging mode (where Tcl_Free is not the same as free).
+
+2010-04-01  jkbonfield
+
+	* convert/Makefile, copy_reads/copy_reads, gap4/gap4, gap5/gap.tcl,
+	  gap5/gap5, gap5/gap5rc, prefinish/finish_sanger, pregap4/pregap4,
+	  spin/spin, spin_emboss/create_emboss_files, system.mk.in,
+	  tgap/Makefile, tgap/tg_tcl.c, tk_utils/Makefile, tk_utils/init.c,
+	  trev/trev: Various fixes for building on MacOS X.
+	  
+	  - The sh wrapper scripts seem to need a trailing / on $STADLIB
+	  otherwise tcl "load" doesn't add one. I'm not sure why yet.
+	  
+	  - Removed tkCanvGraph.c and tclCanvGraph.c from tk_utils build.
+	  These caused all sorts of problems with needing internal tcl/tk
+	  header files, but they're only used by spin2 which we no longer
+	  support nor build. We can cross that bridge if we ever go back
+	  to it.
+	  
+	  - Similarly removed tclInt.h from tg_tcl.c. In theory this was
+	  added to get a prototype for Tcl_GetCommandFromObj, but it
+	  doesn't always seem to be there anyway. Perhaps a Tcl version
+	  issue.
+	  
+	  - Added various more extra libs to explicitly link against in the
+	  Makefiles as MacOS X doesn't like the implicit chains.
+	  
+	  - Removed load of iwidgets from gap5rc. Not sure if we need
+	  this, but it seems to have been commented out some time ago for
+	  gap4 so it seems unlikely.
+	  
+	  - Use @TK_LIBS@ and @TCL_LIBS@ again in system.mk.in. I do not
+	  know why I commented those out (which is worrying), but they're
+	  definitely required for MacOS.
+	  
+	  - Similarly disabled -rpath-link for now as it doesn't exist on
+	  MacOS X. I'm hoping the explicit library linking will remove the
+	  need for using this anyway... to test on other platforms.
+
+	* Misc/os.h: Updated os.h to handle endianness is a better
+	  fashion.  This is taken from io_lib's copy of it and hopefully
+	  works better now on intel based MacOS X systems or Mac systems
+	  building "fat binaries".
+
 2010-03-26  jkbonfield
 	* rel-2-0-0-b6
 	  gap5-1-2-8
