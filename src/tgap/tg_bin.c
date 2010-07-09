@@ -528,6 +528,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     if (!(bin = bin_for_range(io, c, r->start, r->end, 1, &offset,
 			      &comp))) //complemented)))
 	return NULL;
+
     if (complemented)
 	*complemented = comp;
 
@@ -535,12 +536,13 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 	return NULL;
 
     /* Adjust start/end used in bin */
-    if (bin->start_used != bin->end_used) {
+    if (bin->rng) {
 	if (bin->start_used > r->start - offset)
 	    bin->start_used = r->start - offset;
 	if (bin->end_used < r->end - offset)
 	    bin->end_used = r->end - offset;
     } else {
+	/* Initial case */
 	bin->start_used = r->start - offset;
 	bin->end_used = r->end - offset;
     }

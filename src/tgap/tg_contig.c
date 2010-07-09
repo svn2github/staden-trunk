@@ -169,7 +169,7 @@ static int contig_insert_base2(GapIO *io, int bnum,
 
     /* Adjust the bin dimensions */
     bin->size++;
-    if (bin->start_used != bin->end_used) {
+    if (bin->rng) {
 	if (pos <= bin->start_used)
 	    bin->start_used++;
 	if (pos <= bin->end_used)
@@ -321,7 +321,7 @@ static int contig_delete_base2(GapIO *io, int bnum,
 	bin->size = 0;
 	bin_delete(io, bin);
     } else {
-	if (bin->start_used != bin->end_used) {
+	if (bin->rng) {
 	    if (pos < bin->start_used)
 		bin->start_used--;
 	    if (pos <= bin->end_used)
