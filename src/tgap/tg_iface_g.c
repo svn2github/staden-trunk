@@ -2063,6 +2063,8 @@ static GRange *unpack_rng_array(int comp_mode, unsigned char *packed,
 
     /* And finally unpack from the 6 components in parallel for each struct */
     for (i = 0; i < *nr; i++) {
+	r[i].y = 0;
+
 	cp[2] += u72int(cp[2], (uint32_t *)&r[i].rec);
 	cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
 	if (r[i].flags & GRANGE_FLAG_UNUSED) {

@@ -120,7 +120,8 @@ typedef struct {
  * Y position allocation functions/data structs
  */
 typedef struct xy_pair {
-    SPLAY_ENTRY(xy_pair) link;
+    SPLAY_ENTRY(xy_pair) x_link; /* Sorted on X */
+    SPLAY_ENTRY(xy_pair) y_link; /* Sorted on Y */
     int x;
     int y;
 } xy_pair;

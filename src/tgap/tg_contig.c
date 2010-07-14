@@ -670,31 +670,90 @@ int y_cmp(struct xy_pair *y1, struct xy_pair *y2) {
     return y1->y - y2->y;
 }
 
-SPLAY_HEAD(XTREE, xy_pair);
-SPLAY_HEAD(YTREE, xy_pair);
-SPLAY_PROTOTYPE(XTREE, xy_pair, link, x_cmp);
-SPLAY_PROTOTYPE(YTREE, xy_pair, link, y_cmp);
-SPLAY_GENERATE(XTREE, xy_pair, link, x_cmp);
-SPLAY_GENERATE(YTREE, xy_pair, link, y_cmp);
+SPLAY_HEAD(xTREE, xy_pair);
+SPLAY_HEAD(yTREE, xy_pair);
+SPLAY_PROTOTYPE(xTREE, xy_pair, x_link, x_cmp);
+SPLAY_PROTOTYPE(yTREE, xy_pair, y_link, y_cmp);
+SPLAY_GENERATE(xTREE, xy_pair, x_link, x_cmp);
+SPLAY_GENERATE(yTREE, xy_pair, y_link, y_cmp);
+
+#define KEEP_Y
+
+#if 0
+static void xtree_dump(struct xTREE *tree, xy_pair *node) {
+    static int level = 0;
+    char *space = "                                                  ";
+
+    if (!node) {
+	printf("\nxTREE: %p\n", tree);
+	node = SPLAY_ROOT(tree);
+	printf("Root: %p\n", node);
+	level = 0;
+
+	if (!node)
+	    return;
+    }
+    
+    printf("%.*sleft=%p\n", level, space, SPLAY_LEFT(node, x_link));
+    level++;
+    if (SPLAY_LEFT(node, x_link))
+	xtree_dump(tree, SPLAY_LEFT(node, x_link));
+    level--;
+
+    printf("%.*sright=%p\n", level, space, SPLAY_RIGHT(node, x_link));
+    level++;
+    if (SPLAY_RIGHT(node, x_link))
+	xtree_dump(tree, SPLAY_RIGHT(node, x_link));
+    level--;
+}
+
+static void ytree_dump(struct yTREE *tree, xy_pair *node) {
+    xy_pair *n;
+    static int level = 0;
+    char *space = "                                                  ";
+
+    if (!node) {
+	printf("\nyTREE: %p\n", tree);
+	node = SPLAY_ROOT(tree);
+	printf("Root: %p\n", node);
+	level = 0;
+
+	if (!node)
+	    return;
+    }
+    
+    printf("%.*sleft=%p\n", level, space, n=SPLAY_LEFT(node, y_link));
+    level++;
+    if (n) ytree_dump(tree, n);
+    level--;
+
+    printf("%.*sright=%p\n", level, space, n=SPLAY_RIGHT(node, y_link));
+    level++;
+    if (n) ytree_dump(tree, n);
+    level--;
+}
+#endif
 
 /*
  * This algorithm allocates Y coordinates to the horizontal lines listed
  * in tl[0..ntl-1].
  *
  * To keep track of this we expect sorted data, by X. We then keep track
- * of every display line as an entry in one of two splay trees; one
- * sorted on X and one sorted on Y. (NB, change macros SPLAY_ to RB_ for
- * a red-black tree implementation instead.)
+ * of every display line as either a line currently in use (with each line
+ * indexed in two trees - sorted on X and sorted on Y) or a line no longer
+ * in use (indexed in a 3rd tree sorted by Y).
+ * (NB, change macros SPLAY_ to RB_ for a red-black tree
+ * implementation instead.)
  *
- * The X-sorted tree holds the used portion of active display rows.
- * The Y-sorted tree holds rows that can be considered as inactive, but
- * will be reused if we have to add another row.
+ * axtree - active rows sorted by X
+ * aytree - active rows sorted by Y
+ * iytree - inactive rows sorted by Y
  */
 static int compute_ypos(rangec_t *r, int nr, int job) {
     int i, j;
     struct xy_pair *node, *curr, *next;
     int yn = -1;
-
+    
     /* Simple case */
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
 	for (i = j = 0; i < nr; i++) {
@@ -715,8 +774,9 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 #define xgap 3
 
     /* Create and initialise X and Y trees */
-    struct XTREE xtree = SPLAY_INITIALIZER(&xtree);
-    struct YTREE ytree = SPLAY_INITIALIZER(&ytree);
+    struct xTREE axtree = SPLAY_INITIALIZER(&axtree);
+    struct yTREE aytree = SPLAY_INITIALIZER(&aytree);
+    struct yTREE iytree = SPLAY_INITIALIZER(&iytree);
 
     /* Compute Y coords */
     for (i = 0; i < nr; i++) {
@@ -731,48 +791,116 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 		    continue;
 		}
 
-	if ((node = SPLAY_MIN(XTREE, &xtree)) != NULL && r[i].start >= node->x) {
+	//xtree_dump(&axtree, NULL);
+	//ytree_dump(&aytree, NULL);
+
+#ifdef KEEP_Y
+	/* If the node has a cached y coord already, use it if valid */
+	if (r[i].y) {
+	    struct xy_pair yline;
+	    int found = 0;
+
+	    yline.x = 0;
+	    yline.y = r[i].y;
+
+	    /* Ensure we have sufficient yTREE entries */
+	    if (r[i].y > yn) {
+		int j;
+		for (j = yn+1; j <= r[i].y; j++) {
+		    node = (struct xy_pair *)malloc(sizeof(*node));
+		    node->y = ++yn;
+		    node->x = 0;
+		    SPLAY_INSERT(yTREE, &iytree, node);
+		}
+	    }
+
+	    /* See if this Y coord is available */
+	    node = SPLAY_FIND(yTREE, &iytree, &yline);
+	    if (node) {
+		SPLAY_REMOVE(yTREE, &iytree, node);
+		node->x = r[i].end + xgap;
+		SPLAY_INSERT(xTREE, &axtree, node);
+		SPLAY_INSERT(yTREE, &aytree, node);
+		//printf("Used cached Y=%d\n", r[i].y);
+		continue;
+	    }
+
+	    //printf("Looked for x=%d, y=%d, but not in yTREE (0..%d)\n",
+	    //r[i].start, r[i].y, yn);
+
+	    /*
+	     * Faster equivalent to the above by using aytree
+	     */
+	    node = SPLAY_FIND(yTREE, &aytree, &yline);
+	    if (node) {
+		assert(node->y == r[i].y);
+		if (r[i].start >= node->x) {
+		    SPLAY_REMOVE(xTREE, &axtree, node);
+		    node->x = r[i].end + xgap;
+		    SPLAY_INSERT(xTREE, &axtree, node);
+		    continue;
+		}
+	    }
+
+	}
+#endif
+
+	if ((node = SPLAY_MIN(xTREE, &axtree)) != NULL && r[i].start >= node->x) {
 	    //int try_cull = 0;
 
-	    /* We found a node, but is there a smaller Y in the YTREE? */
-	    curr = SPLAY_MIN(YTREE, &ytree);
+	    /* We found a node, but is there a smaller Y in the yTREE? */
+	    curr = SPLAY_MIN(yTREE, &iytree);
 	    if (curr && node->y > curr->y) {
 		node = curr;
 		r[i].y = node->y;
-		SPLAY_REMOVE(YTREE, &ytree, node);
+		SPLAY_REMOVE(yTREE, &iytree, node);
 		node->x = r[i].end + xgap;
-		SPLAY_INSERT(XTREE, &xtree, node);
+		SPLAY_INSERT(xTREE, &axtree, node);
+		SPLAY_INSERT(yTREE, &aytree, node);
+		//printf("1: alloc node=%p, x=%d, y=%d\n", node, node->x, node->y);
 	    } else {
-		/* Apparently not, what about smaller (in y) in XTREE? */
-		curr = SPLAY_NEXT(XTREE, &xtree, node);
+		/* Apparently not, what about smaller (in y) in xTREE? */
+		curr = SPLAY_NEXT(xTREE, &axtree, node);
 		while (curr && r[i].start >= curr->x) {
-		    next = SPLAY_NEXT(XTREE, &xtree, curr);
+#ifdef KEEP_Y
+		    if (curr->y == r[i].y) {
+			/* previous Y, so keep it */
+			node = curr;
+			break;
+		    }
+#endif
+
+		    next = SPLAY_NEXT(xTREE, &axtree, curr);
 		    if (node->y > curr->y) {
-			SPLAY_REMOVE(XTREE, &xtree, node);
-			SPLAY_INSERT(YTREE, &ytree, node);
+			SPLAY_REMOVE(xTREE, &axtree, node);
+			SPLAY_REMOVE(yTREE, &aytree, node);
+			SPLAY_INSERT(yTREE, &iytree, node);
 			//try_cull = 1;
 			node = curr;
 		    } else {
-			SPLAY_REMOVE(XTREE, &xtree, curr);
-			SPLAY_INSERT(YTREE, &ytree, curr);
+			SPLAY_REMOVE(xTREE, &axtree, curr);
+			SPLAY_REMOVE(yTREE, &aytree, curr);
+			SPLAY_INSERT(yTREE, &iytree, curr);
 			//try_cull = 1;
 		    }
 		    curr = next;
 		}
 
 		r[i].y = node->y;
-		SPLAY_REMOVE(XTREE, &xtree, node);
+		SPLAY_REMOVE(xTREE, &axtree, node);
 		node->x = r[i].end + xgap;
-		SPLAY_INSERT(XTREE, &xtree, node);
+		SPLAY_INSERT(xTREE, &axtree, node);
+
+		//printf("2: alloc node=%p, x=%d, y=%d\n", node, node->x, node->y);
 	    }
 
 #if 0
 	    /* Cull Y tree if appropriate to remove excess rows */
 	    if (try_cull) {
-		for (curr = SPLAY_MAX(YTREE, &ytree); curr; curr = next) {
-		    next = SPLAY_PREV(YTREE, &ytree, curr);
+		for (curr = SPLAY_MAX(yTREE, &iytree); curr; curr = next) {
+		    next = SPLAY_PREV(yTREE, &iytree, curr);
 		    if (curr->y == yn) {
-			SPLAY_REMOVE(YTREE, &ytree, curr);
+			SPLAY_REMOVE(yTREE, &iytree, curr);
 			free(curr);
 			yn--;
 		    } else {
@@ -784,28 +912,31 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 
 	} else {
 	    /* Check if we have a free y on ytree */
-	    if ((node = SPLAY_MIN(YTREE, &ytree)) != NULL) {
-		SPLAY_REMOVE(YTREE, &ytree, node);
+	    if ((node = SPLAY_MIN(yTREE, &iytree)) != NULL) {
+		SPLAY_REMOVE(yTREE, &iytree, node);
 	    } else {
 		node = (struct xy_pair *)malloc(sizeof(*node));
 		node->y = ++yn;
 	    }
 	    r[i].y = node->y;
 	    node->x = r[i].end + xgap;
-	    SPLAY_INSERT(XTREE, &xtree, node);
+	    SPLAY_INSERT(xTREE, &axtree, node);
+	    SPLAY_INSERT(yTREE, &aytree, node);
+
+	    //printf("0: alloc node=%p, x=%d, y=%d\n", node, node->x, node->y);
 	}
     }
 
     /* Delete trees */
-    for (node = SPLAY_MIN(XTREE, &xtree); node; node = next) {
-	next = SPLAY_NEXT(XTREE, &xtree, node);
-	SPLAY_REMOVE(XTREE, &xtree, node);
+    for (node = SPLAY_MIN(xTREE, &axtree); node; node = next) {
+	next = SPLAY_NEXT(xTREE, &axtree, node);
+	SPLAY_REMOVE(xTREE, &axtree, node);
 	free(node); 
     }
 
-    for (node = SPLAY_MIN(YTREE, &ytree); node; node = next) {
-	next = SPLAY_NEXT(YTREE, &ytree, node);
-	SPLAY_REMOVE(YTREE, &ytree, node);
+    for (node = SPLAY_MIN(yTREE, &iytree); node; node = next) {
+	next = SPLAY_NEXT(yTREE, &iytree, node);
+	SPLAY_REMOVE(yTREE, &iytree, node);
 	free(node); 
     }
 
@@ -958,7 +1089,9 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 		(*results)[count].pair_mqual = 0;
 
 		(*results)[count].flags = l->flags;
-		(*results)[count].y = 0;
+		(*results)[count].y = l->y;
+		(*results)[count].orig_rec = bin->rec;
+		(*results)[count].orig_ind = n;
 		count++;
 	    }
 	}
@@ -983,6 +1116,36 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
     cache_decr(io, bin);
     return count;
 }
+
+
+/*
+ * Writes back the computed Y position into the cached range arrays
+ * in the tg_cache.c data structs. (If not still in cache, do nothing.)
+ */
+void update_range_y(GapIO *io, rangec_t *r, int count) {
+    int i, last_bin = -1;
+
+    for (i = 0; i < count; i++) {
+	bin_index_t *bin;
+	range_t *rng;
+
+	if (last_bin != r[i].orig_rec) {
+	    last_bin  = r[i].orig_rec;
+	    bin = cache_search_no_load(io, GT_Bin, r[i].orig_rec);
+	}
+
+	if (!bin) {
+	    printf("Bin %d not in cache\n", r[i].orig_rec);
+	    continue;
+	}
+	
+	rng = arrp(range_t, bin->rng, r[i].orig_ind);
+	assert(r[i].rec == rng->rec);
+
+	rng->y = r[i].y;
+    }
+}
+
 
 rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 				int job, int *count) {
@@ -1056,6 +1219,10 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 	    qsort(r, *count, sizeof(*r), sort_range_by_y);
     }
 
+#ifdef KEEP_Y
+    update_range_y(io, r, *count);
+#endif
+
     return r;
 }
 
@@ -1092,6 +1259,8 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 	    verror(ERR_WARN, "tg_contig", "Out of memory - unable to get sequences\n");
 	}
     }
+
+    update_range_y(io, r, *count);
 
     return r;
 }
@@ -1189,7 +1358,9 @@ static int contig_cons_in_range2(GapIO *io, int bin_num,
 		(*results)[count].pair_mqual = 0;
 
 		(*results)[count].flags = l->flags;
-		(*results)[count].y = 0;
+		(*results)[count].y = l->y;
+		(*results)[count].orig_rec = bin->rec;
+		(*results)[count].orig_ind = n;
 
 		if ((*results)[count].start > cend) {
 		    cst  = (*results)[count].start;

@@ -1112,6 +1112,62 @@ void *cache_search(GapIO *io, int type, GRec rec) {
     return &((cached_item *)hi->data.p)->data;
 }
 
+
+/*
+ * As per cache_search, but do not load the item if it's not already in the
+ * cache.
+ *
+ * Returns a pointer to the object on success
+ *         NULL on failure or if not in cache
+ */
+void *cache_search_no_load(GapIO *io, int type, GRec rec) {
+    int sub_rec = 0;
+    int otype = type, orec = rec;
+    cache_key_t k;
+    HacheItem *hi;
+    
+    switch (type) {
+    case GT_Seq:
+	sub_rec = rec & (SEQ_BLOCK_SZ-1);
+	rec >>= SEQ_BLOCK_BITS;
+	type = GT_SeqBlock;
+	break;
+
+    case GT_AnnoEle:
+	sub_rec = rec & (ANNO_ELE_BLOCK_SZ-1);
+	rec >>= ANNO_ELE_BLOCK_BITS;
+	type = GT_AnnoEleBlock;
+	break;
+    }
+
+    k = construct_key(rec, type);
+    hi = HacheTableQuery(io->cache, (char *)&k, sizeof(k));
+
+    if (!hi && io->base)
+	return cache_search_no_load(io->base, otype, orec);
+
+    if (!hi)
+	return NULL;
+
+    switch (otype) {
+    case GT_Seq:
+	{
+	    seq_block_t *b = (seq_block_t *)&((cached_item *)hi->data.p)->data;
+	    return b->seq[sub_rec];
+	}
+
+    case GT_AnnoEle:
+	{
+	    anno_ele_block_t *b = (anno_ele_block_t *)
+		((cached_item *)hi->data.p)->data;
+	    return b->ae[sub_rec];
+        }
+    }
+
+    return &((cached_item *)hi->data.p)->data;
+}
+
+
 /*
  * Creates a new seq_t item.
  */

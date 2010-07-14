@@ -452,10 +452,10 @@ void template_destroy(template_disp_t *t) {
 
 SPLAY_HEAD(XTREE, xy_pair);
 SPLAY_HEAD(YTREE, xy_pair);
-SPLAY_PROTOTYPE(XTREE, xy_pair, link, x_cmp);
-SPLAY_PROTOTYPE(YTREE, xy_pair, link, y_cmp);
-SPLAY_GENERATE(XTREE, xy_pair, link, x_cmp);
-SPLAY_GENERATE(YTREE, xy_pair, link, y_cmp);
+SPLAY_PROTOTYPE(XTREE, xy_pair, x_link, x_cmp);
+SPLAY_PROTOTYPE(YTREE, xy_pair, y_link, y_cmp);
+SPLAY_GENERATE(XTREE, xy_pair, x_link, x_cmp);
+SPLAY_GENERATE(YTREE, xy_pair, y_link, y_cmp);
 
 /*
  * This algorithm allocates Y coordinates to the horizontal lines listed

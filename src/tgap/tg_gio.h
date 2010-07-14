@@ -76,6 +76,7 @@ void cache_destroy(GapIO *io);
 int cache_flush(GapIO *io);
 int cache_updated(GapIO *io);
 void *cache_search(GapIO *io, int type, int GRec);
+void *cache_search_no_load(GapIO *io, int type, GRec rec);
 int cache_upgrade(GapIO *io, cached_item *ci, int mode);
 void *cache_lock(GapIO *io, int type, GRec rec, int mode);
 void *cache_item_resize(void *item, size_t size);

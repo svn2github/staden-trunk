@@ -56,6 +56,7 @@ typedef struct {
     GCardinal pair_rec; /* paired end data */
     GCardinal flags; /* see below */
     /* Move library here? */
+    GCardinal y; /* Not stored on disc, just cached */
 } GRange; /* An element of the bin->rng record */
 
 
@@ -309,6 +310,9 @@ typedef struct {
 
     /* Derived fields, placed here to make sorting easier */
     int seq_tech;
+
+    int orig_rec; /* From bin record and index into bin->rng array. */
+    int orig_ind; /*    Used to update cached range_t->y field. */
 } rangec_t;
 
 typedef struct {
@@ -338,6 +342,7 @@ typedef struct {
     int flags;
     /* Move library here? */
 #endif
+    int y; /* Not stored on disc, just cached */
 } range_t;
 
 /* Decoded from GTrack_header above */
