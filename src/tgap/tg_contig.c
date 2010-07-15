@@ -1134,10 +1134,8 @@ void update_range_y(GapIO *io, rangec_t *r, int count) {
 	    bin = cache_search_no_load(io, GT_Bin, r[i].orig_rec);
 	}
 
-	if (!bin) {
-	    printf("Bin %d not in cache\n", r[i].orig_rec);
+	if (!bin)
 	    continue;
-	}
 	
 	rng = arrp(range_t, bin->rng, r[i].orig_ind);
 	assert(r[i].rec == rng->rec);
@@ -1220,7 +1218,8 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
     }
 
 #ifdef KEEP_Y
-    update_range_y(io, r, *count);
+    if (job & CSIR_ALLOCATE_Y)
+	update_range_y(io, r, *count);
 #endif
 
     return r;
@@ -1260,7 +1259,10 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 	}
     }
 
-    update_range_y(io, r, *count);
+#ifdef KEEP_Y
+    if (job & CSIR_ALLOCATE_Y)
+	update_range_y(io, r, *count);
+#endif
 
     return r;
 }
