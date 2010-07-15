@@ -1,10 +1,174 @@
+2010-07-14  jkbonfield
+
+	* Tagged VERSION 2.0.0b7
+
+2010-07-14  jkbonfield
+
+        * gap5/template_display.c, tgap/tg_cache.c, tgap/tg_contig.c,
+          tgap/tg_contig.h, tgap/tg_gio.h, tgap/tg_iface_g.c,
+          tgap/tg_struct.h: Updated the compute_ypos function in
+          tg_contig.c (note, not the one in template_display.c) to
+          keep track of previous Y coordinates.
+
+          We achieve this by modifying the low-level cached bin-range
+          structures to also include a Y (in memory and not written to
+          disk). If our next query already has Y coordinates used then
+          we prefer these over allocating new ones.
+
+          This prevents the "rotating" effect of short-read data when
+          scrolling right in the contig editor, although at the moment
+          this still happens when scrolling left.
+
+2010-07-09  jkbonfield
+
+        * gap5/docs/TODO:
+
+        * ChangeLog, NEWS, gap5/docs/TODO:
+
+        * tgap/tg_bin.c, tgap/tg_contig.c: Fixed our check for
+          bin->{start_used,start_end} being valid from comparing
+          whether they are equal to checking whether bin->rng is
+          blank.
+
+          The former method meant that a bin consisting solely of a 1
+          base tag (eg start_used=1000, end_used=1000) was considered
+          empty. The next time we add another tag to the bin,
+          start/end weren't extended but instead moved as-if
+          initialising an empty bin. This caused tags to be invisible
+          in some corner cases.
+
+2010-07-08  jkbonfield
+
+        * gap5/Makefile, gap5/gap5rc_menu_full, gap5/import_gff.c,
+          gap5/import_gff.h, gap5/import_gff.tcl, gap5/newgap5_cmds.c,
+          gap5/tclIndex: Added an Import GFF function to act as the
+          reverse of the tag export code in export_contigs.c.
+
+          It handles both padded and unpadded coordinates, although
+          unpadded import is far slower.
+
+          Also right now the GFF type field is ignored, instead using
+          a type= attribute at the end.
+
+        * gap5/export_contigs.c: Fixed writing unpadded coordinates
+          for GFF tags when not-mapping from sequence to consensus
+          positions.
+
+2010-07-07  jkbonfield
+
+        * gap5/export_contigs.c: Now use
+          active_list_contigs_extended()
+          when exporting tags in GFF
+          format.
+
+          Fixed separator in GFF attrib section, from "," to ";".
+
+        * gap5/gap4_compat.c, gap5/io_utils.h, gap5/list_proc.c,
+          gap5/list_proc.h: When expanding a list of contig names to
+          contig recs, start and end coordinates we now have the
+          option of using the full unclipped contig length instead of
+          the previous clipped length.
+
+          This is through using the new active_list_contigs_extended()
+          function instead of active_list_contigs().
+
+          Functions will need to use what is appropriate. Outputting
+          consensus makes sense to only have the clipped portion as
+          the extensions are just poly-N. Outputting all sequence and
+          tags may make sense to use extended mode.
+
+        * gap5/baf.c: Bug fix to parsing of consensus tags in BAF
+
+2010-07-02  jkbonfield
+
+        * gap5/editor_view.c: Disabled the debugging output:
+          accidentally left on from earlier commit.
+
+        * gap5/sam_index.c: Prevented crash when dealing with CIGAR
+          strings using "N" (skipped bases). These can come from
+          TopHat's spliced alignments. The samtools pileup interface
+          treats a single input sequence as having multiple start and
+          end coordinates (unfortunately without a flag indicating
+          whether it's a true or spliced end).
+
+          We need a better method of handling this, especially with
+          regards to templates and more than 2 reads on it. (We
+          actually know how many we expect due to previous scanning of
+          CIGAR.)
+
+2010-07-02  awhitwham
+
+        * gap5/depth.tcl: Fixed the resizing issues on the template
+          tracks.
+
+2010-07-01  jkbonfield
+
+        * gap5/break_contig.c: Added two new utility functions which
+          we may later wish to move to a more general purpose
+          location: contig_visible_start and
+          contig_visible_end. Visible here including cutoff data but
+          excluding the invisible cached consensus data.
+
+        * gap5/editor_view.c, gap5/export_contigs.c: Updated the way
+	  we interpret consensus tags.
+
+          Previously the range (flags & GRANGE_FLAG_TAG_SEQ) bit was
+	  used to distinguish sequence tags vs consensus tags, but
+	  also the range pair_rec held the record number the tag was
+	  bound to. This makes sense for sequences, but we also stored
+	  the consensus record for consensus tags.
+
+          The problem comes when breaking a contig. We reparent an
+	  entire section of bin tree, attaching it to a new contig
+	  record. We do not wish to go through the entire bin tree
+	  changing r->pair_rec to be the new contig ID. Fortunately
+	  checking the GRANGE_FLAG_TAG_SEQ bit is sufficient to know
+	  if the tag is for the consensus instead.
+
+          So... changed cases where we checked r->pair_rec ==
+          contig_rec to instead use !(r->flags & GRANGE_FLAG_TAG_SEQ).
+
+          Also updated the GFF export code in export_contigs.c so it
+	  does hex escaping instead of C-string escaped (as mandated
+	  in GFF3 spec at http://www.sequenceontology.org/gff3.shtml).
+
+        * gap5/docs/TODO:
+
+        * tgap/tg_contig.c, tgap/tg_contig.h: Overloaded the "whence"
+	  type to the iterator to also control whether we sort by
+	  start (default and old mode) or end of read. This is
+	  particularly useful when using whence of CITER_LAST and
+	  using contig_iter_prev to walk through the list backwards,
+	  allowing us to iterate along the order in which sequences
+	  become visible while going backwards.
+
+        * tk_utils/sheet.c, tk_utils/sheet.h: Removed the maximum
+          number of rows/columns. It wasn't functioning correctly
+          anyway, being only checked in some cases and consequentially
+          causing memory corruptions. (Albeit hard to hit unless using
+          nil2 font.)
+
+        * gap5/editor_view.c: Protect against potentiallty
+	  uninitialised values returned from edview_item_at_pos when
+	  nothing is visible. (This makes it easier for error checking
+	  in the calling function.)
+
+          Fixed buffer overflow when an editor sheet is at the maximum
+          display width.
+
+2010-06-30  jkbonfield
+
+        * gap5/baf.c: Fixed a bug with consensus tags. We were
+	  incorrectly setting the flag to indicate they were sequence
+	  tags. (This was causing crashes in break contig too.)
+
 2010-06-28  jkbonfield
 
-	* gap5/editor_view.c: Attempted to improve the positioning of the
-	  Y scrollbar when scrolling around in X. This is somewhat tricky
-	  to get right, especially when multiple sequences are packed in a
-	  line as the Y coordinates of them jump around a lot
-	  anyway. However our method is as follows.
+	* gap5/editor_view.c: Attempted to improve the positioning of
+	  the Y scrollbar when scrolling around in X. This is somewhat
+	  tricky to get right, especially when multiple sequences are
+	  packed in a line as the Y coordinates of them jump around a
+	  lot anyway. However our method is as follows.
 	  
 	  - Attempt to keep the top sequence still in the top position
 	  after scrolling, adjusting Y scrollbar as necessary.

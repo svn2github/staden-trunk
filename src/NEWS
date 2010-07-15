@@ -1,4 +1,21 @@
-... up to date June 30th 2010 ...
+Staden 2.0.0b7,  July 14th 2010
+===============================
+
+Gap5/tg_index v1.2.9.
+
+Gap5 changes
+------------
+
+*	Added an Import GFF Annotations option to Gap5. This deals
+        with padded and unpadded data, although for now the GFF types
+        are not used, instead using the "type=<tag_type>;" attribute
+        in the last GFF column to select a gap5 tag type. GFF Export
+        has been improved too.
+
+*	Tg_index now has support for spliced alignments in SAM/BAM,
+        using the CIGAR "N" character. This isn't fully implemented
+        yet as the read-pairing breaks in this case, but the data at
+        least can be imported now.
 
 *	Gap5 should now compile under MacOS X, provided the X11
         version of Tcl/Tk is used rather than native aqua.
@@ -10,16 +27,15 @@
         either auto-scrolls at the window edge or we can use
         shift+click to extend.
 
-*	Updated the primer melting temperature code to use the latest
-        published formulae.
+*	Gap5 now has basic primer-walking oligo picking support. (PCR
+        to come later.)
 
-*	Gap5 now has basic primer-walking oligo picking support.
-
-*	Improvements to SAM support: fixed flags when exporting; tags
-        are supported (via user-define key=value auxillary data) in
-        both import/export; faster export; output is now sorted;
-        protection against quality values higher than ASCII ~; now
-	parse the PL field in read-group lines in tg_index.
+*       Improvements to SAM support: fixed flags when exporting; tags
+        are supported (via user-defined key=value auxillary data - Zs
+        and Zc record types) in both import/export; faster export;
+        output is now sorted; protection against quality values higher
+        than ASCII ~; now parse the PL field in read-group lines in
+        tg_index.
 
 *	The Join Editor now displays overlap length and match score,
         confirming whether we still wish to make a join. Also
@@ -34,13 +50,15 @@
 
 *	It should be easier to keep track of sequences when scrolling
         in the editor as it attempts to adjust the Y scrollbar to keep
-        data on screen. Also improved efficiency by caching some more
+        data on screen. Additionally the Y-layout doesn't change so
+        much when scrolling rightwards (although left scrolling still
+        changes Y layout). Improved efficiency by caching some more
         data.
 
 *	The contig editor now sorts by sequence technology first and
         then X coordinate, meaning that ABI capillary sequences are
-        always at the top of the display.
-
+        always at the top of the display. NOTE: This requires the
+        platform tag (PL) in SAM/BAM @RG read-group header lines.
 
 *	Bug fix writing reading names when importing a mixture of data
         with and without read-groups.
@@ -52,18 +70,26 @@
         selector window now work. The results menu (and Results
         Manager window) now update too.
 
+*	Disable a few more options and buttons when in read-only
+        mode. Previously it wouldn't actually have written data, but
+        tried and aborted.
+
+*	Fixed a rare bug with single base-pair tags vanishing under
+        certainc onditions.
+
+
+Other changes
+-------------
+
+*	[Gap4/Gap5] Updated the primer melting temperature code to use
+        the latest published formulae.
+
 *	Various compilation improvements: better detection of Large
         File Support under some linux systems; control over the
         location of curses/ncurses libraries (and which to use); fixed
         "make depend" when running from a subdirectory instead of the
         top src root; forced use of the staden os.h instead of
         sometimes picking up a copy in io_lib.
-
-*	Disable a few more options and buttons when in read-only
-        mode. Previously it wouldn't actually have written data, but
-        tried and aborted.
-
-
 
 
 

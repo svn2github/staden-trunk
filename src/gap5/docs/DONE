@@ -1,3 +1,8 @@
+*	Further improvements to scrolling. We could store the Y
+        coordinate used in the range_t or seq_t struct rather than
+        rangec_t. This means it's effectively cached between calls of
+	contig_seqs_in_range.
+
 *	BUILD: Remove -lcurses and use $(CURSES_LIB). This can be set
 	up by autoconf:
 	http://www.gnu.org/software/autoconf-archive/ax_with_curses.html

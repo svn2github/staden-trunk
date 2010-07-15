@@ -1,8 +1,3 @@
-*	Further improvements to scrolling. We could store the Y
-        coordinate used in the range_t or seq_t struct rather than
-        rangec_t. This means it's effectively cached between calls of
-	contig_seqs_in_range.
-
 *	BUG: creating tags (2 on the consensus together?) sometimes
         causes the editor to not believe an edit is made and we can
         quit without getting a dialogue to save. However it really has
