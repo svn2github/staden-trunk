@@ -98,6 +98,7 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 
     xx->r = NULL;
     xx->anno_hash = NULL;
+    xx->rec_hash = NULL;
 
     /* Private cursor */
     cp = Tcl_GetVar2(xx->interp, Tk_PathName(xx->ed->sw.tkwin), "reg",
@@ -122,6 +123,9 @@ void edview_destroy(edview *xx) {
 
     if (xx->anno_hash)
 	HacheTableDestroy(xx->anno_hash, 0);
+    
+    if (xx->rec_hash)
+	HacheTableDestroy(xx->rec_hash, 0);
 
     xfree(xx);
 }
@@ -796,11 +800,24 @@ int edview_visible_items(edview *xx, int start, int end) {
     if (!xx->r)
 	return -1;
 
+    if (xx->rec_hash) {
+	HacheTableDestroy(xx->rec_hash, 0);
+    }
+
+    xx->rec_hash = HacheTableCreate(8192, HASH_DYNAMIC_SIZE);
+    xx->rec_hash->name = "rec_hash";
+
     /* Work out Y dimension */
     xx->max_height = 0;
     for (i = 0; i < xx->nr; i++) {
+	HacheData hd;
+	int key = xx->r[i].rec;
+
 	if (xx->max_height < xx->r[i].y)
 	    xx->max_height = xx->r[i].y;
+
+	hd.i = i;
+	HacheTableAdd(xx->rec_hash, (char *)&key, sizeof(key), hd, NULL);
     }
     xx->max_height += 3; /* +1 for from 0, +2 for consensus+ruler */
 
@@ -876,6 +893,31 @@ int edGetGelNumber(edview *xx, int x, int y) {
 
     puts("edGetGelNumber unimplemented");
     return 0;
+}
+
+/*
+ * Find the largest i such that r[i].y <= y.
+ */
+static int edview_binary_search_y(rangec_t *r, int nr, int y) {
+    int i_start, i_end, i_mid;
+
+    if (nr <= 0)
+	return 0;
+
+    i_start = 0;
+    i_end = nr;
+
+    while (i_start < i_end) {
+	i_mid = (i_end - i_start) / 2 + i_start;
+
+	if (r[i_mid].y < y) {
+	    i_start = i_mid+1;
+	} else {
+	    i_end = i_mid;
+	}
+    }
+
+    return i_mid;
 }
 
 static int ed_set_xslider_pos(edview *xx, int offset) {
@@ -1031,8 +1073,10 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
     sheet_clear(&xx->names->sw);
     */
 
+    i = edview_binary_search_y(r, nr, xx->displayYPos);
+
     /* Work down the screen line by line */
-    for (j = xx->y_seq_start, i = 0;
+    for (j = xx->y_seq_start;
 	 j < xx->displayHeight - xx->y_seq_end && i < nr;
 	 j++) {
 	int sp, l;
@@ -1507,7 +1551,7 @@ static void tk_redisplaySeqScroll(edview *xx, rangec_t *r, int nr) {
 			   xx->max_height);
 
 	/* No need to redraw the consenus/numbers */
-	xx->refresh_flags |= ED_DISP_NAMES | ED_DISP_SEQS | ED_DISP_CURSOR |
+	xx->refresh_flags |= ED_DISP_NAMES | ED_DISP_READS | ED_DISP_CURSOR |
 	    ED_DISP_SELECTION;
     }
 
@@ -1533,15 +1577,15 @@ static void tk_redisplayCursor(edview *xx, rangec_t *r, int nr) {
     if (xx->cursor_rec == xx->cnum) {
 	y = xx->y_cons;
     } else {
-	int i;
-	y = -1;
-	for (i = 0; i < nr; i++) {
-	    if (r[i].rec == xx->cursor_rec) {
-		y = r[i].y + xx->y_seq_start - xx->displayYPos;
-		break;
-	    }
-	}
+	int key;
+	HacheItem *hi;
 	
+	key = xx->cursor_rec;
+	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
+	y = hi
+	    ? r[hi->data.i].y + xx->y_seq_start - xx->displayYPos
+	    : -1;
+
 	if (y < xx->y_seq_start || y >= xx->displayHeight) {
 	    XawSheetDisplayCursor(&xx->ed->sw, False);
 	    return; /* not visible */
@@ -1585,22 +1629,24 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 
     /* Y position */
     if (!y_safe && xx->cursor_type != GT_Contig) {
-	int i;
+	int i, key;
 	int sheight = xx->displayHeight - xx->y_seq_end - xx->y_seq_start;
+	HacheItem *hi;
 	
 	edview_visible_items(xx, xx->displayPos,
 			     xx->displayPos + xx->displayWidth);
 
-	for (i = 0; i < xx->nr; i++) {
-	    if (xx->r[i].rec == xx->cursor_rec) {
-		y_pos = xx->r[i].y;
-		if (y_pos == -1) {
-		    y_pos = 0; /* tag on consensus */
-		    xx->cursor_rec = xx->cnum;
-		    xx->cursor_type = GT_Contig;
-		}
-		break;
-	    }
+	key = xx->cursor_rec;
+	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
+	if (!hi)
+	    return 1;
+	i = hi->data.i;
+
+	y_pos = xx->r[i].y;
+	if (y_pos == -1) {
+	    y_pos = 0; /* tag on consensus */
+	    xx->cursor_rec = xx->cnum;
+	    xx->cursor_type = GT_Contig;
 	}
 
 	/* If above, scroll so this is the first row */
@@ -1627,6 +1673,8 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 
     if (do_x || do_y) {
 	xx->refresh_flags = ED_DISP_ALL;
+	if (!do_x)
+	    xx->refresh_flags &= ~(ED_DISP_CONS | ED_DISP_XSCROLL);
 	edview_redraw(xx);
 	return 1;
     }
@@ -1665,6 +1713,7 @@ static void cursor_notify(edview *xx) {
 int edview_seq_visible(edview *xx, int seq, int *new_y) {
     int i, y_pos, vis = 0;
     int sheight = xx->displayHeight - xx->y_seq_end - xx->y_seq_start;
+    HacheItem *hi;
 	
     edview_visible_items(xx, xx->displayPos,
 			 xx->displayPos + xx->displayWidth);
@@ -1672,16 +1721,16 @@ int edview_seq_visible(edview *xx, int seq, int *new_y) {
     if (new_y)
 	*new_y = xx->displayYPos;
 
-    for (i = 0; i < xx->nr; i++) {
-	if (xx->r[i].rec == seq) {
-	    y_pos = xx->r[i].y;
-	    vis = 1;
-	    if (y_pos == -1) {
-		/* tag? */
-		return 1;
-	    }
-	    break;
-	}
+    hi = HacheTableSearch(xx->rec_hash, (char *)&seq, sizeof(seq));
+    if (!hi)
+	return 0;
+    i = hi->data.i;
+
+    y_pos = xx->r[i].y;
+    vis = 1;
+    if (y_pos == -1) {
+	/* tag? */
+	return 1;
     }
 
     if (!vis) {
@@ -1948,11 +1997,13 @@ int edCursorUp(edview *xx) {
     if (xx->cursor_type == GT_Contig) {
 	j = xx->nr;
     } else {
-	for (j = 0; j < xx->nr; j++) {
-	    if (xx->r[j].rec == xx->cursor_rec) {
-		break;
-	    }
-	}
+	HacheItem *hi;
+	int key = xx->cursor_rec;
+
+	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
+	if (!hi)
+	    return 0;
+	j = hi->data.i;
     }
 
     /* Step up until we find something overlapping */
@@ -2013,12 +2064,14 @@ int edCursorDown(edview *xx) {
 	cpos = xx->cursor_pos;
 	j = -1;
     } else {
-	for (j = 0; j < xx->nr; j++) {
-	    if (xx->r[j].rec == xx->cursor_rec) {
-		cpos = xx->r[j].start + xx->cursor_pos;
-		break;
-	    }
-	}
+	HacheItem *hi;
+	int key = xx->cursor_rec;
+
+	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
+	if (!hi)
+	    return 0;
+	j = hi->data.i;
+	cpos = xx->r[j].start + xx->cursor_pos;
     }
 
     /* Step up until we find something overlapping */
@@ -2382,7 +2435,8 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 			 xx->displayPos + xx->displayWidth);
 
     /* Inefficient, but just a copy from tk_redisplaySeqSequences() */
-    for (i = 0; i < xx->nr; i++) {
+    i = edview_binary_search_y(xx->r, xx->nr, xx->displayYPos);
+    for (; i < xx->nr; i++) {
 	if ((xx->ed->hide_annos || seq_only || name) &&
 	    ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO))
 	    continue;
@@ -2448,6 +2502,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
  */
 int edview_row_for_item(edview *xx, int rec, int *xmin, int *xmax) {
     int i, r = -1;
+    HacheItem *hi;
 
     if (rec == xx->cnum) {
 	if (xmin) *xmin = -xx->displayPos;
@@ -2460,15 +2515,14 @@ int edview_row_for_item(edview *xx, int rec, int *xmin, int *xmax) {
 			 xx->displayPos + xx->displayWidth);
 
     /* And search for rec in this list */
-    for (i = 0; i < xx->nr; i++) {
-	if (xx->r[i].rec == rec) {
-	    if (xmin) *xmin = xx->r[i].start - xx->displayPos;
-	    if (xmax) *xmax = xx->r[i].end   - xx->displayPos;
-	    r = xx->r[i].y + xx->y_seq_start - xx->displayYPos;
-	    break;
-	    
-	}
-    }
+    hi = HacheTableSearch(xx->rec_hash, (char *)&rec, sizeof(rec));
+    if (!hi)
+	return -1;
+
+    i = hi->data.i;
+    if (xmin) *xmin = xx->r[i].start - xx->displayPos;
+    if (xmax) *xmax = xx->r[i].end   - xx->displayPos;
+    r = xx->r[i].y + xx->y_seq_start - xx->displayYPos;
     
     return r >= xx->y_seq_start ? r : -1;
 }

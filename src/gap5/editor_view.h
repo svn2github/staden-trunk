@@ -108,6 +108,9 @@ typedef struct _edview {
     /* Maps r[i].anno.obj_rec to i */
     HacheTable *anno_hash;
 
+    /* Maps record numbers to r[i] indices */
+    HacheTable *rec_hash;
+
     /* Selection */
     int select_made;
     int select_seq;
