@@ -1898,7 +1898,15 @@ int edSetCursorPos(edview *xx, int type, int rec, int pos, int visible) {
 	    ustart = xx->contig->start;
 	    uend   = xx->contig->end;
 	} else {
-	    consensus_valid_range(xx->io, xx->contig->rec, &ustart, &uend);
+	    char con;
+	    calculate_consensus_simple(xx->io, xx->cnum, pos, pos, &con, NULL);
+	    if (con != 'N') {
+		/* Must be valid, so fake boundaries */
+		ustart = pos;
+		uend = pos;
+	    } else {
+		consensus_valid_range(xx->io, xx->contig->rec, &ustart, &uend);
+	    }
 	}
 
 	uend++;
