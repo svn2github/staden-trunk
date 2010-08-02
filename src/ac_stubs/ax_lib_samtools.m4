@@ -6,7 +6,7 @@
 #
 #   This macro will check for the existence of samtools 'bam' library.
 #   (http://samtools.sourceforge.net/). It does this by checking for the
-#   header file ibam.h and the bam library object file. These are
+#   header file bam.h and the bam library object file. These are
 #   initially searched for in the include and lib subdirectory of the
 #   --with-samtools=DIR, and if not found there directly within DIR
 #   itself. This allows for --with-samtools to be specified as either
