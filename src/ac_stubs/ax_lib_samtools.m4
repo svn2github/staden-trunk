@@ -117,7 +117,8 @@ AC_DEFUN([AX_LIB_SAMTOOLS],
       if test "x$SAMTOOLS_ROOT" == "x"
       then
           samtools_exe=samtools
-      elseif test -x "$SAMTOOLS_ROOT/bin/samtools"
+      elif test -x "$SAMTOOLS_ROOT/bin/samtools"
+      then
 	  samtools_exe="$SAMTOOLS_ROOT/bin/samtools"
       else
 	  samtools_exe="$SAMTOOLS_ROOT/samtools"
