@@ -78,7 +78,7 @@ DEPS = $(TK_LIB) \
        $(MISC_LIB)
 
 
-$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
+$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE) $(L)/.dir
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(DEPS)
 
 # 7/1/99 johnt - Rule used when $(DEF_FILE) defined - currently only for windows

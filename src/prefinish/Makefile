@@ -38,7 +38,7 @@ x$(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 	$(MKDEFL) $@ $(OBJS)
 
-$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
+$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE) $(L)/.dir
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(FIN_DEP) $(SHLIB_DEP)
 
 # Most of these are only needed because GAP_LIB has a dependency
