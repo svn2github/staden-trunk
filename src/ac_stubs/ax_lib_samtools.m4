@@ -99,7 +99,7 @@ AC_DEFUN([AX_LIB_SAMTOOLS],
 
       if test "$samtools_ok" = "yes"
       then
-          SAMTOOLS_LDFLAGS="$ZLIB_LDFLAGS"
+          SAMTOOLS_LDFLAGS="-lbam $ZLIB_LDFLAGS"
           SAMTOOLS_CFLAGS=
       fi
   fi
