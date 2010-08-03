@@ -31,16 +31,20 @@ around by typing "(cd manual; make spotless)".
 Installing documention
 ======================
 
-Use "make install PREFIX=<dir>" to install the package documentation
+Use "make install prefix=<dir>" to install the package documentation
 somewhere. This is entirely platform independent, so the documentation
-will be copied to ${PREFIX}/share/man/ and ${PREFIX}/share/doc/staden/.
+will be copied to ${prefix}/share/man/ and ${prefix}/share/doc/staden/.
 
 This copies manuals previously been built in the first step.
 
-Without redefining the PREFIX variable the documentation will be
-installed into the "_inst" local subdirectory. PREFIX defined here
-should be th same --prefix used when configuring and building the main
-Staden Package source directory.
+Without redefining the prefix variable the documentation will attempt
+to be installed into the system "/usr" directory. prefix defined here
+should be the same --prefix used when configuring and building the
+main Staden Package source directory.
+
+Additionally, the DESTDIR variable can be set allowing for staged
+installs. See http://www.gnu.org/prep/standards/html_node/DESTDIR.html
+for further details on this.
 
 
 Building a source distribution

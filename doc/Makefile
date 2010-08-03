@@ -1,5 +1,20 @@
-VERSION=2.0.0b1
-PREFIX=_inst
+VERSION=2.0.0b2
+prefix=/usr
+
+# GNU standard dir names
+datarootdir = ${prefix}/share
+docdir      = ${datarootdir}/doc/staden
+mandir      = ${datarootdir}/man
+man1dir     = ${mandir}/man1
+man4dir     = ${mandir}/man4
+htmldir     = ${docdir}
+
+# Dir names used below, incorporating DESTDIR
+DOCDIR     = ${DESTDIR}${docdir}
+MANDIR     = ${DESTDIR}${mandir}
+MAN1DIR    = ${DESTDIR}${man1dir}
+MAN4DIR    = ${DESTDIR}${man4dir}
+HTMLDIR    = ${DESTDIR}${htmldir}
 
 all:
 	@echo
@@ -19,29 +34,35 @@ common:
 
 install:
 	# Man pages
-	-mkdir -p $(PREFIX)/share/man
-	cp -R manual/man/* $(PREFIX)/share/man/
-	#
+	-mkdir -p            $(MAN1DIR)
+	cp manual/man/man1/* $(MAN1DIR)
+
+	-mkdir -p            $(MAN4DIR)
+	cp manual/man/man4/* $(MAN4DIR)
+
 	# Main PDF docs
-	-mkdir -p $(PREFIX)/share/doc/staden
-	cp manual/manual.pdf manual/mini.pdf $(PREFIX)/share/doc/staden
-	#
+	-mkdir -p                            $(DOCDIR)
+	cp manual/manual.pdf manual/mini.pdf $(DOCDIR)
+
 	# HTML pages
-	-mkdir $(PREFIX)/share/doc/staden/manual
-	cp manual/*.html $(PREFIX)/share/doc/staden/manual
-	cp manual/*.png $(PREFIX)/share/doc/staden/manual
-	cp manual/*.index $(PREFIX)/share/doc/staden/manual
-	cp -r i $(PREFIX)/share/doc/staden/manual
-	-mkdir $(PREFIX)/share/doc/staden/scripting_manual
-	-cp scripting_manual/*.html $(PREFIX)/share/doc/staden/scripting_manual
-	cp -r i $(PREFIX)/share/doc/staden/manual/scripting_manual
-	cp *.html $(PREFIX)/share/doc/staden
-	#
+	cp *.html $(HTMLDIR)
+
+	-mkdir            $(HTMLDIR)/manual
+	cp manual/*.html  $(HTMLDIR)/manual
+	cp manual/*.png   $(HTMLDIR)/manual
+	cp manual/*.index $(HTMLDIR)/manual
+	-mkdir            $(HTMLDIR)/manual/i
+	cp i/*            $(HTMLDIR)/manual/i
+
+	-mkdir                      $(HTMLDIR)/scripting_manual
+	-cp scripting_manual/*.html $(HTMLDIR)/scripting_manual
+	-mkdir                      $(HTMLDIR)/scripting_manual/i
+	cp i/*                      $(HTMLDIR)/scripting_manual/i
+
 	# Other bits and pieces
-	cp -r Acknowledgements *.txt *.pdf i $(PREFIX)/share/doc/staden
-	#
-	# Tidy up
-	-test "$(PREFIX)" != "." && find $(PREFIX) -name .svn -exec rm -rf {} \;
+	cp Acknowledgements *.txt *.pdf $(DOCDIR)
+	-mkdir -p $(DOCDIR)/i
+	cp i/*    $(DOCDIR)/i
 
 
 DISTSRC=staden_doc-$(VERSION)-src
