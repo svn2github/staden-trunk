@@ -1,546 +1,671 @@
-#include <string.h>
-#include <xalloc.h>
+/*
+ *
+ * depth_track.c - a tk canvas item to display depth track data
+ *                 formerly used tkRaster to do the same job.
+ *
+ * Andrew Whitwham, July 2010
+ *
+ */
+
+#include <stdio.h>
 #include <math.h>
-#include <sys/time.h>
-#include <time.h>
-#include <float.h>
-#include <assert.h>
+#include <X11/Xlib.h>
 
+#include "gap_range.h"
 #include "depth_track.h"
-#include "gap_cli_arg.h"
-#include "tkRaster.h"
 
-static void dtrack_move_xhair(depth_track_t *t, int x, int y,
-			     double *rx, double *ry);
+/* define the depth track item */
 
-/* From tclIntDecls.h */
-extern Tcl_Command Tcl_GetCommandFromObj(Tcl_Interp * interp, Tcl_Obj * objPtr);
+typedef struct DepthTrackItem {
+    Tk_Item header; 	    /* mandatory entry */
+    GC template;    	    /* template context */
+    GC reads;	    	    /* reads context */
+    GC copy;
+    XColor *tcolour;
+    XColor *scolour;
+    XColor *background;
+    Pixmap pm;	    	    /* pixmap to draw on */
+    Tk_Anchor anchor;	    /* pixmap anchorpoint */
+    double an_x, an_y;      /* postioning points */
+    double px, py;          /* current mouse pointer x, y (in world units)*/
+    
+    gap_range_t *gr;        /* range info */
+    double contig_start;    /* start value of contig */
+    double contig_length;   /* length of contig */
+    double wx0, wx1;	    /* world coords */
+    double wy0, wy1;        
+    double y_start, y_end;  /* world edges in y */
+    
+    int logy;
+    int cmode;
+    int ymode;
+    int accuracy;
+    int reads_only;
+    int filter;
+    int min_qual;
+    int max_qual;
+    int min_sz;
+    double yzoom;
+    double yz;
+    
+    int width, height;      /* pixmap width and height */
+    int ntl;	    	    /* num lines in viewable area */
+} DepthTrackItem;
 
-/* ------------------------------------------------------------------------ */
-/* Tcl_Obj "template_display" type implementation */
-/* Not sure if needed for depth_track, trying anyway */
 
-static void dtrack_update_string(Tcl_Obj *obj);
-static int  dtrack_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
+/* mandatory prototypes */
 
-static Tcl_ObjType dtrack_obj_type = {
+static int		depth_coords(Tcl_Interp *interp, Tk_Canvas canvas,
+    	    	    	    Tk_Item *itemPtr, int argc, Tcl_Obj *CONST argv[]);
+static int		depth_area(Tk_Canvas canvas, Tk_Item *itemPtr, 
+    	    	    	    double *rectPtr);
+static double		depth_point(Tk_Canvas canvas, Tk_Item *itemPtr,
+    	    	    	    double *coordPtr);
+static int		depth_postscript(Tcl_Interp *interp, 
+    	    	    	    Tk_Canvas canvas, Tk_Item *itemPtr, int prepass);
+static int		configure_depth(Tcl_Interp *interp,
+			    Tk_Canvas canvas, Tk_Item *itemPtr, int argc,
+			    Tcl_Obj *CONST argv[], int flags);
+static int		create_depth(Tcl_Interp *interp,
+			    Tk_Canvas canvas, struct Tk_Item *itemPtr,
+			    int argc, Tcl_Obj *CONST argv[]);
+static void		delete_depth(Tk_Canvas canvas,
+			    Tk_Item *itemPtr, Display *display);
+static void		depth_display(Tk_Canvas canvas,
+			    Tk_Item *itemPtr, Display *display, Drawable dst,
+			    int x, int y, int width, int height);
+static void		scale_depth(Tk_Canvas canvas,
+			    Tk_Item *itemPtr, double originX, double originY,
+			    double scaleX, double scaleY);
+static void		translate_depth(Tk_Canvas canvas,
+			    Tk_Item *itemPtr, double deltaX, double deltaY);
+
+/* none mandatory protoypes */
+static void compute_depth_bbox(Tk_Canvas canvas, DepthTrackItem *dti);
+
+static int  range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+	    	    	    char *value, char *widgRec, int offset);
+static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
+	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr);
+		    
+static void redraw_depth_image(DepthTrackItem *dti, Display *display);
+
+/* define the non-standard option types */ 
+static Tk_CustomOption range_option = {
+    (Tk_OptionParseProc *)range_cmd_parse,
+    range_cmd_print, (ClientData)NULL
+};
+
+/* config options, some are meant only to be returned with itemcget */
+static Tk_ConfigSpec config_specs[] = {
+    {TK_CONFIG_ANCHOR, "-anchor", NULL, NULL,
+	"nw", Tk_Offset(DepthTrackItem, anchor), TK_CONFIG_DONT_SET_DEFAULT},
+    {TK_CONFIG_CUSTOM, "-range", NULL, NULL,
+    	NULL, Tk_Offset(DepthTrackItem, gr), TK_CONFIG_NULL_OK, &range_option},
+    {TK_CONFIG_INT, "-logy", "logy", "LogY", "0", Tk_Offset(DepthTrackItem, logy), 0, 0},
+    {TK_CONFIG_INT, "-cmode", "colourMode", "ColourMode", "0", Tk_Offset(DepthTrackItem, cmode), 0, 0},
+    {TK_CONFIG_INT, "-ymode", "YMode", "YMode", "0", Tk_Offset(DepthTrackItem, ymode), 0, 0},
+    {TK_CONFIG_INT, "-accuracy", "accuracy", "Accuracy", "0", Tk_Offset(DepthTrackItem, accuracy), 0, 0},
+    {TK_CONFIG_INT, "-reads_only", "readsOnly", "ReadsOnly", "0", Tk_Offset(DepthTrackItem, reads_only), 0, 0},
+    {TK_CONFIG_INT, "-filter", "filter", "Filter", "0", Tk_Offset(DepthTrackItem, filter), 0, 0},
+    {TK_CONFIG_INT, "-min_qual", "minQual", "MinQual", "0", Tk_Offset(DepthTrackItem, min_qual), 0, 0},
+    {TK_CONFIG_INT, "-max_qual", "maxQual", "MaxQual", "255", Tk_Offset(DepthTrackItem, max_qual), 0, 0},
+    {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "100.0", Tk_Offset(DepthTrackItem, yzoom), 0, 0},
+    {TK_CONFIG_DOUBLE, "-yz", "yZ", "YZ", "0", Tk_Offset(DepthTrackItem, yz), 0, 0},
+    {TK_CONFIG_DOUBLE, "-wx0", NULL, NULL, "0", Tk_Offset(DepthTrackItem, wx0), 0}, 
+    {TK_CONFIG_DOUBLE, "-wx1", NULL, NULL, "0", Tk_Offset(DepthTrackItem, wx1), 0},
+    {TK_CONFIG_DOUBLE, "-wy0", NULL, NULL, "0", Tk_Offset(DepthTrackItem, wy0), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-wy1", NULL, NULL, "0", Tk_Offset(DepthTrackItem, wy1), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-y_start", NULL, NULL, "0", Tk_Offset(DepthTrackItem, y_start), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-y_end", NULL, NULL, "0", Tk_Offset(DepthTrackItem, y_end), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-px", NULL, NULL, "0", Tk_Offset(DepthTrackItem, px), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-py", NULL, NULL, "0", Tk_Offset(DepthTrackItem, py), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_COLOR, "-tcolour", NULL, NULL,
+	"magenta", Tk_Offset(DepthTrackItem, tcolour), TK_CONFIG_NULL_OK},
+    {TK_CONFIG_COLOR, "-scolour", NULL, NULL,
+	"green4", Tk_Offset(DepthTrackItem, scolour), TK_CONFIG_NULL_OK},
+    {TK_CONFIG_COLOR, "-background", NULL, NULL,
+        "black", Tk_Offset(DepthTrackItem, background), TK_CONFIG_NULL_OK},
+    {TK_CONFIG_END, (char *) NULL, (char *) NULL, (char *) NULL, (char *) NULL, 0, 0}
+};			    
+
+/* define the DepthTrackItem functions and name */			    
+Tk_ItemType tkDepthItem = {
     "depth_track",
-    (Tcl_FreeInternalRepProc*)NULL,
-    (Tcl_DupInternalRepProc*)NULL,
-    dtrack_update_string,
-    dtrack_from_any
+    sizeof(DepthTrackItem),
+    create_depth,
+    config_specs,
+    configure_depth,
+    depth_coords,
+    delete_depth,
+    depth_display,
+    TK_CONFIG_OBJS,          /* needs to be this */
+    depth_point,
+    depth_area,
+    depth_postscript,
+    scale_depth,
+    translate_depth,
+    (Tk_ItemIndexProc *)     NULL,
+    (Tk_ItemCursorProc *)    NULL,
+    (Tk_ItemSelectionProc *) NULL,
+    (Tk_ItemInsertProc *)    NULL,
+    (Tk_ItemDCharsProc *)    NULL,
+    (Tk_ItemType *)          NULL,
 };
-
-static void dtrack_update_string(Tcl_Obj *obj) {
-    depth_track_t *t = obj->internalRep.otherValuePtr;
-    obj->bytes = ckalloc(30);
-    obj->length = sprintf(obj->bytes, "dtrack=%p", t);
-}
-
-static int dtrack_from_any(Tcl_Interp *interp, Tcl_Obj *obj) {
-    char *bytes;
-    int length;
-    depth_track_t *t;
-
-    if (NULL == (bytes = Tcl_GetStringFromObj(obj, &length)))
-	return TCL_ERROR;
-
-    if (0 != strncmp(bytes, "dtrack=", 3))
-	return TCL_ERROR;
-
-    /* Free the old internalRep before setting the new one. */
-    if (obj->typePtr && obj->typePtr->freeIntRepProc)
-	(*obj->typePtr->freeIntRepProc)(obj);
-
-    /* Convert the hex value to a pointer once more */
-    if (1 != sscanf(bytes+3, "%p", &t))
-	return TCL_ERROR;
-
-    obj->internalRep.otherValuePtr = t;
-    obj->typePtr = &dtrack_obj_type;
-    return TCL_OK;
-}
-
-/* not all of these needed, prune list later */
-static Tk_OptionSpec optionSpecs[] = {
-    {TK_CONFIG_INT, "-logy", "logy", "LogY", "0",
-     -1, Tk_Offset(depth_track_t, logy), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-cmode", "colourMode", "ColourMode", "0",
-     -1, Tk_Offset(depth_track_t, cmode), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-ymode", "YMode", "YMode", "0",
-     -1, Tk_Offset(depth_track_t, ymode), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-yoffset", "YOffset", "YOffset", "0",
-     -1, Tk_Offset(depth_track_t, yoffset), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-accuracy", "accuracy", "Accuracy", "0",
-     -1, Tk_Offset(depth_track_t, accuracy), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-spread", "spread", "Spread", "0",
-     -1, Tk_Offset(depth_track_t, spread), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-reads_only", "readsOnly", "ReadsOnly", "0",
-     -1, Tk_Offset(depth_track_t, reads_only), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-by_strand", "byStrand", "ByStrand", "1",
-     -1, Tk_Offset(depth_track_t, sep_by_strand), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-filter", "filter", "Filter", "0",
-     -1, Tk_Offset(depth_track_t, filter), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-plot_depth", "plotDepth", "PlotDepth", "0",
-     -1, Tk_Offset(depth_track_t, plot_depth), 0, 0, 0 /* mask */},
-    {TK_CONFIG_DOUBLE, "-xzoom", "xZoom", "XZoom", "10.0",
-     -1, Tk_Offset(depth_track_t, xzoom), 0, 0, 0 /* mask */},
-    {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "10.0",
-     -1, Tk_Offset(depth_track_t, yzoom), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-min_qual", "minQual", "MinQual", "0",
-     -1, Tk_Offset(depth_track_t, min_qual), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-max_qual", "maxQual", "MaxQual", "255",
-     -1, Tk_Offset(depth_track_t, max_qual), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-min_y_size", "minYSize", "MinYSize", "512",
-     -1, Tk_Offset(depth_track_t, min_sz), 0, 0, 0 /* mask */},
-    {TK_OPTION_END}
-};
-
-static int dtrack_cmd(ClientData clientData, Tcl_Interp *interp,
-		      int objc, Tcl_Obj *CONST objv[]) {
-    int index, replot = 0;
-    depth_track_t *t = (depth_track_t *)clientData;
-    Tcl_Obj *res = NULL;
-
-    static char *options[] = {
-	"delete",       "cget",    "configure", "replot",
-	"ymin",         "ymax",         "yrange",  "xhair", "yz",
-	(char *)NULL,
-    };
-
-    enum options {
-	DELETE,         CGET,      CONFIGURE,   REPLOT,
-	YMIN,           YMAX,      YRANGE,      XHAIR,    YZ
-    };
-
-    if (objc < 2) {
-	Tcl_WrongNumArgs(interp, 1, objv, "option arg ?arg ...?");
-	return TCL_ERROR;
+	    
+	    
+/* this function is called when item is created as part
+   of a canvas */
+   			    
+static int create_depth(Tcl_Interp *interp,
+	    Tk_Canvas canvas,
+	    Tk_Item *itemPtr,
+	    int argc,
+	    Tcl_Obj *CONST *argv) {
+    DepthTrackItem *dti = (DepthTrackItem *)itemPtr;
+    int i;
+    
+    if (argc==1) {
+	i = 1;
+    } else {
+	char *arg = Tcl_GetStringFromObj(argv[1], NULL);
+	
+	if (((argc>1) && (arg[0] == '-')
+		&& (arg[1] >= 'a') && (arg[1] <= 'z'))) {
+	    i = 1;
+	} else {
+	    i = 2;
+	}
     }
 
-    if (Tcl_GetIndexFromObj(interp, objv[1], options, "option", 0,
-            &index) != TCL_OK) {
-        return TCL_ERROR;
+    if (argc < i) {
+	Tcl_AppendResult(interp, "wrong # args: should be \"",
+		Tk_PathName(Tk_CanvasTkwin(canvas)), " create ",
+		itemPtr->typePtr->name, " x y ?options?\"",
+		(char *) NULL);
+	return TCL_ERROR;
     }
+    
+    /* initialise item record */
+    
+    dti->template = None;
+    dti->reads = None;
+    dti->tcolour = NULL;
+    dti->scolour = NULL;
+    dti->copy = NULL;
+    dti->background = NULL;
+    dti->pm = None;
+    dti->anchor = TK_ANCHOR_NW;
+    dti->an_x = 0.0;
+    dti->an_y = 0.0;
+    dti->gr = NULL;
+    dti->wy0 = dti->y_start = 0;
+    dti->wy1 = dti->y_end = Tk_Height(Tk_CanvasTkwin(canvas)); /* initial world height */
+    dti->width = -1;
+    dti->height = -1;
+    
+    
+    if ((depth_coords(interp, canvas, itemPtr, i, argv) == TCL_OK)) {
+    	if (configure_depth(interp, canvas, itemPtr, argc - i, argv + i, 0) == TCL_OK) {
+	    // possibly more initialisation here
 
-    switch ((enum options)index) {
-    case DELETE:
-	Tcl_DeleteCommandFromToken(interp,
-				   Tcl_GetCommandFromObj(interp, objv[0]));
-	break;
+	    return TCL_OK;
+	}
+    }
+    
+    /* if we get here then something is wrong */
+    printf("DepthTrackItem creation failed\n");
+    delete_depth(canvas, itemPtr, Tk_Display(Tk_CanvasTkwin(canvas)));
+    
+    return TCL_ERROR;
+}
 
-    case CGET:
-	if (objc != 3) {
-	    Tcl_WrongNumArgs(interp, 2, objv, "cget");
+
+/* invoked by the coords command */
+
+static int depth_coords(Tcl_Interp *interp, Tk_Canvas canvas,		
+    	    	    	    Tk_Item *itemPtr, int objc, Tcl_Obj *CONST objv[]) {
+    DepthTrackItem *dti = (DepthTrackItem *)itemPtr;
+    
+    if (objc == 0) {
+	Tcl_Obj *obj = Tcl_NewObj();
+
+	Tcl_Obj *subobj = Tcl_NewDoubleObj(dti->an_x);
+    	Tcl_ListObjAppendElement(interp, obj, subobj);
+
+	subobj = Tcl_NewDoubleObj(dti->an_y);
+	Tcl_ListObjAppendElement(interp, obj, subobj);
+
+	Tcl_SetObjResult(interp, obj);
+    } else if (objc < 3) {
+	if (objc == 1) {
+	    if (Tcl_ListObjGetElements(interp, objv[0], &objc,
+		    (Tcl_Obj ***) &objv) != TCL_OK) {
+		return TCL_ERROR;
+	    } else if (objc != 2) {
+		char buf[64 + TCL_INTEGER_SPACE];
+
+		sprintf(buf, "wrong # coordinates: expected 2, got %d", objc);
+		Tcl_SetResult(interp, buf, TCL_VOLATILE);
+		return TCL_ERROR;
+	    }
+	}
+	
+	if ((Tk_CanvasGetCoordFromObj(interp, canvas, objv[0],
+		&dti->an_x) != TCL_OK)
+		|| (Tk_CanvasGetCoordFromObj(interp, canvas, objv[1],
+			&dti->an_y) != TCL_OK)) {
 	    return TCL_ERROR;
 	}
-	break;
-
-    case CONFIGURE:
-	if (objc == 2) {
-	    res = Tk_GetOptionValue(interp, (char *)t, t->optionTable,
-				    NULL, t->tkwin);
-	    if (!res)
-		return TCL_ERROR;
-	} else if (objc == 3) {
-	    res = Tk_GetOptionValue(interp, (char *)t, t->optionTable,
-				    objv[2], t->tkwin);
-	    if (!res)
-		return TCL_ERROR;
-	} else {
-	    if (Tk_SetOptions(interp, (char *)t, t->optionTable,
-			      objc-2, objv+2, t->tkwin, NULL, NULL)
-		!= TCL_OK)
-		return TCL_ERROR;
-	    replot = 1;
-	}
-	if (res)
-	    Tcl_SetObjResult(interp, res);
-	break;
-
-    case REPLOT:
-	replot = 1;
-	break;
-
-    case YMIN:
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(t->ymin));
-	break;
-
-    case YMAX:
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(t->ymax));
-	break;
 	
-    case YZ:
-	Tcl_SetObjResult(interp, Tcl_NewDoubleObj(t->yz));
-	break;
-    	
+	compute_depth_bbox(canvas, dti);
+    } else {
+	char buf[64 + TCL_INTEGER_SPACE];
 
-    case YRANGE: {
-	char buf[1024];
-	double top, bottom;
-
-    	/* Line adjusts to raster size, so no scolling needed for the moment.
-	   There may be value in having an adustable size, but not yet.
-	*/
-	
-	bottom = 1;
-	top = 0;
-
-	sprintf(buf, "%f %f", top, bottom);
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, -1));
-	break;
+	sprintf(buf, "wrong # coordinates: expected 0 or 2, got %d", objc);
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
+	return TCL_ERROR;
     }
-
-    case XHAIR:
-	if (objc == 4) {
-	    int x, y;
-	    double rx, ry;
-	    Tcl_Obj *obj[2];
-	    int width, height, height2;
-	    
-	    RasterWinSize(t->raster, &width, &height);
-	    height2 = height / 2;
-
-	    Tcl_GetIntFromObj(interp, objv[2], &x);
-	    Tcl_GetIntFromObj(interp, objv[3], &y);
-	    dtrack_move_xhair(t, x, y, &rx, &ry);
-
-    	    ry  = (height - ry) / t->yz;
-	    
-	    obj[0] = Tcl_NewDoubleObj(rx);
-	    obj[1] = Tcl_NewDoubleObj(ry);
-	    Tcl_SetObjResult(interp, Tcl_NewListObj(2, obj));
-	} else {
-	    dtrack_move_xhair(t, INT_MAX, INT_MAX, NULL, NULL);
-	}
-	break;
-    }
-
-    if (replot)
-	depth_track_replot(t);
-
+    
     return TCL_OK;
 }
 
 
-static void dtrack_cmd_delete(ClientData clientData) {
-    depth_track_destroy((depth_track_t *)clientData);
+/* configure and redraw the depth track */
+
+static int configure_depth(Tcl_Interp *interp,
+	       Tk_Canvas canvas,
+	       Tk_Item *itemPtr,
+	       int argc,
+	       Tcl_Obj *CONST *argv,
+	       int flags) {
+	    
+    DepthTrackItem *dti = (DepthTrackItem *)itemPtr;
+    Tk_Window tkwin;
+    Display *display;
+    int width, height;
+        
+    tkwin   = Tk_CanvasTkwin(canvas);
+    display = Tk_Display(tkwin);
+    
+    if (Tk_ConfigureWidget(interp, tkwin, config_specs, argc, (char **) argv,
+	    (char *) dti, flags|TK_CONFIG_OBJS) != TCL_OK) {
+
+	printf("ERROR %s\n", Tcl_GetStringResult(interp));
+	return TCL_ERROR;
+    }
+    
+    width  = Tk_Width(tkwin);
+    height = Tk_Height(tkwin);
+    
+    if (dti->template == None) {
+    	XGCValues gcValues;
+    	gcValues.foreground = dti->tcolour->pixel;
+	gcValues.background = dti->background->pixel;
+	dti->template = Tk_GetGC(tkwin, GCForeground|GCBackground, &gcValues);
+    }
+
+    if (dti->reads == None) {
+    	XGCValues gcValues;
+    	gcValues.foreground = dti->scolour->pixel;
+	gcValues.background = dti->background->pixel;
+	dti->reads = Tk_GetGC(tkwin, GCForeground|GCBackground, &gcValues);
+    }
+
+    if (dti->copy == None) {
+    	XGCValues gcValues;
+   	gcValues.foreground = dti->background->pixel;
+	gcValues.background = dti->background->pixel;
+	dti->copy = Tk_GetGC(tkwin, GCForeground|GCBackground, &gcValues);
+    }
+
+    if (width != dti->width || height != dti->height) {
+    	/* going to need a new pixmap */
+ 	if (dti->pm) {
+	    Tk_FreePixmap(display, dti->pm);
+	}
+
+    	dti->width = width;
+    	dti->height = height;	
+	
+	dti->pm = Tk_GetPixmap(display, Tk_WindowId(tkwin), dti->width, dti->height, 24);
+    }
+    
+
+    redraw_depth_image(dti, display);
+    compute_depth_bbox(canvas, dti);
+    return TCL_OK;
 }
 
-static void dt_event_proc(ClientData clientData, XEvent *eventPtr) {
-    if (eventPtr->type == DestroyNotify) {
-    	depth_track_destroy((depth_track_t *)clientData);
+
+/* free resources nicely*/
+
+static void delete_depth(Tk_Canvas canvas, Tk_Item *itemPtr, Display *display) {
+    DepthTrackItem *dti = (DepthTrackItem *)itemPtr;
+    
+    if (dti->pm != None) {
+    	Tk_FreePixmap(display, dti->pm);
+    }
+    
+    if (dti->template != None) {
+    	Tk_FreeGC(display, dti->template);
+    }
+    
+    if (dti->reads != None) {
+    	Tk_FreeGC(display, dti->reads);
+    }
+    
+    if (dti->copy != None) {
+    	Tk_FreeGC(display, dti->copy);
+    }
+    
+    if (dti->tcolour != NULL) {
+	Tk_FreeColor(dti->tcolour);
+    }
+
+    if (dti->scolour != NULL) {
+	Tk_FreeColor(dti->scolour);
+    }
+
+    if (dti->background != NULL) {
+	Tk_FreeColor(dti->background);
     }
 }
 
 
-typedef struct {
-    char *raster_win;
-    char *range_obj;
-} dtrack_arg;
+/* compute the bounding box of the item */
 
-static int tcl_depth_track(ClientData clientData, Tcl_Interp *interp,
-				int objc, Tcl_Obj *CONST objv[]) {
-    depth_track_t *dt;
-    Tcl_Obj *tobj;
-    Tk_Raster *raster;
+static void compute_depth_bbox(Tk_Canvas canvas, DepthTrackItem *dti) {
+    Tk_Window tkwin;
+    int width, height;
+    int x, y;
+    
+    tkwin = Tk_CanvasTkwin(canvas);
+
+    width  = Tk_Width(tkwin);
+    height = Tk_Height(tkwin);
+    
+    x = (int) (dti->an_x + ((dti->an_x >= 0) ? 0.5 : - 0.5));
+    y = (int) (dti->an_y + ((dti->an_y >= 0) ? 0.5 : - 0.5));
+    
+    switch (dti->anchor) {
+	case TK_ANCHOR_N:
+	    x -= width / 2;
+	    break;
+	case TK_ANCHOR_NE:
+	    x -= width;
+	    break;
+	case TK_ANCHOR_E:
+	    x -= width;
+	    y -= height / 2;
+	    break;
+	case TK_ANCHOR_SE:
+	    x -= width;
+	    y -= height;
+	    break;
+	case TK_ANCHOR_S:
+	    x -= width / 2;
+	    y -= height;
+	    break;
+	case TK_ANCHOR_SW:
+	    y -= height;
+	    break;
+	case TK_ANCHOR_W:
+	    y -= height / 2;
+	    break;
+	case TK_ANCHOR_NW:
+	    break;
+    	case TK_ANCHOR_CENTER:
+	    x -= width / 2;
+	    y -= height / 2;
+	    break;
+    }
+    
+    dti->header.x1 = x;
+    dti->header.y1 = y;
+    dti->header.x2 = x + width;
+    dti->header.y2 = y + height;
+}
+
+			    
+/* draw the depth track onto the screen, copies from the pixmap to
+   the canvas */			    
+			    
+static void depth_display(Tk_Canvas canvas, Tk_Item *itemPtr,
+    	    	    	    Display *display, Drawable drawable,
+			    int x, int y, int width, int height) {
+    
+    DepthTrackItem *dti = (DepthTrackItem *)itemPtr;
+    int pix_x, pix_y, pix_w, pix_h;
+    short draw_x, draw_y;
+
+    if (dti->pm != None) {
+	if (x > dti->header.x1) {
+	    pix_x = x - dti->header.x1;
+	    pix_w = dti->header.x2 - x;
+	} else {
+	    pix_x = 0;
+	    if ((x + width) < dti->header.x2) {
+		pix_w = x + width - dti->header.x1;
+	    } else {
+		pix_w = dti->header.x2 - dti->header.x1;
+	    }
+	}
+	if (y > dti->header.y1) {
+	    pix_y = y - dti->header.y1;
+	    pix_h = dti->header.y2 - y;
+	} else {
+	    pix_y = 0;
+	    if ((y + height) < dti->header.y2) {
+		pix_h = y + height - dti->header.y1;
+	    } else {
+		pix_h = dti->header.y2 - dti->header.y1;
+	    }
+	}
+	
+	Tk_CanvasDrawableCoords(canvas,
+		(double) (dti->header.x1 + pix_x),
+		(double) (dti->header.y1 + pix_y),
+		&draw_x, &draw_y);
+
+	/*
+	 * Must modify the mask origin within the graphics context to line up
+	 * with the bitmap's origin (in order to make bitmaps with
+	 * "-background {}" work right).
+	 */
+
+ 	XSetClipOrigin(display, dti->copy, draw_x - pix_x, draw_y - pix_y);
+	XCopyArea(display, dti->pm, drawable, dti->copy, pix_x, pix_y,(unsigned int) pix_w,
+		(unsigned int) pix_h, draw_x, draw_y); 
+	
+	XSetClipOrigin(display, dti->copy, 0, 0);
+    }
+}
+
+
+/* subvert the point function so that it now
+   now provides world coords for xhair feedback in depth.tcl
+*/
+
+static double depth_point(Tk_Canvas canvas, Tk_Item *itemPtr, double *coordPtr) {
+    DepthTrackItem *dti = (DepthTrackItem *)itemPtr;
+    double ax, bx;
+
+    dti->px = coordPtr[0];
+    dti->py = coordPtr[1];
+
+    dti->py = (dti->height - dti->py) / dti->yz;
+    
+    ax = dti->width / (dti->wx1 - dti->wx0);
+    bx = dti->wx0;
+    
+    dti->px = (dti->px / ax) + bx;
+
+    return 0;
+}
+
+
+/* determines whether an item lies entirely
+   inside, entirely outside, or overlapping a given rectangle
+*/
+
+static int depth_area(Tk_Canvas canvas, Tk_Item *itemPtr, double *rectPtr) {
+    DepthTrackItem *dti = (DepthTrackItem *)itemPtr;
+
+    if ((rectPtr[2] <= dti->header.x1)
+	    || (rectPtr[0] >= dti->header.x2)
+	    || (rectPtr[3] <= dti->header.y1)
+	    || (rectPtr[1] >= dti->header.y2)) {
+	return -1;
+    }
+    if ((rectPtr[0] <= dti->header.x1)
+	    && (rectPtr[1] <= dti->header.y1)
+	    && (rectPtr[2] >= dti->header.x2)
+	    && (rectPtr[3] >= dti->header.y2)) {
+	return 1;
+    }
+    
+    return 0;
+}
+
+
+/* unimplemented scaling function */
+
+static void scale_depth(Tk_Canvas canvas, Tk_Item *itemPtr,
+    	    	    	    double originX, double originY,
+			    double scaleX, double scaleY) {
+    printf("DepthTrackItem scale - not implemented.\n");
+}
+
+
+/* move item by given amount */
+
+static void translate_depth(Tk_Canvas canvas, Tk_Item *itemPtr, 
+    	    	    	    	double deltaX, double deltaY) {
+
+    DepthTrackItem *dti = (DepthTrackItem *)itemPtr;
+
+    dti->an_x += deltaX;
+    dti->an_y += deltaY;
+    
+    compute_depth_bbox(canvas, dti);
+}
+
+
+/* unimplemented function to generate postscript data for printing */
+
+static int depth_postscript(Tcl_Interp *interp, Tk_Canvas canvas, Tk_Item *itemPtr,	
+    	    	    	    	int prepass) {
+    printf("DepthTrackItem postscript - not implemented\n");
+    
+    return TCL_ERROR;
+}
+
+
+/* parse the range command to get at the data */
+
+static int range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+	    	    	    char *value, char *widgRec, int offset) {
+			    
+    DepthTrackItem *dti = (DepthTrackItem *)widgRec;
     Tcl_CmdInfo info;
-
-    dtrack_arg args;
-    cli_args a[] = {
-	{"-raster", ARG_STR, 1, NULL, offsetof(dtrack_arg, raster_win)},
-	{"-range",  ARG_STR, 1, NULL, offsetof(dtrack_arg, range_obj)},
-	{NULL,	     0,	      0, NULL, 0}
-    };
-
-    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
-	return TCL_ERROR;
-	
-	
-    if (!Tcl_GetCommandInfo(interp, args.raster_win, &info))
-	return TCL_ERROR;
-
-    raster = (Tk_Raster*)info.clientData;
-
-    if (NULL == (dt = depth_track_new(interp, raster)))
-	return TCL_ERROR;
-
-    if (!Tcl_GetCommandInfo(interp, args.range_obj, &info))
-	return TCL_ERROR;
-
-    dt->gr = (gap_range_t*)info.objClientData; // N.B. different from rasta
-    gap_range_test(dt->gr);
-	
-    if (NULL == (tobj = Tcl_NewObj())) {
-	free(dt);
-	return TCL_ERROR;
-    }
     
-    tobj->internalRep.otherValuePtr = (VOID *)dt;
-    tobj->typePtr = &dtrack_obj_type;
-    dtrack_update_string(tobj);
-
-    dt->optionTable = Tk_CreateOptionTable(interp, optionSpecs);
-    if (Tk_InitOptions(interp, (char *)dt, dt->optionTable, dt->tkwin)
-	!= TCL_OK) {
-	free(dt);
-	return TCL_ERROR;
-    }
-
-    /* Register the string form as a new command */
-    if (NULL == Tcl_CreateObjCommand(interp, tobj->bytes, dtrack_cmd,
-				     (ClientData)dt,
-				     (Tcl_CmdDeleteProc *)dtrack_cmd_delete))
-	return TCL_ERROR;
-	
-    Tk_CreateEventHandler(dt->tkwin,
-    	    	    	     StructureNotifyMask,
-			     dt_event_proc, (ClientData) dt);
-
-    Tcl_SetObjResult(interp, tobj);
+    if (!Tcl_GetCommandInfo(interp, value, &info)) return TCL_ERROR;
     
-    return TCL_OK;
-}
-
-/* Our only external function */
-int DTrack_Init(Tcl_Interp *interp) {
-    Tcl_RegisterObjType(&dtrack_obj_type);
-
-    if (NULL == Tcl_CreateObjCommand(interp, "g5::depth_track",
-				     tcl_depth_track,
-				     (ClientData)NULL,
-				     (Tcl_CmdDeleteProc *)NULL))
-	return TCL_ERROR;
+    dti->gr = (gap_range_t *)info.objClientData;
 
     return TCL_OK;
 }
-
-
-/* ------------------------------------------------------------------------ */
-/* And the C to actually implement it, minus the Tcl interface gubbins above */
-depth_track_t *depth_track_new(Tcl_Interp *interp,
-			      Tk_Raster *raster) {
-    depth_track_t *t = (depth_track_t *)calloc(1, sizeof(*t));
-    int i;
-    char *opts[10], b[1024];
-
-    if (!t)
-	return NULL;
-
-    t->interp = interp;
-    t->raster = raster;
-    t->tkwin = GetRasterTkWin(raster);
-
-    opts[0] = "-fg";
-    opts[1] = b;
-    opts[2] = "-linewidth";
-    opts[3] = "0";
-    opts[4] = "-function";
-    opts[5] = "copy";
-    opts[6] = NULL;
-
-    for (i = 0; i < 32; i++) {
-	sprintf(b, "#%02x%02x%02x", 64+i*5, 64+i*5, 64+i*5);
-	t->map_col[i] = CreateDrawEnviron(interp, raster, 6, opts);
-	SetDrawEnviron(t->interp, t->raster, t->map_col[i]);
-    }
-   
-    opts[1] = "orange";
-    t->span_col = CreateDrawEnviron(interp, raster, 6, opts);
-
-    opts[1] = "blue";
-    t->single_col = CreateDrawEnviron(interp, raster, 6, opts);
-
-    opts[1] = "red";
-    t->inconsistent_col = CreateDrawEnviron(interp, raster, 6, opts);
-
-    opts[1] = "green4";
-    t->fwd_col  = CreateDrawEnviron(interp, raster, 6, opts);
-    opts[3] = "3";
-    t->fwd_col3 = CreateDrawEnviron(interp, raster, 6, opts);
-    opts[3] = "0";
-
-    opts[1] = "magenta";
-    t->rev_col  = CreateDrawEnviron(interp, raster, 6, opts);
-    opts[3] = "3";
-    t->rev_col3 = CreateDrawEnviron(interp, raster, 6, opts);
-    opts[3] = "0";
-   
-    opts[1] = "green";
-    opts[5] = "xor";
-    t->xhair_col = CreateDrawEnviron(interp, raster, 6, opts);
-
-    t->tdepth = NULL;
-    t->sdepth = NULL;
-    t->depth_width = 0;
-    t->xhair_pos = DBL_MAX;
-    t->yhair_pos = DBL_MAX;
-    t->wx0 = 0;
-    t->wx1 = 0;
     
-    return t;
+
+/* return value for the range command */
+
+static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
+	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr) {
+    DepthTrackItem *dti = (DepthTrackItem *)widgRec;
+    
+    if (dti->gr == NULL) 
+    	return "gap range not set";
+    else
+    	return "gap range set";
 }
+			    
 
-void depth_track_destroy(depth_track_t *t) {
-    if (!t)
-	return;
-
-    if (t->tdepth)
-	free(t->tdepth);
-    if (t->sdepth)
-	free(t->sdepth);
-	
-    /* Draw Environments automatically freed on raster destroy */
-
-    free(t);
-}
-
-
-int depth_track_replot(depth_track_t *t) {
-    double wx0, wy0, wx1, wy1, ax, ay, bx, by;
-    int j;
+/* do the actual work of drawing the depth track, uses the gap_range
+   functions for most of the data handling */
+   	    
+static void redraw_depth_image(DepthTrackItem *dti, Display *display) {
+    double working_wx0, working_wx1;
     double tsize = 1000;
+    int force_change = 0;
+    XPoint *sp = NULL;
+    XPoint *tp = NULL;
+    int i;
     int ymin = INT_MAX;
     int ymax = INT_MIN;
-    int width, height, height2;
-    Display *rdisp;
-    Drawable rdraw;
-    GC rgc;
-    int force_change = 0;
-    XPoint *sp, *tp;
-    
-    if (!t)
-	return -1;
+    double ax, bx;
 
-    tk_RasterClear(t->raster);
-    RasterWinSize(t->raster, &width, &height);
-    GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
-//  printf("DT Height %f to %f height %d\n", wy0, wy1, height);
-//  printf("DT Width  %f to %f width  %d\n", wx0, wx1, width);
+    /* clear the pixmap */
+    XFillRectangle(display, dti->pm, dti->copy, 0, 0, dti->width, dti->height);
     
-    wx0 -= tsize; /* we use some of the reads beyond the window size */
-    wx1 += tsize;
+    working_wx0 = dti->wx0 - tsize; // use some values beyond the window size.
+    working_wx1 = dti->wx1 + tsize;
+    
+    if (gap_range_recalculate(dti->gr, dti->width, working_wx0, working_wx1, dti->gr->template_mode, force_change)) {
 
-    /* if range has changed (or no range) recalculate */
-    
-    if (gap_range_recalculate(t->gr, width, wx0, wx1, t->gr->template_mode, force_change)) {
-    
-	if (t->gr->r == NULL) {
-	    return 0;
+	if (dti->gr->r == NULL) {
+	    return;
 	}
 	
 	force_change = 1;
     }
     
-
-    /*
-     * Do this in multiple passes.
-     * 1) Compute X (start/end of lines to draw), colours, status.
-     * 2) Plot (possibly combined with 2)
-     */
-
-    GetWorldToRasterConversion(t->raster, &ax, &ay, &bx, &by);
-
-    t->ntl = gap_range_x(t->gr, ax, bx, t->fwd_col, t->rev_col, 
-    	    	    	    t->single_col, t->span_col, t->inconsistent_col,
-		    	    force_change, t->reads_only);
-
-
-    /* 2) Plot the lines */
-
-    /* prepare image */
-    height2 = height / 2;
-    t->yzoom = 100;
-    t->yz = t->yzoom / 50.0;
-
-    if (t->gr->max_height > 0) {    
-    	t->yz = ((double)height / (double)t->gr->max_height) * 0.95;
-    } 
+    /* world to pixmap conversion values */
+    if (dti->wx1 - dti->wx0 == 0) return;
     
+    ax = dti->width / (dti->wx1 - dti->wx0);
+    bx = dti->wx0;
     
-    /* Now to draw the show the image */
-    rdisp = GetRasterDisplay (t->raster);
-    rdraw = GetRasterDrawable(t->raster);
-    rgc   = GetRasterGC      (t->raster);
+    /* 1) Compute X */
+    dti->ntl = gap_range_x(dti->gr, ax, bx, 0, 0, 0, 0, 0, force_change, dti->reads_only);
 
-
-    /* Plot depth */
-    sp = (XPoint *)calloc(width, sizeof(*sp));
-    tp = (XPoint *)calloc(width, sizeof(*tp));
-
-    for (j = 0; j < width; j++) {
-	sp[j].x = j;
-	sp[j].y = height - 5 - t->gr->depth[j].s * t->yz;
-	tp[j].x = j;
-	tp[j].y = height - 5 - t->gr->depth[j].t * t->yz;
-	
-	if (ymin > sp[j].y) ymin = sp[j].y;
-	if (ymin > tp[j].y) ymin = tp[j].y;
-	
-	if (ymax < sp[j].y) ymax = sp[j].y;
-	if (ymax < tp[j].y) ymax = tp[j].y;
-    } 
-
-    if (!(t->filter & FILTER_PAIRED)) {
-	SetDrawEnviron(t->interp, t->raster, t->fwd_col);
-	XDrawLines(rdisp, rdraw, GetRasterGC(t->raster), sp, width, CoordModeOrigin);
+    /* 2) Calculate Y scale */
+    if (dti->gr->max_height > 0) {    
+    	dti->yz = ((double)dti->height / (double)dti->gr->max_height) * 0.95;
+    } else {
+    	dti->yz = dti->yzoom / 50.0;
     }
     
-    SetDrawEnviron(t->interp, t->raster, t->rev_col);
-    XDrawLines(rdisp, rdraw, GetRasterGC(t->raster), tp, width, CoordModeOrigin);
-
+   /* Plot depth */
+    sp = (XPoint *)calloc(dti->width, sizeof(*sp));
+    tp = (XPoint *)calloc(dti->width, sizeof(*tp));
+    
+    // FIXME - need to put in a memory check
+    
+    for (i = 0; i < dti->width; i++) {
+	sp[i].x = i;
+	sp[i].y = dti->height - 5 - dti->gr->depth[i].s * dti->yz;
+	tp[i].x = i;
+	tp[i].y = dti->height - 5 - dti->gr->depth[i].t * dti->yz;
+	
+	if (ymin > sp[i].y) ymin = sp[i].y;
+	if (ymin > tp[i].y) ymin = tp[i].y;
+	
+	if (ymax < sp[i].y) ymax = sp[i].y;
+	if (ymax < tp[i].y) ymax = tp[i].y;
+    }
+    
+    if (!(dti->filter & FILTER_PAIRED)) {
+	XDrawLines(display, dti->pm, dti->reads, sp, dti->width, CoordModeOrigin);
+    }
+    
+    XDrawLines(display, dti->pm, dti->template, tp, dti->width, CoordModeOrigin);
+        
+    /* Compute scrollbar and bounding box locations */
+    dti->y_start = ymin != INT_MAX ? ymin : 0;
+    dti->y_end = ymax != INT_MIN ? ymax : 0;
+    
     free(sp);
     free(tp);
-
-
-    /* Compute scrollbar and bounding box locations */
-    t->ymin = ymin != INT_MAX ? ymin : 0;
-    t->ymax = ymax != INT_MIN ? ymax : 0;
-    
-    t->xhair_pos = DBL_MAX;
-    t->yhair_pos = DBL_MAX;
-
-    return 0;
 }
-
-static void dtrack_move_xhair(depth_track_t *t, int x, int y,
-			     double *rx, double *ry) {
-    double wx0, wx1, wy0, wy1;
-    double xh, xh2, yh, yh2;
-    int width, height;
-
-    RasterWinSize(t->raster, &width, &height);
-    RasterToWorld(t->raster, x, y, &xh, &yh);
-    RasterToWorld(t->raster, x+1, y+1, &xh2, &yh2);
-    xh = (xh+xh2)/2;
-    yh = (yh+yh2)/2;
-    RasterToWorld(t->raster, 0, 0, &wx0, &wy0);
-    RasterToWorld(t->raster, width, height, &wx1, &wy1);
-
-    SetDrawEnviron(t->interp, t->raster, t->xhair_col);
-    if (t->xhair_pos != DBL_MAX) {
-	RasterDrawLine(t->raster, t->xhair_pos, wy0, t->xhair_pos, wy1);
-    }
-    if (t->yhair_pos != DBL_MAX) {
-	RasterDrawLine(t->raster, wx0, t->yhair_pos, wx1, t->yhair_pos);
-    }
-
-    if (x != INT_MAX) {
-	t->xhair_pos = xh;
-	RasterDrawLine(t->raster, t->xhair_pos, wy0, t->xhair_pos, wy1);
-	if (rx) *rx = t->xhair_pos;
-    } else {
-	t->xhair_pos = DBL_MAX;
-    }
-
-    if (y != INT_MAX) {
-	t->yhair_pos = yh;
-	RasterDrawLine(t->raster, wx0, t->yhair_pos, wx1, t->yhair_pos);
-	if (ry) *ry = t->yhair_pos;
-    } else {
-	t->yhair_pos = DBL_MAX;
-    }
-
-    tk_RasterRefresh(t->raster);
-
-}
+   

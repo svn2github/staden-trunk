@@ -39,7 +39,6 @@
 #include "tg_index_common.h"
 #include "gap_range.h"
 #include "depth_track.h"
-
 #include "maq.h"
 #include "ace.h"
 #include "baf.h"
@@ -1770,6 +1769,11 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "consensus_valid_range",
 			 tcl_consensus_valid_range,
 			 (ClientData) NULL, NULL);
+			 
+    
+    Tk_CreateItemType(&tkTDItem);
+    
+    Tk_CreateItemType(&tkDepthItem);
 
 #ifdef VALGRIND
     Tcl_CreateObjCommand(interp, "leak_check",
@@ -1780,9 +1784,7 @@ NewGap_Init(Tcl_Interp *interp) {
     //Ced_Init(interp);
     Editor_Init(interp);
     EdNames_Init(interp);
-    TDisp_Init(interp);
     GRange_Init(interp);
-    DTrack_Init(interp);
 
     return TCL_OK;
 

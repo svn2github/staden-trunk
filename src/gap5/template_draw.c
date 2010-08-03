@@ -139,6 +139,7 @@ image_t *initialise_image(Display *dis) {
     image->depth  = DefaultDepth(image->dis, image->screen);
     image->colour_size = 256;
     image->colour_count = 0;
+    image->buf = NULL;
 	
     if (image->depth >= 24) {
     	u_int32_t *map_col = malloc(256 * sizeof(u_int32_t));

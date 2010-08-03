@@ -607,7 +607,7 @@ add_menu Help			1 0 right
 add_command {File.Exit}		1 0 {1.5plot_exit $w}
 
 add_check {Tracks.Template}     1 0 {${w}(template)} \
-    	    	    	    	{show_track $w seq_seqs -200 \[set ${w}(template)\]}
+    	    	    	    	{show_track $w template_item -200 \[set ${w}(template)\]}
 add_check {Tracks.Depth}    	1 0 {${w}(depth)} \
-    	    	    	    	{show_track $w depth_track -50 \[set ${w}(depth)\]}
+    	    	    	    	{show_track $w depth_item -50 \[set ${w}(depth)\]}
 

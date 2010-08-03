@@ -1,451 +1,618 @@
-#include <string.h>
-#include <xalloc.h>
+/*
+ *
+ * template_display.c - a tk canvas item to show the template display
+ *                      formerly used tkRaster.
+ *
+ * Andrew Whitwham, July 2010
+ *
+ */
+
+#include <stdio.h>
 #include <math.h>
-#include <sys/time.h>
-#include <time.h>
-#include <float.h>
-#include <assert.h>
+#include <X11/Xlib.h>
 
+#include "template_draw.h"
+#include "gap_range.h"
 #include "template_display.h"
-#include "gap_cli_arg.h"
-#include "tree.h"
-#include "tkRaster.h"
 
-static void tdisp_move_xhair(template_disp_t *t, int x, int y,
-			     double *rx, double *ry);
+/* Define the template display item */
 
-/* From tclIntDecls.h */
-extern Tcl_Command Tcl_GetCommandFromObj(Tcl_Interp * interp, Tcl_Obj * objPtr);
+typedef struct TemplateDisplayItem {
+    Tk_Item header; 	    /* mandatory entry */
+    GC gc;  	    	    /* graphics context */
+    Pixmap pm;	    	    /* pixmap to draw on */
+    Tk_Anchor anchor;	    /* pixmap anchorpoint */
+    double an_x, an_y;      /* postioning points */
+    double px, py;          /* current mouse pointer x, y (in world units)*/
+    
+    gap_range_t *gr;        /* range info */
+    double contig_start;    /* start value of contig */
+    double contig_length;   /* length of contig */
+    double wx0, wx1;	    /* world coords */
+    double wy0, wy1;        
+    double y_start, y_end;  /* world edges in y */
+    
+    int logy;
+    int cmode;
+    int ymode;
+    int yoffset;
+    int accuracy;
+    int spread;
+    int reads_only;
+    int sep_by_strand;
+    int filter;
+    int min_qual;
+    int max_qual;
+    int min_sz;
+    double yzoom;
+    double yz;
+    
+    int width, height;      /* pixmap width and height */
+    image_t *image;         /* image drawing goes on to */
+    int single_col;         /* special colours for image below */
+    int span_col;
+    int inconsistent_col;
+    int fwd_col;
+    int rev_col;
+    int fwd_col3;
+    int rev_col3;
+    int background;
+    
+    int ntl;
+             
+} TemplateDisplayItem;
 
-/* ------------------------------------------------------------------------ */
-/* Tcl_Obj "template_display" type implementation */
 
-static void tdisp_update_string(Tcl_Obj *obj);
-static int tdisp_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
 
-static Tcl_ObjType tdisp_obj_type = {
+/* mandatory prototypes */
+
+static int		template_coords(Tcl_Interp *interp, Tk_Canvas canvas,
+    	    	    	    Tk_Item *itemPtr, int argc, Tcl_Obj *CONST argv[]);
+static int		template_area(Tk_Canvas canvas, Tk_Item *itemPtr, 
+    	    	    	    double *rectPtr);
+static double		template_point(Tk_Canvas canvas, Tk_Item *itemPtr,
+    	    	    	    double *coordPtr);
+static int		template_postscript(Tcl_Interp *interp, 
+    	    	    	    Tk_Canvas canvas, Tk_Item *itemPtr, int prepass);
+static int		configure_template(Tcl_Interp *interp,
+			    Tk_Canvas canvas, Tk_Item *itemPtr, int argc,
+			    Tcl_Obj *CONST argv[], int flags);
+static int		create_template(Tcl_Interp *interp,
+			    Tk_Canvas canvas, struct Tk_Item *itemPtr,
+			    int argc, Tcl_Obj *CONST argv[]);
+static void		delete_template(Tk_Canvas canvas,
+			    Tk_Item *itemPtr, Display *display);
+static void		display_template(Tk_Canvas canvas,
+			    Tk_Item *itemPtr, Display *display, Drawable dst,
+			    int x, int y, int width, int height);
+static void		scale_template(Tk_Canvas canvas,
+			    Tk_Item *itemPtr, double originX, double originY,
+			    double scaleX, double scaleY);
+static void		translate_template(Tk_Canvas canvas,
+			    Tk_Item *itemPtr, double deltaX, double deltaY);
+			    
+/* none mandatory protoypes */
+static void compute_template_bbox(Tk_Canvas canvas, TemplateDisplayItem *tdi);
+static int  initialise_template_image(TemplateDisplayItem *tdi, Display *display);
+static int  range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+	    	    	    char *value, char *widgRec, int offset);
+static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
+	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr);
+static void redraw_template_image(TemplateDisplayItem *tdi, Display *display);
+
+
+
+/* define the non-standard option types */ 
+static Tk_CustomOption range_option = {
+    (Tk_OptionParseProc *)range_cmd_parse,
+    range_cmd_print, (ClientData)NULL
+};
+
+/* config options, some are meant only to be returned with itemcget */
+static Tk_ConfigSpec config_specs[] = {
+    {TK_CONFIG_ANCHOR, "-anchor", NULL, NULL,
+	"nw", Tk_Offset(TemplateDisplayItem, anchor), TK_CONFIG_DONT_SET_DEFAULT},
+    {TK_CONFIG_CUSTOM, "-range", NULL, NULL,
+    	NULL, Tk_Offset(TemplateDisplayItem, gr), TK_CONFIG_NULL_OK, &range_option},
+    {TK_CONFIG_DOUBLE, "-contig_start", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, contig_start), 0}, 
+    {TK_CONFIG_DOUBLE, "-contig_length", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, contig_length), 0}, 
+    {TK_CONFIG_INT, "-logy", "logy", "LogY", "0", Tk_Offset(TemplateDisplayItem, logy), 0, 0},
+    {TK_CONFIG_INT, "-cmode", "colourMode", "ColourMode", "0", Tk_Offset(TemplateDisplayItem, cmode), 0, 0},
+    {TK_CONFIG_INT, "-ymode", "YMode", "YMode", "0", Tk_Offset(TemplateDisplayItem, ymode), 0, 0},
+    {TK_CONFIG_INT, "-yoffset", "YOffset", "YOffset", "0", Tk_Offset(TemplateDisplayItem, yoffset), 0, 0},
+    {TK_CONFIG_INT, "-accuracy", "accuracy", "Accuracy", "0", Tk_Offset(TemplateDisplayItem, accuracy), 0, 0},
+    {TK_CONFIG_INT, "-spread", "spread", "Spread", "0", Tk_Offset(TemplateDisplayItem, spread), 0, 0},
+    {TK_CONFIG_INT, "-reads_only", "readsOnly", "ReadsOnly", "0", Tk_Offset(TemplateDisplayItem, reads_only), 0, 0},
+    {TK_CONFIG_INT, "-by_strand", "byStrand", "ByStrand", "1", Tk_Offset(TemplateDisplayItem, sep_by_strand), 0, 0},
+    {TK_CONFIG_INT, "-filter", "filter", "Filter", "0", Tk_Offset(TemplateDisplayItem, filter), 0, 0},
+    {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "10.0", Tk_Offset(TemplateDisplayItem, yzoom), 0, 0},
+    {TK_CONFIG_DOUBLE, "-yz", "yZ", "YZ", "0", Tk_Offset(TemplateDisplayItem, yz), 0, 0},
+    {TK_CONFIG_INT, "-min_qual", "minQual", "MinQual", "0", Tk_Offset(TemplateDisplayItem, min_qual), 0, 0},
+    {TK_CONFIG_INT, "-max_qual", "maxQual", "MaxQual", "255", Tk_Offset(TemplateDisplayItem, max_qual), 0, 0},
+    {TK_CONFIG_INT, "-min_y_size", "minYSize", "MinYSize", "512", Tk_Offset(TemplateDisplayItem, min_sz), 0, 0},
+    {TK_CONFIG_DOUBLE, "-wx0", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, wx0), 0}, 
+    {TK_CONFIG_DOUBLE, "-wx1", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, wx1), 0}, 
+    {TK_CONFIG_DOUBLE, "-wy0", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, wy0), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-wy1", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, wy1), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-y_start", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, y_start), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-y_end", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, y_end), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-px", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, px), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_DOUBLE, "-py", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, py), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_END, (char *) NULL, (char *) NULL, (char *) NULL, (char *) NULL, 0, 0}
+};
+    
+/* define the TemplateDisplayItem functions */
+Tk_ItemType tkTDItem = {
     "template_display",
-    (Tcl_FreeInternalRepProc*)NULL,
-    (Tcl_DupInternalRepProc*)NULL,
-    tdisp_update_string,
-    tdisp_from_any
+    sizeof(TemplateDisplayItem),
+    create_template,
+    config_specs,
+    configure_template,
+    template_coords,
+    delete_template,
+    display_template,
+    TK_CONFIG_OBJS,          /* needs to be this */
+    template_point,
+    template_area,
+    template_postscript,
+    scale_template,
+    translate_template,
+    (Tk_ItemIndexProc *)     NULL,
+    (Tk_ItemCursorProc *)    NULL,
+    (Tk_ItemSelectionProc *) NULL,
+    (Tk_ItemInsertProc *)    NULL,
+    (Tk_ItemDCharsProc *)    NULL,
+    (Tk_ItemType *)          NULL,
 };
 
-static void tdisp_update_string(Tcl_Obj *obj) {
-    template_disp_t *t = obj->internalRep.otherValuePtr;
-    obj->bytes = ckalloc(30);
-    obj->length = sprintf(obj->bytes, "tdisp=%p", t);
-}
 
-static int tdisp_from_any(Tcl_Interp *interp, Tcl_Obj *obj) {
-    char *bytes;
-    int length;
-    template_disp_t *t;
+/* this function is called when item is created as part
+   of a canvas */
 
-    if (NULL == (bytes = Tcl_GetStringFromObj(obj, &length)))
-	return TCL_ERROR;
-
-    if (0 != strncmp(bytes, "tdisp=", 3))
-	return TCL_ERROR;
-
-    /* Free the old internalRep before setting the new one. */
-    if (obj->typePtr && obj->typePtr->freeIntRepProc)
-	(*obj->typePtr->freeIntRepProc)(obj);
-
-    /* Convert the hex value to a pointer once more */
-    if (1 != sscanf(bytes+3, "%p", &t))
-	return TCL_ERROR;
-
-    obj->internalRep.otherValuePtr = t;
-    obj->typePtr = &tdisp_obj_type;
-    return TCL_OK;
-}
-
-static Tk_OptionSpec optionSpecs[] = {
-    {TK_CONFIG_INT, "-logy", "logy", "LogY", "0",
-     -1, Tk_Offset(template_disp_t, logy), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-cmode", "colourMode", "ColourMode", "0",
-     -1, Tk_Offset(template_disp_t, cmode), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-ymode", "YMode", "YMode", "0",
-     -1, Tk_Offset(template_disp_t, ymode), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-yoffset", "YOffset", "YOffset", "0",
-     -1, Tk_Offset(template_disp_t, yoffset), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-accuracy", "accuracy", "Accuracy", "0",
-     -1, Tk_Offset(template_disp_t, accuracy), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-spread", "spread", "Spread", "0",
-     -1, Tk_Offset(template_disp_t, spread), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-reads_only", "readsOnly", "ReadsOnly", "0",
-     -1, Tk_Offset(template_disp_t, reads_only), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-by_strand", "byStrand", "ByStrand", "1",
-     -1, Tk_Offset(template_disp_t, sep_by_strand), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-filter", "filter", "Filter", "0",
-     -1, Tk_Offset(template_disp_t, filter), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-plot_depth", "plotDepth", "PlotDepth", "0",
-     -1, Tk_Offset(template_disp_t, plot_depth), 0, 0, 0 /* mask */},
-    {TK_CONFIG_DOUBLE, "-xzoom", "xZoom", "XZoom", "10.0",
-     -1, Tk_Offset(template_disp_t, xzoom), 0, 0, 0 /* mask */},
-    {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "10.0",
-     -1, Tk_Offset(template_disp_t, yzoom), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-min_qual", "minQual", "MinQual", "0",
-     -1, Tk_Offset(template_disp_t, min_qual), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-max_qual", "maxQual", "MaxQual", "255",
-     -1, Tk_Offset(template_disp_t, max_qual), 0, 0, 0 /* mask */},
-    {TK_CONFIG_INT, "-min_y_size", "minYSize", "MinYSize", "512",
-     -1, Tk_Offset(template_disp_t, min_sz), 0, 0, 0 /* mask */},
-    {TK_OPTION_END}
-};
-
-static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
-		      int objc, Tcl_Obj *CONST objv[]) {
-    int index, replot = 0;
-    template_disp_t *t = (template_disp_t *)clientData;
-    Tcl_Obj *res = NULL;
-
-    static char *options[] = {
-	"delete",       "io",           "cget",    "configure", "replot",
-	"ymin",         "ymax",         "yrange",  "xhair", "yz",
-	(char *)NULL,
-    };
-
-    enum options {
-	DELETE,         IO,     	CGET,      CONFIGURE,   REPLOT,
-	YMIN,           YMAX,           YRANGE,    XHAIR,   	YZ
-    };
-
-    if (objc < 2) {
-	Tcl_WrongNumArgs(interp, 1, objv, "option arg ?arg ...?");
-	return TCL_ERROR;
+static int create_template(Tcl_Interp *interp,
+	    Tk_Canvas canvas,
+	    Tk_Item *itemPtr,
+	    int argc,
+	    Tcl_Obj *CONST *argv) {
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *)itemPtr;
+    int i;
+    
+    if (argc==1) {
+	i = 1;
+    } else {
+	char *arg = Tcl_GetStringFromObj(argv[1], NULL);
+	
+	if (((argc>1) && (arg[0] == '-')
+		&& (arg[1] >= 'a') && (arg[1] <= 'z'))) {
+	    i = 1;
+	} else {
+	    i = 2;
+	}
     }
 
-    if (Tcl_GetIndexFromObj(interp, objv[1], options, "option", 0,
-            &index) != TCL_OK) {
-        return TCL_ERROR;
+    if (argc < i) {
+	Tcl_AppendResult(interp, "wrong # args: should be \"",
+		Tk_PathName(Tk_CanvasTkwin(canvas)), " create ",
+		itemPtr->typePtr->name, " x y ?options?\"",
+		(char *) NULL);
+	return TCL_ERROR;
     }
+    
+    /* initialise item record */
+    
+    tdi->gc = None;
+    tdi->pm = None;
+    tdi->anchor = TK_ANCHOR_CENTER;
+    tdi->an_x = 0.0;
+    tdi->an_y = 0.0;
+    tdi->image = NULL;
+    tdi->gr = NULL;
+    tdi->wy0 = tdi->y_start = 0;
+    tdi->wy1 = tdi->y_end = Tk_Height(Tk_CanvasTkwin(canvas)); /* initial world height */
+    tdi->width = -1;
+    tdi->height = -1;
+   
+    if(initialise_template_image(tdi, Tk_Display(Tk_CanvasTkwin(canvas)))) {
+	if ((template_coords(interp, canvas, itemPtr, i, argv) == TCL_OK)) {
+    	    if (configure_template(interp, canvas, itemPtr, argc - i, argv + i, 0) == TCL_OK) {
+		// possibly more initialisation here
 
-    switch ((enum options)index) {
-    case DELETE:
-	Tcl_DeleteCommandFromToken(interp,
-				   Tcl_GetCommandFromObj(interp, objv[0]));
-	break;
+	        return TCL_OK;
+    	    }
+	}
+    }
+    
+    /* if we get here then something is wrong */
+    printf("TemplateDisplayItem creation failed\n");
+    delete_template(canvas, itemPtr, Tk_Display(Tk_CanvasTkwin(canvas)));
+    
+    return TCL_ERROR;
+}
 
-    case IO:
-	Tcl_SetResult(interp, io_obj_as_string(t->io) , TCL_VOLATILE);
-	break;
 
-    case CGET:
-	if (objc != 3) {
-	    Tcl_WrongNumArgs(interp, 2, objv, "cget");
+/* invoked by the coords command */
+   	
+static int template_coords(Tcl_Interp *interp, Tk_Canvas canvas,		
+    	    	    	    Tk_Item *itemPtr, int objc, Tcl_Obj *CONST objv[]) {
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *) itemPtr;
+    
+    if (objc == 0) {
+	Tcl_Obj *obj = Tcl_NewObj();
+
+	Tcl_Obj *subobj = Tcl_NewDoubleObj(tdi->an_x);
+    	Tcl_ListObjAppendElement(interp, obj, subobj);
+
+	subobj = Tcl_NewDoubleObj(tdi->an_y);
+	Tcl_ListObjAppendElement(interp, obj, subobj);
+
+	Tcl_SetObjResult(interp, obj);
+    } else if (objc < 3) {
+	if (objc == 1) {
+	    if (Tcl_ListObjGetElements(interp, objv[0], &objc,
+		    (Tcl_Obj ***) &objv) != TCL_OK) {
+		return TCL_ERROR;
+	    } else if (objc != 2) {
+		char buf[64 + TCL_INTEGER_SPACE];
+
+		sprintf(buf, "wrong # coordinates: expected 2, got %d", objc);
+		Tcl_SetResult(interp, buf, TCL_VOLATILE);
+		return TCL_ERROR;
+	    }
+	}
+	
+	if ((Tk_CanvasGetCoordFromObj(interp, canvas, objv[0],
+		&tdi->an_x) != TCL_OK)
+		|| (Tk_CanvasGetCoordFromObj(interp, canvas, objv[1],
+			&tdi->an_y) != TCL_OK)) {
 	    return TCL_ERROR;
 	}
-	break;
-
-    case CONFIGURE:
-	if (objc == 2) {
-	    res = Tk_GetOptionValue(interp, (char *)t, t->optionTable,
-				    NULL, t->tkwin);
-	    if (!res)
-		return TCL_ERROR;
-	} else if (objc == 3) {
-	    res = Tk_GetOptionValue(interp, (char *)t, t->optionTable,
-				    objv[2], t->tkwin);
-	    if (!res)
-		return TCL_ERROR;
-	} else {
-	    if (Tk_SetOptions(interp, (char *)t, t->optionTable,
-			      objc-2, objv+2, t->tkwin, NULL, NULL)
-		!= TCL_OK)
-		return TCL_ERROR;
-	    replot = 1;
-	}
-	if (res)
-	    Tcl_SetObjResult(interp, res);
-	break;
-
-    case REPLOT:
-	replot = 1;
-	break;
-
-    case YMIN:
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(t->ymin));
-	break;
-
-    case YMAX:
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(t->ymax));
-	break;
-
-    case YZ:
-	Tcl_SetObjResult(interp, Tcl_NewDoubleObj(t->yz));
-	break;
-
-    case YRANGE: {
-	char buf[1024];
-	double wx0, wy0, wx1, wy1;
-//    	int width, height;
-	double top, bottom;
-	double wx_start, wx_end, wy_start, wy_end;
-
-	GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
-    	RasterGetWorldScroll(t->raster, &wx_start, &wy_start, &wx_end, &wy_end); 
-//   	RasterWinSize(t->raster, &width, &height);
 	
-/*
-    	printf("TD Raster wx0 %f wx1 %f wy0 %f wy1 %f\n", wx0, wx1, wy0, wy1);
-	printf("TD Y min %d Y max %d\n", t->ymin, t->ymax);
-    	printf("TD wx_start %f wx_end %f wy_start %f wy_end %f\n", wx_start, wx_end, wy_start, wy_end);
-	printf("TD width %d height %d\n", width, height);
+	compute_template_bbox(canvas, tdi);
+    } else {
+	char buf[64 + TCL_INTEGER_SPACE];
+
+	sprintf(buf, "wrong # coordinates: expected 0 or 2, got %d", objc);
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
+	return TCL_ERROR;
+    }
+    
+    return TCL_OK;
+}
+
+
+/* configure and redraw the template track */
+
+static int configure_template(Tcl_Interp *interp,
+	       Tk_Canvas canvas,
+	       Tk_Item *itemPtr,
+	       int argc,
+	       Tcl_Obj *CONST *argv,
+	       int flags) {
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *) itemPtr;
+    XGCValues gcValues;
+    Tk_Window tkwin;
+    Display *display;
+    unsigned long mask = 0;
+    int width, height;
+        
+    tkwin   = Tk_CanvasTkwin(canvas);
+    display = Tk_Display(tkwin);
+    
+    if (Tk_ConfigureWidget(interp, tkwin, config_specs, argc, (char **) argv,
+	    (char *) tdi, flags|TK_CONFIG_OBJS) != TCL_OK) {
+
+	printf("ERROR %s\n", Tcl_GetStringResult(interp));
+	return TCL_ERROR;
+    }
+    
+    width  = Tk_Width(tkwin);
+    height = Tk_Height(tkwin);
+    
+    if (tdi->gc == None) {
+    	mask = 0;
+	tdi->gc = Tk_GetGC(tkwin, mask, &gcValues);
+    }
+	
+    if (width != tdi->width || height != tdi->height) {
+    	/* going to need a new pixmap */
+ 	if (tdi->pm) {
+	    Tk_FreePixmap(display, tdi->pm);
+	}
+
+    	tdi->width = width;
+    	tdi->height = height;	
+	
+	tdi->pm = Tk_GetPixmap(display, Tk_WindowId(tkwin), tdi->width, tdi->height, 24);
+    }
+    
+    redraw_template_image(tdi, display);
+    compute_template_bbox(canvas, tdi);
+    return TCL_OK;
+}
+
+
+/* free resources */
+
+static void delete_template(Tk_Canvas canvas, Tk_Item *itemPtr, Display *display) {
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *) itemPtr;
+    
+    if (tdi->pm != None) {
+    	Tk_FreePixmap(display, tdi->pm);
+    }
+    
+    if (tdi->gc != None) {
+    	Tk_FreeGC(display, tdi->gc);
+    }
+    
+    if (tdi->image != NULL) {
+    	image_destroy(tdi->image);
+    }
+}
+
+
+/* compute the bounding box of the item */
+
+static void compute_template_bbox(Tk_Canvas canvas, TemplateDisplayItem *tdi) {
+    Tk_Window tkwin;
+    int width, height;
+    int x, y;
+    
+    tkwin = Tk_CanvasTkwin(canvas);
+
+    width  = Tk_Width(tkwin);
+    height = Tk_Height(tkwin);
+    
+    x = (int) (tdi->an_x + ((tdi->an_x >= 0) ? 0.5 : - 0.5));
+    y = (int) (tdi->an_y + ((tdi->an_y >= 0) ? 0.5 : - 0.5));
+    
+    switch (tdi->anchor) {
+	case TK_ANCHOR_N:
+	    x -= width / 2;
+	    break;
+	case TK_ANCHOR_NE:
+	    x -= width;
+	    break;
+	case TK_ANCHOR_E:
+	    x -= width;
+	    y -= height / 2;
+	    break;
+	case TK_ANCHOR_SE:
+	    x -= width;
+	    y -= height;
+	    break;
+	case TK_ANCHOR_S:
+	    x -= width / 2;
+	    y -= height;
+	    break;
+	case TK_ANCHOR_SW:
+	    y -= height;
+	    break;
+	case TK_ANCHOR_W:
+	    y -= height / 2;
+	    break;
+	case TK_ANCHOR_NW:
+	    break;
+    	case TK_ANCHOR_CENTER:
+	    x -= width / 2;
+	    y -= height / 2;
+	    break;
+    }
+    
+    tdi->header.x1 = x;
+    tdi->header.y1 = y;
+    tdi->header.x2 = x + width;
+    tdi->header.y2 = y + height;
+}
+    
+
+/* draw the template track onto the screen, copies from the pixmap to
+   the canvas */			    
+			    
+static void display_template(Tk_Canvas canvas, Tk_Item *itemPtr,
+    	    	    	    Display *display, Drawable drawable,
+			    int x, int y, int width, int height) {
+    
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *) itemPtr;
+    int pix_x, pix_y, pix_w, pix_h;
+    short draw_x, draw_y;
+
+    if (tdi->pm != None) {
+	if (x > tdi->header.x1) {
+	    pix_x = x - tdi->header.x1;
+	    pix_w = tdi->header.x2 - x;
+	} else {
+	    pix_x = 0;
+	    if ((x + width) < tdi->header.x2) {
+		pix_w = x + width - tdi->header.x1;
+	    } else {
+		pix_w = tdi->header.x2 - tdi->header.x1;
+	    }
+	}
+	if (y > tdi->header.y1) {
+	    pix_y = y - tdi->header.y1;
+	    pix_h = tdi->header.y2 - y;
+	} else {
+	    pix_y = 0;
+	    if ((y + height) < tdi->header.y2) {
+		pix_h = y + height - tdi->header.y1;
+	    } else {
+		pix_h = tdi->header.y2 - tdi->header.y1;
+	    }
+	}
+	
+	Tk_CanvasDrawableCoords(canvas,
+		(double) (tdi->header.x1 + pix_x),
+		(double) (tdi->header.y1 + pix_y),
+		&draw_x, &draw_y);
+
+	/*
+	 * Must modify the mask origin within the graphics context to line up
+	 * with the bitmap's origin (in order to make bitmaps with
+	 * "-background {}" work right).
+	 */
+
+ 	XSetClipOrigin(display, tdi->gc, draw_x - pix_x, draw_y - pix_y);
+	XCopyArea(display, tdi->pm, drawable, tdi->gc, pix_x, pix_y,(unsigned int) pix_w,
+		(unsigned int) pix_h, draw_x, draw_y); 
+	
+	XSetClipOrigin(display, tdi->gc, 0, 0);
+    }
+}
+    
+
+/* subvert the point function so that it now
+   now provides world coords for xhair feedback in depth.tcl
 */
-    	
-	if (t->ymax == 0 || wy1 == 0) {
-	    top = 0;
-	    bottom = 1;
-	} else {
-	    top = (wy0 - wy_start) / (t->ymax - wy_start);
-	    bottom = (wy1 - wy_start) / (t->ymax - wy_start);
-	    
-	    if (top < 0) {
-	    	top = 0;
-	    }
-	    
-	    if (bottom > 1) {
-	    	bottom = 1;
-	    }
-	}
-    	
-//	printf("TD top %f bottom %f\n", top, bottom);
-	
-	sprintf(buf, "%f %f", top, bottom);
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, -1));
-	break;
+
+static double template_point(Tk_Canvas canvas, Tk_Item *itemPtr, double *coordPtr) {
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *) itemPtr;
+    int height2;
+    double ax, bx;
+
+    tdi->px = coordPtr[0];
+    tdi->py = coordPtr[1];
+
+    height2 = tdi->height / 2;
+
+    if (tdi->sep_by_strand) {
+	if (tdi->py > height2)
+	    tdi->py = tdi->py - height2;
+	else
+	    tdi->py = height2 - tdi->py;
     }
 
-    case XHAIR:
-	if (objc == 4) {
-	    int x, y;
-	    double rx, ry;
-	    Tcl_Obj *obj[2];
-	    int width, height, height2;
+    if (tdi->ymode == 1) tdi->py /= 10;
 
-	    RasterWinSize(t->raster, &width, &height);
-	    height2 = height / 2;
-
-	    Tcl_GetIntFromObj(interp, objv[2], &x);
-	    Tcl_GetIntFromObj(interp, objv[3], &y);
-	    tdisp_move_xhair(t, x, y, &rx, &ry);
-	    
-	    if (t->sep_by_strand) {
-		if (ry > height2)
-		    ry = ry-height2;
-		else
-		    ry = height2-ry;
-	    }
-
-	    if (t->ymode == 1)
-		ry /= 10;
-
-	    ry = ry/(t->yzoom / 200.0) + t->yoffset - 50;
-	    if (t->logy && t->ymode != 1) {
-		ry = exp(ry/50.0)-1;
-	    }
-	    ry++;
-	    
-	    obj[0] = Tcl_NewDoubleObj(rx);
-	    obj[1] = Tcl_NewDoubleObj(ry);
-	    Tcl_SetObjResult(interp, Tcl_NewListObj(2, obj));
-	} else {
-	    tdisp_move_xhair(t, INT_MAX, INT_MAX, NULL, NULL);
-	}
-	break;
+    tdi->py = tdi->py / (tdi->yzoom / 200.0) + tdi->yoffset - 50;
+    
+    if (tdi->logy && tdi->ymode != 1) {
+	tdi->py = exp(tdi->py / 50.0) - 1;
     }
+    
+    tdi->py++;
+    
+    ax = tdi->width / (tdi->wx1 - tdi->wx0);
+    bx = tdi->wx0;
+    
+    tdi->px = (tdi->px / ax) + bx;
 
-    if (replot)
-	template_replot(t);
+    return 0;
+}
 
-    return TCL_OK;
+   
+/* determines whether an item lies entirely
+   inside, entirely outside, or overlapping a given rectangle
+*/
+
+static int template_area(Tk_Canvas canvas, Tk_Item *itemPtr, double *rectPtr) {
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *) itemPtr;
+
+    if ((rectPtr[2] <= tdi->header.x1)
+	    || (rectPtr[0] >= tdi->header.x2)
+	    || (rectPtr[3] <= tdi->header.y1)
+	    || (rectPtr[1] >= tdi->header.y2)) {
+	return -1;
+    }
+    if ((rectPtr[0] <= tdi->header.x1)
+	    && (rectPtr[1] <= tdi->header.y1)
+	    && (rectPtr[2] >= tdi->header.x2)
+	    && (rectPtr[3] >= tdi->header.y2)) {
+	return 1;
+    }
+    
+    return 0;
 }
 
 
-static void tdisp_cmd_delete(ClientData clientData) {
-    template_destroy((template_disp_t *)clientData);
+/* unimplemented scaling function */
+
+static void scale_template(Tk_Canvas canvas, Tk_Item *itemPtr,
+    	    	    	    double originX, double originY,
+			    double scaleX, double scaleY) {
+
+    printf("TemplateDisplayItem scale - not implemented\n");
 }
 
-typedef struct {
-    GapIO *io;
-    int cnum;
-    char *raster_win;
-    char *range_obj;
-} tdisp_arg;
 
+/* move item by given amount */
 
-static void td_event_proc(ClientData clientData, XEvent *eventPtr) {
-    template_disp_t *td = (template_disp_t *)clientData;
+static void translate_template(Tk_Canvas canvas, Tk_Item *itemPtr, 
+    	    	    	    	double deltaX, double deltaY) {
+
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *) itemPtr;
+
+    tdi->an_x += deltaX;
+    tdi->an_y += deltaY;
     
-    if (eventPtr->type == DestroyNotify) {
-    	template_destroy(td);
-    }
+    compute_template_bbox(canvas, tdi);
 }
+
+
+/* unimplemented function to generate postscript data for printing */
+
+static int template_postscript(Tcl_Interp *interp, Tk_Canvas canvas, Tk_Item *itemPtr,	
+    	    	    	    	int prepass) {
+    printf("TemplateDisplayItem postscript - not implemented\n");
     
-    
-static int tcl_template_display(ClientData clientData, Tcl_Interp *interp,
-				int objc, Tcl_Obj *CONST objv[]) {
-    template_disp_t *td;
-    Tcl_Obj *tobj;
-    Tk_Raster *raster;
+    /* leave blank for now */
+    return TCL_ERROR;
+}
+
+
+/* parse the range command to get at the data */
+
+static int range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+	    	    	    char *value, char *widgRec, int offset) {
+			    
     Tcl_CmdInfo info;
-
-    tdisp_arg args;
-    cli_args a[] = {
-	{"-io",     ARG_IO,  1, NULL, offsetof(tdisp_arg, io)},
-	{"-cnum",   ARG_INT, 1, NULL, offsetof(tdisp_arg, cnum)},
-	{"-raster", ARG_STR, 1, NULL, offsetof(tdisp_arg, raster_win)},
-	{"-range",  ARG_STR, 1, NULL, offsetof(tdisp_arg, range_obj)},
-	{NULL,	     0,	      0, NULL, 0}
-    };
-
-    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
-	return TCL_ERROR;
-	
-	
-    if (!Tcl_GetCommandInfo(interp, args.raster_win, &info))
-	return TCL_ERROR;
-
-    raster = (Tk_Raster*)info.clientData;
-
-    if (NULL == (td = template_new(args.io, args.cnum, interp, raster)))
-	return TCL_ERROR;
-
-    if (!Tcl_GetCommandInfo(interp, args.range_obj, &info))
-	return TCL_ERROR;
-
-    td->gr = (gap_range_t*)info.objClientData; // N.B. different from rasta
-    gap_range_test(td->gr);
-	
-    if (NULL == (tobj = Tcl_NewObj())) {
-	free(td);
-	return TCL_ERROR;
-    }
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *)widgRec;
     
-    tobj->internalRep.otherValuePtr = (VOID *)td;
-    tobj->typePtr = &tdisp_obj_type;
-    tdisp_update_string(tobj);
-
-    td->optionTable = Tk_CreateOptionTable(interp, optionSpecs);
-    if (Tk_InitOptions(interp, (char *)td, td->optionTable, td->tkwin)
-	!= TCL_OK) {
-	free(td);
-	return TCL_ERROR;
-    }
-
-    /* Register the string form as a new command */
-    if (NULL == Tcl_CreateObjCommand(interp, tobj->bytes, tdisp_cmd,
-				     (ClientData)td,
-				     (Tcl_CmdDeleteProc *)tdisp_cmd_delete))
-	return TCL_ERROR;
-	
-    Tk_CreateEventHandler(td->tkwin,
-    	    	    	     StructureNotifyMask,
-			     td_event_proc, (ClientData) td);
-
-    Tcl_SetObjResult(interp, tobj);
+    if (!Tcl_GetCommandInfo(interp, value, &info)) return TCL_ERROR;
     
-    return TCL_OK;
-}
-
-/* Our only external function */
-int TDisp_Init(Tcl_Interp *interp) {
-    Tcl_RegisterObjType(&tdisp_obj_type);
-
-    if (NULL == Tcl_CreateObjCommand(interp, "g5::template_display",
-				     tcl_template_display,
-				     (ClientData)NULL,
-				     (Tcl_CmdDeleteProc *)NULL))
-	return TCL_ERROR;
+    tdi->gr = (gap_range_t *)info.objClientData;
 
     return TCL_OK;
 }
+    
+
+/* return value for the range command */
+
+static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
+	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr) {
+    TemplateDisplayItem *tdi = (TemplateDisplayItem *)clientData;
+    
+    if (tdi->gr == NULL) 
+    	return "gap range not set";
+    else
+    	return "gap range set";
+}
 
 
-/* ------------------------------------------------------------------------ */
-/* And the C to actually implement it, minus the Tcl interface gubbins above */
-template_disp_t *template_new(GapIO *io, int cnum,
-			      Tcl_Interp *interp,
-			      Tk_Raster *raster) {
-    template_disp_t *t = (template_disp_t *)calloc(1, sizeof(*t));
+/* set up the image to draw the template on */
+
+static int initialise_template_image(TemplateDisplayItem *tdi, Display *display) {
     int i;
-    char *opts[10], b[1024];
 
-    if (!t)
-	return NULL;
-
-    t->io = io;
-    t->contig = (contig_t *)cache_search(io, GT_Contig, cnum);
-    t->crec = t->contig->rec;
-    if (!t->contig)
-	return NULL;
-    cache_incr(io, t->contig);
-    
-    t->interp = interp;
-    t->raster = raster;
-    t->tkwin = GetRasterTkWin(raster);
-
-    if (NULL == (t->image = initialise_image(GetRasterDisplay(t->raster)))) return NULL;
-
-    opts[0] = "-fg";
-    opts[1] = b;
-    opts[2] = "-linewidth";
-    opts[3] = "0";
-    opts[4] = "-function";
-    opts[5] = "copy";
-    opts[6] = NULL;
+    if (NULL == (tdi->image = initialise_image(display))) {
+	printf("Unable to initialise image_t\n");
+	return 0;
+    }
 
     for (i = 0; i < 32; i++) {
-	add_colour(t->image, 64+i*5, 64+i*5, 64+i*5);
+	add_colour(tdi->image, 64+i*5, 64+i*5, 64+i*5);
     }
 
-    t->span_col         = add_colour(t->image, 255, 165, 0); // orange
-    t->single_col       = add_colour(t->image, 0, 0, 255);   // blue
-    t->inconsistent_col = add_colour(t->image, 255, 0, 0);   // red
-    t->fwd_col  = t->fwd_col3 = add_colour(t->image, 0, 139, 0);   // green4
-    t->rev_col  = t->rev_col3 = add_colour(t->image, 255, 0, 255); // magenta
-    t->background = add_colour(t->image, 0, 0, 0); // black
-    
-    opts[1] = "green";
-    opts[5] = "xor";
-    t->xhair_col = CreateDrawEnviron(interp, raster, 6, opts);
+    tdi->background 	  = add_colour(tdi->image, 0, 0, 0);	     // black
+    tdi->span_col         = add_colour(tdi->image, 255, 165, 0);       // orange
+    tdi->single_col       = add_colour(tdi->image, 0, 0, 255);         // blue
+    tdi->inconsistent_col = add_colour(tdi->image, 255, 0, 0);         // red
+    tdi->fwd_col  = tdi->fwd_col3 = add_colour(tdi->image, 0, 139, 0);   // green4
+    tdi->rev_col  = tdi->rev_col3 = add_colour(tdi->image, 255, 0, 255); // magenta
 
-    t->tdepth = NULL;
-    t->sdepth = NULL;
-    t->depth_width = 0;
-    t->xhair_pos = DBL_MAX;
-    t->yhair_pos = DBL_MAX;
-    t->wx0 = 0;
-    t->wx1 = 0;
-    
-    return t;
+    return 1;
 }
-
-void template_destroy(template_disp_t *t) {
-    if (!t)
-	return;
-
-    if (t->io && t->contig)
-	cache_decr(t->io, t->contig);
-
-    if (t->tdepth)
-	free(t->tdepth);
-    if (t->sdepth)
-	free(t->sdepth);
-	
-    if (t->image) {	
-	image_destroy(t->image);
-    }
+   
     
-    /* Draw Environments automatically freed on raster destroy */
-
-    free(t);
-}
-
-
-
 /* -------------------------------------------------------------------------
  * Y Coordinate allocation routines
  */
@@ -470,12 +637,13 @@ SPLAY_GENERATE(YTREE, xy_pair, y_link, y_cmp);
  * The Y-sorted tree holds rows that can be considered as inactive, but
  * will be reused if we have to add another row.
  */
-static int compute_ypos(template_disp_t *t, int xgap, tline *tl, int ntl) {
+ 
+static int compute_ypos(TemplateDisplayItem  *tdi, int xgap, tline *tl, int ntl) {
     int i;
     struct xy_pair *node, *curr, *next;
     int yn = 0;
     int min_sz = INT_MIN;
-    int max_sz = t->min_sz;
+    int max_sz = tdi->min_sz;
     int yoffset = 0, ymax = 0, nleft;
 
     /* Create and initialise X and Y trees */
@@ -528,22 +696,6 @@ static int compute_ypos(template_disp_t *t, int xgap, tline *tl, int ntl) {
 		SPLAY_REMOVE(XTREE, &xtree, node);
 		node->x = tl[i].x[3] + xgap;
 		SPLAY_INSERT(XTREE, &xtree, node);
-#if 0
-		/* Cull Y tree if appropriate to remove excess rows */
-		if (try_cull) {
-		    for (curr = SPLAY_MAX(YTREE, &ytree); curr; curr = next) {
-			next = SPLAY_PREV(YTREE, &ytree, curr);
-			if (curr->y == yn) {
-			    SPLAY_REMOVE(YTREE, &ytree, curr);
-			    free(curr);
-			    yn--;
-			} else {
-			    break;
-			}
-		    }
-		}
-#endif
-
 	    } else {
 		/* Check if we have a free y on ytree */
 		if ((node = SPLAY_MIN(YTREE, &ytree)) != NULL) {
@@ -572,134 +724,100 @@ static int compute_ypos(template_disp_t *t, int xgap, tline *tl, int ntl) {
 	}
 
 	min_sz = max_sz;
-	max_sz += t->min_sz;
+	max_sz += tdi->min_sz;
+	
 	if (max_sz < min_sz+10)
 	    max_sz = min_sz+10;
 	yoffset += ymax;
     }
+    
     return 0;
 }
 
-int sort_by_mq(void *p1, void *p2) {
-    rangec_t *r1 = (rangec_t *)p1;
-    rangec_t *r2 = (rangec_t *)p2;
 
-    return (int)((r1->mqual + r1->pair_mqual)/8)
-	-  (int)((r2->mqual + r2->pair_mqual)/8);
-}
-
-int sort_by_rec(void *p1, void *p2) {
-    rangec_t *r1 = (rangec_t *)p1;
-    rangec_t *r2 = (rangec_t *)p2;
-
-    return r1->rec - r2->rec;
-}
-
-int sort_tline_by_x(const void *p1, const void *p2) {
+static int sort_tline_by_x(const void *p1, const void *p2) {
     tline *r1 = (tline *)p1;
     tline *r2 = (tline *)p2;
 
     return r1->x[0] - r2->x[1];
 }
 
-int template_replot(template_disp_t *t) {
-    double wx0, wy0, wx1, wy1, ny0, ny1, ax, ay, bx, by;
-    int i, j, mode;
-    struct timeval tv1, tv2;
-    double t1, t2 = 0, t3, t4;
+
+
+/* do the actual work of drawing the template track, uses the gap_range
+   functions for most of the data handling */
+   	    
+static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
+    double working_wx0, working_wx1;
+    int force_change = 0;
     double tsize = 1000;
+    int mode;
+    double ax, bx, ay, by;
+    int fwd_col, rev_col;
+    int half_height;
+    int i;
     int ymin = INT_MAX;
     int ymax = INT_MIN;
-    int width, height, height2;
     static int last_zoom = 0;
-    int fwd_col, rev_col;
-    Display *rdisp;
-    Drawable rdraw;
-    GC rgc;
-    int force_change = 0;
     
-    if (!t)
-	return -1;
-    if (!t->io)
-	return -1;
+    image_remove(tdi->image);
+    if(!create_image_buffer(tdi->image, tdi->width, tdi->height, tdi->background)) return;
 
-    tk_RasterClear(t->raster);
-    RasterWinSize(t->raster, &width, &height);
-    GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
-
-    // printf("templates %f to %f\n", wx0, wx1);
-/*
-    printf("TD Height %f to %f height %d\n", wy0, wy1, height);
-    printf("TD Width  %f to %f width  %d\n", wx0, wx1, width);
-*/
-    wx0 -= tsize; /* we use some of the reads beyond the window size */
-    wx1 += tsize;
-
-    /* Timing test start*/
-    gettimeofday(&tv1, NULL);
+    working_wx0 = tdi->wx0 - tsize; // use some values beyond the window size.
+    working_wx1 = tdi->wx1 + tsize;
+ 
+    mode = tdi->reads_only ? 0 : CSIR_PAIR;
     
-    /* Find sequences on screen */
-    mode = t->reads_only ? 0 : CSIR_PAIR;
+    if (tdi->ymode == 1) mode |= CSIR_SORT_BY_Y;
     
-    if (t->ymode == 1)
-	mode |= CSIR_SORT_BY_Y;
-	
-    set_filter(t->gr, t->filter, t->min_qual, t->max_qual, t->cmode, t->accuracy);
+    set_filter(tdi->gr, tdi->filter, tdi->min_qual, tdi->max_qual, tdi->cmode, tdi->accuracy);
     
-    if (gap_range_recalculate(t->gr, width, wx0, wx1, mode, force_change)) {
-    
-	if (t->gr->r == NULL) {
-	    return 0;
+    if (gap_range_recalculate(tdi->gr, tdi->width, working_wx0, working_wx1, mode, force_change)) {
+	if (tdi->gr->r == NULL) {
+	    // either lack of memory or an empty part of contig, blank to black 
+	    create_image_from_buffer(tdi->image);
+	    XPutImage(display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
+	    return;
 	}
 	
 	force_change = 1;
     }
     
-    /* more timing */
-    gettimeofday(&tv2, NULL);
-    t1 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
-
-    /*
-     * Do this in multiple passes.
-     * 1) Compute X (start/end of lines to draw), colours, status.
-     * 2) Compute Y
-     * 3) Plot (possibly combined with 2)
-     */
-
-    fwd_col = t->yzoom >= 150 ? t->fwd_col3 : t->fwd_col;
-    rev_col = t->yzoom >= 150 ? t->rev_col3 : t->rev_col;
-
+    fwd_col = tdi->yzoom >= 150 ? tdi->fwd_col3 : tdi->fwd_col;
+    rev_col = tdi->yzoom >= 150 ? tdi->rev_col3 : tdi->rev_col;
+    
+    /* world to pixmap conversion values */
+    if (tdi->wx1 - tdi->wx0 == 0) return;
+    
+    ax = tdi->width / (tdi->wx1 - tdi->wx0);
+    bx = tdi->wx0;
+    
+    ay = tdi->height / (tdi->wy1 - tdi->wy0);
+    by = tdi->wy0;    
+    
     /* 1) Compute X */
-    GetWorldToRasterConversion(t->raster, &ax, &ay, &bx, &by);
-
-    t->ntl = gap_range_x(t->gr, ax, bx, fwd_col, rev_col, 
-    	    	    	    t->single_col, t->span_col, t->inconsistent_col,
-		    	    force_change, t->reads_only);
+    tdi->ntl = gap_range_x(tdi->gr, ax, bx, fwd_col, rev_col, 
+    	    	    	    tdi->single_col, tdi->span_col, tdi->inconsistent_col,
+		    	    force_change, tdi->reads_only);
 			    
-   /* 2) Compute Y coordinates (part 1) */
-    if (t->ymode == 1) {
+    /* 2) Compute Y coordinates (part 1) */
+    if (tdi->ymode == 1) {
     	double xgap = 100;
     
 	puts("Sorting");
-	qsort(t->gr->tl, t->ntl, sizeof(tline), sort_tline_by_x);
+	qsort(tdi->gr->tl, tdi->ntl, sizeof(tline), sort_tline_by_x);
 	puts("computing ypos");
-	compute_ypos(t, xgap, t->gr->tl, t->ntl);
+	compute_ypos(tdi, xgap, tdi->gr->tl, tdi->ntl);
 	puts("done");
     }
-
-
-
+    
     /* 3) Plot the lines */
-
-    /* prepare image */
-    image_remove(t->image);
-    if(!create_image_buffer(t->image, width, height, t->background)) return -1;
-
-    height2 = height / 2;
-    t->yz = t->yzoom / 200.0;
-
-    for (i = 0; i < t->ntl; i++) {
-    	tline *tl = &t->gr->tl[i];
+    half_height = tdi->height / 2;
+    tdi->yz = tdi->yzoom / 200.0;
+    
+    for (i = 0; i < tdi->ntl; i++) {
+    	int j;
+    	tline *tl = &tdi->gr->tl[i];
     
 	for (j = 0; j < 3; j++) {
 	
@@ -708,130 +826,71 @@ int template_replot(template_disp_t *t) {
 
 		/* Compute the Y coordinates (part 2) */
 		/* See XHAIR sub-command code too; keep it in sync */
-		if (t->ymode == 1) {
+		if (tdi->ymode == 1) {
 		    y = tl->y * 10;
 		} else {
-		    if (t->ymode == 0)
+		    if (tdi->ymode == 0)
 			y = tl->x[3] - tl->x[0];
 		    else
 			y = tl->mq * 4;
 			
-		    if (t->logy) {
+		    if (tdi->logy) {
 			if (y < 0) y = 0;
 			
 			y = 50 * log(y + 1);
 		    }
 		}
 		
-		y = (y + 50 - t->yoffset) * t->yz;
+		y = (y + 50 - tdi->yoffset) * tdi->yz;
 
-		if (t->spread)
-		    y = y - t->spread / 2 + ((tl->x[0] + tl->rec) % (t->spread));
+		if (tdi->spread)
+		    y = y - tdi->spread / 2 + ((tl->x[0] + tl->rec) % (tdi->spread));
 
-		if (t->sep_by_strand)
-		    y = tl->t_strand ? height2 - y : height2 + y;
+		if (tdi->sep_by_strand)
+		    y = tl->t_strand ? half_height - y : half_height + y;
 
 		if (ymin > y) ymin = y;
 		if (ymax < y) ymax = y;
 
 		/* And plot if visible */
-		if (y >= wy0 && y <= wy1) {
+		if (y >= tdi->wy0 && y <= tdi->wy1) {
 		    int rx1, rx2, ry;
 		    
 		    rx1 = (tl->x[j] - bx) * ax; // world to raster conversion
 		    rx2 = (tl->x[j + 1] - bx) * ax;
 		    ry  = (y - by) * ay;
 		    
-		    draw_line(t->image, rx1, rx2, ry, tl->col[j]);
+		    draw_line(tdi->image, rx1, rx2, ry, tl->col[j]);
 		}
-		
-		
 	    }
 	}
     }
     
-    /* Now to draw the show the image */
-    create_image_from_buffer(t->image);
-    rdisp = GetRasterDisplay (t->raster);
-    rdraw = GetRasterDrawable(t->raster);
-    rgc   = GetRasterGC      (t->raster);
-
-    XPutImage(rdisp, rdraw, rgc, t->image->img, 0, 0, 0, 0, t->image->width, t->image->height);
-
-    /* Compute scrollbar and bounding box locations */
-    t->ymin = ymin != INT_MAX ? ymin : 0;
-    t->ymax = ymax != INT_MIN ? ymax : 0;
-
-    tv1 = tv2;
-    gettimeofday(&tv2, NULL);
-    t4 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
-
-//    printf("Query range %d..%d => %d reads, E%5.3fs + X%5.3fs + Y%5.3fs + D%5.3fs\n",
-//        	   (int)wx0, (int)wx1, nr, t1, t2, t3, t4);
-
-    ny0 = wy0; ny1 = wy1;
-    if (t->yzoom != last_zoom) {
-	ny0 = t->ymin - 10;
-	ny1 = t->ymax + 10;
-    } else {
-	if (ny0 > t->ymin - 10)
-	    ny0 = t->ymin - 10;
-	if (ny1 < t->ymax + 10)
-	    ny1 = t->ymax + 10;
-    }
-    last_zoom = t->yzoom;
+    create_image_from_buffer(tdi->image);
+    XPutImage(display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
     
-    if (ny0 > 0) ny0 = 0;
-    if (ny1 < 400) ny1 = 400;
+    /* some last bits of size calculation for scrolling */
+    tdi->y_start = ymin - 10;
+    tdi->y_end   = ymax + 10;
     
-    wx0 = contig_get_start(&t->contig) - 10;
-    wx1 = contig_get_end(&t->contig) + 10;
-    RasterSetWorldScroll(t->raster,  wx0,  ny0,  wx1,  ny1);
-
-    t->xhair_pos = DBL_MAX;
-    t->yhair_pos = DBL_MAX;
-
-    return 0;
+    if (tdi->y_start > 0) tdi->y_start = 0;
+    if (tdi->y_end < tdi->height) tdi->y_end = tdi->height;
+    
+    last_zoom = tdi->yzoom;
 }
+    
+    
+    
+    
+    
+    
+   
 
-static void tdisp_move_xhair(template_disp_t *t, int x, int y,
-			     double *rx, double *ry) {
-    double wx0, wx1, wy0, wy1;
-    double xh, xh2, yh, yh2;
-    int width, height;
+	    
 
-    RasterWinSize(t->raster, &width, &height);
-    RasterToWorld(t->raster, x, y, &xh, &yh);
-    RasterToWorld(t->raster, x+1, y+1, &xh2, &yh2);
-    xh = (xh+xh2)/2;
-    yh = (yh+yh2)/2;
-    RasterToWorld(t->raster, 0, 0, &wx0, &wy0);
-    RasterToWorld(t->raster, width, height, &wx1, &wy1);
-
-    SetDrawEnviron(t->interp, t->raster, t->xhair_col);
-    if (t->xhair_pos != DBL_MAX) {
-	RasterDrawLine(t->raster, t->xhair_pos, wy0, t->xhair_pos, wy1);
-    }
-    if (t->yhair_pos != DBL_MAX) {
-	RasterDrawLine(t->raster, wx0, t->yhair_pos, wx1, t->yhair_pos);
-    }
-
-    if (x != INT_MAX) {
-	t->xhair_pos = xh;
-	RasterDrawLine(t->raster, t->xhair_pos, wy0, t->xhair_pos, wy1);
-	if (rx) *rx = t->xhair_pos;
-    } else {
-	t->xhair_pos = DBL_MAX;
-    }
-
-    if (y != INT_MAX) {
-	t->yhair_pos = yh;
-	RasterDrawLine(t->raster, wx0, t->yhair_pos, wx1, t->yhair_pos);
-	if (ry) *ry = t->yhair_pos;
-    } else {
-	t->yhair_pos = DBL_MAX;
-    }
-
-    tk_RasterRefresh(t->raster);
-
-}
+    
+    
+    
+    
+    
+    

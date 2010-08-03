@@ -88,7 +88,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     $w.xscroll set \
 	[expr {[set ${w}(x1)]/double([set ${w}(length)])}] \
 	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]
-
+	
     grid $w.xscroll -column 1 -row 998 -sticky nsew
     grid rowconfigure $w 998 -weight 0
 
@@ -105,11 +105,10 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     bind $w <Any-Configure> "after idle {resize1.5 $w}"
 
     set ${w}(pwidth) [expr {[set ${w}(width)]-21}]
-    puts pwdth=[set ${w}(pwidth)]
-    
     set ${w}(xorigin) [set ${w}(x1)]
-    set ${w}(xzoom) [expr {([set ${w}(x2)]-[set ${w}(x1)]+1)/
-			   double([set ${w}(pwidth)])}]
+    set ${w}(xzoom) [expr {double([set ${w}(pwidth)]) / ([set ${w}(x2)]-[set ${w}(x1)]+1)}]
+			   
+    
 
 
     # Contig registration
@@ -154,8 +153,7 @@ proc 1.5plot_contig_event {w type id cdata args} {
 		set t $w.track$id
 		global $t $t.Cursors $t.Id2Cid
 
-		if {![info exists ${t}(Raster)]} continue;
-		set r [set ${t}(Raster)]
+		if {![info exists ${t}(track)]} continue;
 
 		if {[lsearch $arg(job) DELETE] != -1} {
 		    catch {unset $t.Cursors($cid)}
@@ -177,7 +175,7 @@ proc 1.5plot_contig_event {w type id cdata args} {
 			"1.5cursor_motion $w $t $cid %X"
 		}
 		set $t.Cursors($cid) $arg(abspos)
-		set x [lindex [$r topixmap $arg(abspos) 0] 0]
+		set x [expr {int([x2c $w $arg(abspos)])}]
 		incr x -2
 
 		global $t.cursorx$cid
@@ -196,11 +194,10 @@ proc 1.5plot_contig_event {w type id cdata args} {
 proc 1.5redraw_cursor {w t} {
     global $w $t $t.Cursors
 
-    if {![info exists ${t}(Raster)]} return;
-    set r [set ${t}(Raster)]
+    if {![info exists ${t}(track)]} return;
 
     foreach id [array names $t.Cursors] {
-	place $t.cursor$id -x [lindex [$r topixmap [set $t.Cursors($id)] 0] 0]
+	place $t.cursor$id -x [expr {int([x2c $w [set $t.Cursors($id)])}]]
     }
 }
 
@@ -214,11 +211,10 @@ proc 1.5cursor_motion {w t id x} {
     global $w $t $t.cursor_selected_$id
     if {![info exists $t.cursor_selected_$id]} return
 
-    if {![info exists ${t}(Raster)]} return;
-    set r [set ${t}(Raster)]
-
+    if {![info exists ${t}(track)]} return;
+ 
     incr x -[winfo rootx $t]
-    set bx [expr {round([lindex [$r toworld $x 0] 0])}]
+    set bx [expr {round([c2x $w $x])}]
 
     contig_notify \
 	-io [set ${w}(io)] \
@@ -262,6 +258,7 @@ proc resize1.5 {w} {
 
     set ${w}(x2) [expr {[set ${w}(xzoom)]*[set ${w}(pwidth)] +
 			+[set ${w}(x1)] - 1}]
+			
     redraw_plot $w
 }
 
@@ -273,9 +270,6 @@ proc scrollx1.5 {w cmd args} {
 
     set sbar $w.xscroll
     set clen [set ${w}(length)]
-
-    puts ""
-    #parray $w
 
     if {$cmd == "moveto"} {
 	set xpos [expr {int([lindex $args 0]*$clen)}]
@@ -302,7 +296,7 @@ proc scrollx1.5 {w cmd args} {
     $sbar set \
 	[expr {[set ${w}(x1)]/double([set ${w}(length)])}] \
 	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]
-
+	
     redraw_plot $w
 }
 
@@ -316,13 +310,17 @@ proc set_xzoom {w val} {
     set mid [c2x $w [expr {$wid/2.0}]]
     set ${w}(xzoom) [expr {pow(($val+4)/10,4)}]
 
-    # Adjust xorigin to ensure $mid stays the same
-    set ${w}(xorigin) [expr {$mid - ($wid/2)*[set ${w}(xzoom)]}]
+    if {[info exists ${w}(zoom_set)]} {
+        # Adjust xorigin to ensure $mid stays the same
+        set ${w}(xorigin) [expr {$mid - ($wid/2)*[set ${w}(xzoom)]}]
+    } else {
+	set ${w}(zoom_set) 1
+    }
 
     # Reset x1/x2
     set ${w}(x1) [c2x $w 0]
     set ${w}(x2) [c2x $w $wid]
-
+    
     # Simulate a scrollbar movement to update size, position and redraw.
     set sbar $w.xscroll
 
@@ -337,27 +335,22 @@ proc set_xzoom {w val} {
 # x and y are booleans to govern whether we want to zoom in x, y or both.
 proc zoom1.5 {w x y z} {
     global $w
-
+    
     if {$y} {
 	set ${w}(yzoom) [expr {[set ${w}(yzoom)]/$z}]
     }
 
     if {$x} {
-	#set ${w}(xzoom) [expr {$z*[set ${w}(xzoom)]}]
 	set x1 [set ${w}(x1)]
 	set x2 [set ${w}(x2)]
 	set mid [expr {($x1+$x2)/2.0}]
 	set wid [expr {$x2-$x1+1}]
 	set wid [expr {$wid * $z}];
     
-	puts "old x=$x1..$x2"
-
 	set x1 [expr {int($mid-$wid/2)}]
 	set x2 [expr {int($mid+$wid/2)}]
 	set ${w}(x1) $x1
 	set ${w}(x2) $x2
-
-	puts "new x=$x1..$x2"
 
 	$w.xscroll set \
 	    [expr {$x1/double([set ${w}(length)])}] \
@@ -365,6 +358,7 @@ proc zoom1.5 {w x y z} {
 
 	set ${w}(xorigin) [expr $x1]
 	set ${w}(xzoom)   [expr {($x2-$x1+1)/double([set ${w}(pwidth)])}]
+	
     }
 
     redraw_plot $w seq_depth
@@ -452,7 +446,7 @@ proc yscale_init {w t tnum height} {
     global $w $t
     
     # create a scale for the y axis
-    canvas $w.yscale$tnum -height $height -width 60
+    canvas $w.yscale$tnum -height $height -width 60 -bd 1 -relief sunken
     set ${t}(yscale) $w.yscale$tnum
     set ys [set ${t}(yscale)]
     
@@ -477,15 +471,17 @@ proc yscale_seq {w t height} {
     set w4 [expr {0.4 * 60}]
     set w5 [expr {0.45 * 60}]
     set w6 [expr {0.7 * 60}]
-
+    
+    set d [set ${t}(canvas)]
     set td [set ${t}(track)]
-    set zoom [$td yz]
+    
+    set zoom [$d itemcget $td -yz]
     
     if {$zoom == 0} {
     	set zoom 1
     }
 
-    set ymode [$td configure -ymode]
+    set ymode [$d itemcget $td -ymode]
     set ylog  [set ${t}(YLog)]
     set strands [set ${t}(SeparateStrands)]
     
@@ -493,6 +489,7 @@ proc yscale_seq {w t height} {
     $ys create line $w1 0 $w1 $height
     
     set y1 [set ${t}(y1)]
+    set y1 [expr {int($y1)}]
     
     if {$ylog && $ymode != 1} {
 	set max $height
@@ -734,10 +731,11 @@ proc yscale_depth {w t height} {
     set w3 [expr {0.3 * 60}]
     set w4 [expr {0.45 * 60}]
     set w5 [expr {0.4 * 60}]
-
+    
+    set d  [set ${t}(canvas)]
     set td [set ${t}(track)]
 
-    set zoom [$td yz]
+    set zoom [$d itemcget $td -yz]
     
     if {$zoom == 0} {
     	set zoom 1
@@ -792,20 +790,28 @@ proc yscroll_plot {w t cmd {opt1 {}} {opt2 {}}} {
     puts [info level [info level]]
     
     set td   [set ${t}(track)]
-    foreach {top bottom} [$td yrange] break
+    foreach {top bottom} [set ${t}(tb)] break
     
     if {[set ${t}(all_visible)] == 1} {
     	return; # no scroll needed
     }
 
     set y1 [set ${t}(y1)]
+    set y1 [expr {int($y1)}]
     set h [winfo height [set ${t}(canvas)]]
     set ymax [set ${t}(ymax)]
     
     switch $cmd {
 	scroll {
 	    if {$opt2 == "pages"} {
-		return; # we don't do pages
+	    	set page [expr {int($h * 0.9)}]
+		
+		if {$opt1 == 1} {
+		    incr y1 $h
+		} else {
+		    incr y1 [expr {$h * -1}]
+		}
+	    
 	    } else {
 	    	if {$top <= 0 && $opt1 <= 0} {
 		    return
@@ -835,9 +841,8 @@ proc yscroll_plot {w t cmd {opt1 {}} {opt2 {}}} {
     }
     
     set ${t}(y1) $y1
-    set y2 [expr {$y1+$h}]
-
-    puts "$y1 to $y2 out of [set ${t}(scroll_height)]"
+    set y2 [expr {$y1 + $h}]
+    set ${t}(y2) $y2
 
     if {[info exists ${t}(Raster)]} {
 	eval [set ${t}(Raster)] yview $cmd $opt1 $opt2
@@ -940,7 +945,7 @@ proc redraw_plot {w {track_types {}} args} {
 # The actual redraw function, rather than a simple request to redraw
 proc redraw_plot_doit {w} {
     global $w
-
+    
     set bd [set ${w}(border)]
 
     set tracks [lsort -unique [set ${w}(RedrawPending)]]
@@ -948,6 +953,8 @@ proc redraw_plot_doit {w} {
     set x1 [set ${w}(x1)]
     set x2 [set ${w}(x2)]
     set ${w}(xorigin) [expr $x1]
+    
+    
 
 #    puts ""
 #    puts ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -960,7 +967,7 @@ proc redraw_plot_doit {w} {
     foreach id $tracks {
 	set t $w.track$id
 	global $t
-
+	
 	set d [set ${t}(canvas)]
 	set y1 [set ${t}(y1)]
 	set y2 [expr {[set ${t}(y1)]+[winfo height [set ${t}(canvas)]]}]
@@ -977,105 +984,9 @@ proc redraw_plot_doit {w} {
 }
 
 
-#
-# range_track_init
-#
-# Common initilizations for range based
-# tracks.
-#
-
-proc range_track_init {w t} {
-    global $w $t
-    
-    set ${t}(Init) 1
-    set ${t}(Accurate) 0
-    set ${t}(YLog) 1
-    set ${t}(YScale) 100
-    set ${t}(OldYScale) [set ${t}(YScale)]
-    set ${t}(YOffset) 50
-    set ${t}(Simple) 0
-    set ${t}(Y) "Template Size"
-    set ${t}(Colour) "Combined mapping quality"
-    set ${t}(Spread) 0
-    set ${t}(PlotDepth) 0
-    set ${t}(SeparateStrands) 0
-    set ${t}(MinQual) 0
-    set ${t}(MaxQual) 255
-    set ${t}(MinYSize) 1024
-    set ${t}(FilterPair) 0
-    set ${t}(FilterConsistent) 0
-    set ${t}(FilterSpanning) 0
-    set ${t}(ReadsOnly) 0
-    set ${t}(m_start) -1
-    set ${t}(m_stop)  -1
-    
-    # Add raster component to canvas
-    update idletasks
-
-    set d    [set ${t}(canvas)]
-    puts 1:[winfo width $d]x[winfo height $d]
-    set r [raster $d.r \
-	       -width [winfo width $d] \
-	       -height [winfo height $d] \
-	       -bg black \
-	       -bd 0]
-
-    set rid [$d create window 0 0 -anchor nw -window $r]
-    set ${t}(Raster) $r
-    set ${t}(R_id)   $rid
-    $d raise [set ${t}(R_id)]
-
-    $r world_scroll 1 1 [set ${w}(length)] 10000
-    $r world 0 0 [expr {[set ${w}(pwidth)]*[set ${w}(xzoom)]}] \
-	[winfo height $d]
-
-    set ${t}(R_zoom) [set ${w}(xzoom)]
-    
-    bind $r <B1-Motion> "drag_x $w $t %x %y"
-    bind $r <B1-ButtonRelease> "end_drag_x $w $t"
-}
-   
 ###############################################################################
 # The tracks
 ###############################################################################
-
-#
-# Initialises the template display window - range track
-#
-proc seq_seqs_init {w t} {
-    global $w $t
-
-    puts START:[info level [info level]]
-
-    range_track_init $w $t
-
-    set r [set ${t}(Raster)]
-
-    set ${t}(track) [g5::template_display \
-			 -io 	 [set ${w}(io)] \
-			 -cnum   [set ${w}(cnum)] \
-			 -raster $r \
-			 -range  [set ${w}(grange)]]
-    set td   [set ${t}(track)]
-	
-    bind $r <Any-Motion> "
-         foreach {x y} \[$td xhair %x %y\] break;
-         set ${w}(info) \"X: \$x    Y: \$y)\"
-    "
-    bind $r <Any-Leave> "$td xhair; set ${w}(info) {}"
-
-    # Add GUI elements
-    top_controls    $w $t
-    bottom_controls $w $t
-
-    set d    [set ${t}(canvas)]
-    $d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
-
-    bind $r <<use>> "invoke_editor $w $t %x"
-    
-    puts END:[info level [info level]]
-}
-
 
 proc bottom_controls {w t} {
     global $w $t
@@ -1083,19 +994,19 @@ proc bottom_controls {w t} {
     set bc $w.bcontrol
 
     scale $bc.yzoom -from 1 -to 1000 -orient horiz -label "Y Magnification" \
-	-variable ${t}(YScale) -command "scale_Y $w $t seq_seqs"
+	-variable ${t}(YScale) -command "scale_Y $w $t template_item"
 
     scale $bc.yspread -from 0 -to 250 -orient horiz -label "Y Spread" \
-	-variable ${t}(Spread) -command "redraw_plot $w seq_seqs"
+	-variable ${t}(Spread) -command "redraw_plot $w template_item"
 
     scale $bc.yoffset -from 0 -to 250 -orient horiz -label "Y Offset" \
-	-variable ${t}(YOffset) -command "redraw_plot $w seq_seqs"
+	-variable ${t}(YOffset) -command "redraw_plot $w template_item"
 
     pack $bc.yzoom $bc.yspread $bc.yoffset -fill both -expand 1 -side left
 
     scale $bc.minysize -from 100 -to 5000 -resolution 10 -orient horiz \
 	-label "Stacking Y Size" -variable ${t}(MinYSize) \
-	-command "redraw_plot $w seq_seqs"
+	-command "redraw_plot $w template_item"
 
     pack $bc.minysize -fill both -expand 1 -side left
 }
@@ -1146,205 +1057,28 @@ proc top_controls {w t} {
 
 
 #
-# Plots the sequence read depth.
-#
-proc seq_seqs {w t x1 x2 y1 y2} {
-    global $w $t
-
-    if {![info exists ${t}(Init)]} {
-	seq_seqs_init $w $t
-    }
-
-    set r [set ${t}(Raster)]
-    set d [set ${t}(canvas)]
-
-    if {[info exists ${t}(width)]} {
-    	update idletasks
-	
-	$r configure -width [winfo width $d] -height [winfo height $d]
-    }
-
-    # Replacement for the scroll/zooming code - just reset world
-    foreach {X1 Y1 X2 Y2} [$r world] break;
-    # the raster coords can become fractions, which doesn't make much sense
-    set Y1 [expr {int($Y1)}]
-    # change the raster wy1 coord to match visible height
-    set nheight [winfo height $d] 
-    set Y2 [expr {$Y1 + $nheight}]
-    
-    $r world $x1 $Y1 $x2 $Y2
-    
-    set ${t}(y1) $Y1
-
-    set cmode [lsearch {{Combined mapping quality} \
-			    {Minimum mapping quality} \
-			    {Maximum mapping quality} \
-			    {Reads}} [set ${t}(Colour)]]
-    set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
-		   [set ${t}(Y)]]
-
-    update idletasks
-
-    # Forces a redraw too
-    set flag [expr { [set ${t}(FilterPair)]
-		    +[set ${t}(FilterConsistent)]
-		    +[set ${t}(FilterSpanning)]}]
-		     
-    1.5redraw_cursor $w $t
-
-    set td   [set ${t}(track)]
-
-    $td configure \
-	-accuracy    [set ${t}(Accurate)] \
-	-logy        [set ${t}(YLog)] \
-	-yoffset     [set ${t}(YOffset)] \
-	-spread      [set ${t}(Spread)] \
-	-ymode       $ymode \
-	-cmode       $cmode \
-	-reads_only  [set ${t}(ReadsOnly)] \
-	-by_strand   [set ${t}(SeparateStrands)] \
-	-filter      $flag \
-	-yzoom       [set ${t}(YScale)] \
-	-plot_depth  [set ${t}(PlotDepth)] \
- 	-min_qual    [set ${t}(MinQual)] \
- 	-max_qual    [set ${t}(MaxQual)] \
-	-min_y_size  [set ${t}(MinYSize)]
-
-
-    # Set Y scrollbar
-    set ymax [set ${t}(ymax) [$td ymax]]
-    set ymin [set ${t}(ymin) [$td ymin]]
-    
-    if {[string compare [$td yrange] "0.000000 1.000000"] == 0} {
-    	set ${t}(all_visible) 1
-    } else {
-    	set ${t}(all_visible) 0
-    }
- 
-    
-    set ${t}(scroll_height) [expr {[$td ymax]-[$td ymin]}]
-    eval [set ${t}(ys)] set [$td yrange]
-    
-    # change the yscale
-    yscale_seq $w $t $nheight
-    
-    if {$ymax <= $Y1} {
-    	puts "Out of range (max) $ymax (y1) $Y1 (y2) $Y2"
-
-	# check for no data
-	if {$ymax == 0 && $Y1 == 0} {
-	    return
-	}
-	
-	# bring the range back to normal range
-	set diff [expr {$ymax - $Y2}]
-	
-	incr Y2 $diff
-	incr Y1 $diff
-	
-	if {$Y1 < 0} {
-	    set Y1 0
-	}
-	
-	if {$Y1 == $Y2} {
-	    incr Y2; # world needs a rectangle
-	}
-	
-    	$r world $x1 $Y1 $x2 $Y2
-	
-    	# need to redraw and do it now, simple redraw_plot
-	# stacks up redraw but does not.
-	redraw_plot_doit $w
-    }
-}
-
-#
-# initialise the depth track - a range track
-#
-proc depth_track_init {w t} {
-    global $w $t
-
-    puts START:[info level [info level]]
-
-    range_track_init $w $t
-
-    set r [set ${t}(Raster)]
-    set ${t}(track) [g5::depth_track \
-			 -raster $r \
-			 -range  [set ${w}(grange)]]
-
-    set dt   [set ${t}(track)]
-    bind $r <Any-Motion> "
-         foreach {x y} \[$dt xhair %x %y\] break;
-         set ${w}(info) \"X: \$x    Y: \$y)\"
-    "
-    bind $r <Any-Leave> "$dt xhair; set ${w}(info) {}"
-
-    puts END:[info level [info level]]
-}
-
-
-#
-# plot depth track - a range track
-#
-proc depth_track {w t x1 x2 y1 y2} {
-    global $w $t
-
-    if {![info exists ${t}(Init)]} {
-	depth_track_init $w $t
-    }
-
-    set r    [set ${t}(Raster)]
-    set d    [set ${t}(canvas)]
-
-    if {[info exists ${t}(width)]} {
-	$r configure -width [winfo width $d] -height [winfo height $d]
-    }
-
-    # Replacement for the scroll/zooming code - just reset world
-    foreach {X1 Y1 X2 Y2} [$r world] break;
-
-    set Y1 [expr {int($Y1)}]
-    # change the raster wy1 coord to match visible height
-    set nheight [winfo height $d] 
-    set Y2 [expr {$Y1 + $nheight}]
-
-    $r world $x1 $Y1 $x2 $Y2
-
-    update idletasks
-
-    # Forces a redraw too
-    1.5redraw_cursor $w $t
-
-    set td   [set ${t}(track)]
-    $td replot
-
-   # Set Y scrollbar
-    if {[string compare [$td yrange] "0.000000 1.000000"] == 0} {
-    	set ${t}(all_visible) 1
-    } else {
-    	set ${t}(all_visible) 0
-    }
-
-    set ${t}(ymax) [$td ymax]
-    set ${t}(scroll_height) [expr {[$td ymax]-[$td ymin]}]
-    
-    eval [set ${t}(ys)] set [$td yrange]
-
-    # change the yscale
-    yscale_depth $w $t [winfo height $d]
-}
-
-
-
-#
 # Plots the sequence ruler
 #
 proc seq_ruler {w t x1 x2 y1 y2} {
     global $w $t
     
     set d    [set ${t}(canvas)]
+    
+    if {![info exists ${t}(Init)]} {   
+    	# initial pwidth was just a guess
+	# lets make a more accurate measure
+    
+	set ${w}(pwidth) [winfo width $d]
 
+	set ${w}(x2) [expr {[set ${w}(xzoom)]*[set ${w}(pwidth)] +
+			    +[set ${w}(x1)] - 1}]
+
+	set x2 [set ${w}(x2)]
+	
+	set ${t}(Init) 1
+    }
+
+			
     set wx1 [x2c $w $x1]
     set wx2 [x2c $w $x2]
 
@@ -1373,6 +1107,7 @@ proc seq_ruler {w t x1 x2 y1 y2} {
     }
 
     set step2 [expr {$step/2.0}]
+
     set pstep2 [expr {$pstep/2.0}]
     for {set i $x1; set j $p1} {$i < $x2} {set i [expr {$i+$step2}]; set j [expr {$j+$pstep2}]} {
     	set xi [x2c $w $i]
@@ -1391,6 +1126,308 @@ proc seq_ruler {w t x1 x2 y1 y2} {
 }
 
 
+proc template_item_init {w t} {
+    global $w $t
+
+    puts START:[info level [info level]]
+    
+    set ${t}(Accurate) 0
+    set ${t}(YLog) 1
+    set ${t}(YScale) 100
+    set ${t}(OldYScale) [set ${t}(YScale)]
+    set ${t}(YOffset) 50
+    set ${t}(Simple) 0
+    set ${t}(Y) "Template Size"
+    set ${t}(Colour) "Combined mapping quality"
+    set ${t}(Spread) 0
+    set ${t}(PlotDepth) 0
+    set ${t}(SeparateStrands) 0
+    set ${t}(MinQual) 0
+    set ${t}(MaxQual) 255
+    set ${t}(MinYSize) 1024
+    set ${t}(FilterPair) 0
+    set ${t}(FilterConsistent) 0
+    set ${t}(FilterSpanning) 0
+    set ${t}(ReadsOnly) 0
+    set ${t}(m_start) -1
+    set ${t}(m_stop)  -1
+
+    set d [set ${t}(canvas)]
+
+    set ${t}(track) [$d create template_display 0 0 -anchor nw -range [set ${w}(grange)] \
+	    	    -contig_start [set ${w}(start)]  -contig_length [set ${w}(length)]]
+		    
+    set td [set ${t}(track)]
+		    
+    set ${t}(y1) [$d itemcget $td -wy0]
+    set ${t}(y2) [$d itemcget $td -wy1]
+    
+    # Add GUI elements
+    top_controls    $w $t
+    bottom_controls $w $t
+
+    bind $d <2> "set lastx %x; set lasty %y"
+    bind $d <B2-Motion> "addLine $d %x %y"
+    bind $d <3> "$d delete withttag tline"
+
+    bind $d <B1-Motion> "drag_x $w $t %x %y"
+    bind $d <B1-ButtonRelease> "end_drag_x $w $t %x %y"
+
+    bind $d <Any-Motion> "cross_hair $w $t %x %y"
+    bind $d <Any-Leave>  "cross_hair_leave $w"
+
+    bind $d <<use>> "invoke_editor $w $t %x"
+
+    set ${t}(Init) 1
+}
+
+
+
+proc template_item {w t x1 x2 y1 y2} {
+    global $w $t
+    
+    if {![info exists ${t}(Init)]} {
+    	template_item_init $w $t
+     }
+     
+    update idletasks
+    
+    set d [set ${t}(canvas)]
+    set td [set ${t}(track)]
+    set cmode [lsearch {{Combined mapping quality} \
+			    {Minimum mapping quality} \
+			    {Maximum mapping quality} \
+			    {Reads}} [set ${t}(Colour)]]
+    set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
+		   [set ${t}(Y)]]
+
+    set flag [expr { [set ${t}(FilterPair)]
+		    +[set ${t}(FilterConsistent)]
+		    +[set ${t}(FilterSpanning)]}]
+
+    $d itemconfigure $td \
+	-accuracy    [set ${t}(Accurate)] \
+	-logy        [set ${t}(YLog)] \
+	-yoffset     [set ${t}(YOffset)] \
+	-spread      [set ${t}(Spread)] \
+	-ymode       $ymode \
+	-cmode       $cmode \
+	-reads_only  [set ${t}(ReadsOnly)] \
+	-by_strand   [set ${t}(SeparateStrands)] \
+	-filter      $flag \
+	-yzoom       [set ${t}(YScale)] \
+	-min_qual    [set ${t}(MinQual)] \
+ 	-max_qual    [set ${t}(MaxQual)] \
+	-min_y_size  [set ${t}(MinYSize)] \
+    	-wx0   	     $x1 \
+	-wx1         $x2 \
+	-wy0	     $y1 \
+	-wy1	     $y2
+
+    # reset coords just in case they have moved
+    $d coords $td 0 0
+    
+    set ${t}(ymax) [$d itemcget $td -y_end]
+    set ${t}(ymin) [$d itemcget $td -y_start]
+    
+    set ${t}(scroll_height) [expr {[set ${t}(ymax)] - [set ${t}(ymin)]}]
+    set ${t}(tb) [calculate_range $y1 $y2 [set ${t}(ymin)] [set ${t}(ymax)] [set ${t}(scroll_height)]]
+    
+    if {[string compare [set ${t}(tb)] "0.0 1.0"] == 0} {
+    	set ${t}(all_visible) 1
+    } else {
+    	set ${t}(all_visible) 0
+    }
+
+    eval [set ${t}(ys)] set [set ${t}(tb)] 
+    
+    yscale_seq $w $t [winfo height $d]
+    
+    range_sanity_check $w $t
+}
+
+
+proc depth_item_init {w t} {
+    global $w $t
+
+    puts START:[info level [info level]]
+    
+    set ${t}(Accurate) 0
+    set ${t}(YLog) 1
+    set ${t}(YScale) 100
+    set ${t}(OldYScale) [set ${t}(YScale)]
+    set ${t}(YOffset) 50
+    set ${t}(Simple) 0
+    set ${t}(Y) "Template Size"
+    set ${t}(Colour) "Combined mapping quality"
+    set ${t}(MinQual) 0
+    set ${t}(MaxQual) 255
+    set ${t}(MinYSize) 1024
+    set ${t}(FilterPair) 0
+    set ${t}(FilterConsistent) 0
+    set ${t}(FilterSpanning) 0
+    set ${t}(ReadsOnly) 0
+    set ${t}(m_start) -1
+    set ${t}(m_stop)  -1
+
+    set d [set ${t}(canvas)]
+
+    set ${t}(track) [$d create depth_track 0 0 -anchor nw -range [set ${w}(grange)]]
+		    
+		    
+    set td [set ${t}(track)]
+		    
+    set ${t}(y1) [$d itemcget $td -wy0]
+    set ${t}(y2) [$d itemcget $td -wy1]
+    
+    bind $d <2> "set lastx %x; set lasty %y"
+    bind $d <B2-Motion> "addLine $d %x %y"
+    bind $d <3> "$d delete withttag tline"
+
+    bind $d <B1-Motion> "drag_x $w $t %x %y"
+    bind $d <B1-ButtonRelease> "end_drag_x $w $t %x %y"
+
+    bind $d <Any-Motion> "cross_hair $w $t %x %y"
+    bind $d <Any-Leave>  "cross_hair_leave $w"
+
+    set ${t}(Init) 1
+}
+
+
+proc depth_item {w t x1 x2 y1 y2} {
+    global $w $t
+    
+    if {![info exists ${t}(Init)]} {
+    	depth_item_init $w $t
+     }
+     
+    update idletasks
+    
+    set d [set ${t}(canvas)]
+    set td [set ${t}(track)]
+    set cmode [lsearch {{Combined mapping quality} \
+			    {Minimum mapping quality} \
+			    {Maximum mapping quality} \
+			    {Reads}} [set ${t}(Colour)]]
+    set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
+		   [set ${t}(Y)]]
+
+    set flag [expr { [set ${t}(FilterPair)]
+		    +[set ${t}(FilterConsistent)]
+		    +[set ${t}(FilterSpanning)]}]
+
+    $d itemconfigure $td \
+	-accuracy    [set ${t}(Accurate)] \
+	-logy        [set ${t}(YLog)] \
+	-ymode       $ymode \
+	-cmode       $cmode \
+	-reads_only  [set ${t}(ReadsOnly)] \
+	-filter      $flag \
+	-min_qual    [set ${t}(MinQual)] \
+ 	-max_qual    [set ${t}(MaxQual)] \
+    	-wx0   	     $x1 \
+	-wx1         $x2 \
+	-wy0	     $y1 \
+	-wy1	     $y2
+
+    # reset coords just in case they have moved
+    $d coords $td 0 0
+    
+    set ${t}(ymax) [$d itemcget $td -y_end]
+    set ${t}(ymin) [$d itemcget $td -y_start]
+    
+    set ${t}(scroll_height) [expr {[set ${t}(ymax)] - [set ${t}(ymin)]}]
+    set ${t}(tb) [calculate_range $y1 $y2 [set ${t}(ymin)] [set ${t}(ymax)] [set ${t}(scroll_height)]]
+    
+    if {[string compare [set ${t}(tb)] "0.0 1.0"] == 0} {
+    	set ${t}(all_visible) 1
+    } else {
+    	set ${t}(all_visible) 0
+    }
+
+    eval [set ${t}(ys)] set [set ${t}(tb)] 
+    
+    yscale_depth $w $t [winfo height $d]
+    
+    range_sanity_check $w $t
+}
+
+
+proc range_sanity_check {w t} {
+    global $w $t
+    
+    set ymax [expr {int([set ${t}(ymax)])}]
+    set ymin [expr {int([set ${t}(ymin)])}]
+    set y1   [expr {int([set ${t}(y1)])}]
+    set y2   [expr {int([set ${t}(y2)])}]
+    
+    
+    # no data check   
+    if {$ymax == 0 && $ymin == 0} {
+    	return
+    }
+    
+    # check if our viewable area lands outside 
+    # the y range
+    
+    if {$y1 < $ymin} {
+    	set diff [expr {$ymin - $y1}]
+    } elseif {$y2 > $ymax} {
+    	set diff [expr {$ymax - $y2}]
+    } else {
+    	return
+    }
+    
+    # other checks
+    set wrange [expr {$ymax - $ymin}]
+    set crange [expr {$y2 - $y1}]
+    
+    # if the viewable size is bigger than the y range then that is
+    # ok
+    
+    if {($crange > $wrange) && (($y1 >= $ymin) || ($y2 <= $ymax))} {
+    	return
+    }
+    
+    incr y1 $diff
+    incr y2 $diff
+    
+    set ${t}(y1) $y1
+    set ${t}(y2) $y2
+    
+    # need to redraw and do it now, simple redraw_plot
+    # stacks up redraw but does not.
+    redraw_plot_doit $w
+}
+
+
+
+proc calculate_range {wy0 wy1 y_start y_end sheight} {
+    if {$wy1 == 0 || $y_end == 0 || $sheight == 0} {
+    	set top 0
+	set bottom 1
+    } else {
+     	set top    [expr {($wy0 - $y_start) / $sheight}]
+	set bottom [expr {($wy1 - $y_start) / $sheight}]
+	
+	if {$top < 0} {
+	    set top 0
+	}
+	
+	if {$bottom > 1} {
+	    set bottom 1
+	}
+    }
+    
+    return "$top $bottom"
+} 
+
+
+proc addLine {d x y} {
+    $d create line $::lastx $::lasty $x $y -tags tline -fill white
+    set ::lastx $x; set ::lasty $y
+}
+
 #
 # functions used by tracks
 #
@@ -1399,19 +1436,27 @@ proc drag_x {w t x y} {
     global $w $t
     
     set start [set ${t}(m_start)]
+    set d  [set ${t}(canvas)]
+    set td [set ${t}(track)]
     
     if {$start == -1} {
     	set ${t}(m_start) $x
+	set ${t}(m_stop)  $x
+
 	$w configure -cursor fleur
     } else {
+    	set dx [set ${t}(m_stop)]
     	set ${t}(m_stop) $x
+	
+	set dx [expr {$x - $dx}]
+	
+	$d move $td $dx 0 
     }
 
-    set td [set ${t}(track)]
-    $td xhair $x $y
+    cross_hair $w $t $x $y
 }
 
-proc end_drag_x {w t} {
+proc end_drag_x {w t x y} {
     global $w $t
     
     set start [set ${t}(m_start)]
@@ -1434,7 +1479,7 @@ proc end_drag_x {w t} {
 	set sbar $w.xscroll
     	$sbar set \
 	[expr {[set ${w}(x1)]/double([set ${w}(length)])}] \
-	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]
+	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]    
     } else {
     	return
     }
@@ -1444,21 +1489,72 @@ proc end_drag_x {w t} {
     set ${t}(m_start) -1
     set ${t}(m_stop) -1
     
+    set d  [set ${t}(canvas)]
+    set td [set ${t}(track)]
+    
     redraw_plot $w
 }
 
+
+proc cross_hair_leave {w} {
+    global $w
+    
+    foreach id [set ${w}(tracks)] {
+    	set t $w.track$id
+	global $t
+	
+	if {[info exists ${t}(track)]} {
+
+	    set d [set ${t}(canvas)]
+	    $d delete withtag xhair	    
+            set ${w}(info) {}
+	}
+    }
+}
+
+
+proc cross_hair {w tl x y} {
+    global $w
+    
+    foreach id [set ${w}(tracks)] {
+    	set t $w.track$id
+	global $t
+	
+	if {[info exists ${t}(track)]} {
+
+	    set tr     [set ${t}(track)]
+	    set d      [set ${t}(canvas)]
+    	    set width  [winfo width $d]
+    	    set height [winfo height $d]
+	    
+	    $d delete withtag xhair	    
+    	    $d create line $x 0 $x $height -tags xhair -fill green -dash {6 4 2 4 2 4}
+	    
+	    set comp [string compare $t $tl]
+	    
+	    if {$comp == 0} {
+    	    	$d create line 0 $y $width $y -tags xhair -fill green -dash {6 4 2 4 2 4}
+		set x1 [$d itemcget $tr -px]
+		set y1 [$d itemcget $tr -py]
+		set ${w}(info) "X: $x1    Y: $y1"
+	    }
+	}
+    }
+}
+    
 
 proc scale_Y {w t type mag} {
     global $w $t
 
     set d [set ${t}(canvas)]
-    set r [set ${t}(Raster)]
     set height [winfo height $d]
     set new_zoom [set ${t}(YScale)]
-    set old_zoom [set ${t}(OldYScale)] 
+    set old_zoom [set ${t}(OldYScale)]
     
-    # get the world coords
-    foreach {X1 Y1 X2 Y2} [$r world] break;
+    set Y1 [set ${t}(y1)]
+    set Y2 [set ${t}(y2)]
+    
+    set Y1 [expr {int($Y1)}]
     
     set wy_mid [expr {(($Y2 - $Y1) / 2) + $Y1}]
     set new_wy_mid [expr {($wy_mid * $new_zoom) / $old_zoom}]
@@ -1470,8 +1566,7 @@ proc scale_Y {w t type mag} {
 	set Y1 0
     } 
 
-    set Y2 [expr {$Y1 + $height}]
-    $r world $X1 $Y1 $X2 $Y2
+    set ${t}(y2) [expr {$Y1 + $height}]
     
     set ${t}(OldYScale) $new_zoom
     redraw_plot $w $type
@@ -1479,42 +1574,42 @@ proc scale_Y {w t type mag} {
 
 
 # Mouse-over event callback
-proc seq_seqs_bind {t w canvas} {
-    global $w $t
-
-    # Find the current reading record number
-    set tags [$canvas gettags current]
-    $canvas raise current
-    set rec [lindex [regexp -inline {(^| )rec_([0-9]+)} $tags] 2]
-    if {$rec == ""} return
-
-    # Produce some information about it
-    set io [set ${w}(io)]
-    set r1 [$io get_sequence $rec]
-    set c1 [$r1 get_contig]
-    set p1 [$r1 get_position]
-
-    set info "[$r1 get_name] len [$r1 get_len] mq [$r1 get_mapping_qual]"
-
-    set pair [$r1 get_pair]
-    if {$pair} {
-	set r2 [$io get_sequence $pair]
-	set c2 [$r2 get_contig]
-	set p2 [$r2 get_position]
-	set l2 [$r2 get_length]
-	append info ", pair [$r2 get_name] len $l2 mq [$r2 get_mapping_qual]"
-	if {$c1 != $c2} {
-	    append info " (contig\#$c2)"
-	} else {
-	    set size [expr {$p2+abs($l2)-$p1+1}]
-	    append info " (insert size $size)"
-	}
-    } else {
-	append info " single ended (rec \#$rec)"
-    }
-
-    set ${w}(info) $info
-}
+#proc seq_seqs_bind {t w canvas} {
+#    global $w $t
+#
+#    # Find the current reading record number
+#    set tags [$canvas gettags current]
+#    $canvas raise current
+#    set rec [lindex [regexp -inline {(^| )rec_([0-9]+)} $tags] 2]
+#    if {$rec == ""} return
+#
+#    # Produce some information about it
+#    set io [set ${w}(io)]
+#    set r1 [$io get_sequence $rec]
+#    set c1 [$r1 get_contig]
+#    set p1 [$r1 get_position]
+#
+#    set info "[$r1 get_name] len [$r1 get_len] mq [$r1 get_mapping_qual]"
+#
+#    set pair [$r1 get_pair]
+#    if {$pair} {
+#	set r2 [$io get_sequence $pair]
+#	set c2 [$r2 get_contig]
+#	set p2 [$r2 get_position]
+#	set l2 [$r2 get_length]
+#	append info ", pair [$r2 get_name] len $l2 mq [$r2 get_mapping_qual]"
+#	if {$c1 != $c2} {
+#	    append info " (contig\#$c2)"
+#	} else {
+#	    set size [expr {$p2+abs($l2)-$p1+1}]
+#	    append info " (insert size $size)"
+#	}
+#    } else {
+#	append info " single ended (rec \#$rec)"
+#    }
+#
+#    set ${w}(info) $info
+#}
 
 #
 # Brings up a contig editor
@@ -1533,8 +1628,9 @@ proc invoke_editor {w t x} {
 	}
     }
 
-    set r    [set ${t}(Raster)]
-    set x [lindex [$r toworld $x 0] 0]
+    set d  [set ${t}(canvas)]
+    set td [set ${t}(track)]
+    set x [expr {int([$d itemcget $td -px])}]
     if {$found} {
 	global $t.Id2Cid
 	if {[info exists $t.Id2Cid($id)]} {
@@ -1551,7 +1647,6 @@ proc invoke_editor {w t x} {
 		        pos     $x \
 		        sent_by 0]
     } else {
-	puts x=$x
 	edit_contig \
 	    -io $io \
 	    -contig  [set ${w}(cnum)] \
@@ -1718,7 +1813,6 @@ proc seq_seqs_filter_cancel {w t f} {
     global $w $t
     foreach var [array names $t] {
 	if {[regexp {^(.*)~} $var dummy v]} {
-	    puts "set ${t}($v) [set ${t}($var)]"
 	    set ${t}($v) [set ${t}($var)]
 	}
     }
@@ -2061,10 +2155,12 @@ proc TemplateDisplay2 { io f id} {
 proc CreateTemplateDisplay {io cnum} {
     set pwin .read_depth[counter]
     1.5Dplot $pwin $io 900 600 $cnum
-    add_plot $pwin seq_seqs    250  1 1 -bd 0 -relief raised
-    add_separator $pwin 1
-    add_plot $pwin depth_track 150  1 1 -bd 0 -relief raised
-    add_plot $pwin seq_ruler    50  0 0 -bd 0 -relief raised
+#    add_plot $pwin seq_seqs    250  1 1 -bd 0 -relief raised
+#    add_separator $pwin 1
+#    add_plot $pwin depth_track 150  1 1 -bd 0 -relief raised
+    add_plot $pwin template_item 250  1 1 -bd 0 -relief raised -bg black
+    add_plot $pwin depth_item    150  1 1 -bd 0 -relief raised -bg black
+    add_plot $pwin seq_ruler    50  0 0 -bd 1 -relief sunken
 }
 
 
