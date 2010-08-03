@@ -236,16 +236,18 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    mq  = r->mqual;
 	    
 	    /* depth plot setting (sequence) */
-	    r_sta = (sta - bx_conv) * ax_conv; // world to raster conversion
-	    r_end = (end - bx_conv) * ax_conv;
-	    
-	    if (r_sta < 0)  	   r_sta = 0;
-	    if (r_end >= gr->width) r_end = gr->width - 1;
-	    
-	    for (j = r_sta; j <= r_end; j++) {
-	    	gr->depth[j].s++;
- 		if (gr->depth[j].s > gr->max_height) gr->max_height = gr->depth[j].s;
-		
+	    if (!(mq < gr->new_filter.min_qual || mq > gr->new_filter.max_qual)) {
+		r_sta = (sta - bx_conv) * ax_conv; // world to raster conversion
+		r_end = (end - bx_conv) * ax_conv;
+
+		if (r_sta < 0)  	   r_sta = 0;
+		if (r_end >= gr->width) r_end = gr->width - 1;
+
+		for (j = r_sta; j <= r_end; j++) {
+	    	    gr->depth[j].s++;
+ 		    if (gr->depth[j].s > gr->max_height) gr->max_height = gr->depth[j].s;
+
+		}
 	    }
 	    
 	    /* deal with filters */
@@ -333,6 +335,9 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    
 	    if (gr->new_filter.filter & FILTER_INCONSISTENT && col != inconsistent_col) continue;
 	    
+	    /* Filter */
+	    if (tl->mq < gr->new_filter.min_qual || tl->mq > gr->new_filter.max_qual) continue;
+
 	    /* depth plot template pairs */
 	    if (!single && !span && col != inconsistent_col) {
 	    	r_sta = (sta - bx_conv) * ax_conv; // world to raster conversion
@@ -346,9 +351,6 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		    if (gr->depth[j].t > gr->max_height) gr->max_height = gr->depth[j].t;
 		}
 	    }
-	    
-	    /* Filter */
-	    if (tl->mq < gr->new_filter.min_qual || tl->mq > gr->new_filter.max_qual) continue;
 	    
 	    /* Generate line data */
 	    tl->col[1] = col;

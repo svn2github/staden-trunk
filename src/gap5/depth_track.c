@@ -596,7 +596,6 @@ static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
    	    
 static void redraw_depth_image(DepthTrackItem *dti, Display *display) {
     double working_wx0, working_wx1;
-    double tsize = 1000;
     int force_change = 0;
     XPoint *sp = NULL;
     XPoint *tp = NULL;
@@ -608,8 +607,8 @@ static void redraw_depth_image(DepthTrackItem *dti, Display *display) {
     /* clear the pixmap */
     XFillRectangle(display, dti->pm, dti->copy, 0, 0, dti->width, dti->height);
     
-    working_wx0 = dti->wx0 - tsize; // use some values beyond the window size.
-    working_wx1 = dti->wx1 + tsize;
+    working_wx0 = dti->wx0 - GR_WINDOW_RANGE; // use some values beyond the window size.
+    working_wx1 = dti->wx1 + GR_WINDOW_RANGE;
     
     if (gap_range_recalculate(dti->gr, dti->width, working_wx0, working_wx1, dti->gr->template_mode, force_change)) {
 
@@ -655,12 +654,12 @@ static void redraw_depth_image(DepthTrackItem *dti, Display *display) {
 	if (ymax < tp[i].y) ymax = tp[i].y;
     }
     
-    if (!(dti->filter & FILTER_PAIRED)) {
-	XDrawLines(display, dti->pm, dti->reads, sp, dti->width, CoordModeOrigin);
+    XDrawLines(display, dti->pm, dti->reads, sp, dti->width, CoordModeOrigin);
+        
+    if (!dti->reads_only) {
+	XDrawLines(display, dti->pm, dti->template, tp, dti->width, CoordModeOrigin);
     }
     
-    XDrawLines(display, dti->pm, dti->template, tp, dti->width, CoordModeOrigin);
-        
     /* Compute scrollbar and bounding box locations */
     dti->y_start = ymin != INT_MAX ? ymin : 0;
     dti->y_end = ymax != INT_MIN ? ymax : 0;

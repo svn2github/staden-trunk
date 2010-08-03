@@ -61,6 +61,9 @@ typedef struct {
 #define FILTER_SPANNING      (1<<4)
 #define FILTER_NONSPANNING   (1<<5)
 
+/* define range beyond window size used in track calc */
+#define GR_WINDOW_RANGE 1000
+
 int  GRange_Init(Tcl_Interp *interp);
 void gap_range_destroy(gap_range_t *gr);
 int  gap_range_test(gap_range_t *gr);

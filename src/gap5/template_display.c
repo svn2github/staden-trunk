@@ -750,7 +750,6 @@ static int sort_tline_by_x(const void *p1, const void *p2) {
 static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     double working_wx0, working_wx1;
     int force_change = 0;
-    double tsize = 1000;
     int mode;
     double ax, bx, ay, by;
     int fwd_col, rev_col;
@@ -763,8 +762,8 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     image_remove(tdi->image);
     if(!create_image_buffer(tdi->image, tdi->width, tdi->height, tdi->background)) return;
 
-    working_wx0 = tdi->wx0 - tsize; // use some values beyond the window size.
-    working_wx1 = tdi->wx1 + tsize;
+    working_wx0 = tdi->wx0 - GR_WINDOW_RANGE; // use some values beyond the window size.
+    working_wx1 = tdi->wx1 + GR_WINDOW_RANGE;
  
     mode = tdi->reads_only ? 0 : CSIR_PAIR;
     

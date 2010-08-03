@@ -107,6 +107,8 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     set ${w}(pwidth) [expr {[set ${w}(width)]-21}]
     set ${w}(xorigin) [set ${w}(x1)]
     set ${w}(xzoom) [expr {double([set ${w}(pwidth)]) / ([set ${w}(x2)]-[set ${w}(x1)]+1)}]
+    
+    track_settings $w 
 			   
     
 
@@ -482,8 +484,8 @@ proc yscale_seq {w t height} {
     }
 
     set ymode [$d itemcget $td -ymode]
-    set ylog  [set ${t}(YLog)]
-    set strands [set ${t}(SeparateStrands)]
+    set ylog  [set ${w}(YLog)]
+    set strands [set ${w}(SeparateStrands)]
     
     # vertical base line
     $ys create line $w1 0 $w1 $height
@@ -1126,29 +1128,38 @@ proc seq_ruler {w t x1 x2 y1 y2} {
 }
 
 
+# common setting for contigs
+
+proc track_settings {w} {
+    global $w
+    
+    set ${w}(Accurate) 0
+    set ${w}(YLog) 1
+    set ${w}(Simple) 0
+    set ${w}(Y) "Template Size"
+    set ${w}(Colour) "Combined mapping quality"
+    set ${w}(PlotDepth) 0
+    set ${w}(SeparateStrands) 0
+    set ${w}(MinQual) 0
+    set ${w}(MaxQual) 255
+    set ${w}(FilterPair) 0
+    set ${w}(FilterConsistent) 0
+    set ${w}(FilterSpanning) 0
+    set ${w}(ReadsOnly) 0
+}
+    
+
+
 proc template_item_init {w t} {
     global $w $t
 
     puts START:[info level [info level]]
     
-    set ${t}(Accurate) 0
-    set ${t}(YLog) 1
     set ${t}(YScale) 100
     set ${t}(OldYScale) [set ${t}(YScale)]
-    set ${t}(YOffset) 50
-    set ${t}(Simple) 0
-    set ${t}(Y) "Template Size"
-    set ${t}(Colour) "Combined mapping quality"
-    set ${t}(Spread) 0
-    set ${t}(PlotDepth) 0
-    set ${t}(SeparateStrands) 0
-    set ${t}(MinQual) 0
-    set ${t}(MaxQual) 255
     set ${t}(MinYSize) 1024
-    set ${t}(FilterPair) 0
-    set ${t}(FilterConsistent) 0
-    set ${t}(FilterSpanning) 0
-    set ${t}(ReadsOnly) 0
+    set ${t}(Spread) 0
+    set ${t}(YOffset) 50
     set ${t}(m_start) -1
     set ${t}(m_stop)  -1
 
@@ -1197,27 +1208,27 @@ proc template_item {w t x1 x2 y1 y2} {
     set cmode [lsearch {{Combined mapping quality} \
 			    {Minimum mapping quality} \
 			    {Maximum mapping quality} \
-			    {Reads}} [set ${t}(Colour)]]
+			    {Reads}} [set ${w}(Colour)]]
     set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
-		   [set ${t}(Y)]]
+		   [set ${w}(Y)]]
 
-    set flag [expr { [set ${t}(FilterPair)]
-		    +[set ${t}(FilterConsistent)]
-		    +[set ${t}(FilterSpanning)]}]
+    set flag [expr { [set ${w}(FilterPair)]
+		    +[set ${w}(FilterConsistent)]
+		    +[set ${w}(FilterSpanning)]}]
 
     $d itemconfigure $td \
-	-accuracy    [set ${t}(Accurate)] \
-	-logy        [set ${t}(YLog)] \
+	-accuracy    [set ${w}(Accurate)] \
+	-logy        [set ${w}(YLog)] \
 	-yoffset     [set ${t}(YOffset)] \
 	-spread      [set ${t}(Spread)] \
 	-ymode       $ymode \
 	-cmode       $cmode \
-	-reads_only  [set ${t}(ReadsOnly)] \
-	-by_strand   [set ${t}(SeparateStrands)] \
+	-reads_only  [set ${w}(ReadsOnly)] \
+	-by_strand   [set ${w}(SeparateStrands)] \
 	-filter      $flag \
 	-yzoom       [set ${t}(YScale)] \
-	-min_qual    [set ${t}(MinQual)] \
- 	-max_qual    [set ${t}(MaxQual)] \
+	-min_qual    [set ${w}(MinQual)] \
+ 	-max_qual    [set ${w}(MaxQual)] \
 	-min_y_size  [set ${t}(MinYSize)] \
     	-wx0   	     $x1 \
 	-wx1         $x2 \
@@ -1252,21 +1263,11 @@ proc depth_item_init {w t} {
 
     puts START:[info level [info level]]
     
-    set ${t}(Accurate) 0
-    set ${t}(YLog) 1
     set ${t}(YScale) 100
     set ${t}(OldYScale) [set ${t}(YScale)]
-    set ${t}(YOffset) 50
-    set ${t}(Simple) 0
-    set ${t}(Y) "Template Size"
-    set ${t}(Colour) "Combined mapping quality"
-    set ${t}(MinQual) 0
-    set ${t}(MaxQual) 255
     set ${t}(MinYSize) 1024
-    set ${t}(FilterPair) 0
-    set ${t}(FilterConsistent) 0
-    set ${t}(FilterSpanning) 0
-    set ${t}(ReadsOnly) 0
+    set ${t}(Spread) 0
+    set ${t}(YOffset) 50
     set ${t}(m_start) -1
     set ${t}(m_stop)  -1
 
@@ -1308,23 +1309,23 @@ proc depth_item {w t x1 x2 y1 y2} {
     set cmode [lsearch {{Combined mapping quality} \
 			    {Minimum mapping quality} \
 			    {Maximum mapping quality} \
-			    {Reads}} [set ${t}(Colour)]]
+			    {Reads}} [set ${w}(Colour)]]
     set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
-		   [set ${t}(Y)]]
+		   [set ${w}(Y)]]
 
-    set flag [expr { [set ${t}(FilterPair)]
-		    +[set ${t}(FilterConsistent)]
-		    +[set ${t}(FilterSpanning)]}]
+    set flag [expr { [set ${w}(FilterPair)]
+		    +[set ${w}(FilterConsistent)]
+		    +[set ${w}(FilterSpanning)]}]
 
     $d itemconfigure $td \
-	-accuracy    [set ${t}(Accurate)] \
-	-logy        [set ${t}(YLog)] \
+	-accuracy    [set ${w}(Accurate)] \
+	-logy        [set ${w}(YLog)] \
 	-ymode       $ymode \
 	-cmode       $cmode \
-	-reads_only  [set ${t}(ReadsOnly)] \
+	-reads_only  [set ${w}(ReadsOnly)] \
 	-filter      $flag \
-	-min_qual    [set ${t}(MinQual)] \
- 	-max_qual    [set ${t}(MaxQual)] \
+	-min_qual    [set ${w}(MinQual)] \
+ 	-max_qual    [set ${w}(MaxQual)] \
     	-wx0   	     $x1 \
 	-wx1         $x2 \
 	-wy0	     $y1 \
@@ -1679,14 +1680,14 @@ proc seq_seqs_filter {w t} {
 
     # Initialise variable copies
     foreach v {FilterPair FilterConsistent FilterSpanning MinQual MaxQual} {
-	set ${t}(_$v) [set ${t}($v)]
-	set ${t}($v~) [set ${t}($v)]
+	set ${w}(_$v) [set ${w}($v)]
+	set ${w}($v~) [set ${w}($v)]
     }
 
     # Auto-update?
     checkbutton $f2.auto \
 	-text "Auto update" \
-	-variable ${t}(FilterAutoUpdate) \
+	-variable ${w}(FilterAutoUpdate) \
 	-command "seq_seqs_filter_update $w $t $f"
     grid $f2.auto - - - -sticky w
 
@@ -1716,7 +1717,7 @@ proc seq_seqs_filter {w t} {
 	    grid [radiobutton $f2.b$r$c \
 		      -text $name \
 		      -value $value \
-		      -variable ${t}(_$var) \
+		      -variable ${w}(_$var) \
 		      -command "seq_seqs_filter_update $w $t $f" \
 		     ] -row $r -column $c -sticky w
 	    incr c
@@ -1763,7 +1764,7 @@ proc seq_seqs_filter {w t} {
 	-from 0 \
 	-to 255 \
 	-orient horiz \
-	-variable ${t}(_MinQual) \
+	-variable ${w}(_MinQual) \
 	-command "seq_seqs_filter_update $w $t $f min"
     grid $f2.min_label $f2.min_qual - - -sticky ew
     label $f2.max_label -text "Max. Qual"
@@ -1771,7 +1772,7 @@ proc seq_seqs_filter {w t} {
 	-from 0 \
 	-to 255 \
 	-orient horiz \
-	-variable ${t}(_MaxQual) \
+	-variable ${w}(_MaxQual) \
 	-command "seq_seqs_filter_update $w $t $f max"
     grid $f2.max_label $f2.max_qual - - -sticky ew
 
@@ -1790,11 +1791,11 @@ proc seq_seqs_filter {w t} {
 # Filter::OK 
 proc seq_seqs_filter_apply {w t f keep} {
     global $w $t
-    foreach var [array names $t] {
+    foreach var [array names $w] {
 	if {[regexp {^_(.*)} $var dummy v]} {
-	    set ${t}($v)  [set ${t}($var)]
+	    set ${w}($v)  [set ${w}($var)]
 	    if {$keep} {
-		set ${t}($v~) [set ${t}($var)]
+		set ${w}($v~) [set ${w}($var)]
 	    }
 	}
     }
@@ -1811,9 +1812,9 @@ proc seq_seqs_filter_ok {w t f} {
 
 proc seq_seqs_filter_cancel {w t f} {
     global $w $t
-    foreach var [array names $t] {
+    foreach var [array names $w] {
 	if {[regexp {^(.*)~} $var dummy v]} {
-	    set ${t}($v) [set ${t}($var)]
+	    set ${w}($v) [set ${w}($var)]
 	}
     }
 
@@ -1825,14 +1826,14 @@ proc seq_seqs_filter_cancel {w t f} {
 proc seq_seqs_filter_update {w t f {cmd {}} args} {
     global $w $t
 
-    if {$cmd == "min" && [set ${t}(_MinQual)] > [set ${t}(_MaxQual)]} {
-	set ${t}(_MaxQual) [set ${t}(_MinQual)]
+    if {$cmd == "min" && [set ${w}(_MinQual)] > [set ${w}(_MaxQual)]} {
+	set ${w}(_MaxQual) [set ${w}(_MinQual)]
     }
-    if {$cmd == "max" && [set ${t}(_MaxQual)] < [set ${t}(_MinQual)]} {
-	set ${t}(_MinQual) [set ${t}(_MaxQual)]
+    if {$cmd == "max" && [set ${w}(_MaxQual)] < [set ${w}(_MinQual)]} {
+	set ${w}(_MinQual) [set ${w}(_MaxQual)]
     }
 
-    if {[set ${t}(FilterAutoUpdate)]} {
+    if {[set ${w}(FilterAutoUpdate)]} {
 	seq_seqs_filter_apply $w $t $f 0
     }
 }
@@ -1854,7 +1855,7 @@ proc template_dialog {w t} {
     # auto
     checkbutton $cf.auto \
 	-text "Auto update" \
-	-variable ${t}(FilterAutoUpdate) \
+	-variable ${w}(FilterAutoUpdate) \
 	-command "seq_seqs_filter_update $w $t $c"
     grid $cf.auto -row 0 -column 0 -columnspan 4 -sticky w
     
@@ -1874,14 +1875,14 @@ proc template_dialog {w t} {
 	}
     } {
     	set r 0
-	set ${t}(_$var) [set ${t}($var)]
+	set ${w}(_$var) [set ${w}($var)]
 	labelframe $cf.$suf -text $lflabel
 	
 	foreach {name value} $lflist {
 	    grid [radiobutton $cf.$suf.r$r \
 	    	    -text $name \
 		    -value $value \
-		    -variable ${t}(_$var) \
+		    -variable ${w}(_$var) \
 		    -command "seq_seqs_filter_update $w $t $c" \
 		    ] -row $r -column 0 -stick w
 	    incr r
@@ -1900,11 +1901,11 @@ proc template_dialog {w t} {
 	{Y-log scale} YLog \
 	{Separate strands} SeparateStrands
     } {
-    	set ${t}(_$var) [set ${t}($var)]
+    	set ${w}(_$var) [set ${w}($var)]
 	
 	grid [checkbutton $cf.c$col \
 	    	-text $blabel \
-		-variable ${t}(_$var) \
+		-variable ${w}(_$var) \
 		-command "seq_seqs_filter_update $w $t $c" \
 		] -row 2 -column $col -stick w -pady {5 0}
 		
