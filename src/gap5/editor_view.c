@@ -1105,9 +1105,6 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	}
 
 	/* Iterate through all sequences on this line */
-	if (i >= nr || xx->r[i].y - xx->displayYPos > j - xx->y_seq_start)
-	    continue;
-
 	while (i < nr && xx->r[i].y - xx->displayYPos <= j - xx->y_seq_start) {
 	    seq_t *s, *sorig;
 
@@ -1722,7 +1719,7 @@ int edview_seq_visible(edview *xx, int seq, int *new_y) {
 	*new_y = xx->displayYPos;
 
     hi = HacheTableSearch(xx->rec_hash, (char *)&seq, sizeof(seq));
-    if (!hi)
+    if (!hi || !xx->r)
 	return 0;
     i = hi->data.i;
 
