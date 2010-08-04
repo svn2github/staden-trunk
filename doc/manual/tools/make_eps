@@ -62,11 +62,10 @@ while ($#ARGV >= 0) {
     $density = $density . 'x' . $density;
 
     # Convert the image
-    print "processing $_\n";
-    system "$convert -density $density $_.$old_fmt $_.ps";
+    system "$convert -density $density $_.$old_fmt $_.eps";
 
     # Find the size of the postscript image.
-    open(FILE, "$_.ps") || die "Cannot open $_.ps\n";
+    open(FILE, "$_.eps") || die "Cannot open $_.eps\n";
     while (<FILE>) {
 	if (s/^%%BoundingBox: 0 0 (.*) .*/$1/) {
 	    $width=$_;

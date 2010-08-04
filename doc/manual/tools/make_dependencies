@@ -1,15 +1,22 @@
 #!/bin/sh
 # Produces a dependencies file for use with gmake.
 
-# M4 include commands.
 for i in *.texi
 do
-    sed -n "s/^_include(\(.*\))/$i: \1/p" $i
-done
+    # M4 include commands.
+    b=`echo $i | sed 's/\.texi//'`
 
-# PostScript files from the images
-for i in *.texi
-do
-    sed -n "s/^_picture(\(.*\))/$i: \1.pdf/p" $i
-    sed -n "s/^_lpicture(\(.*\))/$i: \1.pdf/p" $i
+    echo "$b.pdf_done:"
+    sed -n "s/^_include(\(.*\)\.texi)/$b.pdf_done: \1.pdf_done/p" $i
+
+    echo "$b.eps_done:"
+    sed -n "s/^_include(\(.*\)\.texi)/$b.eps_done: \1.eps_done/p" $i
+
+    # pdf image files from the images
+    sed -n "s/^_picture(\(.*\))/$b.pdf_done: \1.pdf/p" $i
+    sed -n "s/^_lpicture(\(.*\))/$b.pdf_done: \1.pdf/p" $i
+
+    # eps files from the images
+    sed -n "s/^_picture(\(.*\))/$b.eps_done: \1.eps/p" $i
+    sed -n "s/^_lpicture(\(.*\))/$b.eps_done: \1.eps/p" $i
 done

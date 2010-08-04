@@ -1,335 +1,914 @@
-assembly-t.texi: cap2-t.texi
-assembly-t.texi: cap3-t.texi
-assembly-t.texi: fak2-t.texi
-assembly-t.texi: phrap-t.texi
-filebrowser.texi: copyright.texi
-filebrowser.texi: filebrowser-t.texi
-formats-t.texi: scf-t.texi
-formats-t.texi: ztr-t.texi
-formats-t.texi: exp-t.texi
-formats-t.texi: renzymes-t.texi
-formats-t.texi: vector_primer-t.texi
-formats.texi: copyright.texi
-formats.texi: formats-t.texi
-gap4-t.texi: gap4_org-t.texi
-gap4-t.texi: gap4_mini-t.texi
-gap4-t.texi: gap4_intro-t.texi
-gap4-t.texi: contig_selector-t.texi
-gap4-t.texi: comparator-t.texi
-gap4-t.texi: template-t.texi
-gap4-t.texi: quality_plot-t.texi
-gap4-t.texi: stops-t.texi
-gap4-t.texi: restrict_enzymes-t.texi
-gap4-t.texi: contig_editor-t.texi
-gap4-t.texi: assembly-t.texi
-gap4-t.texi: contig_ordering-t.texi
-gap4-t.texi: read_pairs-t.texi
-gap4-t.texi: fij-t.texi
-gap4-t.texi: repeats-t.texi
-gap4-t.texi: disassembly-t.texi
-gap4-t.texi: exp_suggest-t.texi
-gap4-t.texi: calc_consensus-t.texi
-gap4-t.texi: complement-t.texi
-gap4-t.texi: show_rel-t.texi
-gap4-t.texi: contig_navigation-t.texi
-gap4-t.texi: find_oligo-t.texi
-gap4-t.texi: extract-t.texi
-gap4-t.texi: clip-t.texi
-gap4-t.texi: results-t.texi
-gap4-t.texi: lists-t.texi
-gap4-t.texi: notes-t.texi
-gap4-t.texi: gap_database-t.texi
-gap4-t.texi: copy_reads-t.texi
-gap4-t.texi: check_db-t.texi
-gap4-t.texi: doctor_db-t.texi
-gap4-t.texi: configure-t.texi
-gap4-t.texi: convert-t.texi
-gap4.texi: copyright.texi
-gap4.texi: gap4-t.texi
-gap4_intro-t.texi: hidden-t.texi
-gap4_intro-t.texi: tags-t.texi
-interface-t.texi: filebrowser-t.texi
-interface.texi: copyright.texi
-interface.texi: interface-t.texi
-manpages-t.texi: convert_trace.1.texi
-manpages-t.texi: copy_db.1.texi
-manpages-t.texi: copy_reads.1.texi
-manpages-t.texi: eba.1.texi
-manpages-t.texi: extract_seq.1.texi
-manpages-t.texi: extract_fastq.1.texi
-manpages-t.texi: find_renz.1.texi
-manpages-t.texi: getABIfield.1.texi
-manpages-t.texi: get_comment.1.texi
-manpages-t.texi: get_scf_field.1.texi
-manpages-t.texi: hash_exp.1.texi
-manpages-t.texi: hash_extract.1.texi
-manpages-t.texi: hash_list.1.texi
-manpages-t.texi: hash_tar.1.texi
-manpages-t.texi: init_exp.1.texi
-manpages-t.texi: makeSCF.1.texi
-manpages-t.texi: make_weights.1.texi
-manpages-t.texi: polyA_clip.1.texi
-manpages-t.texi: qclip.1.texi
-manpages-t.texi: screen_seq.1.texi
-manpages-t.texi: tracediff.1.texi
-manpages-t.texi: trace_dump.1.texi
-manpages-t.texi: vector_clip.1.texi
-manpages.texi: copyright.texi
-manpages.texi: manpages-t.texi
-manual.texi: copyright.texi
-manual.texi: preface-t.texi
-manual.texi: gap4-t.texi
-manual.texi: mutations-t.texi
-manual.texi: pregap4-t.texi
-manual.texi: read_clipping-t.texi
-manual.texi: vector_clip-t.texi
-manual.texi: trev-t.texi
-manual.texi: spin-t.texi
-manual.texi: interface-t.texi
-manual.texi: formats-t.texi
-manual.texi: manpages-t.texi
-manual.texi: references-t.texi
-mini_manual.texi: copyright.texi
-mini_manual.texi: preface-t.texi
-mini_manual.texi: gap4_mini-t.texi
-mini_manual.texi: mutations-t.texi
-mini_manual.texi: pregap4_mini-t.texi
-mini_manual.texi: trev_mini-t.texi
-mini_manual.texi: spin_mini-t.texi
-mutations.texi: copyright.texi
-mutations.texi: mutations-t.texi
-pregap4-t.texi: pregap4_org-t.texi
-pregap4-t.texi: pregap4_mini-t.texi
-pregap4.texi: copyright.texi
-pregap4.texi: pregap4-t.texi
-read_clipping.texi: copyright.texi
-read_clipping.texi: read_clipping-t.texi
-references.texi: copyright.texi
-references.texi: references-t.texi
-spin-t.texi: spin_org-t.texi
-spin-t.texi: spin_mini-t.texi
-spin-t.texi: spin_restrict_enzymes-t.texi
-spin.texi: copyright.texi
-spin.texi: spin-t.texi
-template-t.texi: consistency_display-t.texi
-trev-t.texi: trev_mini-t.texi
-trev.texi: copyright.texi
-trev.texi: trev-t.texi
-vector_clip.texi: copyright.texi
-vector_clip.texi: vector_clip-t.texi
-assembly-t.texi: assembly.shot.pdf
-assembly-t.texi: assembly.single.pdf
-assembly-t.texi: assembly.one.pdf
-assembly-t.texi: assembly.new.pdf
-assembly-t.texi: assembly.directed.pdf
-assembly-t.texi: assembly.screen.pdf
-calc_consensus-t.texi: calc_consensus.normal.pdf
-calc_consensus-t.texi: calc_consensus.extended.pdf
-calc_consensus-t.texi: calc_consensus.unfinished.pdf
-calc_consensus-t.texi: calc_consensus.quality.pdf
-cap2-t.texi: assembly.cap2.pdf
-cap3-t.texi: assembly.CAP3.pdf
-clip-t.texi: difference_clip.pdf
-clip-t.texi: quality_clip.pdf
-clip-t.texi: quality_clip_ends.pdf
-clip-t.texi: NBase_clip.pdf
-comparator-t.texi: comparator.pdf
-configure-t.texi: configure.colour.pdf
-configure-t.texi: set_genetic_code.pdf
-configure-t.texi: interface.tag.pdf
-configure-t.texi: template_status.pdf
-consistency_display-t.texi: read_coverage_d.pdf
-consistency_display-t.texi: strand_coverage_d.pdf
-consistency_display-t.texi: 2nd_highest_confidence.pdf
-consistency_display-t.texi: discrepancy_graph.pdf 
-consistency_display-t.texi: consistency_p.pdf
-consistency_display-t.texi: conf_values_p.pdf
-consistency_display-t.texi: read_coverage_p.pdf
-consistency_display-t.texi: readpair_coverage_p.pdf
-consistency_display-t.texi: strand_coverage_p1.pdf
-consistency_display-t.texi: strand_coverage_p2.pdf
-contig_editor-t.texi: contig_editor.taged.pdf
-contig_editor-t.texi: contig_editor.tagsel.pdf
-contig_editor-t.texi: contig_editor.tagmacro.pdf
-contig_editor-t.texi: contig_editor.search.pdf
-contig_editor-t.texi: contig_editor.screen.pdf
-contig_editor-t.texi: contig_editor_grey_scale.pdf
-contig_editor-t.texi: contig_editor.traces.pdf
-contig_editor-t.texi: mut_traces_het.pdf
-contig_editor-t.texi: mut_traces_positive.pdf
-contig_editor-t.texi: contig_editor.traces.pdf
-contig_editor-t.texi: contig_editor.traces.compact.pdf
-contig_editor-t.texi: contig_editor.join.pdf
-contig_navigation-t.texi: contig_navigation_browse.pdf
-contig_navigation-t.texi: contig_navigation_table.pdf
-contig_ordering-t.texi: c_order_lb.pdf
-contig_ordering-t.texi: comparator.pdf
-contig_ordering-t.texi: c_order_t1.pdf
-contig_ordering-t.texi: c_order_t2.pdf
-contig_selector-t.texi: contig_selector.pdf
-contig_selector-t.texi: contig_list_box.pdf
-copy_reads-t.texi: copy_reads.dialogue.pdf
-disassembly-t.texi: check_ass.pdf
-disassembly-t.texi: break_contig.pdf
-disassembly-t.texi: disassembly.pdf
-doctor_db-t.texi: doctor_db.main.pdf
-doctor_db-t.texi: doctor_db.structures.pdf
-exp_suggest-t.texi: exp_suggest.double.pdf
-exp_suggest-t.texi: exp_suggest.primers.pdf
-exp_suggest-t.texi: exp_suggest.long.pdf
-exp_suggest-t.texi: exp_suggest.comp.pdf
-exp_suggest-t.texi: suggest_probes.main.pdf
-exp_suggest-t.texi: suggest_probes.select.pdf
-extract-t.texi: extract.pdf
-fak2-t.texi: assembly.fak2.pdf
-fij-t.texi: fij.dialogue.pdf
-fij-t.texi: comparator.pdf
-filebrowser-t.texi: filebrowser.pdf
-find_oligo-t.texi: find_oligo_pic.pdf
-gap4_mini-t.texi: contig_selector.pdf
-gap4_mini-t.texi: interface.output.pdf
-gap4_mini-t.texi: comparator.pdf
-gap4_mini-t.texi: template.display.pdf
-gap4_mini-t.texi: consistency_p.pdf
-gap4_mini-t.texi: restrict_enzymes.pdf
-gap4_mini-t.texi: stops.pdf
-gap4_mini-t.texi: contig_editor.screen.pdf
-gap4_mini-t.texi: contig_editor_grey_scale.pdf
-gap4_mini-t.texi: contig_editor.traces.pdf
-gap4_mini-t.texi: contig_editor.join.pdf
-interface-t.texi: interface.buttons.pdf
-interface-t.texi: interface.menus.pdf
-interface-t.texi: interface.entry.pdf
-interface-t.texi: interface.colour.pdf
-interface-t.texi: interface.fonts.pdf
-interface-t.texi: interface.output.pdf
-mutations-t.texi: mut_pregap4.pdf
-mutations-t.texi: mut_traces_point.pdf
-mutations-t.texi: mut_traces_het.pdf
-mutations-t.texi: mut_contig_editor5.pdf
-mutations-t.texi: mut_contig_editor_dis5.pdf
-mutations-t.texi: mut_traces_positive.pdf
-mutations-t.texi: mut_traces_het.pdf
-mutations-t.texi: mut_template_all.pdf
-mutations-t.texi: mut_template_reads.pdf
-mutations-t.texi: mut_template_reads_single.pdf
-notes-t.texi: notes.selector.pdf
-notes-t.texi: notes.editor.pdf
-phrap-t.texi: phrap.assembly.pdf
-pregap4-t.texi: pregap4_files.pdf
-pregap4-t.texi: pregap4_textwin.pdf
-pregap4-t.texi: pregap4_separate.pdf
-pregap4-t.texi: pregap4_compact.pdf
-pregap4-t.texi: pregap4_config.pdf
-pregap4-t.texi: mut_mutscan_adaptive_noise_threshold.pdf
-pregap4-t.texi: mut_mutscan_peak_drop_threshold.pdf
-pregap4-t.texi: mut_mutscan_peak_alignment_threshold.pdf
-pregap4-t.texi: pregap4_component.pdf
-pregap4-t.texi: pregap4_simpledb.pdf
-pregap4-t.texi: pregap4_edit_exp.pdf
-pregap4-t.texi: pregap4_select.pdf
-pregap4_mini-t.texi: pregap4_overview.pdf
-pregap4_mini-t.texi: pregap4_overview2.pdf
-pregap4_mini-t.texi: pregap4_separate.pdf
-pregap4_mini-t.texi: pregap4_compact.pdf
-pregap4_mini-t.texi: pregap4_files.pdf
-pregap4_mini-t.texi: pregap4_config.pdf
-pregap4_mini-t.texi: pregap4_textwin.pdf
-quality_plot-t.texi: template.quality.pdf
-read_pairs-t.texi: read_pairs.pdf
-read_pairs-t.texi: comparator.pdf
-repeats-t.texi: repeats.pdf
-restrict_enzymes-t.texi: restrict_enzymes.pdf
-results-t.texi: results.1.pdf
-show_rel-t.texi: show_rel.pdf
-spin-t.texi: spin_plot_base_comp_d.pdf
-spin-t.texi: spin_count_codons_d.pdf
-spin-t.texi: set_genetic_code.pdf
-spin-t.texi: spin_translate_t.pdf
-spin-t.texi: spin_translate_d.pdf
-spin-t.texi: spin_find_orf_d.pdf
-spin-t.texi: spin_string_search_d.pdf
-spin-t.texi: spin_weight_matrix_dial.pdf
-spin-t.texi: spin_start_d.pdf
-spin-t.texi: spin_stops_d.pdf
-spin-t.texi: spin_codon_usage_dial.pdf
-spin-t.texi: spin_author_d.pdf
-spin-t.texi: spin_base_bias_d.pdf
-spin-t.texi: spin_similar_spans.pdf
-spin-t.texi: spin_match_words.pdf
-spin-t.texi: spin_diagonals.pdf
-spin-t.texi: spin_align_seq.pdf
-spin-t.texi: spin_local_align.pdf
-spin-t.texi: spin_alignment_symbols.pdf
-spin-t.texi: spin_sequence_display_d.pdf
-spin-t.texi: spin_sequence_display_save_d.pdf
-spin-t.texi: spin_results_manager_d.pdf
-spin-t.texi: spin_simple_search.pdf
-spin-t.texi: spin_personal_search.pdf
-spin-t.texi: spin_seq_manager.pdf
-spin-t.texi: spin_save_sequence_d.pdf
-spin-t.texi: spin_plot_base_comp_p.pdf
-spin-t.texi: spin_count_codons_t.pdf
-spin-t.texi: spin_string_search_p.pdf
-spin-t.texi: spin_weight_matrix.pdf
-spin-t.texi: spin_start_p.pdf
-spin-t.texi: spin_stops_p.pdf
-spin-t.texi: spin_stops_p2.pdf
-spin-t.texi: spin_codon_usage.pdf
-spin-t.texi: spin_codon_usage_aaonly.pdf
-spin-t.texi: spin_author_p.pdf
-spin-t.texi: spin_base_bias_p.pdf
-spin-t.texi: spin_splice.pdf
-spin-t.texi: spin_trna_p.pdf
-spin-t.texi: spin_trna_t.pdf
-spin-t.texi: spin_align_p.pdf
-spin-t.texi: spin_local_p1.pdf
-spin-t.texi: spin_local_p2.pdf
-spin-t.texi: spin_translate_t.pdf
-spin-t.texi: spin_plot_p.pdf
-spin-t.texi: spin_results_manager_d2.pdf
-spin-t.texi: spin_plot_drag1.pdf
-spin-t.texi: spin_plot_drag2.pdf
-spin-t.texi: spin_plot_drag3.pdf
-spin-t.texi: spin_sequence_display_t.pdf
-spin-t.texi: spin_dot_plot.pdf
-spin-t.texi: spin_seq_display.pdf
-spin-t.texi: spin_results_manager_d2.pdf
-spin_mini-t.texi: spin_translate_t.pdf
-spin_mini-t.texi: spin_plot_p.pdf
-spin_mini-t.texi: spin_restrict_enzymes_p.pdf
-spin_mini-t.texi: spin_plot_base_comp_p.pdf
-spin_mini-t.texi: spin_weight_matrix.pdf
-spin_mini-t.texi: spin_splice.pdf
-spin_mini-t.texi: spin_base_bias_p.pdf
-spin_mini-t.texi: spin_trna_t.pdf
-spin_mini-t.texi: spin_sequence_display_t.pdf
-spin_mini-t.texi: spin_dot_plot.pdf
-spin_mini-t.texi: spin_plot.pdf
-spin_mini-t.texi: spin_local_p1.pdf
-spin_mini-t.texi: spin_align_p.pdf
-spin_mini-t.texi: spin_seq_display.pdf
-spin_restrict_enzymes-t.texi: spin_restrict_enzymes_d.pdf
-spin_restrict_enzymes-t.texi: spin_restrict_enzymes_p.pdf
-spin_restrict_enzymes-t.texi: spin_restrict_enzymes_p1.pdf
-stops-t.texi: stops.pdf
-template-t.texi: template.dialogue.pdf
-template-t.texi: template.display.pdf
-template-t.texi: template.display.pdf
-template-t.texi: template.quality.pdf
-template-t.texi: template.restriction.pdf
-template-t.texi: snp_candidates1.pdf
-template-t.texi: snp_candidates2.pdf
-template-t.texi: contig_editor_sets.pdf
-trev-t.texi: trace_print_menu.pdf
-trev-t.texi: trace_print_page_dialogue.pdf
-trev-t.texi: trace_print_trace_dialogue.pdf
-trev-t.texi: trace_print_trace1.pdf
-trev-t.texi: trev_conf_trace.pdf
-trev_mini-t.texi: trev_pic.pdf
-trev_mini-t.texi: trace_print_trace1.pdf
-trev_mini-t.texi: trev_conf_trace.pdf
-trev_mini-t.texi: trev_pyro_trace.pdf
-vector_clip-t.texi: primer_pos_text.pdf
-vector_clip-t.texi: primer_pos_plot.pdf
-vector_clip-t.texi: primer_pos_seq_display.pdf
+assembly-t.pdf_done:
+assembly-t.pdf_done: cap2-t.pdf_done
+assembly-t.pdf_done: cap3-t.pdf_done
+assembly-t.pdf_done: fak2-t.pdf_done
+assembly-t.pdf_done: phrap-t.pdf_done
+assembly-t.eps_done:
+assembly-t.eps_done: cap2-t.eps_done
+assembly-t.eps_done: cap3-t.eps_done
+assembly-t.eps_done: fak2-t.eps_done
+assembly-t.eps_done: phrap-t.eps_done
+assembly-t.pdf_done: assembly.shot.pdf
+assembly-t.pdf_done: assembly.single.pdf
+assembly-t.pdf_done: assembly.one.pdf
+assembly-t.pdf_done: assembly.new.pdf
+assembly-t.pdf_done: assembly.directed.pdf
+assembly-t.pdf_done: assembly.screen.pdf
+assembly-t.eps_done: assembly.shot.eps
+assembly-t.eps_done: assembly.single.eps
+assembly-t.eps_done: assembly.one.eps
+assembly-t.eps_done: assembly.new.eps
+assembly-t.eps_done: assembly.directed.eps
+assembly-t.eps_done: assembly.screen.eps
+calc_consensus-t.pdf_done:
+calc_consensus-t.eps_done:
+calc_consensus-t.pdf_done: calc_consensus.normal.pdf
+calc_consensus-t.pdf_done: calc_consensus.extended.pdf
+calc_consensus-t.pdf_done: calc_consensus.unfinished.pdf
+calc_consensus-t.pdf_done: calc_consensus.quality.pdf
+calc_consensus-t.eps_done: calc_consensus.normal.eps
+calc_consensus-t.eps_done: calc_consensus.extended.eps
+calc_consensus-t.eps_done: calc_consensus.unfinished.eps
+calc_consensus-t.eps_done: calc_consensus.quality.eps
+cap2-t.pdf_done:
+cap2-t.eps_done:
+cap2-t.pdf_done: assembly.cap2.pdf
+cap2-t.eps_done: assembly.cap2.eps
+cap3-t.pdf_done:
+cap3-t.eps_done:
+cap3-t.pdf_done: assembly.CAP3.pdf
+cap3-t.eps_done: assembly.CAP3.eps
+check_db-t.pdf_done:
+check_db-t.eps_done:
+clip-t.pdf_done:
+clip-t.eps_done:
+clip-t.pdf_done: difference_clip.pdf
+clip-t.pdf_done: quality_clip.pdf
+clip-t.pdf_done: quality_clip_ends.pdf
+clip-t.pdf_done: NBase_clip.pdf
+clip-t.eps_done: difference_clip.eps
+clip-t.eps_done: quality_clip.eps
+clip-t.eps_done: quality_clip_ends.eps
+clip-t.eps_done: NBase_clip.eps
+comparator-t.pdf_done:
+comparator-t.eps_done:
+comparator-t.pdf_done: comparator.pdf
+comparator-t.eps_done: comparator.eps
+complement-t.pdf_done:
+complement-t.eps_done:
+configure-t.pdf_done:
+configure-t.eps_done:
+configure-t.pdf_done: configure.colour.pdf
+configure-t.pdf_done: set_genetic_code.pdf
+configure-t.pdf_done: interface.tag.pdf
+configure-t.pdf_done: template_status.pdf
+configure-t.eps_done: configure.colour.eps
+configure-t.eps_done: set_genetic_code.eps
+configure-t.eps_done: interface.tag.eps
+configure-t.eps_done: template_status.eps
+consistency_display-t.pdf_done:
+consistency_display-t.eps_done:
+consistency_display-t.pdf_done: read_coverage_d.pdf
+consistency_display-t.pdf_done: strand_coverage_d.pdf
+consistency_display-t.pdf_done: 2nd_highest_confidence.pdf
+consistency_display-t.pdf_done: discrepancy_graph.pdf 
+consistency_display-t.pdf_done: consistency_p.pdf
+consistency_display-t.pdf_done: conf_values_p.pdf
+consistency_display-t.pdf_done: read_coverage_p.pdf
+consistency_display-t.pdf_done: readpair_coverage_p.pdf
+consistency_display-t.pdf_done: strand_coverage_p1.pdf
+consistency_display-t.pdf_done: strand_coverage_p2.pdf
+consistency_display-t.eps_done: read_coverage_d.eps
+consistency_display-t.eps_done: strand_coverage_d.eps
+consistency_display-t.eps_done: 2nd_highest_confidence.eps
+consistency_display-t.eps_done: discrepancy_graph.eps 
+consistency_display-t.eps_done: consistency_p.eps
+consistency_display-t.eps_done: conf_values_p.eps
+consistency_display-t.eps_done: read_coverage_p.eps
+consistency_display-t.eps_done: readpair_coverage_p.eps
+consistency_display-t.eps_done: strand_coverage_p1.eps
+consistency_display-t.eps_done: strand_coverage_p2.eps
+contig_editor-t.pdf_done:
+contig_editor-t.eps_done:
+contig_editor-t.pdf_done: contig_editor.taged.pdf
+contig_editor-t.pdf_done: contig_editor.tagsel.pdf
+contig_editor-t.pdf_done: contig_editor.tagmacro.pdf
+contig_editor-t.pdf_done: contig_editor.search.pdf
+contig_editor-t.pdf_done: contig_editor.screen.pdf
+contig_editor-t.pdf_done: contig_editor_grey_scale.pdf
+contig_editor-t.pdf_done: contig_editor.traces.pdf
+contig_editor-t.pdf_done: mut_traces_het.pdf
+contig_editor-t.pdf_done: mut_traces_positive.pdf
+contig_editor-t.pdf_done: contig_editor.traces.pdf
+contig_editor-t.pdf_done: contig_editor.traces.compact.pdf
+contig_editor-t.pdf_done: contig_editor.join.pdf
+contig_editor-t.eps_done: contig_editor.taged.eps
+contig_editor-t.eps_done: contig_editor.tagsel.eps
+contig_editor-t.eps_done: contig_editor.tagmacro.eps
+contig_editor-t.eps_done: contig_editor.search.eps
+contig_editor-t.eps_done: contig_editor.screen.eps
+contig_editor-t.eps_done: contig_editor_grey_scale.eps
+contig_editor-t.eps_done: contig_editor.traces.eps
+contig_editor-t.eps_done: mut_traces_het.eps
+contig_editor-t.eps_done: mut_traces_positive.eps
+contig_editor-t.eps_done: contig_editor.traces.eps
+contig_editor-t.eps_done: contig_editor.traces.compact.eps
+contig_editor-t.eps_done: contig_editor.join.eps
+contig_navigation-t.pdf_done:
+contig_navigation-t.eps_done:
+contig_navigation-t.pdf_done: contig_navigation_browse.pdf
+contig_navigation-t.pdf_done: contig_navigation_table.pdf
+contig_navigation-t.eps_done: contig_navigation_browse.eps
+contig_navigation-t.eps_done: contig_navigation_table.eps
+contig_ordering-t.pdf_done:
+contig_ordering-t.eps_done:
+contig_ordering-t.pdf_done: c_order_lb.pdf
+contig_ordering-t.pdf_done: comparator.pdf
+contig_ordering-t.pdf_done: c_order_t1.pdf
+contig_ordering-t.pdf_done: c_order_t2.pdf
+contig_ordering-t.eps_done: c_order_lb.eps
+contig_ordering-t.eps_done: comparator.eps
+contig_ordering-t.eps_done: c_order_t1.eps
+contig_ordering-t.eps_done: c_order_t2.eps
+contig_selector-t.pdf_done:
+contig_selector-t.eps_done:
+contig_selector-t.pdf_done: contig_selector.pdf
+contig_selector-t.pdf_done: contig_list_box.pdf
+contig_selector-t.eps_done: contig_selector.eps
+contig_selector-t.eps_done: contig_list_box.eps
+convert-t.pdf_done:
+convert-t.eps_done:
+convert_trace.1.pdf_done:
+convert_trace.1.eps_done:
+copy_db.1.pdf_done:
+copy_db.1.eps_done:
+copy_reads-t.pdf_done:
+copy_reads-t.eps_done:
+copy_reads-t.pdf_done: copy_reads.dialogue.pdf
+copy_reads-t.eps_done: copy_reads.dialogue.eps
+copy_reads.1.pdf_done:
+copy_reads.1.eps_done:
+copyright.pdf_done:
+copyright.eps_done:
+disassembly-t.pdf_done:
+disassembly-t.eps_done:
+disassembly-t.pdf_done: check_ass.pdf
+disassembly-t.pdf_done: break_contig.pdf
+disassembly-t.pdf_done: disassembly.pdf
+disassembly-t.eps_done: check_ass.eps
+disassembly-t.eps_done: break_contig.eps
+disassembly-t.eps_done: disassembly.eps
+doctor_db-t.pdf_done:
+doctor_db-t.eps_done:
+doctor_db-t.pdf_done: doctor_db.main.pdf
+doctor_db-t.pdf_done: doctor_db.structures.pdf
+doctor_db-t.eps_done: doctor_db.main.eps
+doctor_db-t.eps_done: doctor_db.structures.eps
+eba.1.pdf_done:
+eba.1.eps_done:
+exp-t.pdf_done:
+exp-t.eps_done:
+exp_suggest-t.pdf_done:
+exp_suggest-t.eps_done:
+exp_suggest-t.pdf_done: exp_suggest.double.pdf
+exp_suggest-t.pdf_done: exp_suggest.primers.pdf
+exp_suggest-t.pdf_done: exp_suggest.long.pdf
+exp_suggest-t.pdf_done: exp_suggest.comp.pdf
+exp_suggest-t.pdf_done: suggest_probes.main.pdf
+exp_suggest-t.pdf_done: suggest_probes.select.pdf
+exp_suggest-t.eps_done: exp_suggest.double.eps
+exp_suggest-t.eps_done: exp_suggest.primers.eps
+exp_suggest-t.eps_done: exp_suggest.long.eps
+exp_suggest-t.eps_done: exp_suggest.comp.eps
+exp_suggest-t.eps_done: suggest_probes.main.eps
+exp_suggest-t.eps_done: suggest_probes.select.eps
+extract-t.pdf_done:
+extract-t.eps_done:
+extract-t.pdf_done: extract.pdf
+extract-t.eps_done: extract.eps
+extract_fastq.1.pdf_done:
+extract_fastq.1.eps_done:
+extract_seq.1.pdf_done:
+extract_seq.1.eps_done:
+fak2-t.pdf_done:
+fak2-t.eps_done:
+fak2-t.pdf_done: assembly.fak2.pdf
+fak2-t.eps_done: assembly.fak2.eps
+fij-t.pdf_done:
+fij-t.eps_done:
+fij-t.pdf_done: fij.dialogue.pdf
+fij-t.pdf_done: comparator.pdf
+fij-t.eps_done: fij.dialogue.eps
+fij-t.eps_done: comparator.eps
+filebrowser-t.pdf_done:
+filebrowser-t.eps_done:
+filebrowser-t.pdf_done: filebrowser.pdf
+filebrowser-t.eps_done: filebrowser.eps
+filebrowser.pdf_done:
+filebrowser.pdf_done: copyright.pdf_done
+filebrowser.pdf_done: filebrowser-t.pdf_done
+filebrowser.eps_done:
+filebrowser.eps_done: copyright.eps_done
+filebrowser.eps_done: filebrowser-t.eps_done
+find_oligo-t.pdf_done:
+find_oligo-t.eps_done:
+find_oligo-t.pdf_done: find_oligo_pic.pdf
+find_oligo-t.eps_done: find_oligo_pic.eps
+find_renz.1.pdf_done:
+find_renz.1.eps_done:
+formats-t.pdf_done:
+formats-t.pdf_done: scf-t.pdf_done
+formats-t.pdf_done: ztr-t.pdf_done
+formats-t.pdf_done: exp-t.pdf_done
+formats-t.pdf_done: renzymes-t.pdf_done
+formats-t.pdf_done: vector_primer-t.pdf_done
+formats-t.eps_done:
+formats-t.eps_done: scf-t.eps_done
+formats-t.eps_done: ztr-t.eps_done
+formats-t.eps_done: exp-t.eps_done
+formats-t.eps_done: renzymes-t.eps_done
+formats-t.eps_done: vector_primer-t.eps_done
+formats.pdf_done:
+formats.pdf_done: copyright.pdf_done
+formats.pdf_done: formats-t.pdf_done
+formats.eps_done:
+formats.eps_done: copyright.eps_done
+formats.eps_done: formats-t.eps_done
+gap4-t.pdf_done:
+gap4-t.pdf_done: gap4_org-t.pdf_done
+gap4-t.pdf_done: gap4_mini-t.pdf_done
+gap4-t.pdf_done: gap4_intro-t.pdf_done
+gap4-t.pdf_done: contig_selector-t.pdf_done
+gap4-t.pdf_done: comparator-t.pdf_done
+gap4-t.pdf_done: template-t.pdf_done
+gap4-t.pdf_done: quality_plot-t.pdf_done
+gap4-t.pdf_done: stops-t.pdf_done
+gap4-t.pdf_done: restrict_enzymes-t.pdf_done
+gap4-t.pdf_done: contig_editor-t.pdf_done
+gap4-t.pdf_done: assembly-t.pdf_done
+gap4-t.pdf_done: contig_ordering-t.pdf_done
+gap4-t.pdf_done: read_pairs-t.pdf_done
+gap4-t.pdf_done: fij-t.pdf_done
+gap4-t.pdf_done: repeats-t.pdf_done
+gap4-t.pdf_done: disassembly-t.pdf_done
+gap4-t.pdf_done: exp_suggest-t.pdf_done
+gap4-t.pdf_done: calc_consensus-t.pdf_done
+gap4-t.pdf_done: complement-t.pdf_done
+gap4-t.pdf_done: show_rel-t.pdf_done
+gap4-t.pdf_done: contig_navigation-t.pdf_done
+gap4-t.pdf_done: find_oligo-t.pdf_done
+gap4-t.pdf_done: extract-t.pdf_done
+gap4-t.pdf_done: clip-t.pdf_done
+gap4-t.pdf_done: results-t.pdf_done
+gap4-t.pdf_done: lists-t.pdf_done
+gap4-t.pdf_done: notes-t.pdf_done
+gap4-t.pdf_done: gap_database-t.pdf_done
+gap4-t.pdf_done: copy_reads-t.pdf_done
+gap4-t.pdf_done: check_db-t.pdf_done
+gap4-t.pdf_done: doctor_db-t.pdf_done
+gap4-t.pdf_done: configure-t.pdf_done
+gap4-t.pdf_done: convert-t.pdf_done
+gap4-t.eps_done:
+gap4-t.eps_done: gap4_org-t.eps_done
+gap4-t.eps_done: gap4_mini-t.eps_done
+gap4-t.eps_done: gap4_intro-t.eps_done
+gap4-t.eps_done: contig_selector-t.eps_done
+gap4-t.eps_done: comparator-t.eps_done
+gap4-t.eps_done: template-t.eps_done
+gap4-t.eps_done: quality_plot-t.eps_done
+gap4-t.eps_done: stops-t.eps_done
+gap4-t.eps_done: restrict_enzymes-t.eps_done
+gap4-t.eps_done: contig_editor-t.eps_done
+gap4-t.eps_done: assembly-t.eps_done
+gap4-t.eps_done: contig_ordering-t.eps_done
+gap4-t.eps_done: read_pairs-t.eps_done
+gap4-t.eps_done: fij-t.eps_done
+gap4-t.eps_done: repeats-t.eps_done
+gap4-t.eps_done: disassembly-t.eps_done
+gap4-t.eps_done: exp_suggest-t.eps_done
+gap4-t.eps_done: calc_consensus-t.eps_done
+gap4-t.eps_done: complement-t.eps_done
+gap4-t.eps_done: show_rel-t.eps_done
+gap4-t.eps_done: contig_navigation-t.eps_done
+gap4-t.eps_done: find_oligo-t.eps_done
+gap4-t.eps_done: extract-t.eps_done
+gap4-t.eps_done: clip-t.eps_done
+gap4-t.eps_done: results-t.eps_done
+gap4-t.eps_done: lists-t.eps_done
+gap4-t.eps_done: notes-t.eps_done
+gap4-t.eps_done: gap_database-t.eps_done
+gap4-t.eps_done: copy_reads-t.eps_done
+gap4-t.eps_done: check_db-t.eps_done
+gap4-t.eps_done: doctor_db-t.eps_done
+gap4-t.eps_done: configure-t.eps_done
+gap4-t.eps_done: convert-t.eps_done
+gap4.pdf_done:
+gap4.pdf_done: copyright.pdf_done
+gap4.pdf_done: gap4-t.pdf_done
+gap4.eps_done:
+gap4.eps_done: copyright.eps_done
+gap4.eps_done: gap4-t.eps_done
+gap4_intro-t.pdf_done:
+gap4_intro-t.pdf_done: hidden-t.pdf_done
+gap4_intro-t.pdf_done: tags-t.pdf_done
+gap4_intro-t.eps_done:
+gap4_intro-t.eps_done: hidden-t.eps_done
+gap4_intro-t.eps_done: tags-t.eps_done
+gap4_mini-t.pdf_done:
+gap4_mini-t.eps_done:
+gap4_mini-t.pdf_done: contig_selector.pdf
+gap4_mini-t.pdf_done: interface.output.pdf
+gap4_mini-t.pdf_done: comparator.pdf
+gap4_mini-t.pdf_done: template.display.pdf
+gap4_mini-t.pdf_done: consistency_p.pdf
+gap4_mini-t.pdf_done: restrict_enzymes.pdf
+gap4_mini-t.pdf_done: stops.pdf
+gap4_mini-t.pdf_done: contig_editor.screen.pdf
+gap4_mini-t.pdf_done: contig_editor_grey_scale.pdf
+gap4_mini-t.pdf_done: contig_editor.traces.pdf
+gap4_mini-t.pdf_done: contig_editor.join.pdf
+gap4_mini-t.eps_done: contig_selector.eps
+gap4_mini-t.eps_done: interface.output.eps
+gap4_mini-t.eps_done: comparator.eps
+gap4_mini-t.eps_done: template.display.eps
+gap4_mini-t.eps_done: consistency_p.eps
+gap4_mini-t.eps_done: restrict_enzymes.eps
+gap4_mini-t.eps_done: stops.eps
+gap4_mini-t.eps_done: contig_editor.screen.eps
+gap4_mini-t.eps_done: contig_editor_grey_scale.eps
+gap4_mini-t.eps_done: contig_editor.traces.eps
+gap4_mini-t.eps_done: contig_editor.join.eps
+gap4_org-t.pdf_done:
+gap4_org-t.eps_done:
+gap5-t.pdf_done:
+gap5-t.pdf_done: gap5_org-t.pdf_done
+gap5-t.pdf_done: gap5_mini-t.pdf_done
+gap5-t.pdf_done: gap5_intro-t.pdf_done
+gap5-t.pdf_done: contig_selector-t.pdf_done
+gap5-t.pdf_done: comparator-t.pdf_done
+gap5-t.pdf_done: gap5_template-t.pdf_done
+gap5-t.pdf_done: gap5_contig_editor-t.pdf_done
+gap5-t.pdf_done: gap5_assembly-t.pdf_done
+gap5-t.pdf_done: contig_ordering-t.pdf_done
+gap5-t.pdf_done: fij-t.pdf_done
+gap5-t.pdf_done: repeats-t.pdf_done
+gap5-t.pdf_done: calc_consensus-t.pdf_done
+gap5-t.pdf_done: complement-t.pdf_done
+gap5-t.pdf_done: results-t.pdf_done
+gap5-t.pdf_done: lists-t.pdf_done
+gap5-t.pdf_done: gap5_database-t.pdf_done
+gap5-t.pdf_done: configure-t.pdf_done
+gap5-t.pdf_done: gap5_convert-t.pdf_done
+gap5-t.eps_done:
+gap5-t.eps_done: gap5_org-t.eps_done
+gap5-t.eps_done: gap5_mini-t.eps_done
+gap5-t.eps_done: gap5_intro-t.eps_done
+gap5-t.eps_done: contig_selector-t.eps_done
+gap5-t.eps_done: comparator-t.eps_done
+gap5-t.eps_done: gap5_template-t.eps_done
+gap5-t.eps_done: gap5_contig_editor-t.eps_done
+gap5-t.eps_done: gap5_assembly-t.eps_done
+gap5-t.eps_done: contig_ordering-t.eps_done
+gap5-t.eps_done: fij-t.eps_done
+gap5-t.eps_done: repeats-t.eps_done
+gap5-t.eps_done: calc_consensus-t.eps_done
+gap5-t.eps_done: complement-t.eps_done
+gap5-t.eps_done: results-t.eps_done
+gap5-t.eps_done: lists-t.eps_done
+gap5-t.eps_done: gap5_database-t.eps_done
+gap5-t.eps_done: configure-t.eps_done
+gap5-t.eps_done: gap5_convert-t.eps_done
+gap5_org-t.pdf_done:
+gap5_org-t.eps_done:
+gap_database-t.pdf_done:
+gap_database-t.eps_done:
+getABIfield.1.pdf_done:
+getABIfield.1.eps_done:
+get_comment.1.pdf_done:
+get_comment.1.eps_done:
+get_scf_field.1.pdf_done:
+get_scf_field.1.eps_done:
+hash_exp.1.pdf_done:
+hash_exp.1.eps_done:
+hash_extract.1.pdf_done:
+hash_extract.1.eps_done:
+hash_list.1.pdf_done:
+hash_list.1.eps_done:
+hash_tar.1.pdf_done:
+hash_tar.1.eps_done:
+hidden-t.pdf_done:
+hidden-t.eps_done:
+init_exp.1.pdf_done:
+init_exp.1.eps_done:
+interface-t.pdf_done:
+interface-t.pdf_done: filebrowser-t.pdf_done
+interface-t.eps_done:
+interface-t.eps_done: filebrowser-t.eps_done
+interface-t.pdf_done: interface.buttons.pdf
+interface-t.pdf_done: interface.menus.pdf
+interface-t.pdf_done: interface.entry.pdf
+interface-t.pdf_done: interface.colour.pdf
+interface-t.pdf_done: interface.fonts.pdf
+interface-t.pdf_done: interface.output.pdf
+interface-t.eps_done: interface.buttons.eps
+interface-t.eps_done: interface.menus.eps
+interface-t.eps_done: interface.entry.eps
+interface-t.eps_done: interface.colour.eps
+interface-t.eps_done: interface.fonts.eps
+interface-t.eps_done: interface.output.eps
+interface.pdf_done:
+interface.pdf_done: copyright.pdf_done
+interface.pdf_done: interface-t.pdf_done
+interface.eps_done:
+interface.eps_done: copyright.eps_done
+interface.eps_done: interface-t.eps_done
+lists-t.pdf_done:
+lists-t.eps_done:
+makeSCF.1.pdf_done:
+makeSCF.1.eps_done:
+make_weights.1.pdf_done:
+make_weights.1.eps_done:
+manpages-t.pdf_done:
+manpages-t.pdf_done: convert_trace.1.pdf_done
+manpages-t.pdf_done: copy_db.1.pdf_done
+manpages-t.pdf_done: copy_reads.1.pdf_done
+manpages-t.pdf_done: eba.1.pdf_done
+manpages-t.pdf_done: extract_seq.1.pdf_done
+manpages-t.pdf_done: extract_fastq.1.pdf_done
+manpages-t.pdf_done: find_renz.1.pdf_done
+manpages-t.pdf_done: getABIfield.1.pdf_done
+manpages-t.pdf_done: get_comment.1.pdf_done
+manpages-t.pdf_done: get_scf_field.1.pdf_done
+manpages-t.pdf_done: hash_exp.1.pdf_done
+manpages-t.pdf_done: hash_extract.1.pdf_done
+manpages-t.pdf_done: hash_list.1.pdf_done
+manpages-t.pdf_done: hash_tar.1.pdf_done
+manpages-t.pdf_done: init_exp.1.pdf_done
+manpages-t.pdf_done: makeSCF.1.pdf_done
+manpages-t.pdf_done: make_weights.1.pdf_done
+manpages-t.pdf_done: polyA_clip.1.pdf_done
+manpages-t.pdf_done: qclip.1.pdf_done
+manpages-t.pdf_done: screen_seq.1.pdf_done
+manpages-t.pdf_done: tracediff.1.pdf_done
+manpages-t.pdf_done: trace_dump.1.pdf_done
+manpages-t.pdf_done: vector_clip.1.pdf_done
+manpages-t.eps_done:
+manpages-t.eps_done: convert_trace.1.eps_done
+manpages-t.eps_done: copy_db.1.eps_done
+manpages-t.eps_done: copy_reads.1.eps_done
+manpages-t.eps_done: eba.1.eps_done
+manpages-t.eps_done: extract_seq.1.eps_done
+manpages-t.eps_done: extract_fastq.1.eps_done
+manpages-t.eps_done: find_renz.1.eps_done
+manpages-t.eps_done: getABIfield.1.eps_done
+manpages-t.eps_done: get_comment.1.eps_done
+manpages-t.eps_done: get_scf_field.1.eps_done
+manpages-t.eps_done: hash_exp.1.eps_done
+manpages-t.eps_done: hash_extract.1.eps_done
+manpages-t.eps_done: hash_list.1.eps_done
+manpages-t.eps_done: hash_tar.1.eps_done
+manpages-t.eps_done: init_exp.1.eps_done
+manpages-t.eps_done: makeSCF.1.eps_done
+manpages-t.eps_done: make_weights.1.eps_done
+manpages-t.eps_done: polyA_clip.1.eps_done
+manpages-t.eps_done: qclip.1.eps_done
+manpages-t.eps_done: screen_seq.1.eps_done
+manpages-t.eps_done: tracediff.1.eps_done
+manpages-t.eps_done: trace_dump.1.eps_done
+manpages-t.eps_done: vector_clip.1.eps_done
+manpages.pdf_done:
+manpages.pdf_done: copyright.pdf_done
+manpages.pdf_done: manpages-t.pdf_done
+manpages.eps_done:
+manpages.eps_done: copyright.eps_done
+manpages.eps_done: manpages-t.eps_done
+manual.pdf_done:
+manual.pdf_done: copyright.pdf_done
+manual.pdf_done: preface-t.pdf_done
+manual.pdf_done: gap4-t.pdf_done
+manual.pdf_done: mutations-t.pdf_done
+manual.pdf_done: pregap4-t.pdf_done
+manual.pdf_done: read_clipping-t.pdf_done
+manual.pdf_done: vector_clip-t.pdf_done
+manual.pdf_done: trev-t.pdf_done
+manual.pdf_done: spin-t.pdf_done
+manual.pdf_done: interface-t.pdf_done
+manual.pdf_done: formats-t.pdf_done
+manual.pdf_done: manpages-t.pdf_done
+manual.pdf_done: references-t.pdf_done
+manual.eps_done:
+manual.eps_done: copyright.eps_done
+manual.eps_done: preface-t.eps_done
+manual.eps_done: gap4-t.eps_done
+manual.eps_done: mutations-t.eps_done
+manual.eps_done: pregap4-t.eps_done
+manual.eps_done: read_clipping-t.eps_done
+manual.eps_done: vector_clip-t.eps_done
+manual.eps_done: trev-t.eps_done
+manual.eps_done: spin-t.eps_done
+manual.eps_done: interface-t.eps_done
+manual.eps_done: formats-t.eps_done
+manual.eps_done: manpages-t.eps_done
+manual.eps_done: references-t.eps_done
+mini_manual.pdf_done:
+mini_manual.pdf_done: copyright.pdf_done
+mini_manual.pdf_done: preface-t.pdf_done
+mini_manual.pdf_done: gap4_mini-t.pdf_done
+mini_manual.pdf_done: mutations-t.pdf_done
+mini_manual.pdf_done: pregap4_mini-t.pdf_done
+mini_manual.pdf_done: trev_mini-t.pdf_done
+mini_manual.pdf_done: spin_mini-t.pdf_done
+mini_manual.eps_done:
+mini_manual.eps_done: copyright.eps_done
+mini_manual.eps_done: preface-t.eps_done
+mini_manual.eps_done: gap4_mini-t.eps_done
+mini_manual.eps_done: mutations-t.eps_done
+mini_manual.eps_done: pregap4_mini-t.eps_done
+mini_manual.eps_done: trev_mini-t.eps_done
+mini_manual.eps_done: spin_mini-t.eps_done
+mutations-t.pdf_done:
+mutations-t.eps_done:
+mutations-t.pdf_done: mut_pregap4.pdf
+mutations-t.pdf_done: mut_traces_point.pdf
+mutations-t.pdf_done: mut_traces_het.pdf
+mutations-t.pdf_done: mut_contig_editor5.pdf
+mutations-t.pdf_done: mut_contig_editor_dis5.pdf
+mutations-t.pdf_done: mut_traces_positive.pdf
+mutations-t.pdf_done: mut_traces_het.pdf
+mutations-t.pdf_done: mut_template_all.pdf
+mutations-t.pdf_done: mut_template_reads.pdf
+mutations-t.pdf_done: mut_template_reads_single.pdf
+mutations-t.eps_done: mut_pregap4.eps
+mutations-t.eps_done: mut_traces_point.eps
+mutations-t.eps_done: mut_traces_het.eps
+mutations-t.eps_done: mut_contig_editor5.eps
+mutations-t.eps_done: mut_contig_editor_dis5.eps
+mutations-t.eps_done: mut_traces_positive.eps
+mutations-t.eps_done: mut_traces_het.eps
+mutations-t.eps_done: mut_template_all.eps
+mutations-t.eps_done: mut_template_reads.eps
+mutations-t.eps_done: mut_template_reads_single.eps
+mutations.pdf_done:
+mutations.pdf_done: copyright.pdf_done
+mutations.pdf_done: mutations-t.pdf_done
+mutations.eps_done:
+mutations.eps_done: copyright.eps_done
+mutations.eps_done: mutations-t.eps_done
+notes-t.pdf_done:
+notes-t.eps_done:
+notes-t.pdf_done: notes.selector.pdf
+notes-t.pdf_done: notes.editor.pdf
+notes-t.eps_done: notes.selector.eps
+notes-t.eps_done: notes.editor.eps
+phrap-t.pdf_done:
+phrap-t.eps_done:
+phrap-t.pdf_done: phrap.assembly.pdf
+phrap-t.eps_done: phrap.assembly.eps
+polyA_clip.1.pdf_done:
+polyA_clip.1.eps_done:
+preface-t.pdf_done:
+preface-t.eps_done:
+pregap4-t.pdf_done:
+pregap4-t.pdf_done: pregap4_org-t.pdf_done
+pregap4-t.pdf_done: pregap4_mini-t.pdf_done
+pregap4-t.eps_done:
+pregap4-t.eps_done: pregap4_org-t.eps_done
+pregap4-t.eps_done: pregap4_mini-t.eps_done
+pregap4-t.pdf_done: pregap4_files.pdf
+pregap4-t.pdf_done: pregap4_textwin.pdf
+pregap4-t.pdf_done: pregap4_separate.pdf
+pregap4-t.pdf_done: pregap4_compact.pdf
+pregap4-t.pdf_done: pregap4_config.pdf
+pregap4-t.pdf_done: mut_mutscan_adaptive_noise_threshold.pdf
+pregap4-t.pdf_done: mut_mutscan_peak_drop_threshold.pdf
+pregap4-t.pdf_done: mut_mutscan_peak_alignment_threshold.pdf
+pregap4-t.pdf_done: pregap4_component.pdf
+pregap4-t.pdf_done: pregap4_simpledb.pdf
+pregap4-t.pdf_done: pregap4_edit_exp.pdf
+pregap4-t.pdf_done: pregap4_select.pdf
+pregap4-t.eps_done: pregap4_files.eps
+pregap4-t.eps_done: pregap4_textwin.eps
+pregap4-t.eps_done: pregap4_separate.eps
+pregap4-t.eps_done: pregap4_compact.eps
+pregap4-t.eps_done: pregap4_config.eps
+pregap4-t.eps_done: mut_mutscan_adaptive_noise_threshold.eps
+pregap4-t.eps_done: mut_mutscan_peak_drop_threshold.eps
+pregap4-t.eps_done: mut_mutscan_peak_alignment_threshold.eps
+pregap4-t.eps_done: pregap4_component.eps
+pregap4-t.eps_done: pregap4_simpledb.eps
+pregap4-t.eps_done: pregap4_edit_exp.eps
+pregap4-t.eps_done: pregap4_select.eps
+pregap4.pdf_done:
+pregap4.pdf_done: copyright.pdf_done
+pregap4.pdf_done: pregap4-t.pdf_done
+pregap4.eps_done:
+pregap4.eps_done: copyright.eps_done
+pregap4.eps_done: pregap4-t.eps_done
+pregap4_mini-t.pdf_done:
+pregap4_mini-t.eps_done:
+pregap4_mini-t.pdf_done: pregap4_overview.pdf
+pregap4_mini-t.pdf_done: pregap4_overview2.pdf
+pregap4_mini-t.pdf_done: pregap4_separate.pdf
+pregap4_mini-t.pdf_done: pregap4_compact.pdf
+pregap4_mini-t.pdf_done: pregap4_files.pdf
+pregap4_mini-t.pdf_done: pregap4_config.pdf
+pregap4_mini-t.pdf_done: pregap4_textwin.pdf
+pregap4_mini-t.eps_done: pregap4_overview.eps
+pregap4_mini-t.eps_done: pregap4_overview2.eps
+pregap4_mini-t.eps_done: pregap4_separate.eps
+pregap4_mini-t.eps_done: pregap4_compact.eps
+pregap4_mini-t.eps_done: pregap4_files.eps
+pregap4_mini-t.eps_done: pregap4_config.eps
+pregap4_mini-t.eps_done: pregap4_textwin.eps
+pregap4_org-t.pdf_done:
+pregap4_org-t.eps_done:
+qclip.1.pdf_done:
+qclip.1.eps_done:
+quality_plot-t.pdf_done:
+quality_plot-t.eps_done:
+quality_plot-t.pdf_done: template.quality.pdf
+quality_plot-t.eps_done: template.quality.eps
+read_clipping-t.pdf_done:
+read_clipping-t.eps_done:
+read_clipping.pdf_done:
+read_clipping.pdf_done: copyright.pdf_done
+read_clipping.pdf_done: read_clipping-t.pdf_done
+read_clipping.eps_done:
+read_clipping.eps_done: copyright.eps_done
+read_clipping.eps_done: read_clipping-t.eps_done
+read_pairs-t.pdf_done:
+read_pairs-t.eps_done:
+read_pairs-t.pdf_done: read_pairs.pdf
+read_pairs-t.pdf_done: comparator.pdf
+read_pairs-t.eps_done: read_pairs.eps
+read_pairs-t.eps_done: comparator.eps
+references-t.pdf_done:
+references-t.eps_done:
+references.pdf_done:
+references.pdf_done: copyright.pdf_done
+references.pdf_done: references-t.pdf_done
+references.eps_done:
+references.eps_done: copyright.eps_done
+references.eps_done: references-t.eps_done
+renzymes-t.pdf_done:
+renzymes-t.eps_done:
+repeats-t.pdf_done:
+repeats-t.eps_done:
+repeats-t.pdf_done: repeats.pdf
+repeats-t.eps_done: repeats.eps
+restrict_enzymes-t.pdf_done:
+restrict_enzymes-t.eps_done:
+restrict_enzymes-t.pdf_done: restrict_enzymes.pdf
+restrict_enzymes-t.eps_done: restrict_enzymes.eps
+results-t.pdf_done:
+results-t.eps_done:
+results-t.pdf_done: results.1.pdf
+results-t.eps_done: results.1.eps
+scf-t.pdf_done:
+scf-t.eps_done:
+screen_seq.1.pdf_done:
+screen_seq.1.eps_done:
+show_rel-t.pdf_done:
+show_rel-t.eps_done:
+show_rel-t.pdf_done: show_rel.pdf
+show_rel-t.eps_done: show_rel.eps
+spin-t.pdf_done:
+spin-t.pdf_done: spin_org-t.pdf_done
+spin-t.pdf_done: spin_mini-t.pdf_done
+spin-t.pdf_done: spin_restrict_enzymes-t.pdf_done
+spin-t.eps_done:
+spin-t.eps_done: spin_org-t.eps_done
+spin-t.eps_done: spin_mini-t.eps_done
+spin-t.eps_done: spin_restrict_enzymes-t.eps_done
+spin-t.pdf_done: spin_plot_base_comp_d.pdf
+spin-t.pdf_done: spin_count_codons_d.pdf
+spin-t.pdf_done: set_genetic_code.pdf
+spin-t.pdf_done: spin_translate_t.pdf
+spin-t.pdf_done: spin_translate_d.pdf
+spin-t.pdf_done: spin_find_orf_d.pdf
+spin-t.pdf_done: spin_string_search_d.pdf
+spin-t.pdf_done: spin_weight_matrix_dial.pdf
+spin-t.pdf_done: spin_start_d.pdf
+spin-t.pdf_done: spin_stops_d.pdf
+spin-t.pdf_done: spin_codon_usage_dial.pdf
+spin-t.pdf_done: spin_author_d.pdf
+spin-t.pdf_done: spin_base_bias_d.pdf
+spin-t.pdf_done: spin_similar_spans.pdf
+spin-t.pdf_done: spin_match_words.pdf
+spin-t.pdf_done: spin_diagonals.pdf
+spin-t.pdf_done: spin_align_seq.pdf
+spin-t.pdf_done: spin_local_align.pdf
+spin-t.pdf_done: spin_alignment_symbols.pdf
+spin-t.pdf_done: spin_sequence_display_d.pdf
+spin-t.pdf_done: spin_sequence_display_save_d.pdf
+spin-t.pdf_done: spin_results_manager_d.pdf
+spin-t.pdf_done: spin_simple_search.pdf
+spin-t.pdf_done: spin_personal_search.pdf
+spin-t.pdf_done: spin_seq_manager.pdf
+spin-t.pdf_done: spin_save_sequence_d.pdf
+spin-t.pdf_done: spin_plot_base_comp_p.pdf
+spin-t.pdf_done: spin_count_codons_t.pdf
+spin-t.pdf_done: spin_string_search_p.pdf
+spin-t.pdf_done: spin_weight_matrix.pdf
+spin-t.pdf_done: spin_start_p.pdf
+spin-t.pdf_done: spin_stops_p.pdf
+spin-t.pdf_done: spin_stops_p2.pdf
+spin-t.pdf_done: spin_codon_usage.pdf
+spin-t.pdf_done: spin_codon_usage_aaonly.pdf
+spin-t.pdf_done: spin_author_p.pdf
+spin-t.pdf_done: spin_base_bias_p.pdf
+spin-t.pdf_done: spin_splice.pdf
+spin-t.pdf_done: spin_trna_p.pdf
+spin-t.pdf_done: spin_trna_t.pdf
+spin-t.pdf_done: spin_align_p.pdf
+spin-t.pdf_done: spin_local_p1.pdf
+spin-t.pdf_done: spin_local_p2.pdf
+spin-t.pdf_done: spin_translate_t.pdf
+spin-t.pdf_done: spin_plot_p.pdf
+spin-t.pdf_done: spin_results_manager_d2.pdf
+spin-t.pdf_done: spin_plot_drag1.pdf
+spin-t.pdf_done: spin_plot_drag2.pdf
+spin-t.pdf_done: spin_plot_drag3.pdf
+spin-t.pdf_done: spin_sequence_display_t.pdf
+spin-t.pdf_done: spin_dot_plot.pdf
+spin-t.pdf_done: spin_seq_display.pdf
+spin-t.pdf_done: spin_results_manager_d2.pdf
+spin-t.eps_done: spin_plot_base_comp_d.eps
+spin-t.eps_done: spin_count_codons_d.eps
+spin-t.eps_done: set_genetic_code.eps
+spin-t.eps_done: spin_translate_t.eps
+spin-t.eps_done: spin_translate_d.eps
+spin-t.eps_done: spin_find_orf_d.eps
+spin-t.eps_done: spin_string_search_d.eps
+spin-t.eps_done: spin_weight_matrix_dial.eps
+spin-t.eps_done: spin_start_d.eps
+spin-t.eps_done: spin_stops_d.eps
+spin-t.eps_done: spin_codon_usage_dial.eps
+spin-t.eps_done: spin_author_d.eps
+spin-t.eps_done: spin_base_bias_d.eps
+spin-t.eps_done: spin_similar_spans.eps
+spin-t.eps_done: spin_match_words.eps
+spin-t.eps_done: spin_diagonals.eps
+spin-t.eps_done: spin_align_seq.eps
+spin-t.eps_done: spin_local_align.eps
+spin-t.eps_done: spin_alignment_symbols.eps
+spin-t.eps_done: spin_sequence_display_d.eps
+spin-t.eps_done: spin_sequence_display_save_d.eps
+spin-t.eps_done: spin_results_manager_d.eps
+spin-t.eps_done: spin_simple_search.eps
+spin-t.eps_done: spin_personal_search.eps
+spin-t.eps_done: spin_seq_manager.eps
+spin-t.eps_done: spin_save_sequence_d.eps
+spin-t.eps_done: spin_plot_base_comp_p.eps
+spin-t.eps_done: spin_count_codons_t.eps
+spin-t.eps_done: spin_string_search_p.eps
+spin-t.eps_done: spin_weight_matrix.eps
+spin-t.eps_done: spin_start_p.eps
+spin-t.eps_done: spin_stops_p.eps
+spin-t.eps_done: spin_stops_p2.eps
+spin-t.eps_done: spin_codon_usage.eps
+spin-t.eps_done: spin_codon_usage_aaonly.eps
+spin-t.eps_done: spin_author_p.eps
+spin-t.eps_done: spin_base_bias_p.eps
+spin-t.eps_done: spin_splice.eps
+spin-t.eps_done: spin_trna_p.eps
+spin-t.eps_done: spin_trna_t.eps
+spin-t.eps_done: spin_align_p.eps
+spin-t.eps_done: spin_local_p1.eps
+spin-t.eps_done: spin_local_p2.eps
+spin-t.eps_done: spin_translate_t.eps
+spin-t.eps_done: spin_plot_p.eps
+spin-t.eps_done: spin_results_manager_d2.eps
+spin-t.eps_done: spin_plot_drag1.eps
+spin-t.eps_done: spin_plot_drag2.eps
+spin-t.eps_done: spin_plot_drag3.eps
+spin-t.eps_done: spin_sequence_display_t.eps
+spin-t.eps_done: spin_dot_plot.eps
+spin-t.eps_done: spin_seq_display.eps
+spin-t.eps_done: spin_results_manager_d2.eps
+spin.pdf_done:
+spin.pdf_done: copyright.pdf_done
+spin.pdf_done: spin-t.pdf_done
+spin.eps_done:
+spin.eps_done: copyright.eps_done
+spin.eps_done: spin-t.eps_done
+spin_mini-t.pdf_done:
+spin_mini-t.eps_done:
+spin_mini-t.pdf_done: spin_translate_t.pdf
+spin_mini-t.pdf_done: spin_plot_p.pdf
+spin_mini-t.pdf_done: spin_restrict_enzymes_p.pdf
+spin_mini-t.pdf_done: spin_plot_base_comp_p.pdf
+spin_mini-t.pdf_done: spin_weight_matrix.pdf
+spin_mini-t.pdf_done: spin_splice.pdf
+spin_mini-t.pdf_done: spin_base_bias_p.pdf
+spin_mini-t.pdf_done: spin_trna_t.pdf
+spin_mini-t.pdf_done: spin_sequence_display_t.pdf
+spin_mini-t.pdf_done: spin_dot_plot.pdf
+spin_mini-t.pdf_done: spin_plot.pdf
+spin_mini-t.pdf_done: spin_local_p1.pdf
+spin_mini-t.pdf_done: spin_align_p.pdf
+spin_mini-t.pdf_done: spin_seq_display.pdf
+spin_mini-t.eps_done: spin_translate_t.eps
+spin_mini-t.eps_done: spin_plot_p.eps
+spin_mini-t.eps_done: spin_restrict_enzymes_p.eps
+spin_mini-t.eps_done: spin_plot_base_comp_p.eps
+spin_mini-t.eps_done: spin_weight_matrix.eps
+spin_mini-t.eps_done: spin_splice.eps
+spin_mini-t.eps_done: spin_base_bias_p.eps
+spin_mini-t.eps_done: spin_trna_t.eps
+spin_mini-t.eps_done: spin_sequence_display_t.eps
+spin_mini-t.eps_done: spin_dot_plot.eps
+spin_mini-t.eps_done: spin_plot.eps
+spin_mini-t.eps_done: spin_local_p1.eps
+spin_mini-t.eps_done: spin_align_p.eps
+spin_mini-t.eps_done: spin_seq_display.eps
+spin_org-t.pdf_done:
+spin_org-t.eps_done:
+spin_restrict_enzymes-t.pdf_done:
+spin_restrict_enzymes-t.eps_done:
+spin_restrict_enzymes-t.pdf_done: spin_restrict_enzymes_d.pdf
+spin_restrict_enzymes-t.pdf_done: spin_restrict_enzymes_p.pdf
+spin_restrict_enzymes-t.pdf_done: spin_restrict_enzymes_p1.pdf
+spin_restrict_enzymes-t.eps_done: spin_restrict_enzymes_d.eps
+spin_restrict_enzymes-t.eps_done: spin_restrict_enzymes_p.eps
+spin_restrict_enzymes-t.eps_done: spin_restrict_enzymes_p1.eps
+stops-t.pdf_done:
+stops-t.eps_done:
+stops-t.pdf_done: stops.pdf
+stops-t.eps_done: stops.eps
+tags-t.pdf_done:
+tags-t.eps_done:
+template-t.pdf_done:
+template-t.pdf_done: consistency_display-t.pdf_done
+template-t.eps_done:
+template-t.eps_done: consistency_display-t.eps_done
+template-t.pdf_done: template.dialogue.pdf
+template-t.pdf_done: template.display.pdf
+template-t.pdf_done: template.display.pdf
+template-t.pdf_done: template.quality.pdf
+template-t.pdf_done: template.restriction.pdf
+template-t.pdf_done: snp_candidates1.pdf
+template-t.pdf_done: snp_candidates2.pdf
+template-t.pdf_done: contig_editor_sets.pdf
+template-t.eps_done: template.dialogue.eps
+template-t.eps_done: template.display.eps
+template-t.eps_done: template.display.eps
+template-t.eps_done: template.quality.eps
+template-t.eps_done: template.restriction.eps
+template-t.eps_done: snp_candidates1.eps
+template-t.eps_done: snp_candidates2.eps
+template-t.eps_done: contig_editor_sets.eps
+trace_dump.1.pdf_done:
+trace_dump.1.eps_done:
+tracediff.1.pdf_done:
+tracediff.1.eps_done:
+trev-t.pdf_done:
+trev-t.pdf_done: trev_mini-t.pdf_done
+trev-t.eps_done:
+trev-t.eps_done: trev_mini-t.eps_done
+trev-t.pdf_done: trace_print_menu.pdf
+trev-t.pdf_done: trace_print_page_dialogue.pdf
+trev-t.pdf_done: trace_print_trace_dialogue.pdf
+trev-t.pdf_done: trace_print_trace1.pdf
+trev-t.pdf_done: trev_conf_trace.pdf
+trev-t.eps_done: trace_print_menu.eps
+trev-t.eps_done: trace_print_page_dialogue.eps
+trev-t.eps_done: trace_print_trace_dialogue.eps
+trev-t.eps_done: trace_print_trace1.eps
+trev-t.eps_done: trev_conf_trace.eps
+trev.pdf_done:
+trev.pdf_done: copyright.pdf_done
+trev.pdf_done: trev-t.pdf_done
+trev.eps_done:
+trev.eps_done: copyright.eps_done
+trev.eps_done: trev-t.eps_done
+trev_mini-t.pdf_done:
+trev_mini-t.eps_done:
+trev_mini-t.pdf_done: trev_pic.pdf
+trev_mini-t.pdf_done: trace_print_trace1.pdf
+trev_mini-t.pdf_done: trev_conf_trace.pdf
+trev_mini-t.pdf_done: trev_pyro_trace.pdf
+trev_mini-t.eps_done: trev_pic.eps
+trev_mini-t.eps_done: trace_print_trace1.eps
+trev_mini-t.eps_done: trev_conf_trace.eps
+trev_mini-t.eps_done: trev_pyro_trace.eps
+vector_clip-t.pdf_done:
+vector_clip-t.eps_done:
+vector_clip-t.pdf_done: primer_pos_text.pdf
+vector_clip-t.pdf_done: primer_pos_plot.pdf
+vector_clip-t.pdf_done: primer_pos_seq_display.pdf
+vector_clip-t.eps_done: primer_pos_text.eps
+vector_clip-t.eps_done: primer_pos_plot.eps
+vector_clip-t.eps_done: primer_pos_seq_display.eps
+vector_clip.1.pdf_done:
+vector_clip.1.eps_done:
+vector_clip.pdf_done:
+vector_clip.pdf_done: copyright.pdf_done
+vector_clip.pdf_done: vector_clip-t.pdf_done
+vector_clip.eps_done:
+vector_clip.eps_done: copyright.eps_done
+vector_clip.eps_done: vector_clip-t.eps_done
+vector_primer-t.pdf_done:
+vector_primer-t.eps_done:
+ztr-t.pdf_done:
+ztr-t.eps_done:

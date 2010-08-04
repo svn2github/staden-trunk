@@ -43,9 +43,15 @@ M4=m4
 	$(M4) $(M4OPT) -D_html < $< > $@
 	./tools/update-nodes $@
 
-# How to build .dvi files from our m4-expanded .texinfo
-# files
-%.dvi:	%.texinfo
+# Remove implcit rules
+%.dvi:  %.texi
+%.dvi:  %.texinfo
+%.pdf:	%.texinfo
+
+%.eps_done:
+
+# How to build .dvi files from our m4-expanded .texinfo files
+%.dvi:	%.texinfo %.eps_done
 	texi2dvi $<
 
 # A4 or US Letter PostScript from DVI
@@ -58,7 +64,7 @@ M4=m4
 # One solution is (eg):
 #   pdftk manual.pdf cat 1-2 469-end 3-468 output new.pdf
 # however this loses the bookmarks.
-%.pdf:	%.texinfo
+%.pdf:	%.texinfo %.pdf_done
 	texi2pdf $<
 
 # HTML files - built from an expanded .texinfo file with the -D_html m4 macro
@@ -96,6 +102,9 @@ pngs:
 # PostScript versions of the gif images.
 %.ps: %.gif
 	./tools/make_ps $<
+
+%.eps: %.png
+	./tools/make_eps $<
 
 %.pdf: %.png
 	./tools/make_pdf $<
@@ -174,6 +183,8 @@ endif
 common: manual xref contents mini man pngs
 
 
+mini.pdf_done:
+
 mini: mini.pdf mini_toc.html
 	./tools/edit_mini_contents.pl < mini_toc.html > tmp.html
 	mv tmp.html mini_toc.html
@@ -211,7 +222,7 @@ spotless:	clean
 	-rm master_index.html master_contents.html master_brief.html
 	-rm manual.ps mini.ps
 	-rm man/man1/* man/man4/*
-	-rm *.ps *.pdf
+	-rm *.ps *.pdf *.eps
 
 depend:
 	./tools/make_dependencies > dependencies
