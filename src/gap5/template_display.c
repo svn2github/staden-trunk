@@ -471,6 +471,8 @@ static double template_point(Tk_Canvas canvas, Tk_Item *itemPtr, double *coordPt
 
     tdi->px = coordPtr[0];
     tdi->py = coordPtr[1];
+    
+    tdi->py += tdi->wy0;
 
     height2 = tdi->height / 2;
 
