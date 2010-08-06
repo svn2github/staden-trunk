@@ -625,7 +625,7 @@ static int sort_range_by_tech_x(const void *v1, const void *v2) {
 
 
     /* Initially by technology */
-    if (r1->seq_tech && r2->seq_tech && r1->seq_tech != r2->seq_tech) {
+    if (r1->seq_tech != r2->seq_tech) {
 	return r1->seq_tech - r2->seq_tech;
     }
 
@@ -1200,7 +1200,11 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 
 		    /* Allocate Y and shift down */
 		    compute_ypos(&r[start], i - start, job & CSIR_ALLOCATE_Y);
-		    for (max_y = 0, j = start; j < n; j++) {
+#ifdef KEEP_Y
+		    update_range_y(io, &r[start], i-start);
+#endif
+
+		    for (max_y = 0, j = start; j < i; j++) {
 			r[j].y += shift;
 			if (max_y < r[j].y)
 			    max_y = r[j].y;
@@ -1209,6 +1213,9 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 		} while (i < n);
 	    } else {
 		compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+#ifdef KEEP_Y
+		update_range_y(io, r, *count);
+#endif
 	    }
 	    compute_ypos_tags(r, *count);
 	}
@@ -1216,11 +1223,6 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 	if (job & CSIR_SORT_BY_Y)
 	    qsort(r, *count, sizeof(*r), sort_range_by_y);
     }
-
-#ifdef KEEP_Y
-    if (job & CSIR_ALLOCATE_Y)
-	update_range_y(io, r, *count);
-#endif
 
     return r;
 }
