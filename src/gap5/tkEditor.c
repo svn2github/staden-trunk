@@ -594,6 +594,10 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	type = Tk_GetScrollInfo(interp, argc, argv, &f1, &count);
 	if (!xx->ed->consensus_at_top)
 	    count = -count;
+
+	if (f1 < 0)
+	    f1 = 0;
+
 	switch (type) {
 	default:
 	    goto fail;
