@@ -1249,7 +1249,7 @@ proc editor_edit_base {w call where} {
     if {$type == 18} {
 	set seq [$io get_sequence $rec]
 	foreach {old_call old_conf} [$seq get_base $pos] break
-	$seq replace_base $pos $call 30
+	$seq replace_base $pos $call 100
 	$seq delete
 
 	foreach {type rec _pos} [$w get_cursor relative] break
@@ -1359,6 +1359,67 @@ proc editor_delete_base {w where} {
     }
     
     $w redraw
+}
+
+proc editor_set_confidence {w where qual} {
+    upvar $w opt
+
+    set io [$w io]
+    upvar $opt(top) top
+    
+    if {$where == "" || [$io read_only]} {
+	bell
+	return
+    }
+
+    foreach {type rec pos} $where break;
+    if {$type == 18} {
+	set seq [$io get_sequence $rec]
+	foreach {old_call old_conf} [$seq get_base $pos] break
+	$seq replace_base $pos $old_call $qual
+	$seq delete
+
+	foreach {type rec _pos} [$w get_cursor relative] break
+	$w cursor_right
+	store_undo $w \
+	    [list \
+		 [list C_SET $type $rec $pos] \
+		 [list B_REP $rec $pos $old_call $old_conf] ] {}
+    }
+
+    $w redraw
+}
+
+proc editor_increment_confidence {w where amount} {
+    upvar $w opt
+
+    set io [$w io]
+    upvar $opt(top) top
+    
+    if {$where == "" || [$io read_only]} {
+	bell
+	return
+    }
+
+    foreach {type rec pos} $where break;
+    if {$type == 18} {
+	set seq [$io get_sequence $rec]
+	foreach {old_call old_conf} [$seq get_base $pos] break
+	set new_conf [expr {$old_conf+$amount}]
+	if {$new_conf > 100} {set new_conf 100}
+	if {$new_conf <   0} {set new_conf   0}
+	$seq replace_base $pos $old_call $new_conf
+	$seq delete
+
+	foreach {type rec _pos} [$w get_cursor relative] break
+	store_undo $w \
+	    [list \
+		 [list C_SET $type $rec $pos] \
+		 [list B_REP $rec $pos $old_call $old_conf] ] {}
+    }
+
+    $w redraw
+    update_brief $w
 }
 
 proc editor_move_seq {w where direction} {
@@ -2445,10 +2506,18 @@ bind Editor <Key-a> {editor_edit_base %W a [%W get_number]}
 bind Editor <Key-c> {editor_edit_base %W c [%W get_number]}
 bind Editor <Key-g> {editor_edit_base %W g [%W get_number]}
 bind Editor <Key-t> {editor_edit_base %W t [%W get_number]}
+bind Editor <Key-u> {editor_edit_base %W t [%W get_number]}
 bind Editor <Key-i> {editor_insert_gap %W [%W get_number]}
 bind Editor <Key-asterisk> {editor_insert_gap %W [%W get_number]}
 bind Editor <Key-Delete> {editor_delete_base %W [%W get_number]}
 bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number]}
+
+bind Editor <Key-bracketleft>  {editor_set_confidence %W [%W get_number] 0}
+bind Editor <Key-bracketright> {editor_set_confidence %W [%W get_number] 100}
+bind Editor <Shift-Key-Up>     {editor_increment_confidence %W [%W get_number] 1}
+bind Editor <Control-Key-Up>   {editor_increment_confidence %W [%W get_number] 10}
+bind Editor <Shift-Key-Down>   {editor_increment_confidence %W [%W get_number] -1}
+bind Editor <Control-Key-Down> {editor_increment_confidence %W [%W get_number] -10}
 
 bind Editor <Control-Key-Left>  {editor_move_seq %W [%W get_number] -1}
 bind Editor <Control-Key-Right> {editor_move_seq %W [%W get_number]  1}
@@ -2483,6 +2552,12 @@ if {[tk windowingsystem] eq "x11"} {
 
 bind Editor <Key-Page_Down> {%W xview scroll  +1000 units}
 bind Editor <Key-Page_Up>   {%W xview scroll  -1000 units}
+bind Editor <Shift-Key-Page_Down> {%W xview scroll  +10000 units}
+bind Editor <Shift-Key-Page_Up>   {%W xview scroll  -10000 units}
+bind Editor <Control-Key-Page_Down> {%W xview scroll  +100000 units}
+bind Editor <Control-Key-Page_Up>   {%W xview scroll  -100000 units}
+bind Editor <Shift-Control-Key-Page_Down> {%W xview scroll  +1000000 units}
+bind Editor <Shift-Control-Key-Page_Up>   {%W xview scroll  -1000000 units}
 
 # Selection control for adding tags
 bind Editor <<select-drag>> {%W select to @%x; editor_select_scroll %W %x}
