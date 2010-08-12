@@ -1578,6 +1578,9 @@ static void tk_redisplayCursor(edview *xx, rangec_t *r, int nr) {
 	HacheItem *hi;
 	
 	key = xx->cursor_rec;
+	if (!xx->rec_hash)
+	    return;
+
 	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
 	y = hi
 	    ? r[hi->data.i].y + xx->y_seq_start - xx->displayYPos
@@ -1634,9 +1637,11 @@ int showCursor(edview *xx, int x_safe, int y_safe) {
 			     xx->displayPos + xx->displayWidth);
 
 	key = xx->cursor_rec;
+	if (!xx->rec_hash)
+	    return 0;
 	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
 	if (!hi)
-	    return 1;
+	    return 0;
 	i = hi->data.i;
 
 	y_pos = xx->r[i].y;
@@ -1718,6 +1723,8 @@ int edview_seq_visible(edview *xx, int seq, int *new_y) {
     if (new_y)
 	*new_y = xx->displayYPos;
 
+    if (!xx->rec_hash)
+	return 0;
     hi = HacheTableSearch(xx->rec_hash, (char *)&seq, sizeof(seq));
     if (!hi || !xx->r)
 	return 0;
@@ -2047,6 +2054,8 @@ int edCursorUp(edview *xx) {
 	HacheItem *hi;
 	int key = xx->cursor_rec;
 
+	if (!xx->rec_hash)
+	    return 0;
 	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
 	if (!hi)
 	    return 0;
@@ -2114,6 +2123,8 @@ int edCursorDown(edview *xx) {
 	HacheItem *hi;
 	int key = xx->cursor_rec;
 
+	if (!xx->rec_hash)
+	    return 0;
 	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
 	if (!hi)
 	    return 0;
@@ -2562,6 +2573,8 @@ int edview_row_for_item(edview *xx, int rec, int *xmin, int *xmax) {
 			 xx->displayPos + xx->displayWidth);
 
     /* And search for rec in this list */
+    if (!xx->rec_hash)
+	return -1;
     hi = HacheTableSearch(xx->rec_hash, (char *)&rec, sizeof(rec));
     if (!hi)
 	return -1;
