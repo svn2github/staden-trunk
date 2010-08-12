@@ -2634,3 +2634,24 @@ bind Editor <<menu>> {
 
 bind Editor <Key-F9> {editor_oligo_dialog %W}
 
+# Tag macros
+set ed_macro_keys ""
+for {set i 1} {$i <= 10} {incr i} {
+    bind Editor <Control-Key-F$i> "tag_macro_copy %W F$i; break"
+    bind Editor <Shift-Key-F$i> "tag_macro_create %W F$i;break"
+    bind Editor <F$i> "tag_macro_invoke %W F$i;%W select clear;break"
+    bind EdNames <Shift-Key-F$i> \
+	"tag_macro_create \[edname_to_editor %W\] F$i;break"
+    bind EdNames <F$i> "tag_macro_invoke \[edname_to_editor %W\] F$i; \
+                       \[edname_to_editor %W\] select clear; \
+                       break"
+    # If XF86_Switch_VT_1 (etc) keysyms exist then they are likely to be
+    # replacing Shift-F1. This seems to be the default in some newer
+    # XFree86 installations
+    catch {
+	bind Editor <XF86_Switch_VT_$i> "tag_macro_create %W F$i;break"
+	bind EdNames <XF86_Switch_VT_$i> \
+	    "tag_macro_create \[edname_to_editor %W\] F$i;break"
+    }
+    lappend ed_macro_keys F$i
+}
