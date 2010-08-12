@@ -395,14 +395,29 @@ proc tag_macro_copy {ed key} {
     set w $ed.macro_$key
 
     # only top-most tag.
-    set tag [lindex [$ed list_anno] 0]
-    foreach {ptr type st len} $tag {}
-    set ${d}(type)    $type
-    set ${d}(anno)    [$ed get_anno $ptr]
+    set xy [$ed get_xy]
+    if {$xy == ""} {
+	bell
+	return
+    }
+
+    foreach {x y} $xy break
+    set where [$ed get_number $x $y]
+    foreach {type rec pos} $where break
+
+    if {$type != 21} {
+	# Not a tag
+	return
+    }
+
+    set tag [[$ed io] get_anno_ele $rec]
+    set ${d}(type)    [$tag get_type]
+    set ${d}(anno)    [$tag get_comment]
     set ${d}(strand)  0
     set ${d}(default) 0
     set ${d}(set)     1
     set ${d}(macro)   1
+    $tag delete
 }
 
 # Loads macro defintions from the gap5_defs (and hence from .gaprc)
