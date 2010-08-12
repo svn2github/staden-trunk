@@ -195,11 +195,11 @@ proc 1.5plot_contig_event {w type id cdata args} {
 # Redraws cursors
 proc 1.5redraw_cursor {w t} {
     global $w $t $t.Cursors
-
+    
     if {![info exists ${t}(track)]} return;
 
     foreach id [array names $t.Cursors] {
-	place $t.cursor$id -x [expr {int([x2c $w [set $t.Cursors($id)])}]]
+	place $t.cursor$id -x [expr {int([x2c $w [set $t.Cursors($id)]])}]
     }
 }
 
@@ -1216,6 +1216,8 @@ proc template_item {w t x1 x2 y1 y2} {
 		    +[set ${w}(FilterConsistent)]
 		    +[set ${w}(FilterSpanning)]}]
 
+    1.5redraw_cursor $w $t
+
     $d itemconfigure $td \
 	-accuracy    [set ${w}(Accurate)] \
 	-logy        [set ${w}(YLog)] \
@@ -1316,6 +1318,8 @@ proc depth_item {w t x1 x2 y1 y2} {
     set flag [expr { [set ${w}(FilterPair)]
 		    +[set ${w}(FilterConsistent)]
 		    +[set ${w}(FilterSpanning)]}]
+
+    1.5redraw_cursor $w $t
 
     $d itemconfigure $td \
 	-accuracy    [set ${w}(Accurate)] \
