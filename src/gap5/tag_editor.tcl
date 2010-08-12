@@ -18,7 +18,7 @@
 #
 proc create_tag_editor {w c data} {
     upvar #0 $data d
-    global NGTag gap_defs default_tag_type licence read_only
+    global NGTag gap5_defs default_tag_type licence read_only
 
     if {[xtoplevel $w] == ""} { return }
     # wm minsize $w 280 100
@@ -371,7 +371,7 @@ proc tag_macro_callback {win data command} {
 # Invokes a macro - ie adds a tag to the current cursor position
 proc tag_macro_invoke {ed key} {
     set d ed_macro_$key
-    global $d gap_defs
+    global $d gap5_defs
 
     if {![info exists $d] || [set ${d}(set)] == 0} {
 	bell
@@ -405,13 +405,13 @@ proc tag_macro_copy {ed key} {
     set ${d}(macro)   1
 }
 
-# Loads macro defintions from the gap_defs (and hence from .gaprc)
+# Loads macro defintions from the gap5_defs (and hence from .gaprc)
 proc tag_macro_load {} {
-    global ed_macro_keys gap_defs
+    global ed_macro_keys gap5_defs
 
     set c CONTIG_EDITOR
     foreach key $ed_macro_keys {
-	if {[catch {set macro [keylget gap_defs $c.TAG_MACRO_$key]}]} {
+	if {[catch {set macro [keylget gap5_defs $c.TAG_MACRO_$key]}]} {
 	    continue
 	}
 	if {$macro == ""} continue
@@ -425,7 +425,7 @@ proc tag_macro_load {} {
 
 # Saves macro definitions to the .gaprc file
 proc tag_macro_save {} {
-    global ed_macro_keys gap_defs env
+    global ed_macro_keys gap5_defs env
 
     set c CONTIG_EDITOR
     foreach key $ed_macro_keys {
@@ -438,11 +438,11 @@ proc tag_macro_save {} {
 	    # Escape newlines and backslashes
 	    set str [array get copy]
 	    set str [string map "\\n \\\\n \\\\ \\\\\\\\" $str]
-	    keylset gap_defs $c.TAG_MACRO_$key $str
+	    keylset gap5_defs $c.TAG_MACRO_$key $str
 	} else {
-	    keylset gap_defs $c.TAG_MACRO_$key {}
+	    keylset gap5_defs $c.TAG_MACRO_$key {}
 	}
-	update_defs gap_defs $env(HOME)/.gaprc $c.TAG_MACRO_$key
+	update_defs gap5_defs $env(HOME)/.gap5rc $c.TAG_MACRO_$key
     }
 }
 

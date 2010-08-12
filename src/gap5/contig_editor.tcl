@@ -2655,3 +2655,4 @@ for {set i 1} {$i <= 10} {incr i} {
     }
     lappend ed_macro_keys F$i
 }
+tag_macro_load

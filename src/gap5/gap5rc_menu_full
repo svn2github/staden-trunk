@@ -373,6 +373,9 @@ add_check       {Settings.Pack Sequences}               1 0 {${w}(PackSequences)
 add_check       {Settings.Hide Annotations}             1 0 {${w}(HideAnno)} \
 	{editor_toggle_annos $w}
 
+add_separator	{Settings.S3}
+add_command     {Settings.Save Tag Macros}		1 0 {tag_macro_save}
+
 ### add_check	{Settings.Compare Strands}		1 0 \
 ### 	{$w.CompareStrands} {$e compare_strands} e
 ### add_check	{Settings.Toggle auto-save}		1 0 {$w.AutoSave} \
@@ -402,8 +405,6 @@ add_check       {Settings.Hide Annotations}             1 0 {${w}(HideAnno)} \
 ### add_separator	{Settings.S4}
 ### add_command	{Settings.Save Settings}		1 0 \
 ### 	{save_editor_settings $e $w}
-### add_command     {Settings.Save Macros}			1 0 \
-### 	{tag_macro_save}
 
 # Contig Editor "Edit Modes" menu
 add_check	{Edit Modes.Allow insert in read}	1 0 \
