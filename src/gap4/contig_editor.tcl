@@ -2440,7 +2440,6 @@ proc editor_change_consensus_algorithm {e w} {
 }
 
 proc save_editor_settings {e w} {
-    puts w=$w
     global gap_defs env
     global $w.ShowQuality $w.AminoMode $w.DisplayTraces $w.AutoSave
     global $w.SE_ins_read $w.SE_del_read $w.SE_ins_cons $w.SE_del_dash_cons
