@@ -553,12 +553,15 @@ proc contig_editor {w args} {
     }
 
     set opt(win) $w
-    set opt(Disagreements) 0
-    set opt(DisagreeMode)  1
-    set opt(DisagreeCase)  1
-    set opt(PackSequences) 1
-    set opt(HideAnno)      0
-    set opt(Status)        "--- Status info here ---"
+    set opt(Disagreements)   [keylget gap5_defs CONTIG_EDITOR.DISAGREEMENTS]
+    set opt(DisagreeMode)    [keylget gap5_defs CONTIG_EDITOR.DISAGREE_MODE]
+    set opt(DisagreeCase)    [keylget gap5_defs CONTIG_EDITOR.DISAGREE_CASE]
+    set opt(DisagreeQuality) [keylget gap5_defs CONTIG_EDITOR.DISAGREE_QUAL]
+    set opt(PackSequences)   [keylget gap5_defs CONTIG_EDITOR.PACK_SEQUENCES]
+    set opt(Quality)         [keylget gap5_defs CONTIG_EDITOR.SHOW_QUALITY]
+    set opt(Cutoffs)         [keylget gap5_defs CONTIG_EDITOR.SHOW_CUTOFFS]
+    set opt(HideAnno)        0
+    set opt(Status)          "--- Status info here ---"
 
     set opt(io_base) $opt(-io)
     set opt(io) [io_child $opt(-io) $opt(-contig)]
@@ -743,7 +746,6 @@ proc contig_editor {w args} {
 #    wm grid $w [winfo width .e1] [winfo height .e1] \
 #	[font measure sheet_font A] $font(-linespace)
 
-
     $e redraw
 }
 
@@ -911,6 +913,11 @@ proc editor_pane {top w above ind arg_array} {
 
     # Seqs panel
     set ed $w.seq.sheet
+    if {$opt(Disagreements)} {
+	set dis_mode $opt(DisagreeMode)
+    } else {
+	set dis_mode 0
+    }
     set ed [editor $ed \
 		-width 80 \
 		-height 16 \
@@ -934,9 +941,15 @@ proc editor_pane {top w above ind arg_array} {
 		-qualcolour8 [keylget gap5_defs CONTIG_EDITOR.QUAL8_COLOUR] \
 		-qualcolour9 [keylget gap5_defs CONTIG_EDITOR.QUAL9_COLOUR] \
 		-bd 0 \
-	        -consensus_at_top $cattop \
-	        -stack_mode  $opt(PackSequences) \
-	        -hide_anno   $opt(HideAnno)]
+	        -consensus_at_top            $cattop \
+	        -stack_mode                  $opt(PackSequences) \
+		-display_differences         $dis_mode \
+		-differences_case_sensitive  $opt(DisagreeCase) \
+		-display_differences_quality $opt(DisagreeQuality) \
+		-display_quality             $opt(Quality) \
+		-display_mapping_quality     $opt(Quality) \
+		-display_cutoffs             $opt(Cutoffs) \
+	        -hide_anno                   $opt(HideAnno)]
     set opt(curr_editor) $ed
 
     # X and y scrollbars
@@ -1193,7 +1206,7 @@ proc set_differences_quality {w} {
     if {[xtoplevel $t -resizable 0] == ""} {return}
     wm title $t "Set differences quality"
 
-    set start [lindex [$ed configure -display_differences_quality] 3]
+    set start $opt(DisagreeQuality)
 
     scalebox $t.qual \
 	-title "Quality" \
@@ -1201,14 +1214,16 @@ proc set_differences_quality {w} {
 	-from 0 \
 	-to 100 \
 	-width 5 \
-	-default $start \
+	-variable ${w}(DisagreeQuality) \
 	-type CheckInt \
 	-command "set_differences_quality_callback $w"
     $t.qual.scale configure -length 150
 
     okcancelhelp $t.ok \
-	-ok_command "keylset gap5_defs CONTIG_EDITOR.DISAGREE_QUAL \[scalebox_get $t.qual\]; destroy $t" \
-	-cancel_command "set_differences_quality_callback $w $start; destroy $t" \
+	-ok_command "destroy $t" \
+	-cancel_command "set_differences_quality_callback $w $start;
+                         set ${w}(DisagreeQuality) $start;
+                         destroy $t" \
         -help_command "show_help gap4 {Editor-Differences Quality}"
 
     pack $t.qual $t.ok -side top -fill both
@@ -2514,6 +2529,29 @@ Oligoname	??"
     U_tag_change $ed -1 [array get d]
 }
 
+proc save_editor_settings {w} {
+    upvar \#0 $w opt
+    global gap5_defs env
+
+    set C CONTIG_EDITOR
+    keylset gap5_defs $C.DISAGREEMENTS    $opt(Disagreements)
+    keylset gap5_defs $C.DISAGREE_MODE    $opt(DisagreeMode)
+    keylset gap5_defs $C.DISAGREE_CASE    $opt(DisagreeCase)
+    keylset gap5_defs $C.DISAGREE_QUAL    $opt(DisagreeQuality)
+    keylset gap5_defs $C.PACK_SEQUENCES   $opt(PackSequences)
+    keylset gap5_defs $C.SHOW_QUALITY     $opt(Quality)
+    keylset gap5_defs $C.SHOW_CUTOFFS     $opt(Cutoffs)
+
+    # Write to the .gaprc file
+    update_defs gap5_defs $env(HOME)/.gap5rc \
+	$C.DISAGREEMENTS    \
+	$C.DISAGREE_MODE    \
+	$C.DISAGREE_CASE    \
+	$C.DISAGREE_QUAL    \
+	$C.PACK_SEQUENCES   \
+	$C.SHOW_QUALITY     \
+	$C.SHOW_CUTOFFS     
+}
 
 #-----------------------------------------------------------------------------
 # Generic bindings

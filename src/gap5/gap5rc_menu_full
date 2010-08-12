@@ -375,6 +375,8 @@ add_check       {Settings.Hide Annotations}             1 0 {${w}(HideAnno)} \
 
 add_separator	{Settings.S3}
 add_command     {Settings.Save Tag Macros}		1 0 {tag_macro_save}
+add_command	{Settings.Save Settings}		1 0 \
+        {save_editor_settings $w}
 
 ### add_check	{Settings.Compare Strands}		1 0 \
 ### 	{$w.CompareStrands} {$e compare_strands} e
@@ -403,8 +405,6 @@ add_command     {Settings.Save Tag Macros}		1 0 {tag_macro_save}
 ### #add_check	{Settings.Store undo}		1 0 {_$dbptr.StoreUndo} \
 ### #	{$e store_undo -1} 
 ### add_separator	{Settings.S4}
-### add_command	{Settings.Save Settings}		1 0 \
-### 	{save_editor_settings $e $w}
 
 # Contig Editor "Edit Modes" menu
 add_check	{Edit Modes.Allow insert in read}	1 0 \
