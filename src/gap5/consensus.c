@@ -630,6 +630,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 
     double (*cvec)[4]; /* cvec[0-3] = A,C,G,T */
     double (*pvec)[2]; /* pvec[0] = gap, pvec[1] = base */
+    char *perfect; /* quality=100 bases */
     int *depth;
     //cstat *cs;
  
@@ -645,6 +646,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     if (NULL == (pvec = (double (*)[2])calloc(len, 2 * sizeof(double))))
 	return -1;
     if (NULL == (depth = (int *)calloc(len, sizeof(int))))
+	return -1;
+    if (NULL == (perfect = (char *)calloc(len, sizeof(char))))
 	return -1;
 
     if (!lookup_done) {
@@ -730,6 +733,11 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    
 	    sequence_get_base4(io, &s, j+off, &base, q, NULL, 0);
 
+	    if (q[0] == 0) perfect[sp-start+j] |= (1<<0);
+	    if (q[1] == 0) perfect[sp-start+j] |= (1<<1);
+	    if (q[2] == 0) perfect[sp-start+j] |= (1<<2);
+	    if (q[3] == 0) perfect[sp-start+j] |= (1<<3);
+
 	    switch (lookup[base]) {
 	    case 0: case 1: case 2: case 3: /* ACGT */
 		cvec[sp-start+j][0] += q[0];
@@ -767,6 +775,44 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     for (i = 0; i < len; i++) {
 	double probs[6], tot2[4], max;
 	double pad_prob, base_prob;
+
+	/* Perfect => manual edit at 100% */
+	if (perfect[i]) {
+	    cons[i].scores[0] = -127;
+	    cons[i].scores[1] = -127;
+	    cons[i].scores[2] = -127;
+	    cons[i].scores[3] = -127;
+	    cons[i].scores[4] = -127;
+	    cons[i].scores[5] = 0; /* N */
+
+	    cons[i].phred = 100;
+
+	    switch (perfect[i]) {
+	    case 1<<0:
+		cons[i].call = 0;
+		break;
+	    case 1<<1:
+		cons[i].call = 1;
+		break;
+	    case 1<<2:
+		cons[i].call = 2;
+		break;
+	    case 1<<3:
+		cons[i].call = 3;
+		break;
+
+	    default:
+		/* Multiple bases marked with max quality */
+		cons[i].call  = 5;
+		cons[i].phred = 0;
+		break;
+	    }
+
+	    cons[i].scores[cons[i].call] = cons[i].phred;
+	    cons[i].depth = depth[i];
+
+	    continue;
+	}
 
 	/* Gap or base? Work out pad probability initially */
 	/* For this the sum differences is basically the log-odds score */

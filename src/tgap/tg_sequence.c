@@ -854,6 +854,10 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos, char *base, double *conf,
 	    lo2r[i] = log((1-p)/3);
 	    lo2ph[i] = 10*log(1+pow(10, i/10.0))/log(10)+0.4999;
 	}
+
+	/* Special case for manually edited bases */
+	lo2l[100] = 0;    /* log(prob = 1.0) */
+	lo2r[100] = -100; /* lof(prob ~ 0.0) */
     }
 
     if (pos < 0 || pos >= ABS(n->len))
