@@ -1603,7 +1603,7 @@ static void tk_redisplayCursor(edview *xx, rangec_t *r, int nr) {
  * Returns 1 if redraw has taken place
  *         0 if not
  */
-static int showCursor(edview *xx, int x_safe, int y_safe) {
+int showCursor(edview *xx, int x_safe, int y_safe) {
     int y_pos = 0;
     int do_x = 0;
     int do_y = 0;
@@ -1977,6 +1977,56 @@ int edSetCursorPos(edview *xx, int type, int rec, int pos, int visible) {
     }
 
     return 0;
+}
+
+/*
+ * Convert from a record and position to a window X,Y coordinate in sheet
+ * units.
+ *
+ * Returns 0 on success and stores via x and y pointers.
+ *        -1 on failure (rec/pos not visible).
+ */
+int edGetXY(edview *xx, int rec_type, int rec, int pos, int *x, int *y) {
+    int i;
+
+    edview_visible_items(xx, xx->displayPos,
+			 xx->displayPos + xx->displayWidth);
+
+    if (xx->nr == 0)
+	return -1;
+
+    if (rec == xx->contig->rec) {
+	int col = pos - xx->displayPos;
+
+	if (col < 0 || col > xx->displayWidth)
+	    return -1;
+	
+	*x = col;
+	*y = 0;
+	return 0;
+    }
+
+    for (i = 0; i < xx->nr; i++) {
+	if (xx->r[i].rec == rec) {
+	    int row, col;
+
+	    row = xx->r[i].y + xx->y_seq_start - xx->displayYPos;
+	    col = xx->r[i].start - xx->displayPos + pos;
+
+	    if (col < 0 || col >= xx->displayWidth)
+		return -1;
+
+	    if (row < xx->y_seq_start ||
+		row >= xx->displayHeight - xx->y_seq_end)
+		return -1;
+
+	    *x = col;
+	    *y = row;
+	    return 0;
+	}
+    }
+
+    return -1;
 }
 
 

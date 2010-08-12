@@ -441,8 +441,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"get_template_seqs", "edits_made", "link_to",    "lock",
 	"join_align",	 "join_mismatch","join",         "join_offset",
 	"select",	 "edit_annotation",  "clear_visibility_cache",
-	"cursor_id",     "get_cursor",	  "search",
-	"decr_contig",   "incr_contig",   "select_oligo",
+	"cursor_id",     "get_cursor",	  "search",      "get_xy",
+	"decr_contig",   "incr_contig",   "select_oligo","show_cursor",
 	NULL
     };
     enum options {
@@ -455,8 +455,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
 	_JOIN_ALIGN,     _JOIN_MISMATCH, _JOIN,          _JOIN_OFFSET,
 	_SELECT,	 _EDIT_ANNOTATION,  _CLEAR_VISIBILITY_CACHE,
-	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	
-	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO
+	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	 _GET_XY,
+	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO,  _SHOW_CURSOR
     };
 
     if (argc < 2) {
@@ -660,6 +660,42 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	break;
     }
 
+    /* Given a record number and offset, turn this into an x,y coord in
+     * "sheet" units. This is useful if we want to go from editor cursor
+     * record/pos to x/y and back to top-most record/pos (eg tag on top
+     * of current sequence) via get_number.
+     */
+    case _GET_XY: {
+	int type, rec, pos;
+	int x,y;
+
+	if (argc != 2 && argc != 5) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_xy ?rec_type rec_no position?"
+			     " ?make_visible?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (argc == 5) {
+	    type = atoi(argv[2]);
+	    rec  = atoi(argv[3]);
+	    pos  = atoi(argv[4]);
+	} else {
+	    type = ed->xx->cursor_type;
+	    rec  = ed->xx->cursor_rec;
+	    pos  = ed->xx->cursor_pos;
+	}
+
+	if (edGetXY(xx, type, rec, pos, &x, &y) == 0) {
+	    vTcl_SetResult(interp, "%d %d", x, y);
+	} else {
+	    Tcl_ResetResult(interp);
+	}
+
+	break;
+    }
+
     /* Sets the editor cursor position */
     case _SET_CURSOR: {
 	int visible = 1;
@@ -696,6 +732,11 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	
 	break;
     }
+
+    /* Forces the cursor to be visible, returns 1 if it wasn't before. */
+    case _SHOW_CURSOR:
+	vTcl_SetResult(interp, "%d", showCursor(xx, 0, 0));
+	break;
 
     /* Cursor movement operations */
     case _CURSOR_UP:

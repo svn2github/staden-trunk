@@ -1,3 +1,22 @@
+*	BUG: Right clicking and also mouse-over in the editor names
+        display doesn't always work on sequences with 1 ascii letter
+        visible to them and on the left edge. Eg:
+
+	This one
+	|
+	v
+
+	><.... <....
+	>>..... >...
+	> >.....>...
+        >. <...... >
+
+	Also right click should follow the same rules as mouse-over -
+	work on what is underneath the cursor rather than what is
+	closest to cursor. Currently we can right click on a gap
+	between two sequences and get a menu, but it's not clear which
+	sequence it is for.
+
 *	Implement disassemble readings
 
 *	fasta2sam and fastq2sam tools, plus menu option to use them

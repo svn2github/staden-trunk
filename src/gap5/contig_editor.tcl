@@ -1298,7 +1298,7 @@ proc editor_insert_gap {w where} {
     $w redraw
 }
 
-proc editor_delete_base {w where} {
+proc editor_delete_base {w where {powerup 0}} {
     upvar $w opt
 
     set io [$w io]
@@ -1317,6 +1317,13 @@ proc editor_delete_base {w where} {
 	set seq [$io get_sequence $rec]
 	foreach {old_base old_conf} [$seq get_base $pos] break
 	foreach {l0 r0} [$seq get_clips] break;
+
+	if {$old_base != "*" && !$powerup} {
+	    bell
+	    $w cursor_right
+	    return
+	}
+
 	$seq delete_base $pos
 
 	# Identify if we're in a situation where we need to undo the clip
@@ -1345,6 +1352,13 @@ proc editor_delete_base {w where} {
 	}
     } else {
 	set contig [$io get_contig $rec]
+
+	set cons [calc_consensus -io $io -contigs "{=$rec $pos $pos}"]
+	if {$cons != "*" && !$powerup} {
+	    bell
+	    $w cursor_right
+	    return
+	}
 
 	# get pileup at consensus position so we can restore it
 	set pileup [$contig get_pileup $pos]
@@ -1723,6 +1737,11 @@ proc tag_repopulate_menu {w} {
 }
 
 proc tag_editor_launch {w where} {
+    if {$where == ""} {
+	bell
+	return
+    }
+
     if {[llength $where] != 1} {
 	foreach {type rec pos} $where break;
 	if {$type != 21} return
@@ -1747,6 +1766,11 @@ proc tag_editor_launch {w where} {
 }
 
 proc tag_editor_delete {w where} {
+    if {$where == ""} {
+	bell
+	return
+    }
+
     if {[llength $where] != 1} {
 	foreach {type rec pos} $where break;
 	if {$type != 21} return
@@ -2507,10 +2531,12 @@ bind Editor <Key-c> {editor_edit_base %W c [%W get_number]}
 bind Editor <Key-g> {editor_edit_base %W g [%W get_number]}
 bind Editor <Key-t> {editor_edit_base %W t [%W get_number]}
 bind Editor <Key-u> {editor_edit_base %W t [%W get_number]}
+bind Editor <Key-asterisk> {editor_edit_base %W * [%W get_number]}
 bind Editor <Key-i> {editor_insert_gap %W [%W get_number]}
-bind Editor <Key-asterisk> {editor_insert_gap %W [%W get_number]}
 bind Editor <Key-Delete> {editor_delete_base %W [%W get_number]}
 bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number]}
+bind Editor <Control-Key-Delete> {editor_delete_base %W [%W get_number] 1}
+bind Editor <Control-Key-BackSpace> {editor_delete_base %W [%W get_number] 1}
 
 bind Editor <Key-bracketleft>  {editor_set_confidence %W [%W get_number] 0}
 bind Editor <Key-bracketright> {editor_set_confidence %W [%W get_number] 100}
@@ -2566,8 +2592,31 @@ bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
 bind EdNames <<select-drag>> {editor_name_select %W [%W get_number @%x @%y]}
 
 # Tag editing
-bind Editor <Key-F11> {tag_editor_launch %W [%W get_number @%x @%y]}
-bind Editor <Key-F12> {tag_editor_delete %W [%W get_number @%x @%y]}
+bind Editor <Key-F11> {
+    set w [%W get_xy]
+    if {$w == ""} {
+	%W show_cursor
+
+	set w [%W get_xy]
+	if {$w == ""} {
+	    bell
+	    return
+	}
+    }
+    foreach {x y} $w break
+    tag_editor_launch %W [%W get_number $x $y]
+}
+
+bind Editor <Key-F12> {
+    set w [%W get_xy]
+    if {$w == ""} {
+	%W show_cursor
+	bell
+	return
+    }
+    foreach {x y} $w break
+    tag_editor_delete %W [%W get_number $x $y]
+}
 
 bind Editor <<menu>> {
     set _sel [%W get_number @%x @%y 0 1]

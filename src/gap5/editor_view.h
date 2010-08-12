@@ -256,5 +256,13 @@ void edSelectSet(edview *xx, int rec, int start, int end);
 int edview_search(edview *xx, int forwards, int strand,
 		  char *type, char *value);
 
+/*
+ * Convert from a record and position to a window X,Y coordinate in sheet
+ * units.
+ *
+ * Returns 0 on success and stores via x and y pointers.
+ *        -1 on failure (rec/pos not visible).
+ */
+int edGetXY(edview *xx, int rec_type, int rec, int pos, int *x, int *y);
 
 #endif /* _EDITOR_VIEW_H_ */
