@@ -633,8 +633,10 @@ proc contig_editor {w args} {
 
     # Highlights of the current editor so we know what window the button
     # applies to.
-    bind $tool.undo <Any-Enter> "editor_hl \[set ${w}(curr_editor)\] red"
-    bind $tool.undo <Any-Leave> "editor_hl \[set ${w}(curr_editor)\] \#d9d9d9"
+    bind $tool.undo <Any-Enter> "editor_hl \[set ${w}(curr_editor)\] red;
+                                 editor_undo_info $w"
+    bind $tool.undo <Any-Leave> "editor_hl \[set ${w}(curr_editor)\] \#d9d9d9;
+                                 editor_undo_info $w 1"
 #    bind $tool.redo <Any-Enter> "editor_hl \[set ${w}(curr_editor)\] red"
 #    bind $tool.redo <Any-Leave> "editor_hl \[set ${w}(curr_editor)\] \#d9d9d9"
 
@@ -1223,6 +1225,125 @@ proc editor_undo {top} {
     
     set w $opt(curr_editor)
     io_undo $w [$w contig_rec]
+    editor_undo_info $top
+}
+
+# Updates the information line with the top-most item on the undo stack
+proc editor_undo_info {top {clear 0}} {
+    upvar \#0 $top opt
+    
+    set w $opt(curr_editor)
+    set crec [$w contig_rec]
+
+    upvar \#0 contigIO_$crec cio
+
+    if {$clear || ![info exists cio(Undo)] || $cio(Undo) == ""} {
+	set opt(Status) ""
+	return
+    }
+    foreach {cmdu cmdr} [lindex [set cio(Undo)] end] break
+
+    set io [$w io]
+
+    set msg ""
+    foreach cmd $cmdu {
+	foreach {code op1 op2 op3 op4} $cmd break
+	switch -- $code {
+	    C_SET { }
+
+	    B_REP {
+		set s [$io get_sequence $op1]
+		lappend msg "Change base in seq [$s get_name] at $op2 to base $op3, qual $op4"
+		$s delete
+	    }
+
+	    B_INS {
+		set s [$io get_sequence $op1]
+		lappend msg "Insert base in seq [$s get_name] at $op2 with base $op3, qual $op4"
+		$s delete
+	    }
+
+	    B_DEL {
+		set s [$io get_sequence $op1]
+		lappend msg "Delete base in seq [$s get_name] at $op2"
+		$s delete
+	    }
+
+	    B_MOVE {
+		set s [$io get_sequence $op1]
+		lappend msg "Move seq [$s get_name] to position $op2"
+		$s delete
+	    }
+
+	    B_CUT {
+		set s [$io get_sequence $op1]
+		lappend msg "Set clip points for seq [$s get_name] to left $op2, right $op3"
+		$s delete
+	    }
+
+	    C_INS {
+		foreach seq $op3 {
+		    foreach {rec pos base val cut} $seq break;
+		    append b $base
+		}
+		lappend msg "Insert column into contig at position $op2, bases $b"
+	    }
+	    
+	    C_DEL {
+		lappend msg "Delete column from contig at position $op2"
+	    }
+
+	    T_DEL {
+		set tag [$io get_anno_ele $op1]
+		set otype [$tag get_obj_type]
+		if {$otype == 18} {
+		    set s [$io get_sequence [$tag get_obj_rec]]
+		    set obj [$s get_name]
+		    $s delete
+		} else {
+		    set obj "<consensus>"
+		}
+		foreach {start end contig} [$tag get_position] break;
+		lappend msg "Remove annotation \#$op1: type=[$tag get_type], text=\"[$tag get_comment]\", object=$obj, position=$start..$end"
+		$tag delete
+	    }
+
+	    T_NEW {
+		array set d $op1
+		if {$d(otype) == 18} {
+		    set s [$io get_sequence $d(orec)]
+		    set obj [$s get_name]
+		    $s delete
+		} else {
+		    set obj "<consensus>"
+		}
+		lappend msg "Create annotation: type=$d(type), text=\"$d(anno)\", object=$obj, position=$d(start)..$d(end)"
+	    }
+
+	    T_MOVE {
+		lappend msg "Move annotations on seq \#$op1 to $op2"
+	    }
+
+	    T_MOD {
+		array set d $op2
+		if {$d(otype) == 18} {
+		    set s [$io get_sequence $d(orec)]
+		    set obj [$s get_name]
+		    $s delete
+		} else {
+		    set obj "<consensus>"
+		}
+		lappend msg "Modify annotation \#$op1: type=$d(type), text=\"$d(anno)\", object=$obj, position=$d(start)..$d(end)"
+	    }
+	    
+	    default {
+		lappend msg "Unknown undo command: $cmd"
+	    }
+	}
+    }
+
+    regsub -all "\n" $msg "\\n" msg
+    set opt(Status) [join $msg " / "]
 }
 
 # proc editor_redo {top} {
@@ -1639,8 +1760,6 @@ proc editor_name_select {w where} {
 # Functions to make tag edits or to be called by the undo/redo stack.
 proc U_tag_change {w rec new_a} {
     set io [$w io]
-
-    puts [info level [info level]]
 
     #-- Get existing tag
     set old_a ""
@@ -2590,6 +2709,10 @@ bind Editor <<select-drag>> {%W select to @%x; editor_select_scroll %W %x}
 bind Editor <<select-to>>   {%W select to @%x}
 bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
 bind EdNames <<select-drag>> {editor_name_select %W [%W get_number @%x @%y]}
+
+# Searching
+bind Editor <<search>>		{create_search_win %W.search "%W search" 1}
+bind Editor <<rsearch>>		{create_search_win %W.search "%W search" -1}
 
 # Tag editing
 bind Editor <Key-F11> {
