@@ -19,6 +19,25 @@ load $env(STADLIB)/${lib_prefix}tgap${lib_suffix} g5
 
 
 #-----------------------------------------------------------------------------
+# Error reporting, override the tk route
+catch {rename tk_messageBox {}}
+proc tk_messageBox {args} {
+    foreach {a b} $args {
+	set opt($a) $b
+    }
+
+    if {[info exists opt(-icon)] && $opt(-icon) == "error"} {
+	global errorCode errorInfo
+	puts stderr "ERROR: $opt(-message)"
+
+	puts "\nError code: $errorCode"
+	puts "\nError message:\n$errorInfo"
+    } else {
+	puts $opt(-message)
+    }
+}
+
+#-----------------------------------------------------------------------------
 # Argument parsing
 proc usage {e} {
     puts ""
