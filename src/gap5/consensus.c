@@ -733,10 +733,12 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    
 	    sequence_get_base4(io, &s, j+off, &base, q, NULL, 0);
 
-	    if (q[0] == 0) perfect[sp-start+j] |= (1<<0);
-	    if (q[1] == 0) perfect[sp-start+j] |= (1<<1);
-	    if (q[2] == 0) perfect[sp-start+j] |= (1<<2);
-	    if (q[3] == 0) perfect[sp-start+j] |= (1<<3);
+	    if (base != 'N' && base != '*') {
+		if (q[0] == 0) perfect[sp-start+j] |= (1<<0);
+		if (q[1] == 0) perfect[sp-start+j] |= (1<<1);
+		if (q[2] == 0) perfect[sp-start+j] |= (1<<2);
+		if (q[3] == 0) perfect[sp-start+j] |= (1<<3);
+	    }
 
 	    switch (lookup[base]) {
 	    case 0: case 1: case 2: case 3: /* ACGT */
@@ -785,7 +787,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    cons[i].scores[4] = -127;
 	    cons[i].scores[5] = 0; /* N */
 
-	    cons[i].phred = 100;
+	    cons[i].phred = 255;
 
 	    switch (perfect[i]) {
 	    case 1<<0:
