@@ -65,7 +65,7 @@ add_command	{File.Open}			 1 2 {Gap_Open \$io}
 if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
     add_command     {File.Import from BioLIMS}	12 22 {ImportBiolims \$io}
 }
-add_command	{File.Check database}		12 6 {check_database -io \$io}
+#add_command	{File.Check database}		12 6 {check_database -io \$io}
 #add_command	{File.Copy database}		 8 10 {CopyDatabase \$io}
 #add_command	{File.Copy readings}		 8 26 {CopyReads \$io}
 add_command	{File.Change directory}		 1 2 {ChangeDirectory} e
@@ -78,9 +78,10 @@ if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
 }
 add_command     {File.Export sequences}          8 10 {ExportSequences \$io} 
 add_command     {File.Export tags}               8 10 {ExportTags \$io} 
+add_command     {File.Import GFF}		 8 26 {ImportGFF \$io}
 add_cascade	{File.Save consensus}		 8 10
-add_command	{File.Extract readings}		 8 10 {ExtractReadings \$io} e
 add_separator	{File.S2}
+#add_command	{File.Extract readings}		 8 10 {ExtractReadings \$io} e
 add_command	{File.Exit}			 1 2 {Gap_Exit \$io}
 
 add_command	{File.Save consensus.normal}	8 10 \
@@ -96,7 +97,6 @@ add_command	{Edit.Edit Contig}		 8 10 {EditContig \$io}
 add_command	{Edit.Join Contig}		 8 10 {JoinContig \$io}
 add_command	{Edit.Break a contig}		 8 26 {BreakContig \$io}
 add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
-add_command     {Edit.Import GFF}		 8 26 {ImportGFF \$io}
 #add_command	{Edit.Order contigs}		 8 10 {OrderContigs \$io}
 #add_command	{Edit.Quality Clip}		 8 26 {QualityClip \$io} e
 #add_command	{Edit.Difference Clip}		 8 26 {DifferenceClip \$io} e
@@ -130,7 +130,7 @@ add_command	{View.Template Display}		 8 10 {TemplateDisplay \$io}
 #add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io conf}
 #add_command	{View.2nd-highest Confidence graph} 8 10 {ConfidenceGraph \$io discrep}
 #add_command	{View.Diploid graph}	 	 8 10 {ConfidenceGraph \$io discrep2}
-add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
+#add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
 #add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
 #add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
 add_command	{View.List Consensus Confidence} 8 10 {ListConfidence \$io}
@@ -586,8 +586,8 @@ add_command {View.2nd-Highest Confidence} 	1 0 \
 	{CreateConfidenceGraph $io discrep \[set $t.cons_id\] $t}
 add_command {View.Diploid graph} 	1 0 \
 	{CreateConfidenceGraph $io discrep2 \[set $t.cons_id\] $t}
-add_command {View.Reading coverage histogram} 	1 0 \
-	{ConsistencyReadingCoverage $io \[set $t.cons_id\] $t}
+#add_command {View.Reading coverage histogram} 	1 0 \
+#	{ConsistencyReadingCoverage $io \[set $t.cons_id\] $t}
 add_command {View.Readpair coverage histogram} 	1 0 \
 	{CreateReadPairCoverage $io \[set $t.cons_id\] $t} 
 add_command {View.Strand coverage} 	1 0 \
