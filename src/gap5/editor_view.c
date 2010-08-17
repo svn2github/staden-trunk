@@ -1578,11 +1578,11 @@ static void tk_redisplayCursor(edview *xx, rangec_t *r, int nr) {
 	HacheItem *hi;
 	
 	key = xx->cursor_rec;
-	if (!xx->rec_hash)
+	if (!xx->rec_hash || !r)
 	    return;
 
 	hi = HacheTableSearch(xx->rec_hash, (char *)&key, sizeof(key));
-	y = hi
+	y = hi && hi->data.i < nr
 	    ? r[hi->data.i].y + xx->y_seq_start - xx->displayYPos
 	    : -1;
 
