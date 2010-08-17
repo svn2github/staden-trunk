@@ -1,10 +1,10 @@
 \input epsf     % -*-texinfo-*-
 \input texinfo
 @c %**start of header
-@setfilename gap4.info
+@setfilename gap5.info
 @setcontentsaftertitlepage
 @setshortcontentsaftertitlepage
-@settitle Gap4
+@settitle Gap5
 @setchapternewpage odd
 @iftex
 @afourpaper
@@ -12,15 +12,15 @@
 @setchapternewpage odd
 @c %**end of header
 
-\global\def\pname{gap4}
-
 @set standalone
 include(header.m4)
 
+@setprog{gap5}{Gap5}
+
 @titlepage
-@title Gap4
+@title @Prog{}
 @subtitle 
-@author 
+@author James Bonfield, Wellcome Trust Sanger Institute
 @page
 @vskip 0pt plus 1filll
 _include(copyright.texi)
@@ -28,10 +28,10 @@ _include(copyright.texi)
 
 @node Top
 @ifinfo
-@top top-gap4
+@top top-gap5
 @end ifinfo
 
-_include(gap4-t.texi)
+_include(gap5-t.texi)
 
 _split()
 @node Index

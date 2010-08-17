@@ -4,25 +4,32 @@
 * Contig-Selector-Menus::               The menus
 @end menu
 
-The gap4 Contig Selector is used to display, select and reorder contigs.
-It can be invoked from the gap4 View menu, but will automatically appear when
+The @prog{} Contig Selector is used to display, select and reorder contigs.
+It can be invoked from the @prog{} View menu, but will automatically appear when
 a database is opened.  In the Contig Selector all contigs are shown as
 colinear horizontal lines separated by short vertical lines.  The length of
 the horizontal lines is proportional to the length of the contigs and their
 left to right order represents the current ordering of the contigs. This
 Contig Order is stored in the gap database and users can change it by
 dragging the lines representing the contigs in the display.  The Contig
-Selector can also be used to select contigs for processing. Tags
-(_fpref(Intro-Anno, Annotating and masking readings and contigs, gap4)) can
+Selector can also be used to select contigs for processing.
+
+_ifdef([[_gap4]],[[Tags
+(_fpref(Intro-Anno, Annotating and masking readings and contigs, @prog{})) can
 also be displayed in the Contig Selector window.  As the mouse is moved over a
 contig, it is highlighted and the contig name (left most reading name) and
 length are displayed in the status line. The number in brackets is the contig
-number.
+number.]]) _ifdef([[_gap5]],[[Unlike gap4, gap5 does not display
+annotations within the Contig Selector window.]])
 
 @cindex Contig Selector: Contig order
 @cindex Contig order: Contig Selector
 
+_ifdef([[_gap4]],[[
 _picture(contig_selector)
+]],[[
+_picture(gap5_contig_selector)
+]])
 
 The figure shows a typical display from the Contig Selector. At the top are
 the File, View and Results menus.  Below that are buttons for zooming
@@ -78,12 +85,22 @@ cleared. To select several disjoint entries in the list press control
 and the left mouse button.  The ``Copy'' button copies the current
 selection to the paste buffer.
 
-Most commands require a contig identifier (which can be the name or
-number of any reading on the contig) and gap4 contains several
+_ifdef([[_gap4]],[[Most commands require a contig identifier (which can be the name or
+number of any reading on the contig) and @prog{} contains several
 mechanisms for obtaining this information from users.  The names or
 numbers can be typed or cut and pasted into dialogue boxes (note that a
 reading number must be preceded by a # character, e.g.  "#102" means
-reading number 102 but "102" means the reading with name 102). Also any
+reading number 102 but "102" means the reading with name
+102).]],[[Most commands require a contig identifier, which can be the
+contig name itself or the name/number of any reading within that
+contig. @Prog{} always knows reading record numbers, but depending on
+the options used in tg_index when creating the assembly database the
+reading names may not be indexed. To specify a reading by record
+number, precede it by a # character, e.g. ``#10000'' means
+reading record number 10000, but ``10000'' means the contig or reading
+with name 10000.]])
+
+Also any
 currently active dialogue boxes that require a contig to be selected can
 be updated simply by clicking on a contig in the contig selector or clicking
 on an entry in the "Contig Names" list box.  For
@@ -145,9 +162,8 @@ selector display.
 The View menu gives access to the Results Manager (_fpref(Results,
 Results Manager, results)), allows contigs to be selected using a list box
 containing the contig names 
-(_oxref(Contig-Selector-Contigs, Selecting Contigs)), allows active tags 
-(_fpref(Conf-Tag, TagSelector, configure)) to be selected, and the list of 
-selected contigs to be cleared. 
+(_oxref(Contig-Selector-Contigs, Selecting Contigs)),
+_ifdef([[_gap4]],[[allows active tags (_fpref(Conf-Tag, TagSelector, configure)) to be selected, ]])and the list of selected contigs to be cleared. 
 
 The Results menu is updated on the fly to contain cascading menus for each of
 the plots shown when the contig selector is in its 2D 

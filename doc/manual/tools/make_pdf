@@ -19,37 +19,78 @@ $default_density = '120';
 
 # For images with a non standard density, we list them here.
 %densities = (
-	      'conf_values_p', '124',
-	      'consistency_p', '123',
-	      'contig_editor.join', '168',
-	      'contig_editor.screen', '168',
-	      'contig_editor.traces', '161',
-	      'contig_editor.traces.compact', '161',
-	      'contig_editor_grey_scale', '168',
-	      'contig_editor_mutations', '168',
-	      'interface.menus', '26',
-	      'primer_pos_plot', '126',
-	      'primer_pos_seq_display', '131',
-	      'read_coverage_p', '123',
-	      'readpair_coverage_p', '125',
-	      'restrict_enzymes', '126',
-	      'spin_plot_base_comp_p', '121',
-	      'spin_plot_drag1', '125',
-	      'spin_plot_drag2', '125',
-	      'spin_plot_drag3', '125',
-	      'spin_restrict_enzymes_p', '125',
-	      'spin_restrict_enzymes_p1', '125',
-	      'spin_seq_display', '151',
-	      'spin_sequence_display_t', '155',
-	      'spin_trna_p', '121',
-	      'stops', '128',
-	      'traces_diff', '163',
-	      'conf_values_p', '121',
-	      'mut_contig_editor5', '167',
-	      'mut_contig_editor_dis5', '167',
-	      'mut_traces_het', '161',
-	      'mut_traces_point', '161',
-	      'mut_traces_positive', '161',
+	      'template.display', '124',
+	      'consistency_p', '132',
+	      'restrict_enzymes', '135',
+	      'stops', '137',
+	      'contig_editor.screen', '180',
+	      'contig_editor_grey_scale', '180',
+	      'contig_editor.traces', '173',
+	      'contig_editor.join', '180',
+	      '2nd_highest_confidence', '129',
+	      'discrepancy_graph', '129',
+	      'conf_values_p', '134',
+	      'read_coverage_p', '132',
+	      'readpair_coverage_p', '134',
+	      'template.quality', '122',
+	      'snp_candidates1', '167',
+	      'snp_candidates2', '167',
+	      'contig_editor_sets', '178',
+	      'mut_traces_het', '173',
+	      'mut_traces_positive', '173',
+	      'contig_editor.traces.compact', '173',
+	      'c_order_t1', '126',
+	      'c_order_t2', '126',
+	      'contig_navigation_table', '125',
+	      'notes.selector', '125',
+	      'mut_pregap4', '124',
+	      'mut_traces_point', '173',
+	      'mut_contig_editor5', '178',
+	      'mut_contig_editor_dis5', '178',
+	      'mut_template_all', '124',
+	      'mut_template_reads', '124',
+	      'mut_template_reads_single', '124',
+	      'pregap4_compact', '124',
+	      'pregap4_files', '124',
+	      'pregap4_config', '124',
+	      'pregap4_textwin', '124',
+	      'primer_pos_plot', '135',
+	      'primer_pos_seq_display', '140',
+	      'trev_pic', '128',
+	      'trace_print_trace1', '128',
+	      'trev_conf_trace', '128',
+	      'trev_pyro_trace', '127',
+	      'trace_print_menu', '128',
+	      'spin_plot_p', '128',
+	      'spin_restrict_enzymes_p', '134',
+	      'spin_plot_base_comp_p', '130',
+	      'spin_weight_matrix', '128',
+	      'spin_splice', '127',
+	      'spin_base_bias_p', '124',
+	      'spin_sequence_display_t', '166',
+	      'spin_seq_display', '162',
+	      'spin_restrict_enzymes_p1', '134',
+	      'spin_string_search_p', '125',
+	      'spin_start_p', '127',
+	      'spin_stops_p', '127',
+	      'spin_stops_p2', '127',
+	      'spin_codon_usage', '126',
+	      'spin_codon_usage_aaonly', '126',
+	      'spin_author_p', '126',
+	      'spin_trna_p', '129',
+	      'spin_results_manager_d2', '126',
+	      'spin_plot_drag1', '134',
+	      'spin_plot_drag2', '134',
+	      'spin_plot_drag3', '134',
+	      'gap5_template_spread0', '151',
+	      'gap5_template_spread50', '151',
+	      'gap5_template_by_stacking', '152',
+	      'gap5_template_by_mapping', '152',
+	      'gap5_template_by_size', '152',
+	      'gap5_contig_editor.screen', '151',
+	      'gap5_contig_editor.join', '151',
+	      'gap5_contig_editor.traces', '173',
+	      'gap5_contig_editor.454trace', '173',
 	      );
 
 while ($#ARGV >= 0) {
@@ -61,7 +102,7 @@ while ($#ARGV >= 0) {
     $density = $density . 'x' . $density;
 
     # Convert the image
-    system "$convert -density $density $_.png $_.pdf";
+    system "$convert -units PixelsPerInch -density $density $_.png $_.pdf";
 
     # Find the size of the postscript image.
     open(FILE, "$_.pdf") || die "Cannot open $_.pdf\n";
@@ -74,9 +115,9 @@ while ($#ARGV >= 0) {
     }
     close(FILE);
 
-    # Check the size. 16.3cm = 462 1/72th inch.
-    if ($width > 462) {
-	$size=int($width/462.0*120+1);
+    # Check the size. 6in = 432 1/72th inch.
+    if ($width > 432) {
+	$size=int($width/432.0*120+1);
 	print "FIX: Suggested new density: '$fname', '$size',\n";
     }
 }

@@ -1,3 +1,6 @@
+@setprog{gap4}{Gap4}
+_define(_gap4)
+
 _include(gap4_org-t.texi)
 _include(gap4_mini-t.texi)
 _include(gap4_intro-t.texi)
@@ -289,3 +292,4 @@ _split()
 _include(convert-t.texi)
 ]])
 
+_undefine(_gap4)

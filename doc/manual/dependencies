@@ -53,7 +53,9 @@ clip-t.eps_done: NBase_clip.eps
 comparator-t.pdf_done:
 comparator-t.eps_done:
 comparator-t.pdf_done: comparator.pdf
+comparator-t.pdf_done: gap5_comparator.pdf
 comparator-t.eps_done: comparator.eps
+comparator-t.eps_done: gap5_comparator.eps
 complement-t.pdf_done:
 complement-t.eps_done:
 configure-t.pdf_done:
@@ -133,8 +135,10 @@ contig_ordering-t.eps_done: c_order_t2.eps
 contig_selector-t.pdf_done:
 contig_selector-t.eps_done:
 contig_selector-t.pdf_done: contig_selector.pdf
+contig_selector-t.pdf_done: gap5_contig_selector.pdf
 contig_selector-t.pdf_done: contig_list_box.pdf
 contig_selector-t.eps_done: contig_selector.eps
+contig_selector-t.eps_done: gap5_contig_selector.eps
 contig_selector-t.eps_done: contig_list_box.eps
 convert-t.pdf_done:
 convert-t.eps_done:
@@ -341,45 +345,69 @@ gap4_mini-t.eps_done: contig_editor.join.eps
 gap4_org-t.pdf_done:
 gap4_org-t.eps_done:
 gap5-t.pdf_done:
-gap5-t.pdf_done: gap5_org-t.pdf_done
-gap5-t.pdf_done: gap5_mini-t.pdf_done
-gap5-t.pdf_done: gap5_intro-t.pdf_done
 gap5-t.pdf_done: contig_selector-t.pdf_done
 gap5-t.pdf_done: comparator-t.pdf_done
 gap5-t.pdf_done: gap5_template-t.pdf_done
 gap5-t.pdf_done: gap5_contig_editor-t.pdf_done
-gap5-t.pdf_done: gap5_assembly-t.pdf_done
-gap5-t.pdf_done: contig_ordering-t.pdf_done
-gap5-t.pdf_done: fij-t.pdf_done
-gap5-t.pdf_done: repeats-t.pdf_done
-gap5-t.pdf_done: calc_consensus-t.pdf_done
-gap5-t.pdf_done: complement-t.pdf_done
-gap5-t.pdf_done: results-t.pdf_done
-gap5-t.pdf_done: lists-t.pdf_done
-gap5-t.pdf_done: gap5_database-t.pdf_done
-gap5-t.pdf_done: configure-t.pdf_done
-gap5-t.pdf_done: gap5_convert-t.pdf_done
 gap5-t.eps_done:
-gap5-t.eps_done: gap5_org-t.eps_done
-gap5-t.eps_done: gap5_mini-t.eps_done
-gap5-t.eps_done: gap5_intro-t.eps_done
 gap5-t.eps_done: contig_selector-t.eps_done
 gap5-t.eps_done: comparator-t.eps_done
 gap5-t.eps_done: gap5_template-t.eps_done
 gap5-t.eps_done: gap5_contig_editor-t.eps_done
-gap5-t.eps_done: gap5_assembly-t.eps_done
-gap5-t.eps_done: contig_ordering-t.eps_done
-gap5-t.eps_done: fij-t.eps_done
-gap5-t.eps_done: repeats-t.eps_done
-gap5-t.eps_done: calc_consensus-t.eps_done
-gap5-t.eps_done: complement-t.eps_done
-gap5-t.eps_done: results-t.eps_done
-gap5-t.eps_done: lists-t.eps_done
-gap5-t.eps_done: gap5_database-t.eps_done
-gap5-t.eps_done: configure-t.eps_done
-gap5-t.eps_done: gap5_convert-t.eps_done
+gap5.pdf_done:
+gap5.pdf_done: copyright.pdf_done
+gap5.pdf_done: gap5-t.pdf_done
+gap5.eps_done:
+gap5.eps_done: copyright.eps_done
+gap5.eps_done: gap5-t.eps_done
+gap5_contig_editor-t.pdf_done:
+gap5_contig_editor-t.eps_done:
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.screen.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.traces.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.names1.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.names2.pdf
+gap5_contig_editor-t.pdf_done: contig_editor.taged.pdf
+gap5_contig_editor-t.pdf_done: contig_editor.tagsel.pdf
+gap5_contig_editor-t.pdf_done: contig_editor.tagmacro.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.search.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.primer_dialogue.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.primers.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.traces.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.454trace.pdf
+gap5_contig_editor-t.pdf_done: gap5_contig_editor.join.pdf
+gap5_contig_editor-t.eps_done: gap5_contig_editor.screen.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.traces.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.names1.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.names2.eps
+gap5_contig_editor-t.eps_done: contig_editor.taged.eps
+gap5_contig_editor-t.eps_done: contig_editor.tagsel.eps
+gap5_contig_editor-t.eps_done: contig_editor.tagmacro.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.search.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.primer_dialogue.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.primers.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.traces.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.454trace.eps
+gap5_contig_editor-t.eps_done: gap5_contig_editor.join.eps
 gap5_org-t.pdf_done:
 gap5_org-t.eps_done:
+gap5_template-t.pdf_done:
+gap5_template-t.eps_done:
+gap5_template-t.pdf_done: gap5_template_by_size.pdf
+gap5_template-t.pdf_done: gap5_template_filter.pdf
+gap5_template-t.pdf_done: gap5_template_spread0.pdf
+gap5_template-t.pdf_done: gap5_template_spread50.pdf
+gap5_template-t.pdf_done: gap5_template_template.pdf
+gap5_template-t.pdf_done: gap5_template_by_size.pdf
+gap5_template-t.pdf_done: gap5_template_by_stacking.pdf
+gap5_template-t.pdf_done: gap5_template_by_mapping.pdf
+gap5_template-t.eps_done: gap5_template_by_size.eps
+gap5_template-t.eps_done: gap5_template_filter.eps
+gap5_template-t.eps_done: gap5_template_spread0.eps
+gap5_template-t.eps_done: gap5_template_spread50.eps
+gap5_template-t.eps_done: gap5_template_template.eps
+gap5_template-t.eps_done: gap5_template_by_size.eps
+gap5_template-t.eps_done: gap5_template_by_stacking.eps
+gap5_template-t.eps_done: gap5_template_by_mapping.eps
 gap_database-t.pdf_done:
 gap_database-t.eps_done:
 getABIfield.1.pdf_done:
@@ -858,6 +886,8 @@ template-t.eps_done: template.restriction.eps
 template-t.eps_done: snp_candidates1.eps
 template-t.eps_done: snp_candidates2.eps
 template-t.eps_done: contig_editor_sets.eps
+test.pdf_done:
+test.eps_done:
 trace_dump.1.pdf_done:
 trace_dump.1.eps_done:
 tracediff.1.pdf_done:

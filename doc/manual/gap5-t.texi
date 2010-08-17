@@ -1,0 +1,215 @@
+_define(_gap5)
+@c __include(gap5_org-t.texi)
+@c __include(gap5_mini-t.texi)
+@c __include(gap5_intro-t.texi)
+@page
+_split()
+@node Contig Selector
+@chapter Contig Selector
+_include(contig_selector-t.texi)
+
+@page
+_split()
+@node Contig Comparator
+@chapter Contig Comparator
+_include(comparator-t.texi)
+
+@page
+_split()
+@node Template Display
+@chapter Template Display
+_include(gap5_template-t.texi)
+
+@page
+_split()
+@node Editor
+@chapter Editing in Gap5
+_include(gap5_contig_editor-t.texi)
+ 
+@page
+_split()
+@node Assembly
+@chapter Assembling and Adding Readings to a Database
+_include(gap5_assembly-t.texi)
+ 
+@c @page
+@c __split()
+@c @node Ordering-and-Joining
+@c @chapter Ordering and Joining Contigs
+@c __include(contig_ordering-t.texi)
+@c 
+
+@page
+__split()
+@node FIJ
+@section Find Internal Joins
+_include(gap5_fij-t.texi)
+
+@page
+_split()
+@node Repeats
+@section Find Repeats
+_include(gap5_repeats-t.texi)
+
+@c Export sequences
+@c Export tags
+@c Save consensus
+@c Import GFF
+@c Break contig
+@c Complement a contig
+@c Sequence search
+@c Database information
+@c List Libraries
+@c List Consensus Confidence
+@c List Base Confidence
+
+@c 
+@c @page
+@c __split()
+@c @node Calculate Consensus
+@c @chapter Calculating Consensus Sequences
+@c __include(calc_consensus-t.texi)
+@c 
+@c @page
+@c __split()
+@c @node gap4-misc
+@c @chapter Miscellaneous functions
+@c @menu
+@c * Complement::    Complement a contig
+@c * Import/export Tags::    Importing and Exporting Annotations
+@c @end menu
+@c 
+@c __split()
+@c __include(complement-t.texi)
+@c 
+@c @page
+@c __split()
+@c @node Results
+@c @chapter Results Manager
+@c __include(results-t.texi)
+@c 
+@c @page
+@c __split()
+@c @node Lists
+@c @chapter Lists
+@c __include(lists-t.texi)
+@c 
+@c @page
+@c __split()
+@c @node GapDB
+@c @chapter Gap5 Database Files
+@c __include(gap5_database-t.texi)
+@c 
+@c @page
+@c __split()
+@c @node Conf
+@c @chapter Configuring
+@c __include(configure-t.texi)
+@c 
+@c 
+@c __split()
+@c @node Gap5-Cline
+@c @chapter Command Line Arguments
+@c @cindex Command line arguments
+@c 
+@c @table @code
+@c @cindex -bitsize 
+@c @cindex bitsize (command line option)
+@c @cindex 64-bit Gap4 databases
+@c @item -bitsize
+@c Specifies whether the database file size is 32-bit or
+@c 64-bit. Practically speaking due to the use of signed numbers in
+@c places and the restriction of 32-bit for the number of records in a
+@c database (even when using @code{-bitsize 64} for 64-bit file offsets)
+@c the practical limits are 2Gb filesize for @code{-bitsize 32} and
+@c somewhere around about 100-million sequences for @code{-bitsize 64}. 
+@c 
+@c Gap4 only needs this option for creating new databases. The bit-size
+@c of existing databases is automatically detected when they are opened.
+@c 
+@c Databases produced in 64-bit format are not compatible with older
+@c versions of Gap4, but old and newly created 32-bit databases still work with
+@c the 64-bit Gap4 (and are maintained in 32-bit format so editing them
+@c will not invalidate their use by older Gap4s). The @code{copy_db}
+@c program (_fpref(Man-copy_db, Copy_db, manpages)) can be used to
+@c convert file formats.
+@c 
+@c @sp 1
+@c @cindex -maxdb
+@c @cindex maxdb (command line option)
+@c @item -maxdb
+@c Specifies the maximum number of readings plus contigs. This value is not
+@c automatically adjusted whilst the program is running, but is not allowed to be
+@c set to a value too small for the database to be opened. It controls the size
+@c of some areas of memory (approximately @code{16*maxdb} bytes) used during
+@c execution of gap. The default value is @code{8000}.
+@c @sp 1
+@c @cindex -maxseq
+@c @cindex maxseq (command line option)
+@c @item -maxseq
+@c Specifies the maximum number of characters used in the concatenated consensus
+@c sequences. This parameter is generally not required as the value is normally
+@c computed and adjusted automatically. However a few functions (such as
+@c assembly) still need to know a maximum size before hand. The default is
+@c @code{100000} bases.
+@c @sp 1
+@c @item -ro
+@c @itemx -read_only
+@c @cindex -read_only
+@c @cindex read_only (command line option)
+@c Opens the database (if specified on the command line) in read only mode. This
+@c does not apply to databases opened using the file browser.
+@c @sp 1
+@c @cindex -check
+@c @cindex -nocheck
+@c @cindex nocheck (command line option)
+@c @cindex check (command line option)
+@c @item -check
+@c @itemx -no_check
+@c Specifies whether to run the "Check Database" option when opening new
+@c databases. @code{-check} forces this to always be done and @code{-nocheck}
+@c forces it to never be done. By default Check Database is always performed when
+@c opening databases in read-write mode and never performed when opening in
+@c read-only mode.
+@c @sp 1
+@c @item -exec_notes
+@c @itemx -no_exec_notes
+@c @cindex -exec_notes
+@c @cindex -no_exec_notes
+@c @cindex security
+@c Controls whether to search for and execute any Notes of type
+@c @code{OPEN} or @code{CLOS}. This may be an important security measure
+@c if you are using foreign databases. Gap4 defaults to -no_check_notes.
+@c @sp 1
+@c @item -rawdata_note
+@c @itemx -no_rawdata_note
+@c @cindex -rawdata_note
+@c @cindex -no_rawdata_note
+@c Controls whether to make use of the @code{RAWD} note type for
+@c specifying the trace file search path. Defaults to -rawdata_note.
+@c @sp 1
+@c @item -csel
+@c @itemx -no_csel
+@c @cindex -csel
+@c @cindex -no_csel
+@c Controls whether to automatically start up the contig selector when
+@c opening a new gap4 database. In some cases (such as when dealing with
+@c many EST clusters each in their own contig) the contig selector is not
+@c a practical tool; this simply offers a way of speeding up database
+@c opening. Defaults to -csel.
+@c @sp 1
+@c @item --
+@c Treat this as the last command line option. Only useful if the database name
+@c is specified and the name starts with a minus character (not
+@c recommended!).
+@c @end table
+@c 
+@c __ifdef([[_unix]],[[
+@c @page
+@c __split()
+@c @node Convert
+@c @chapter Converting Old Databases
+@c __include(gap5_convert-t.texi)
+@c ]])
+
+_undefine(_gap5)

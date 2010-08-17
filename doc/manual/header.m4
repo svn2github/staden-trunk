@@ -10,6 +10,19 @@
 @end tex
 
 @c ---------------------------------------------------------------------------
+@c @prog, @Prog and @setprog commands.
+@c Use @setprog{foo}{Foo} to set the program name to foo/Foo.
+@c Then @prog{} and @Prog{} will be replaced by foo and Foo.
+@tex
+\global\def\setprog#1#2{
+  \global\def\pname{#1}
+  \global\def\Pname{#2}
+}
+\global\def\prog{\pname}
+\global\def\Prog{\Pname}
+@end tex
+
+@c ---------------------------------------------------------------------------
 @c @split{} command
 @c
 @c only makes sense for html.
@@ -141,7 +154,7 @@ _define([[_picture]],[[_ifdef([[_tex]],[[@image{[[$*]]}]])
 _ifdef([[_html]],[[
 @ifhtml
 <p>
-<img src="[[$*]].png" alt="[picture]">
+<img src="[[$1]].png" alt="[picture]">
 @end ifhtml]])]])
 
 @c ---------------------------------------------------------------------------

@@ -6,10 +6,13 @@
 @cindex Comparator window
 @cindex Contig Comparator
 
-gap4 commands such as Find Internal Joins (_fpref(FIJ, Find Internal
-Joins, fij)), Find Repeats (_fpref(Repeats, Find Repeats, repeats)),
-Check Assembly (_fpref(Check Assembly, Check Assembly, check_ass)), and
-Find Read Pairs (_fpref(Read Pairs, Find Read Pairs, read_pairs))
+_ifdef([[_gap4]],[[@Prog{} commands such as Find Internal Joins
+(_fpref(FIJ, Find Internal Joins, fij)), Find Repeats (_fpref(Repeats,
+Find Repeats, repeats)), Check Assembly (_fpref(Check Assembly, Check
+Assembly, check_ass)), and Find Read Pairs (_fpref(Read Pairs, Find
+Read Pairs, read_pairs))]],[[@Prog{} commands such as Find Internal Joins
+(_fpref(FIJ, Find Internal Joins, fij)) and Find Repeats (_fpref(Repeats,
+Find Repeats, repeats))]])
 automatically transform the Contig Selector (_fpref(Contig Selector,
 Contig Selector, contig_selector)) to produce the Contig Comparator.  To
 produce this transformation a copy of the Contig Selector is added at
@@ -30,14 +33,14 @@ means that if users drag the contigs to move their plotted results close
 to the main diagonal they will be simultaneously putting their contigs
 into the correct relative positions.
 
-Because this plot can simultaneously show the results of independent
+_ifdef([[_gap4]],[[Because this plot can simultaneously show the results of independent
 types of search, users can see if different analyses produce
 corroborating evidence for the ordering of contigs.  Also, if for
 example, a result
 from Check Assembly lies on the same horizontal or vertical projection
 as a result from Find Repeats, users can see the alternative position to
 place the doubtful reading. Ie this is an indication that a reading may have
-been assembled in an incorrect position.
+been assembled in an incorrect position.]])
 
 By use of popup menus the plotted results can be used to invoke a subset
 of commands.  For example if the user clicks the right mouse button over
@@ -49,21 +52,34 @@ be started with the two contigs aligned at the match position contained
 in the result. If required one of the contigs will be complemented to
 allow their alignment.
 
-A typical display from the Contig Comparator is shown below. It includes
-results for Find Internal Joins in black, Find Repeats in red, Check
-Assembly in green, and Find Read Pairs in blue. Notice that there are
-several Find Internal Joins, Find Read Pairs and Find Repeats results
-close to the main diagonal near the top left of the display, indicating
-that the contigs represented in that area are likely to be in the
-correct relative positions to one another.  In the middle of the bottom
-right quadrant there is a blue diagonal line perpendicular to the main
-diagonal which indicates a pair of contigs that are in the wrong
-relative orientation.  The crosshairs show the positions for a pair of
-contigs. The vertical line continues into the Contig Selector part of
-the display, and the position represented by the horizontal line is also
-duplicated there.
+_ifdef([[_gap4]],[[A typical display from the Contig Comparator is
+shown below. It includes results for Find Internal Joins in black,
+Find Repeats in red, Check Assembly in green, and Find Read Pairs in
+blue. Notice that there are several Find Internal Joins, Find Read
+Pairs and Find Repeats results close to the main diagonal near the top
+left of the display, indicating that the contigs represented in that
+area are likely to be in the correct relative positions to one
+another.  In the middle of the bottom right quadrant there is a blue
+diagonal line perpendicular to the main diagonal which indicates a
+pair of contigs that are in the wrong relative orientation.]],
+[[A typical display from the Contig Comparator is shown below. It
+includes results for Find Internal Joins in black, Find Repeats in
+red and Sequence Search in green. The currently highlighted item is
+shown in pink with a summary at the bottom of the screen. The
+orientation of this is from top-left to bottom-right indicating that
+the match is in the same orientation within both contigs (we can see
+some in the opposite orientation indicating that we need to reverse
+complement either of the two contigs before attempting any joins,
+although this will happen automatically).]])
+The crosshairs show the positions for a pair of contigs. The vertical
+line continues into the Contig Selector part of the display, and the
+position represented by the horizontal line is also duplicated there.
 
+_ifdef([[_gap4]],[[
 _lpicture(comparator)
+]],[[
+_lpicture(gap5_comparator)
+]])
 
 _split()
 @node Compar-Examining
@@ -95,7 +111,7 @@ Sends a textual description of the match to the Output Window.
 @cindex Hide, in Contig Comparator
 @cindex Invoke contig editors, in Contig Comparator
 @cindex Invoke contig join editors, in Contig Comparator
-@cindex Invoke template display, in Contig Comparator
+_ifdef([[_gap4]],[[@cindex Invoke template display, in Contig Comparator]])
 
 @item Hide
 Removes the match from the Contig Comparator. The match can be revealed
@@ -103,7 +119,7 @@ again by using "Reveal all" within the Results Manager.
 
 @item Invoke contig editors
 @itemx Invoke join editors
-@itemx Invoke template display
+_ifdef([[_gap4]],[[@itemx Invoke template display]])
 
 When invoked these options bring up their respective
 displays to show the match in greater detail. 
@@ -120,7 +136,7 @@ the default operation which can also be performed by double clicking the left
 mouse button on the match.
 For Repeat or Find Internal Joins matches this will normally be the Join
 Editor, or two Contig Editors when the match is between two points in
-the same contig. For Read Pairs two Template Displays are shown.
+the same contig. _ifdef([[_gap4]],[[For Read Pairs two Template Displays are shown.]])
 
 The crosshairs can be toggled on and off and a diagonal line going from
 top left to bottom right of the plot can also be displayed if required.
@@ -153,9 +169,9 @@ displays brief information about it in the status line at the bottom of the
 window. To step through the matches in "best first" order, select the "Sort
 Matches" option from the relevant name in the Results menu. The exact order is
 dependent on the result in question, but is generally arranged to be the most
-interesting ones first. For example, Find Internal Joins shows the lowest
-mismatch first whilst Check Assembly shows the highest mismatches
-first.
+interesting ones first. _ifdef([[_gap4]],[[For example, Find Internal
+Joins shows the lowest mismatch first whilst Check Assembly shows the
+highest mismatches first.]])
 
 Bringing up another result now directs "Next" to step through each of the new
 matches. To change the result that "Next" operates on, use the Result menu to

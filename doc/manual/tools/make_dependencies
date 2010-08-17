@@ -13,10 +13,10 @@ do
     sed -n "s/^_include(\(.*\)\.texi)/$b.eps_done: \1.eps_done/p" $i
 
     # pdf image files from the images
-    sed -n "s/^_picture(\(.*\))/$b.pdf_done: \1.pdf/p" $i
-    sed -n "s/^_lpicture(\(.*\))/$b.pdf_done: \1.pdf/p" $i
+    sed -n "s/^_picture(\([^,]*\).*)/$b.pdf_done: \1.pdf/p" $i
+    sed -n "s/^_lpicture(\([^,]*\).*)/$b.pdf_done: \1.pdf/p" $i
 
     # eps files from the images
-    sed -n "s/^_picture(\(.*\))/$b.eps_done: \1.eps/p" $i
-    sed -n "s/^_lpicture(\(.*\))/$b.eps_done: \1.eps/p" $i
+    sed -n "s/^_picture(\([^,]*\).*)/$b.eps_done: \1.eps/p" $i
+    sed -n "s/^_lpicture(\([^,]*\).*)/$b.eps_done: \1.eps/p" $i
 done

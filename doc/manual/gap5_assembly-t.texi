@@ -1,0 +1,231 @@
+@cindex Assembly
+@cindex Entering readings
+
+There are two main types of assembly - denovo and mapped - with the
+latter not really being a true assembly at all.
+
+Denovo assembly consists of an assembly of DNA fragments without
+typically knowing any of the goal target sequence. Hence it compares
+sequence fragments against each other in order to form contigs.
+Mapped assembly makes uses of a known reference sequence and compares
+all sequence fragments against the reference, which is a far simpler
+and faster process than denovo assembly.
+
+Gap5 however has neither denovo or mapped assembly built-in. Instead
+it relies on externally running standard command-line tools. At
+present this consists purely of using bwa for a mapped assembly, but
+in future this will be expanded upon.
+
+This means that the Assembly menu currently only contains a ``Map
+Reads'' sub-menu, which is turn has multiple choices for bwa
+usage. You will not be directly able to join contigs using these
+facilities or to fill holes in the contig, although this is possible
+by manually following some of the steps outlined below and using an
+alternate step for generating the SAM file.
+
+@menu
+* Assembly-tg_index::        Importing with tg_index
+* Assembly-Map-bwa-aln::     Mapped assembly by bwa aln
+* Assembly-Map-bwa-dbwtsw::  Mapped assembly by bwa dbwtsw
+@end menu
+
+_split()
+@node Assembly-tg_index
+@section Importing with tg_index
+@cindex Assembly: tg_index
+@cindex tg_index
+
+To enable efficient editing of data, Gap5 needs its own database
+format for storing sequence assemblies. Formats such as BAM are good
+at random access for read-only viewing, but are not at all amenable to
+actions such as reverse complementing a contig and joining it to
+another.
+
+Hence we need a tool that can take existing assembly formats and
+convert them to a form suitable for Gap5. The @code{tg_index} program
+performs this task. It is strictly a command line tool, although in
+some specific cases Gap5 has basic GUI dialogues to wrap it up.
+
+One or more input files may be specified. The general form is:
+
+@code{tg_index} @i{[options]} @code{-o} @i{gap5_db_name}
+@i{input_file_name} ...
+
+An example usage is:
+
+@example
+    tg_index -z 16384 -o test_data.g5 test_data.bam
+    gap5 test_data.g5 &
+@end example
+
+
+File formats supported are SAM, BAM, ACE, MAQ (both short and long
+variants), CAF and BAF. Tg_index typically automatically detects the
+type of file, but in rare cases you may need to explicitly state the
+input file type.
+
+Tg_index options:
+
+@table @b
+@item -o @i{filename}
+Creates a gap5 database named @i{filename} and @i{filename}@code{.aux}
+If not specified the default is ``g_db''.
+
+@item -a
+Append to an existing database, instead of creating a new one (which
+is the default action).
+
+@item -n
+When appending, the default behaviour is to add reads to existing
+contigs if contigs with the appropriate names already exist. This
+option always forces creation of new contigs instead.
+
+@item -g
+When appending to an existing database, assume that the alignment has
+been performed against an ungapped copy of the consensus exported from
+this database. (This is internally used when performing mapped
+assemblies as they consist of exporting the consensus, running the
+external mapped alignment tool, and then importing the newly generated
+alignments.)
+
+@item -m
+@itemx -M
+Forces the input to be treated as MAQ, both short (-m) and long (-M)
+formats are supported. By default the file format is automatically
+detected.
+
+@item -A
+Forces the input to be treads as ACE format.
+
+@item -B
+Forces the input to be treads as BAF format.
+
+@item -C
+Forces the input to be treads as CAF format.
+
+@item -b
+@itemx -s
+Forces the input to be treads as BAM (-b) or SAM (-s) format. SAM must
+have @@SQ headers present. Both need to be sorted by position.
+
+@item -z @i{bin_size}
+Modifies the size of the smallest allowable contig bin. Large contigs
+will contain child bins, each of which will contain smaller bins,
+recursing down to a minimum bin size. Sequences are then placed in the
+smallest bin they entirely fit within. The default minimum bin size is
+4096 bytes. For very shallow assemblies increasing this will improve
+performance and the decrease disk space used. Ideally 5,000 to 10,000
+sequences per bin is an approximate figure to aim for.
+
+@item -u
+Store unmapped reads only (from SAM/BAM only)
+
+@item -x
+Store SAM/BAM auxillary key:value records too. 
+
+@item -p
+@itemx -P
+Enable (-p) or disable (-P) read-pairing. By default this is
+enabled. The purpose of this is to link sequences from the same
+template to each other such that gap5 knows the insert size and
+read-pairings. Generally this is desirable, but it adds extra time and
+memory to identify the pairs. Hence for single-ended runs the option
+exists to disable attempts at read-pairing.
+
+@item -f
+Attempt a faster form of read-pairing. In this mode we link the second
+occurrence of a template to the first occurrence, but not vice
+versa. This is sufficient for the template display graphical views to
+work, but will cause other parts of the program to behave
+inconsistently. For example the contig editor ``goto...'' popup menu
+will sometimes be missing.
+
+@item -t
+@itemx -T
+Controls whether to index (-t) or not (-T) the sequence names. By
+default this is disabled. Adding a sequence name index permits us to
+search by sequence name or to use a sequence name in any dialogue that
+requires a contig identifier. However it consumes more disc space to
+store this index and it can be time consuming to construct it.
+
+@item -r @i{nseq}
+Reserves space for at least @i{nseq} sequences. This generally isn't
+necessary, but if the total number of records extends above 2 million
+(equivalent to 2 billion sequences, or less if we have lots of
+contigs, bins and annotation records to write) then we run out of
+suitable sequence record numbers. This option preallocates the lower
+record numbers and reserves them solely for sequence records.
+
+@item -c @i{compression_method}
+Specifies an alternate compression method. This defaults to @i{zlib},
+but can be set to either @i{none} for fastest speed or @i{lzma} for
+best compression.
+@end table
+
+_split()
+@node Assembly-Map-bwa-aln
+@section Mapped assembly by bwa aln
+@cindex Assembly: bwa aln
+@cindex bwa
+
+This function runs the bwa program using the ``aln'' method for
+aligning sequences. It is appropriate for matching most types of
+short-read data.
+
+The GUI is little more than a wrapper around command line tools,
+which can essentially be repeatedly manually as follows.
+
+@enumerate
+@item
+Calculate and save the consensus for all contigs in the database in
+fastq format.
+
+@item
+Index the consensus sequence using ``bwa index''.
+
+@item
+Map our input data against the bwa index using ``bwa aln''.
+Repeat for reverse matches too.
+
+@item
+Generate SAM format from the alignments using ``bwa samse'' or ``bwa
+sampe''.
+
+@item
+Convert to BAM and sort by position.
+
+@item
+Import the BAM file, appending to the existing gap5 database
+(equivalent to @code{tg_index -a}).
+@end enumerate
+
+@node Assembly-Map-bwa-dbwtsw
+@section Mapped assembly by bwa dbwtsw
+@cindex Assembly: bwa dbwtsw
+@cindex bwa
+
+This function runs the bwa program using the ``dbwtsw'' method for
+aligning sequences. This should be used when attempting to align
+longer sequences or data with lots of indels.
+
+The GUI is little more than a wrapper around command line tools,
+which can essentially be repeatedly manually as follows.
+
+@enumerate
+@item
+Calculate and save the consensus for all contigs in the database in
+fastq format.
+
+@item
+Index the consensus sequence using ``bwa index''.
+
+@item
+Map our input data against the bwa index using ``bwa dbwtsw''.
+
+@item
+Convert to BAM and sort by position.
+
+@item
+Import the BAM file, appending to the existing gap5 database
+(equivalent to @code{tg_index -a}).
+@end enumerate
