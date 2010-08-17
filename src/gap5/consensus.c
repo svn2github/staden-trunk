@@ -725,7 +725,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    left = 1;
 
 	for (j = left-1; j < right; j++) {
-	    char base;
+	    char base, base_l;
 	    double q[4];
 
 	    if (sp+j > end)
@@ -733,14 +733,11 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    
 	    sequence_get_base4(io, &s, j+off, &base, q, NULL, 0);
 
-	    if (base != 'N' && base != '*') {
-		if (q[0] == 0) perfect[sp-start+j] |= (1<<0);
-		if (q[1] == 0) perfect[sp-start+j] |= (1<<1);
-		if (q[2] == 0) perfect[sp-start+j] |= (1<<2);
-		if (q[3] == 0) perfect[sp-start+j] |= (1<<3);
-	    }
+	    base_l = lookup[base];
+	    if (base_l < 4 && q[base_l] == 0)
+		perfect[sp-start+j] |= (1<<base_l);
 
-	    switch (lookup[base]) {
+	    switch (base_l) {
 	    case 0: case 1: case 2: case 3: /* ACGT */
 		cvec[sp-start+j][0] += q[0];
 		cvec[sp-start+j][1] += q[1];
@@ -748,7 +745,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][3] += q[3];
 
 		/* Small boost for called base to resolve ties */
-		cvec[sp-start+j][lookup[base]] += 1e-5;
+		cvec[sp-start+j][base_l] += 1e-5;
 
 		/* Fall through */
 	    default: /* N */
