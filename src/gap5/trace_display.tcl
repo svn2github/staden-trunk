@@ -383,11 +383,11 @@ proc new_trace_create2 {w e title allow_diff} {
 	    -command "trace_save_layout"
 	pack $w.bar.save -side left -padx 2m
 
-	# Compact mode
-	checkbutton $w.bar.compact -text "Compact" \
-	    -variable $w.Trace_Compact_Mode \
-	    -command "trace_set_compact $w"
-	pack $w.bar.compact -side left -padx 2m
+	# Compact mode - disable for now
+#	checkbutton $w.bar.compact -text "Compact" \
+#	    -variable $w.Trace_Compact_Mode \
+#	    -command "trace_set_compact $w"
+#	pack $w.bar.compact -side left -padx 2m
 
 	# Help menu
 	button $w.bar.quit \
@@ -508,7 +508,8 @@ proc new_trace_create2 {w e title allow_diff} {
 	-label "Information" \
 	-command "trace_display_info $tf_r.trace $w $e {$title}" \
 	-state $info_state
-    if {$allow_diff} {
+    # Disable difference trace for now as not implemented in gap5 yet
+    if {0 && $allow_diff} {
 	button $tf_l.labels.b.diff -text "Diff" -pady 2 \
 	    -command "trace_display_diff $tf_l.labels.b.diff $tf_r.trace $w $e"
 	$tf_r.m add command \
@@ -849,10 +850,6 @@ proc trace_highlight {trace {make_visible 0}} {
 
 proc trace_complement {e t} {
      $t complement
-
-     # Force a redraw of the cursor and trace - hacky, but it works!
-     # This cures a multitude of display glitches, mainly to do with 
-     $e trace_redraw
 }
 
 proc trace_save {t} {
