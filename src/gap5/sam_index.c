@@ -2028,8 +2028,12 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     fp = samopen(fn, mode, NULL);
     assert(fp);
     bio->header = fp->header;
-    if (!bio->header->dict)
+    if (!bio->header)
+	return -1;
+
+    if (!bio->header->dict) {
 	bio->header->dict = sam_header_parse2(bio->header->text);
+    }
     bio->rg2pl_hash = sam_header2tbl(bio->header->dict, "RG", "ID", "PL");
     plbuf = bam_plbuf_init(bio_callback, bio);
     //bam_plbuf_set_mask(plbuf, BAM_DEF_MASK /* or BAM_FUNMAP? */);

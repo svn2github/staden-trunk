@@ -44,6 +44,8 @@ GapIO *gio_open(char *fn, int ro, int create) {
 	    ro = 1;
 	    if (NULL == (io->dbh = io->iface->connect(fn, ro)))
 		return NULL;
+	} else {
+	    return NULL;
 	}
     }
 

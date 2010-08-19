@@ -273,27 +273,27 @@ int main(int argc, char **argv) {
 	case 'm':
 	case 'M':
 	    printf("Processing MAQ file %s\n", argv[optind]);
-	    parse_maqmap(io, argv[optind++], &a);
+	    err = parse_maqmap(io, argv[optind++], &a) ? 1 : 0;
 	    break;
 
 	case 'A':
 	    printf("Processing ACE file %s\n", argv[optind]);
-	    parse_ace(io, argv[optind++], &a);
+	    err = parse_ace(io, argv[optind++], &a) ? 1 : 0;
 	    break;
 
 	case 'B':
 	    printf("Processing BAF file %s\n", argv[optind]);
-	    parse_baf(io, argv[optind++], &a);
+	    err = parse_baf(io, argv[optind++], &a) ? 1 : 0;
 	    break;
 
 #ifdef HAVE_SAMTOOLS
 	case 'b':
 	    printf("Processing BAM file %s\n", argv[optind]);
-	    parse_bam(io, argv[optind++], &a);
+	    err = parse_bam(io, argv[optind++], &a) ? 1 : 0;
 	    break;
 	case 's':	
 	    printf("Processing SAM file %s\n", argv[optind]);
-	    parse_sam(io, argv[optind++], &a);
+	    err = parse_sam(io, argv[optind++], &a) ? 1 : 0;
 	    break;
 #endif
 
@@ -303,6 +303,11 @@ int main(int argc, char **argv) {
 	    err = 1;
 	    break;
 	}
+    }
+
+    if (err) {
+	fprintf(stderr, "\nERROR: Failed to parse input data file - exiting\n");
+	exit(1);
     }
 
     /* Add to our sequence name B+Tree */

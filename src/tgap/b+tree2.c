@@ -50,6 +50,11 @@ btree_t *btree_new(void *cd, int root) {
 	t->root = btree_node_get(t->cd, root);
     else
 	t->root = btree_node_new(t->cd);
+
+    if (!t->root) {
+	free(t);
+	return NULL;
+    }
     
     btree_inc_ref(cd, t->root);
 

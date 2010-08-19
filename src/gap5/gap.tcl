@@ -630,7 +630,7 @@ if {$argc == 1} {
     if {[catch {set io [g5::open_database -name "$db_name" -access $access]}]} {
 	verror ERR_FATAL "Gap5" "ERROR: Couldn't open the database '$db_name' - exiting."
 	
-	exit
+	exit 1
     }
 
     if {$origtype == "d" && $licence(type) == "v"} {

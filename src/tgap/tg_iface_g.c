@@ -1349,8 +1349,8 @@ static cached_item *io_database_read(void *dbh, GRec rec) {
 	bt->io = io;
 	bt->h = io->seq_name_hash;
 	io->seq_name_tree = btree_new(bt, db->seq_name_index);
-	assert(io->seq_name_tree);
-	assert(io->seq_name_tree->root);
+	if (!io->seq_name_tree || !io->seq_name_tree->root)
+	    return NULL;
     }
 
     //printf("seq_name_hash=%p\n", io->seq_name_hash);
@@ -1361,8 +1361,8 @@ static cached_item *io_database_read(void *dbh, GRec rec) {
 	bt->io = io;
 	bt->h = io->contig_name_hash;
 	io->contig_name_tree = btree_new(bt, db->contig_name_index);
-	assert(io->contig_name_tree);
-	assert(io->contig_name_tree->root);
+	if (!io->contig_name_tree || !io->contig_name_tree->root)
+	    return NULL;
     }
 
     return ci;
