@@ -282,7 +282,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 		     * Not a valid assertion if we uncomment the bstart/bend
 		     * settings above.
 		     */
-		    assert(bin->rec == r[i].rec);
+		    // assert(bin->rec == r[i].rec);
 
 		    s->bin       = bin->rec;
 		    s->bin_index = r_out - ArrayBase(range_t, bin->rng);
