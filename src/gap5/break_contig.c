@@ -22,7 +22,7 @@ int contig_visible_start(GapIO *io, int crec) {
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANY);
     
-    while (r = contig_iter_prev(io, ci)) {
+    while (r = contig_iter_next(io, ci)) {
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS)
 	    continue;
 	return r->start;
