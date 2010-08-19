@@ -1025,3 +1025,39 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
 
     return track;
 }
+
+
+/*
+ * Clears the BIN_CONS_VALID flag on any bins that may contain
+ * consensus data over the region contig:start..end.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_invalidate_consensus(GapIO *io, int contig, int start, int end) {
+    int i, nr;
+    rangec_t *r;
+    contig_t *c;
+    
+    if (NULL == (c = (contig_t *)cache_search(io, GT_Contig, contig)))
+	return -1;
+    
+    r = contig_bins_in_range(io, &c, start, end,
+			     CSIR_LEAVES_ONLY, CONS_BIN_SIZE, &nr);
+
+    for (i = 0; i < nr; i++) {
+	bin_index_t *bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
+	if (!bin)
+	    return -1;
+
+	bin = cache_rw(io, bin);
+	bin->flags |=  BIN_BIN_UPDATED;
+	bin->flags &= ~BIN_CONS_VALID;
+    }
+
+    if (r)
+	free(r);
+
+    return 0;
+}
+

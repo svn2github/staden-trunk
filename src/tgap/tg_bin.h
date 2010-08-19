@@ -124,4 +124,14 @@ int bin_get_item_position(GapIO *io, int type, GRec rec,
  */
 int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n);
 
+
+/*
+ * Clears the BIN_CONS_VALID flag on any bins that may contain
+ * consensus data over the region contig:start..end.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_invalidate_consensus(GapIO *io, int contig, int start, int end);
+
 #endif /* _TG_CONTIG_H_ */

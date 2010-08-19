@@ -637,9 +637,6 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig,
  */
 int sequence_invalidate_consensus(GapIO *io, seq_t *s) {
     int start, end, contig;
-    int i, nr;
-    rangec_t *r;
-    contig_t *c;
 
     if (io->read_only)
 	return -1;
@@ -647,26 +644,7 @@ int sequence_invalidate_consensus(GapIO *io, seq_t *s) {
     if (-1 == sequence_get_position(io, s->rec, &contig, &start, &end, NULL))
 	return -1;
 
-    if (NULL == (c = (contig_t *)cache_search(io, GT_Contig, contig)))
-	return -1;
-    
-    r = contig_bins_in_range(io, &c, start, end,
-			     CSIR_LEAVES_ONLY, CONS_BIN_SIZE, &nr);
-
-    for (i = 0; i < nr; i++) {
-	bin_index_t *bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
-	if (!bin)
-	    return -1;
-
-	bin = cache_rw(io, bin);
-	bin->flags |=  BIN_BIN_UPDATED;
-	bin->flags &= ~BIN_CONS_VALID;
-    }
-
-    if (r)
-	free(r);
-
-    return 0;
+    return bin_invalidate_consensus(io, contig, start, end);
 }
 
 
