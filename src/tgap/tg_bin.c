@@ -490,6 +490,7 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
 	    return -1;
 	bin->nseqs += n;
 	bin->flags |= BIN_BIN_UPDATED;
+	bin->flags &= ~BIN_CONS_VALID;
 
 	if (bin->parent_type != GT_Bin)
 	    break;
@@ -688,6 +689,8 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
     if (!(bin = cache_rw(io, *binp)))
 	return -1;
     *binp = bin;
+
+    bin->flags &= ~BIN_CONS_VALID;
 
     /* FIXME: we should check and update bin->start_used and bin->end_used */
 
