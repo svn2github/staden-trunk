@@ -95,6 +95,7 @@ GAP5=\
 	fij.o\
 	do_fij.o\
 	break_contig.o \
+	dis_readings.o \
 	export_contigs.o \
 	find_oligo.o \
 	import_gff.o \

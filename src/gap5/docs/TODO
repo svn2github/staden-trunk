@@ -1,3 +1,8 @@
+*	BUG: cut and paste from a reading in a complemented contig
+        gives the wrong sequence
+
+*	BUG: outputting to baf doesn't output all annotations?
+
 *	BUG: Right clicking and also mouse-over in the editor names
         display doesn't always work on sequences with 1 ascii letter
         visible to them and on the left edge. Eg:

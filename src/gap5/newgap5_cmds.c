@@ -43,6 +43,7 @@
 #include "ace.h"
 #include "baf.h"
 #include "tg_index_common.h"
+#include "dis_readings.h"
 
 #ifdef HAVE_SAMTOOLS
 #include "sam_index.h"
@@ -1264,6 +1265,57 @@ tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+int
+tcl_disassemble_readings(ClientData clientData, Tcl_Interp *interp,
+			 int objc, Tcl_Obj *CONST objv[])
+{
+    dis_reading_arg args;
+    char **reads = NULL;
+    int *rnums, i, j;
+    int num_reads;
+    cli_args a[] = {
+	{"-io",	      ARG_IO,  1, NULL, offsetof(dis_reading_arg, io)},
+	{"-readings", ARG_STR, 1, NULL, offsetof(dis_reading_arg, list)},
+	{"-move",     ARG_INT, 1, "1",  offsetof(dis_reading_arg, move)},
+	{"-remove_holes",
+	              ARG_INT, 1, "1",  offsetof(dis_reading_arg,
+						 remove_holes)},
+	{"-duplicate_tags",
+	              ARG_INT, 1, "1",  offsetof(dis_reading_arg,
+						 duplicate_tags)},
+	{NULL,	 0,	  0, NULL, 0}
+    };
+
+    vfuncheader("disassemble contig");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    if (Tcl_SplitList(interp, args.list, &num_reads, &reads) != TCL_OK)
+        return TCL_ERROR;
+
+    if (NULL == (rnums = (int *)xmalloc(num_reads * sizeof(int))))
+        return TCL_ERROR;
+
+    for (i = j = 0; i < num_reads; i++) {
+        rnums[j] = get_gel_num(args.io, reads[i], GGN_ID);
+        if (rnums[j])
+            j++;
+    }
+    num_reads = j;
+
+    if (disassemble_readings(args.io, rnums, num_reads, args.move,
+                             args.remove_holes, args.duplicate_tags) < 0) {
+        verror(ERR_WARN, "Disassemble readings",
+               "Failure in Disassemble Readings");
+        return TCL_OK;
+    }
+    Tcl_Free((char *)reads);
+    xfree(rnums);
+
+    return TCL_OK;
+}
+
 typedef struct {
     int fold;     /* line wrapping, 0 to disable */
     int shift;    /* add 'shift' to all output chars, default 0 */
@@ -1738,6 +1790,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "break_contig",
 			 tcl_break_contig,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "disassemble_readings",
+			 tcl_disassemble_readings,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "sequence_depth",
