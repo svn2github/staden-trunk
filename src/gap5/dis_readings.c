@@ -72,7 +72,7 @@ static int unlink_read(GapIO *io, int rec, r_pos_t *pos, int remove) {
 			      (void **)&seq)) {
 	return -1;
     }
-    cache_incr(io, seq);
+    /* seq already has cache_incr on it */
 
     printf("    In contig %d at %d..%d, bin rec %d\n",
 	   pos->contig, pos->start, pos->end, brec);
@@ -182,20 +182,22 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
     /* Hole at left end */
     if (c->start == start) {
 	puts("Trimming left end");
-	iter = contig_iter_new(io, contig, 0, CITER_FIRST, start, end);
+	iter = contig_iter_new(io, contig, 1, CITER_FIRST, start, end);
 	r = contig_iter_next(io, iter);
 	c = cache_rw(io, c);
 	c->start = r->start;
+	contig_iter_del(iter);
 	return 0;
     }
 
     /* Hole at right end */
     if (c->end == end) {
 	puts("Trimming right end");
-	iter = contig_iter_new(io, contig, 0, CITER_LAST | CITER_IEND, start, end);
+	iter = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND, start, end);
 	r = contig_iter_prev(io, iter);
 	c = cache_rw(io, c);
 	c->end = r->end;
+	contig_iter_del(iter);
 	return 0;
     }
 
@@ -204,7 +206,7 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
     iter = contig_iter_new(io, contig, 0, CITER_LAST | CITER_IEND, start, end);
     last = end;
     while (r = contig_iter_prev(io, iter)) {
-	printf("Seq %d, from %d..%d\n", r->rec, r->start, r->end);
+	//printf("Seq %d, from %d..%d\n", r->rec, r->start, r->end);
 	if (r->end < last) {
 	    printf("GAP from %d..%d, breaking...\n", r->end, last);
 	    break_contig(io, contig, last);
@@ -359,12 +361,12 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 	for (j = 0; j < pos[i].n_anno; j++) {
 	    anno_ele_t *a;
 
-	    printf("Seq %d; pos %d,   anno %d; pos %d-%d\n",
-		   pos[i].rec,
-		   pos[i].start,
-		   pos[i].anno[j].rec,
-		   pos[i].anno[j].start,
-		   pos[i].anno[j].end);
+	    //printf("Seq %d; pos %d,   anno %d; pos %d-%d\n",
+	    //	   pos[i].rec,
+	    //	   pos[i].start,
+	    //	   pos[i].anno[j].rec,
+	    //	   pos[i].anno[j].start,
+	    //	   pos[i].anno[j].end);
 
 	    bin_remove_item(io, &c_old, GT_AnnoEle, pos[i].anno[j].rec);
 	    r.start    = pos[i].anno[j].start - offset;
@@ -394,6 +396,9 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 static int move_reads(GapIO *io, r_pos_t *pos, int npos) {
     int i, start, end, contig;
     int i_start, err = 0;
+
+    if (!npos)
+	return 0;
 
     i_start = 0;
     contig  = pos[0].contig;
@@ -453,6 +458,9 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 
     puts("Disassemble_readings");
 
+    if (nreads <= 0)
+	return 0;
+
     /*
      * The plan:
      *
@@ -493,6 +501,9 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 	if (!n) {
 	    printf("Skipping duplicate entry %d\n", rnums[i]);
 	    pos[i].contig = 0;
+	    continue;
+	}
+	if (rnums[i] == -1) {
 	    continue;
 	}
 	if (unlink_read(io, rnums[i], &pos[i], move == 0))

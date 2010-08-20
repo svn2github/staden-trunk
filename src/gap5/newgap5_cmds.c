@@ -1299,8 +1299,12 @@ tcl_disassemble_readings(ClientData clientData, Tcl_Interp *interp,
 
     for (i = j = 0; i < num_reads; i++) {
         rnums[j] = get_gel_num(args.io, reads[i], GGN_ID);
-        if (rnums[j])
+        if (rnums[j] > 0) {
             j++;
+	} else {
+	    verror(ERR_WARN, "Disassemble readings",
+		   "Unknown reading ID '%s'", reads[i]);
+	}
     }
     num_reads = j;
 
