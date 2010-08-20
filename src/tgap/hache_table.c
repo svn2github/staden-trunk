@@ -413,6 +413,8 @@ void HacheTableDestroy(HacheTable *h, int deallocate_data) {
     if (!h)
 	return;
 
+    //HacheTableRefInfo(h, stdout);
+
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi = h->bucket[i], *next = NULL;
 	for (hi = h->bucket[i]; hi; hi = next) {
@@ -662,6 +664,11 @@ void HacheTableIncRef(HacheTable *h, HacheItem *hi) {
 
 void HacheTableDecRef(HacheTable *h, HacheItem *hi) {
     assert(hi->h == h);
+
+    if (hi->ref_count <= 0) {
+	fprintf(stderr, "WARNING: attempting to decrement reference count "
+		"on hache item %p when ref_count is already <= 0\n", hi);
+    }
 
     if (hi && hi->ref_count > 0) {
 	if (--hi->ref_count <= 0) {
@@ -1093,8 +1100,10 @@ void HacheTableRefInfo(HacheTable *h, FILE *fp) {
 	}
     }
 
-    for (i = h->free; i != -1; i = h->ordering[i].next)
-	nf++;
+    if (h->cache_size) {
+	for (i = h->free; i != -1; i = h->ordering[i].next)
+	    nf++;
+    }
 
     fprintf(fp, "Hache Table %s\n", hname(h));
     fprintf(fp, "    Cache size       %d\n", h->cache_size);
