@@ -485,6 +485,13 @@ void g_write_index(GFile *gfile, GCardinal rec, Index *idx) {
     }
 }
 
+void g_remember_index(GFile *gfile, GCardinal rec) {
+    HacheItem *hi;
+
+    if ((hi = HacheTableSearch(gfile->idx_hash, (char *)&rec, sizeof(rec))))
+	HacheTableIncRef(gfile->idx_hash, hi);
+}
+
 void g_forget_index(GFile *gfile, GCardinal rec) {
     HacheItem *hi;
 

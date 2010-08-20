@@ -66,5 +66,6 @@ extern int g_check_header(GFile *gfile);
 Index *g_read_index(GFile *gfile, GCardinal rec);
 void g_write_index(GFile *gfile, GCardinal rec, Index *idx);
 void g_forget_index(GFile *gfile, GCardinal rec);
+void g_remember_index(GFile *gfile, GCardinal rec);
 
 #endif /*_G_FILES_H_*/

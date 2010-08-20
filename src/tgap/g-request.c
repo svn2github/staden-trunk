@@ -494,6 +494,7 @@ GView g_lock_N_(GDB *gdb, GClient c, GFileN file_N, GCardinal rec, GLock lock)
     if (check_record(gfile,rec))
 	return -1;
 
+    g_remember_index(gfile, rec);
 
     /*
      * Get a new view.
@@ -780,11 +781,8 @@ static int g_unlock_views(GDB *gdb, GView v)
 	    
 	    /* free view */
 	    g_free_view(gdb,v);
-	    
+	    g_forget_index(gfile, cache->rec);
 	}
-
-
-	g_forget_index(gfile, cache->rec);
     }
 
     /*
