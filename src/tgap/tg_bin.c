@@ -408,6 +408,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 		    cache_decr(io, bin);
 
 		    bin = get_bin(io, bin->child[0]);
+		    cache_incr(io, bin);
 		    offset += bin->pos;
 		    continue;
 		}
@@ -448,6 +449,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 		    cache_decr(io, bin);
 
 		    bin = get_bin(io, bin->child[1]);
+		    cache_incr(io, bin);
 		    offset += bin->pos;
 		    continue;
 		}
@@ -1021,7 +1023,7 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
 	   nele * sizeof(int));
 
     track_free(child);
-    cache_decr(io, track);
+    //cache_decr(io, track);
 
     return track;
 }

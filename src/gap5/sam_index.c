@@ -2139,8 +2139,21 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	if (bio->pair)
 	    HacheTableDestroy(bio->pair, 1);
 
-	if (bio->libs)
+	if (bio->libs) {
+	    /* call cache_decr on each lib too */
+	    HacheItem *hi;
+	    HacheIter *iter;
+
+	    if (!(iter = HacheTableIterCreate()))
+		return -1;
+	
+	    while (hi = HacheTableIterNext(bio->libs, iter)) {
+		library_t *lib = hi->data.p;
+		cache_decr(io, lib);
+	    }
+
 	    HacheTableDestroy(bio->libs, 0);
+	}
 
 	if (bio->seqs)
 	    free(bio->seqs);
@@ -2155,6 +2168,9 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	}
 
 	free(bio);
+
+	if (bio->c)
+	    cache_decr(io, bio->c);
     }
 
     return 0;

@@ -115,6 +115,9 @@ void gap_range_destroy(gap_range_t *gr) {
     if (gr->depth) {
     	free(gr->depth);
     }
+
+    if (gr->contig)
+	cache_decr(gr->io, gr->contig);
 }
 
 int gap_range_test(gap_range_t *gr) {

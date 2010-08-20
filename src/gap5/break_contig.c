@@ -649,7 +649,6 @@ int break_contig(GapIO *io, int crec, int cpos) {
 
     bin = get_bin(io, cl->bin);
     do_comp = bin->flags & BIN_COMPLEMENTED;
-    cache_decr(io, bin);
 
     break_contig_recurse(io, h, cl, cr,
 			 contig_get_bin(&cl), cpos, contig_offset(io, &cl),

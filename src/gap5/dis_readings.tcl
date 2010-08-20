@@ -95,6 +95,7 @@ proc OK_Pressed_DisReading { io f cs infile id sel_task constags } {
 	# Someone's too busy to shutdown?
 	return
     }
+
     set result [disassemble_readings \
 		    -io $io \
 		    -readings $list \

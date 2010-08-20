@@ -365,7 +365,6 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 	
     case GT_Seq:
 	ci = io->iface->seq.read(io->dbh, k->rec);
-	printf("Query seq %d => %p\n", k->rec, ci);
 	break;
 
     case GT_SeqBlock:
@@ -783,8 +782,8 @@ int cache_flush(GapIO *io) {
     //fprintf(stderr, "\n");
     for (hi = h->in_use; hi; hi = hi->in_use_next) {
 	cached_item *ci = hi->data.p;
-	//	fprintf(stderr, "Item %d, type %d, updated %d\n",
-	//		ci->view, ci->type, ci->updated);
+	//fprintf(stderr, "Item %d, type %d, updated %d\n",
+	//	ci->view, ci->type, ci->updated);
 	if (ci->updated) {
 	    ARR(cached_item *, to_flush, nflush++) = ci;
 	}

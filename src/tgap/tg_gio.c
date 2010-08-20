@@ -167,7 +167,5 @@ int gio_read_contig(GapIO *io, int cnum, contig_t **c) {
     crec = arr(GCardinal, io->contig_order, cnum);
     *c = (contig_t *)cache_search(io, GT_Contig, crec);
 
-    cache_decr(io, *c);
-
     return 0;
 }

@@ -649,5 +649,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     if (pair)
 	HacheTableDestroy(pair, 1);
 
+    if (c)
+	cache_decr(io, c);
+
     return 0;
 }

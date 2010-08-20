@@ -705,15 +705,12 @@ int sequence_get_pair(GapIO *io, seq_t *s) {
 	return -1;
     if (NULL == (b = (bin_index_t *)cache_search(io, GT_Bin, s->bin)))
 	return -1;
-    if (!b->rng) {
-	cache_decr(io, b);
+    if (!b->rng)
 	return -1;
-    }
 
     /* Jump over to pair */
     r = arrp(range_t, b->rng, s->bin_index);
     assert(r->rec == s->rec);
-    cache_decr(io, b);
     return r->pair_rec;
 }
 
@@ -1159,8 +1156,10 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
     /* Find the position and contig this sequence currently covers */
     cache_incr(io, *s);
     if (0 != sequence_get_position(io, (*s)->rec,
-				   &contig, &start, &end, &orient))
+				   &contig, &start, &end, &orient)) {
+	cache_decr(io, *s);
 	return -1;
+    }
 
 
     /*

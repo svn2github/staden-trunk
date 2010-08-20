@@ -269,6 +269,8 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
 	//if (j == 100000)
 	//break;
     }
+    if (c)
+	cache_decr(io, c);
 
     cache_flush(io);
 
@@ -288,6 +290,22 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
     if (pair) {
 	HacheTableStats(pair, stdout);
 	HacheTableDestroy(pair, 0);
+    }
+
+    /* Decr reference count on libs */
+    {
+	HacheItem *hi;
+	HacheIter *iter;
+
+	if (!(iter = HacheTableIterCreate()))
+	    return -1;
+	
+	while (hi = HacheTableIterNext(libs, iter)) {
+	    library_t *lib = hi->data.p;
+	    cache_decr(io, lib);
+	}
+
+	HacheTableIterDestroy(iter);
     }
     HacheTableDestroy(libs, 0);
 

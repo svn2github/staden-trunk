@@ -562,5 +562,8 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     if (af)
 	free(af);
 
+    if (c)
+	cache_decr(io, c);
+
     return 0;
 }

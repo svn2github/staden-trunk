@@ -196,8 +196,10 @@ static int contig_insert_base2(GapIO *io, int bnum,
 		/* All children to the right of this one need pos updating too */
 	    } else if (pos < MIN(ch->pos, ch->pos + ch->size-1)) {
 		ch = get_bin(io, bin->child[i]);
-		if (!(ch = cache_rw(io, ch)))
+		if (!(ch = cache_rw(io, ch))) {
+		    cache_decr(io, bin);
 		    return -1;
+		}
 
 		ch->pos++;
 		ch->flags |= BIN_BIN_UPDATED;
@@ -351,8 +353,10 @@ static int contig_delete_base2(GapIO *io, int bnum,
 	/* All children to the right of this one need pos updating too */
 	if (i == 0 && bin->child[1-i]) {
 	    ch = get_bin(io, bin->child[1-i]);
-	    if (!(ch = cache_rw(io, ch)))
+	    if (!(ch = cache_rw(io, ch))) {
+		cache_decr(io, bin);
 		return -1;
+	    }
 
 	    if (--ch->pos < 0)
 		ch->pos = 0;
@@ -1065,6 +1069,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 		    	if (*results) free(*results);
 			*results = NULL;
 			*alloc = 0;
+			cache_decr(io, bin);
 			return -1;
 		    } else {
 		    	*results = new_range;
@@ -1109,7 +1114,10 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 					  NMIN(ch->pos, ch->pos + ch->size-1),
 					  results, alloc, count,
 					  complement, mask, val);
-	    if (count == -1) return -1;
+	    if (count == -1) {
+		cache_decr(io, bin);
+		return -1;
+	    }
 	}
     }
 
@@ -2096,8 +2104,10 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     if (!gv) {
 	int o = 20;
 	gv = fopen(fn, "w+");
-	if (!gv)
+	if (!gv) {
+	    cache_decr(io, bin);
 	    return -1;
+	}
 	scale = 800.0 / bin->size;
 	o -= offset * scale;
 	fprintf(gv, "%%!\n/Times-Roman findfont\n5 scalefont\nsetfont\n"
@@ -2218,8 +2228,10 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 	if (0 != bin_dump_recurse(io, c, fn, i, bin->child[i],
 				  NMIN(ch->pos, ch->pos + ch->size-1),
 				  level-1, complement, rootx, rooty,
-				  do_seqs))
+				  do_seqs)) {
+	    cache_decr(io, bin);
 	    return -1;
+	}
     }
 
     cache_decr(io, bin);

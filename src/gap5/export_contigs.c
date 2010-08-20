@@ -1802,10 +1802,12 @@ static int export_tags_gff(GapIO *io, FILE *fp,
     if (unpadded) {
 	int i, np;
 	if (NULL == (con = malloc(c->end - c->start + 2))) {
+	    cache_decr(io, c);
 	    return -1;
 	}
 	if (NULL == (map = malloc((c->end - c->start + 2) *
 				  sizeof(int)))) {
+	    cache_decr(io, c);
 	    free(con);
 	    return -1;
 	}

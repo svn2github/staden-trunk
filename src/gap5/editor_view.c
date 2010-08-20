@@ -127,6 +127,8 @@ void edview_destroy(edview *xx) {
     if (xx->rec_hash)
 	HacheTableDestroy(xx->rec_hash, 0);
 
+    cache_decr(xx->io, xx->contig);
+
     xfree(xx);
 }
 
@@ -2659,8 +2661,6 @@ int *edGetTemplateReads(edview *xx, int seqrec, int *nrec) {
     } else {
 	*nrec = 0;
     }
-
-    cache_decr(xx->io, s);
 
     return r;
 }
