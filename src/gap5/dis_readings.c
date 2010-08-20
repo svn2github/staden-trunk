@@ -185,9 +185,8 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
 	iter = contig_iter_new(io, contig, 1, CITER_FIRST, start, end);
 	r = contig_iter_next(io, iter);
 	c = cache_rw(io, c);
-	c->start = r->start;
+	start = c->start = r->start;
 	contig_iter_del(iter);
-	return 0;
     }
 
     /* Hole at right end */
@@ -196,9 +195,8 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
 	iter = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND, start, end);
 	r = contig_iter_prev(io, iter);
 	c = cache_rw(io, c);
-	c->end = r->end;
+	end = c->end = r->end;
 	contig_iter_del(iter);
-	return 0;
     }
 
 
@@ -223,6 +221,28 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
 }
 
 
+/* qsort callback */
+static int pos_sort(const void *vp1, const void *vp2) {
+    const r_pos_t *p1 = (const r_pos_t *)vp1;
+    const r_pos_t *p2 = (const r_pos_t *)vp2;
+
+    if (p1->contig != p2->contig)
+	return p1->contig - p2->contig;
+
+    return p1->start - p2->start;
+}
+
+static int pos_sort_end(const void *vp1, const void *vp2) {
+    const r_pos_t *p1 = (const r_pos_t *)vp1;
+    const r_pos_t *p2 = (const r_pos_t *)vp2;
+
+    if (p1->contig != p2->contig)
+	return p1->contig - p2->contig;
+
+    return p1->end - p2->end;
+}
+
+
 /*
  * Part 4 of the disassemble_readings implementation.
  * 
@@ -243,6 +263,17 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
 	return 0;
 
     /*
+     * pos[] is sorted by start coordinate. We need to loop backwards
+     * through it though as break_contig will be producing a new right
+     * hand contig, so moving backwards means we're always marching
+     * down the un-changing (in contig number terms) left-hand contig.
+     *
+     * Due to sorted start coord but ragged end coord, we sort by
+     * end instead so the overlapping segment detector works.
+     */
+    qsort(pos, npos, sizeof(*pos), pos_sort_end);
+
+    /*
      * Step through pos finding overlapping reads so we can get entire
      * spans where we've removed data. We use this to limit our hole
      * fixing to just that region, reducing the search time on huge
@@ -259,23 +290,13 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
 	    start  = pos[i].start;
 	    end    = pos[i].end;
 	} else {
-	    start = pos[i].start;
+	    if (start > pos[i].start)
+		start = pos[i].start;
 	}
     }
     remove_contig_holes(io, contig, start, end, !remove_holes);
 
     return 0;
-}
-
-/* qsort callback */
-static int pos_sort(const void *vp1, const void *vp2) {
-    const r_pos_t *p1 = (const r_pos_t *)vp1;
-    const r_pos_t *p2 = (const r_pos_t *)vp2;
-
-    if (p1->contig != p2->contig)
-	return p1->contig - p2->contig;
-
-    return p1->start - p2->start;
 }
 
 
@@ -414,7 +435,8 @@ static int move_reads(GapIO *io, r_pos_t *pos, int npos) {
 	    start   = pos[i].start;
 	    end     = pos[i].end;
 	} else {
-	    end = pos[i].end;
+	    if (end < pos[i].end)
+		end = pos[i].end;
 	}
     }
     if (create_contig_from(io, &pos[i_start], i - i_start))
