@@ -62,6 +62,7 @@ TG_INDEX=\
 	maqmap.o \
 	sam_index.o \
 	ace.o \
+	caf.o \
 	depad_seq_tree.o
 
 GAP5=\

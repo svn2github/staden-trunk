@@ -37,6 +37,7 @@
 #include "maq.h"
 #include "ace.h"
 #include "baf.h"
+#include "caf.h"
 #include "tg_index_common.h"
 #include "zfio.h"
 
@@ -54,6 +55,7 @@ void usage(void) {
     fprintf(stderr, "      -M                   Input is MAQ-long format\n");
     fprintf(stderr, "      -A                   Input is ACE format\n");
     fprintf(stderr, "      -B                   Input is BAF format\n");
+    fprintf(stderr, "      -C                   Input is CAF format\n");
 #ifdef HAVE_SAMTOOLS
     fprintf(stderr, "      -b                   Input is BAM format\n");
     fprintf(stderr, "      -s                   Input is SAM format (with @SQ headers)\n");
@@ -125,9 +127,9 @@ int main(int argc, char **argv) {
 
     /* Arg parsing */
 #ifdef HAVE_SAMTOOLS
-    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:d:c:gux")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPnz:fr:d:c:gux")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:d:c:gux")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCstThAmMo:pPnz:fr:d:c:gux")) != -1) {
 #endif
 	switch(opt) {
 	case 'g':
@@ -154,6 +156,7 @@ int main(int argc, char **argv) {
 	case 'B':
 	case 's':
 	case 'b':
+	case 'C':
 	    a.fmt = opt;
 	    break;
 
@@ -284,6 +287,11 @@ int main(int argc, char **argv) {
 	case 'B':
 	    printf("Processing BAF file %s\n", argv[optind]);
 	    err = parse_baf(io, argv[optind++], &a) ? 1 : 0;
+	    break;
+
+	case 'C':
+	    printf("Processing CAF file %s\n", argv[optind]);
+	    parse_caf(io, argv[optind++], &a);
 	    break;
 
 #ifdef HAVE_SAMTOOLS

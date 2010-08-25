@@ -550,6 +550,10 @@ int tg_index_file_type (char *fn) {
 	    0 == strcmp(suffix, "MAP") ||
 	    0 == strcmp(suffix, "maq"))
 	    return 'm';
+
+	if (0 == strcmp(suffix, "caf") ||
+	    0 == strcmp(suffix, "CAF"))
+	    return 'C';
     }
 
     /* By contents */
