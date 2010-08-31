@@ -12,6 +12,116 @@
 #include "misc.h"
 
 /*-----------------------------------------------------------------------------
+ * Databse checking code.
+ */
+
+/* Recursively check linkage on bins and nseqs relationships.
+ * brec  = bin record
+ * prec  = parent record, to validate against.
+ * ptype = type of parent record.
+ *
+ * Returns nseqs on success
+ *         -1 on failure.
+ */
+//static FILE *errfp = stderr;
+static FILE *errfp = NULL;;
+
+static int check_contig_bins_r(GapIO *io, int brec, int ptype, int prec) {
+    bin_index_t *b;
+    int copy_c0, copy_c1, copy_nseq;
+    int i, ns, nseq;
+
+    /* Check prec/ptype */
+    b = cache_search(io, GT_Bin, brec);
+
+    if (b->parent != prec || b->parent_type != ptype) {
+	fprintf(errfp, "ERROR: bin parent record/type mismatch for bin %d : "
+		"parent = %d/%d type = %d/%d\n",
+		brec, b->parent, prec, b->parent_type, ptype);
+	abort();
+	return -1;
+    }
+
+    /* Count number of sequences in this contig */
+    for (ns = i = 0; b->rng && i < ArrayMax(b->rng); i++) {
+	range_t *r = arrp(range_t, b->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+	    ns++;
+    }
+
+    /* Take copies of the data from b so we don't have to lock it and
+     * can allow it to get purged from the hache.
+     */
+    copy_c0   = b->child[0];
+    copy_c1   = b->child[1];
+    copy_nseq = b->nseqs;
+
+    /* Recurse and check nseqs */
+    if (copy_c0) {
+	if ((i = check_contig_bins_r(io, copy_c0, GT_Bin, brec)) == -1)
+	    return -1;
+	ns += i;
+    }
+    if (copy_c1) {
+	if ((i = check_contig_bins_r(io, copy_c1, GT_Bin, brec)) == -1)
+	    return -1;
+	ns += i;
+    }
+
+    if (ns != copy_nseq) {
+	fprintf(errfp, "ERROR: nseq mismatch for bin %d : %d/%d\n",
+		brec, ns, copy_nseq);
+	abort();
+	return -1;
+    }
+
+    return ns;
+}
+
+int check_contig_bins(GapIO *io) {
+    int i, ret = 0;
+
+    errfp = stdout;
+
+    printf("check_contig_bins start, ncontigs=%d\n", io->db->Ncontigs);
+    if (io->db->Ncontigs <= 340)
+	return 0;
+
+    for (i = 0; i < io->db->Ncontigs; i++) {
+	int crec = arr(GCardinal, io->contig_order, i);
+	contig_t *c = cache_search(io, GT_Contig, crec);
+	//printf("Check contig %d root %d\n", crec, c->bin);
+	if (c->bin) {
+	    if (check_contig_bins_r(io, c->bin, GT_Contig, crec) == -1)
+		ret = -1;
+	}
+    }
+
+    printf("check_contig_bins end => %d\n", ret);
+
+    return ret;
+}
+
+/* Singular of above */
+int check_contig_bin(GapIO *io, int crec) {
+    contig_t *c = cache_search(io, GT_Contig, crec);
+    errfp = stdout;
+
+    printf("Check contig %d root %d\n", crec, c->bin);
+    if (c->bin) {
+	if (check_contig_bins_r(io, c->bin, GT_Contig, crec) == -1)
+	    return -1;
+    }
+
+    return 0;
+}
+
+
+
+/*-----------------------------------------------------------------------------
  * Internal functions & data types
  */
 
@@ -24,7 +134,6 @@ typedef struct {
     rangec_t *anno;   /* Annotation ranges */
     int n_anno;
 } r_pos_t;
-
 
 
 /*
@@ -59,7 +168,7 @@ static int unlink_read(GapIO *io, int rec, r_pos_t *pos, int remove) {
     int brec;
     int i, j;
 
-    printf("%soving record #%d\n", remove ? "Rem" : "M", rec);
+    //printf("%soving record #%d\n", remove ? "Rem" : "M", rec);
 
     /* Get location */
     if (bin_get_item_position(io, GT_Seq, rec,
@@ -73,10 +182,6 @@ static int unlink_read(GapIO *io, int rec, r_pos_t *pos, int remove) {
 	return -1;
     }
     /* seq already has cache_incr on it */
-
-    printf("    In contig %d at %d..%d, bin rec %d\n",
-	   pos->contig, pos->start, pos->end, brec);
-
 
     /* Find annotations in this region */
     c = cache_search(io, GT_Contig, pos->contig);
@@ -94,7 +199,7 @@ static int unlink_read(GapIO *io, int rec, r_pos_t *pos, int remove) {
     /*
      * Remove from bin range array
      *
-     * FIXME: could be done more optimally if we knew bin->rng[]
+     * FIXME: could be done more optimal if we knew bin->rng[]
      * index. Maybe update bin_get_item_position to return this
      * value so we can directly manipulate r->flags.
      *
@@ -108,6 +213,7 @@ static int unlink_read(GapIO *io, int rec, r_pos_t *pos, int remove) {
 	cache_decr(io, c);
 	return -1;
     }
+
     if (bin_remove_item_from_bin(io, &c, &bin, GT_Seq, rec)) {
 	cache_decr(io, seq);
 	cache_decr(io, c);
@@ -146,6 +252,17 @@ static int unlink_read(GapIO *io, int rec, r_pos_t *pos, int remove) {
     return 0;
 }
 
+void bin_destroy_recurse(GapIO *io, int rec) {
+    bin_index_t *bin = cache_search(io, GT_Bin,rec);
+
+    cache_incr(io, bin);
+    if (bin->child[0]) bin_destroy_recurse(io, bin->child[0]);
+    if (bin->child[1]) bin_destroy_recurse(io, bin->child[1]);
+    cache_decr(io, bin);
+
+    cache_rec_deallocate(io, GT_Bin, rec);
+}
+
 /*
  * Looks for contig gaps between start..end in contig and if it finds them,
  * breaking the contig in two.
@@ -161,19 +278,22 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
     printf("Finding contig holes in contig %d between %d..%d\n",
 	   contig, start, end);
 
-    /* Invalidate any cached consensus copies */
-    if (bin_invalidate_consensus(io, contig, start, end) != 0)
-	return -1;
-
 
     /* Destroy contigs if they're now entirely empty */
     c = cache_search(io, GT_Contig, contig);
     bin = cache_search(io, GT_Bin, c->bin);
     if (bin->nseqs == 0) {
 	puts("Removing empty contig");
+
+	if (c->bin)
+	    bin_destroy_recurse(io, c->bin);
 	contig_destroy(io, contig);
 	return 0;
     }
+
+    /* Invalidate any cached consensus copies */
+    if (bin_invalidate_consensus(io, contig, start, end) != 0)
+	return -1;
 
     if (empty_contigs_only)
 	return 0;
@@ -181,24 +301,29 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
 
     /* Hole at left end */
     if (c->start == start) {
-	puts("Trimming left end");
 	iter = contig_iter_new(io, contig, 1, CITER_FIRST, start, end);
-	r = contig_iter_next(io, iter);
-	c = cache_rw(io, c);
-	start = c->start = r->start;
-	contig_iter_del(iter);
+	if (iter) {
+	    r = contig_iter_next(io, iter);
+	    if (r) {
+		c = cache_rw(io, c);
+		start = c->start = r->start;
+	    }
+	    contig_iter_del(iter);
+	}
     }
 
     /* Hole at right end */
     if (c->end == end) {
-	puts("Trimming right end");
 	iter = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND, start, end);
-	r = contig_iter_prev(io, iter);
-	c = cache_rw(io, c);
-	end = c->end = r->end;
-	contig_iter_del(iter);
+	if (iter) {
+	    r = contig_iter_prev(io, iter);
+	    if (r) {
+		c = cache_rw(io, c);
+		end = c->end = r->end;
+	    }
+	    contig_iter_del(iter);
+	}
     }
-
 
     /* Look for holes in the middle */
     iter = contig_iter_new(io, contig, 0, CITER_LAST | CITER_IEND, start, end);
@@ -220,11 +345,22 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
     return 0;
 }
 
+static GapIO *xio = NULL;
+
 
 /* qsort callback */
 static int pos_sort(const void *vp1, const void *vp2) {
     const r_pos_t *p1 = (const r_pos_t *)vp1;
     const r_pos_t *p2 = (const r_pos_t *)vp2;
+
+#if 0
+    /* For stable sorting regardless of rec deallocation, use this: */
+    if (p1->contig != p2->contig) {
+	contig_t *c1 = cache_search(xio, GT_Contig, p1->contig);
+	contig_t *c2 = cache_search(xio, GT_Contig, p2->contig);
+	return strcmp(c1->name, c2->name);
+    }
+#endif
 
     if (p1->contig != p2->contig)
 	return p1->contig - p2->contig;
@@ -235,6 +371,14 @@ static int pos_sort(const void *vp1, const void *vp2) {
 static int pos_sort_end(const void *vp1, const void *vp2) {
     const r_pos_t *p1 = (const r_pos_t *)vp1;
     const r_pos_t *p2 = (const r_pos_t *)vp2;
+
+#if 0
+    if (p1->contig != p2->contig) {
+	contig_t *c1 = cache_search(xio, GT_Contig, p1->contig);
+	contig_t *c2 = cache_search(xio, GT_Contig, p2->contig);
+	return strcmp(c1->name, c2->name);
+    }
+#endif
 
     if (p1->contig != p2->contig)
 	return p1->contig - p2->contig;
@@ -300,8 +444,55 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
 }
 
 
-static int seq_deallocate(GapIO *io, int rec) {
-    printf("TODO: deallocate_seq(#%d)\n", rec);
+/*
+ * Removes a sequence from the database, removing the bin range entry
+ * and taking out of the BTree name index too if appropriate.
+ */
+static int seq_deallocate(GapIO *io, r_pos_t *pos) {
+    int i;
+    seq_t *s;
+    bin_index_t *b;
+    range_t *r;
+    contig_t *c;
+
+    /* Remove from relevant seq_block array */
+    cache_item_remove(io, GT_Seq, pos->rec);
+
+    /* Deallocate seq struct itself */
+    if (!(s = cache_search(io, GT_Seq, pos->rec)))
+	return -1;
+    cache_incr(io, s);
+    
+    if (!(b = cache_search(io, GT_Bin, s->bin))) {
+	cache_decr(io, s);
+	return -1;
+    }
+
+    /* Remove from range array */
+    b = cache_rw(io, b);
+    b->flags |= BIN_RANGE_UPDATED;
+    r = arrp(range_t, b->rng, s->bin_index);
+    assert(r->rec == s->rec);
+    r->flags |= GRANGE_FLAG_UNUSED;
+
+    cache_decr(io, s);
+
+    //Already achieved via cache_item_remove
+    //cache_rec_deallocate(io, GT_Seq, pos->rec);
+
+
+    /* TODO: remove from btree name index */
+
+    /* Remove annotations too */
+    c = cache_search(io, GT_Contig, pos->contig);
+    cache_incr(io, c);
+    for (i = 0; i < pos->n_anno; i++) {
+	bin_remove_item(io, &c, GT_AnnoEle, pos->anno[i].rec);
+	cache_item_remove(io, GT_AnnoEle, pos->anno[i].rec);
+	//cache_rec_deallocate(io, GT_AnnoEle, pos->anno[i].rec);
+    }
+    cache_decr(io, c);
+
     return 0;
 }
 
@@ -324,10 +515,10 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
     if (npos <= 0)
 	return -1;
 
-    puts("\n=== new contig ===");
+    vmessage("\n=== new contig ===");
     for (i = 0; i < npos; i++) {
-	printf("%d\tCtg %d\t%d..%d\tseq %d\n",
-	       i, pos[i].contig, pos[i].start, pos[i].end, pos[i].rec);
+	vmessage("%d\tCtg %d\t%d..%d\tseq %d\n",
+		 i, pos[i].contig, pos[i].start, pos[i].end, pos[i].rec);
     }
 
 
@@ -407,6 +598,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 
     cache_decr(io, c_old);
     cache_decr(io, c_new);
+
     return 0;
 }
 
@@ -478,7 +670,8 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
     r_pos_t *pos;
     HacheTable *dup_hash;
 
-    puts("Disassemble_readings");
+    vfuncheader("Disassemble_readings");
+    //    check_contig_bins(io);
 
     if (nreads <= 0)
 	return 0;
@@ -538,6 +731,7 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 
 
     /* Sort position table and drop the duplicate entries */
+    xio = io;
     qsort(pos, nreads, sizeof(*pos), pos_sort);
     for (i = 0; i < nreads; i++)
 	if (pos[i].contig)
@@ -547,17 +741,12 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 	nreads -= i;
     }
 
-    for (i = 0; i < nreads; i++) {
-	printf("%d\tCtg %d\t%d..%d\tseq %d\n",
-	       i, pos[i].contig, pos[i].start, pos[i].end, pos[i].rec);
-    }
-
     /* Part 3: */
     switch (move) {
     case 0:
 	/* 3a. Deallocate the record */
 	for (i = 0; i < nreads; i++) {
-	    if (seq_deallocate(io, pos[i].rec))
+	    if (seq_deallocate(io, &pos[i]))
 		err = 1;
 	}
 	break;
@@ -591,6 +780,8 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 	err = 1;
 
     cache_flush(io);
+
+    // check_contig_bins(io);
 
     for (i = 0; i < nreads; i++)
 	if (pos[i].anno)
