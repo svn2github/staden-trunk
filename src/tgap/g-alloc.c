@@ -76,6 +76,7 @@
 #define MIN_LEN 24
 
 //#define DEBUG
+#define DEBUG_FP stdout
 //#define VALGRIND
 
 /* An allocated block on the heap */
@@ -424,7 +425,8 @@ static int64_t wilderness_allocate(dheap_t *h, uint32_t length) {
     put_block(h, &b, 0, 1);
     
 #ifdef DEBUG
-    fprintf(stderr, "%ld (W)\n", b.pos+4);
+    static int count = 0;
+    fprintf(DEBUG_FP, "%ld (W) %d\n", b.pos+4, count++);
 #endif
     return b.pos + 4;
 }
@@ -447,8 +449,8 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 	*allocated = length-5;
 
 #ifdef DEBUG
-    fprintf(stderr, "H-%p: heap_allocate %d => ", h, length);
-    fflush(stderr);
+    fprintf(DEBUG_FP, "H-%p: heap_allocate %d => ", h, length);
+    fflush(DEBUG_FP);
 #endif
 
     /* Search for the first item in the pool that's big enough */
@@ -461,7 +463,10 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 
     assert(pred >= porig);
 
-    for (; p < NPOOLS; p++) {
+    //    if (length > 70000)
+    //	printf("  largest=%d  ", heap_largest_check(h));
+
+    for (; p < NPOOLS && p-pred < 75; p++) {
 	uint64_t ms = 0;
 	orig = rover = h->pool[p];
 
@@ -514,7 +519,7 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 		}
 
 #ifdef DEBUG
-		fprintf(stderr, "%ld\n", rover+4);
+		fprintf(DEBUG_FP, "%ld\n", rover+4);
 #endif
 		h->next_free_time[porig] = h->timer;
 
@@ -551,14 +556,14 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 int heap_free(dheap_t *h, int64_t pos) {
     block_t b, pb, nb;
 
-#ifdef DEBUG
-    fprintf(stderr, "H-%p: heap_free %ld\n", h, pos);
-#endif
-
     //h->timer++;
 
     if (-1 == get_block(h, pos-4, &b))
 	return -1;
+
+#ifdef DEBUG
+    fprintf(DEBUG_FP, "H-%p: heap_free %ld <= %ld\n", h, b.len, b.pos);
+#endif
 
     if (b.pos + b.len == h->wilderness) {
 	//h->wilderness = b.pos;
@@ -617,6 +622,161 @@ typedef struct free_bit_struct {
     uint32_t len;
     struct free_bit_struct *n;
 } free_bit;
+
+int heap_largest_check(dheap_t *h) {
+    free_bit *head = NULL, *fb = NULL;
+    int largest = 0;
+
+    /* Check the in-memory pool data matches on disk */
+    {
+	uint64_t p[NPOOLS];
+	int i;
+	lseek(h->fd, 0, SEEK_SET);
+	read(h->fd, &p[0], 8*NPOOLS);
+	for (i = 1; i < NPOOLS-1; i++) {
+	    int pmin, pmax;
+
+	    p[i] = be_int8(p[i]);
+	    assert(p[i] == h->pool[i]);
+
+	    if (i < 1) {
+		pmin = 0;
+		pmax = 16;
+	    } else if (i < 126) {
+		pmin = (i+2)<<3;
+		pmax = (i+3)<<3;
+	    } else {
+		pmin = 1024-8 + (8 << (i-126));
+		pmax = 1024-8 + (8 << (i+1-126));
+	    }
+
+	    pmax--;
+
+	    assert(pool(pmin) == i);
+	    assert(pool(pmax) == i);
+	    assert(pool(pmin-1) == i-1);
+	    assert(pool(pmax+1) == i+1);
+	}
+    }
+
+    /* Now read each block in turn */
+    {
+	uint32_t len, len2;
+	uint64_t prev, next;
+	uint64_t offset = 8*NPOOLS;
+
+	while (4 == read(h->fd, &len, 4)) {
+	    read(h->fd, &prev, 8);
+	    read(h->fd, &next, 8);
+
+	    len = be_int4(len);
+	    prev = be_int8(prev);
+	    next = be_int8(next);
+
+	    if (len & 1) {
+		if (largest < (len & ~1))
+		    largest = (len & ~1);
+	    }
+
+	    assert(len < 10000000);
+	    assert((len & ~1) > 0);
+
+	    if (len & 1) {
+		fb = (free_bit *)calloc(1, sizeof(*fb));
+		fb->pos = offset;
+		fb->len = len;
+		fb->prev = prev;
+		fb->next = next;
+		fb->n = head;
+		head = fb;
+
+		assert(fb->prev);
+		assert(fb->next);
+	    }
+
+	    offset += len & ~1;
+	    lseek(h->fd, offset-4, SEEK_SET);
+	    read(h->fd, &len2, 4);
+	    len2 = be_int4(len2);
+
+	    if (len&1) {
+		assert(len == len2);
+	    }
+	    assert((len&1) == (len2&1));
+	}
+    }
+
+    /* Check all pools point to valid items of the correct size */
+    {
+	int i;
+
+	/* Very inefficient, but ok for debugging */
+	for (i = 0; i < NPOOLS; i++) {
+	    int pmin, pmax;
+	    uint64_t pos, more;
+	    free_bit *last;
+
+	    if (h->pool[i] == 0)
+		continue;
+
+	    if (i < 1) {
+		pmin = 0;
+		pmax = 16;
+	    } else if (i < 126) {
+		pmin = (i+2)<<3;
+		pmax = (i+3)<<3;
+	    } else {
+		pmin = 1024-8 + (8 << (i-126));
+		pmax = 1024-8 + (8 << (i+1-126));
+	    }
+	    pmax--;
+
+	    pos = h->pool[i];
+	    last = NULL;
+	    more = 2;
+	    do {
+		/* Find free_bit struct */
+		fb = head;
+		while (fb) {
+		    free_bit *next;
+		    next = fb->n;
+		    if (pos == fb->pos)
+			break;
+		    fb = next;
+		}
+
+		assert(fb);
+		if (more == 2) {
+		    assert(fb->len != 0);
+		    assert(fb->len >= pmin);
+		    assert(fb->len <= pmax);
+		}
+		fb->len = 0; /* Mark it as "been here" */
+
+		if (fb->pos == h->pool[i])
+		    more--;
+
+		if (last)
+		    assert(last->next == fb->pos);
+
+		last = fb;
+		pos = fb->next;
+	    } while (more);
+	}
+    }
+
+    /* Free, checking we've visited all too */
+    fb = head;
+    while (fb) {
+	free_bit *next;
+	next = fb->n;
+	assert(fb->len == 0);
+	free(fb);
+	fb = next;
+    }
+
+    return largest;
+}
 
 void heap_check(dheap_t *h) {
     free_bit *head = NULL, *fb = NULL;
