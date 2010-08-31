@@ -601,6 +601,9 @@ int bin_get_item_position(GapIO *io, int type, GRec rec,
 
     if (type == GT_AnnoEle) {
 	anno_ele_t *a = cache_search(io, GT_AnnoEle, rec);
+	if (!a)
+	    return -1;
+
 	if (i_out) {
 	    cache_incr(io, a);
 	    *i_out = a;
@@ -608,6 +611,8 @@ int bin_get_item_position(GapIO *io, int type, GRec rec,
 	bnum = a->bin;
     } else if (type == GT_Seq) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
+	if (!s)
+	    return -1;
 
 	if (i_out) {
 	    cache_incr(io, s);
@@ -1052,9 +1057,11 @@ int bin_invalidate_consensus(GapIO *io, int contig, int start, int end) {
 	if (!bin)
 	    return -1;
 
-	bin = cache_rw(io, bin);
-	bin->flags |=  BIN_BIN_UPDATED;
-	bin->flags &= ~BIN_CONS_VALID;
+	if (bin->flags & BIN_CONS_VALID) {
+	    bin = cache_rw(io, bin);
+	    bin->flags |=  BIN_BIN_UPDATED;
+	    bin->flags &= ~BIN_CONS_VALID;
+	}
     }
 
     if (r)
@@ -1062,4 +1069,3 @@ int bin_invalidate_consensus(GapIO *io, int contig, int start, int end) {
 
     return 0;
 }
-
