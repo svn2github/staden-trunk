@@ -26,7 +26,8 @@ typedef struct cached_item_s {
     GCardinal rec;
     int lock_mode:7;
     unsigned int updated:1;
-    int type:8;
+    unsigned int forgetme:1;
+    int type:6;
     HacheItem *hi;
     size_t data_size;
     void *data;

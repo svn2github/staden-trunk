@@ -67,6 +67,7 @@ cached_item *cache_new(int type, GRec rec, GView v,
     ci->type = type;
     ci->hi = hi;
     ci->updated = 0;
+    ci->forgetme = 0;
     ci->data_size = e_len;
 
     return ci;
@@ -175,6 +176,9 @@ static int track_write(GapIO *io, cached_item *ci) {
 static void bin_unload(GapIO *io, cached_item *ci, int unlock) {
     bin_index_t *bin = (bin_index_t *)&ci->data;
 
+    if (ci->forgetme)
+	io->iface->bin.destroy(io->dbh, ci->rec, ci->view);
+
     if (unlock)
 	io->iface->bin.unlock(io->dbh, ci->view);
 
@@ -197,8 +201,11 @@ static int bin_write(GapIO *io, cached_item *ci) {
 
 
 static void contig_unload(GapIO *io, cached_item *ci, int unlock) {
+    if (ci->forgetme)
+	io->iface->contig.destroy(io->dbh, ci->rec, ci->view);
+
     if (unlock)
-	io->iface->seq.unlock(io->dbh, ci->view);
+	io->iface->contig.unlock(io->dbh, ci->view);
     free(ci);
 }
 
@@ -689,7 +696,7 @@ int cache_flush(GapIO *io) {
     Array to_flush;
     int nflush = 0;
 
-    //printf(">>> cache flush <<<\n");
+    //printf("\n>>> cache flush <<<\n");
     //HacheTableRefInfo(io->cache, stdout);
 
     /*
@@ -782,12 +789,43 @@ int cache_flush(GapIO *io) {
     //fprintf(stderr, "\n");
     for (hi = h->in_use; hi; hi = hi->in_use_next) {
 	cached_item *ci = hi->data.p;
-	//fprintf(stderr, "Item %d, type %d, updated %d\n",
-	//	ci->view, ci->type, ci->updated);
+	//printf("View %d, type %d, rec %d, updated %d, forgetme %d\n",
+	//	ci->view, ci->type, ci->rec, ci->updated, ci->forgetme);
 	if (ci->updated) {
 	    ARR(cached_item *, to_flush, nflush++) = ci;
+	    //printf("To flush %d, updated\n", ci->rec);
+	} else {
+	    if (ci->forgetme) {
+		ARR(cached_item *, to_flush, nflush++) = ci;
+	    }
 	}
     }
+
+
+#if 0
+    /*
+     * DEBUG: double check all items to make sure that we're not going
+     * to miss something which should be flushed but is somehow not
+     * labelled as in_use.
+     */
+    {
+	HacheIter *iter = HacheTableIterCreate();
+	while (hi = HacheTableIterNext(h, iter)) {
+	    cached_item *ci = hi->data.p;
+
+	    if (ci->updated || ci->forgetme) {
+		int i;
+		for (i = 0; i < nflush; i++) {
+		    if (arr(cached_item *, to_flush, i) == ci)
+			break;
+		}
+		assert(i < nflush);
+	    }
+	}
+	HacheTableIterDestroy(iter);
+    }
+#endif
+
 
     /* Sort them by view number, which is likely to be approx on-disk order */
     qsort(ArrayBase(cached_item *, to_flush), nflush, sizeof(cached_item *),
@@ -804,6 +842,20 @@ int cache_flush(GapIO *io) {
 	//	gettimeofday(&tp1, NULL);
 
 	write_counts[ci->type]++;
+
+	/*
+	 * Should we delay this until we've written data, so that these
+	 * records aren't reused during this self-same flush? It may
+	 * make it impossible to roll back as it currently stands, but
+	 * maybe this is impossible already!? (We have no tool to attempt
+	 * it anyway currently.)
+	 */
+	if (ci->forgetme) {
+	    ci->updated = 0;
+	    HacheTableDecRef(io->cache, ci->hi);
+	    HacheTableDel(io->cache, ci->hi, 1);
+	    continue;
+	}
 
 	switch (ci->type) {
 	case GT_Database:
@@ -1310,6 +1362,43 @@ int cache_item_create(GapIO *io, int type, void *from) {
     return -1;
 }
 
+
+/*
+ * Removes an item from one of the blocked structures.
+ * The caller is expected to deallocate the seq/anno record too.
+ */
+int cache_item_remove(GapIO *io, int type, int rec) {
+    int sub_rec = 0;
+    seq_block_t *sb;
+    anno_ele_block_t *ab;
+
+    switch (type) {
+    case GT_Seq:
+	sub_rec = rec & (SEQ_BLOCK_SZ-1);
+	rec >>= SEQ_BLOCK_BITS;
+	sb = cache_search(io, GT_SeqBlock, rec);
+	sb = cache_rw(io, sb);
+	sb->seq[sub_rec] = NULL;
+	break;
+
+    case GT_AnnoEle:
+	sub_rec = rec & (ANNO_ELE_BLOCK_SZ-1);
+	rec >>= ANNO_ELE_BLOCK_BITS;
+	ab = cache_search(io, GT_AnnoEleBlock, rec);
+	ab = cache_rw(io, ab);
+	ab->ae[sub_rec] = NULL;
+	break;
+
+    default:
+	fprintf(stderr, "cache_item_remove only implemented for "
+		"GT_Seq/GT_AnnoEle.\n");
+	return -1;
+    }
+
+    return 0;
+}
+
+
 /*
  * Initialises an item, for use when cache_item_create was used with 
  * from == NULL. This allows us to pre-allocate a record number and then
@@ -1372,6 +1461,9 @@ void cache_incr(GapIO *io, void *data) {
 void cache_decr(GapIO *io, void *data) {
     cached_item *ci = cache_master(ci_ptr(data));
     HacheTableDecRef(ci->hi->h, ci->hi);
+
+    assert(ci->hi->ref_count >= 0);
+    assert(ci->updated == 0 || ci->hi->ref_count > 0);
 }
 
 /*
@@ -1637,4 +1729,54 @@ void *cache_rw(GapIO *io, void *data) {
     }
 
     return data;
+}
+
+/*
+ * Deallocates a record from disc, freeing up the record number in the process
+ * too. For now the record we deallocate shouldn't have been modified (ie
+ * made r/w). There is no specific need for this constraint except for the
+ * fact that I cannot see why we would modify something and then want to
+ * throw away both the changes and completely destroy the original record
+ * in the same step. So for now we check as it may spot errors. Relax this
+ * if needed.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int cache_deallocate(GapIO *io, void *data) {
+    cached_item *ci = ci_ptr(data);
+
+    /* Mark it for removal */
+    ci->forgetme = 1;
+
+    return 0;
+}
+
+/*
+ * As above, but destroys a type/record instead of a cache object we
+ * have a pointer to.
+ */
+int cache_rec_deallocate(GapIO *io, int type, int rec) {
+    void *v = cache_search(io, type, rec);
+    cached_item *ci;
+
+    if ((ci = ci_ptr(v))) {
+	/* Need write access to remove a record */
+	if (ci->lock_mode < G_LOCK_RW) {
+	    if (-1 == cache_upgrade(io, ci, G_LOCK_RW)) {
+		fprintf(stderr, "lock denied for rec %d\n", ci->rec);
+		return -1;
+	    }
+	}
+
+	/* Mark for removal */
+	ci->forgetme = 1;
+
+	/* Actual deallocate will be done at next flush */
+	HacheTableIncRef(ci->hi->h, ci->hi);
+
+	return 0;
+    } else {
+	return -1;
+    }
 }

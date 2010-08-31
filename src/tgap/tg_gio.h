@@ -90,6 +90,7 @@ void cache_decr(GapIO *io, void *data);
 /* Create and initialise a new item. */
 int cache_item_create(GapIO *io, int type, void *from);
 int cache_item_init(GapIO *io, int type, void *from, int rec);
+int cache_item_remove(GapIO *io, int type, int rec);
 
 /* A temporary hack until GRec becomes 64-bit */
 void set_reserved_seqs(int rseqs);

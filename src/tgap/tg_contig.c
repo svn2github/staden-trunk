@@ -2031,13 +2031,14 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
 
 /*
  * Destroys contig 'rec'.
+ * Does NOT destroy any data within it, including the root bin.
+ *
  * Returns 0 for success
  *        -1 for failure
  */
 int contig_destroy(GapIO *io, int rec) {
     int i, j;
 
-    printf("Destroy contig rec %d\n", rec);
     io->contig_order = cache_rw(io, io->contig_order);
     io->db = cache_rw(io, io->db);
 
@@ -2059,6 +2060,8 @@ int contig_destroy(GapIO *io, int rec) {
     io->db->Ncontigs--;
 
     contig_register_delete(io, rec);
+
+    cache_rec_deallocate(io, GT_Contig, rec);
 
     return 0;
 }
