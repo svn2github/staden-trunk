@@ -253,7 +253,7 @@ static int read_image_(int fd, GImage image, GCardinal used, void *buf, GCardina
 	/* LOW LEVEL IO HERE */
 #ifdef NO_PREAD
 	errno = 0;
-	if (-1==lseek(fd, (off_t)image, 0))
+	if (-1==lseek(fd, (off_t)image, SEEK_SET))
 	    return gerr_set(GERR_SEEK_ERROR);
 
 	/* LOW LEVEL IO HERE */
@@ -321,7 +321,7 @@ static int readv_image_(int fd, GImage image, GCardinal used, GIOVec *v, GCardin
 
 	/* LOW LEVEL IO HERE */
 	errno = 0;
-	if (-1==lseek(fd, (off_t)image, 0))
+	if (-1==lseek(fd, (off_t)image, SEEK_SET))
 	    return gerr_set(GERR_SEEK_ERROR);
 
 	if (used > 0 && vcnt > 0) {
@@ -413,7 +413,7 @@ static int write_image_(int fd, GImage image, GCardinal allocated, void *buf, GC
     /* LOW LEVEL IO HERE */
 #ifdef NO_PREAD
     errno = 0;
-    if (-1==lseek(fd, (off_t)image, 0))
+    if (-1==lseek(fd, (off_t)image, SEEK_SET))
 	return gerr_set(GERR_SEEK_ERROR);
 
     /* LOW LEVEL IO HERE */
@@ -441,7 +441,7 @@ static int writev_image_(int fd, GImage image, GCardinal allocated, GIOVec *v, G
 
     /* LOW LEVEL IO HERE */
     errno = 0;
-    if (-1==lseek(fd, (off_t)image, 0))
+    if (-1==lseek(fd, (off_t)image, SEEK_SET))
 	return gerr_set(GERR_SEEK_ERROR);
 
     if (allocated > 0 && vcnt > 0) {
@@ -643,7 +643,7 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
     }
     
     /* check through the cache list */
-    if (old_image != G_NO_IMAGE) {
+    if (old_image != G_NO_IMAGE && old_image != 0) {
 	heap_free(gfile->dheap, old_image);
 	if (err) {
 	    gerr_set(err);
@@ -697,9 +697,17 @@ static void update_header(GFile *gfile, GTimeStamp edtime)
 
 
 
+typedef struct {
+    GView v;
+    GCardinal rec;
+} view_rec_pair_t;
 
+static int qsort_view_rec_pair(const void *vp1, const void *vp2) {
+    const view_rec_pair_t *p1 = (const view_rec_pair_t *)vp1;
+    const view_rec_pair_t *p2 = (const view_rec_pair_t *)vp2;
 
-
+    return p1->rec - p2->rec;
+}
 
 static int g_unlock_views(GDB *gdb, GView v)
 /*
@@ -708,8 +716,11 @@ static int g_unlock_views(GDB *gdb, GView v)
 {
     GFile *gfile;
     GTimeStamp edtime;
-    int updates;
+    int updates, i;
     GView nextv;
+    int countv = 0;
+    static view_rec_pair_t *pair = NULL;
+    static int pair_alloc = 0;
 
     /* check arguments */
     if (gdb==NULL) return gerr_set(GERR_INVALID_ARGUMENTS);
@@ -733,12 +744,34 @@ static int g_unlock_views(GDB *gdb, GView v)
     updates = 0;
 
     /*
-     * unlock each view in turn
+     * Sort locs by ascending record number
      */
-    for(; v!=-1; v=nextv) {
-
+    for (countv = 0; v != -1; v = nextv) {
 	Cache *cache;
 
+	nextv = arr(View,gdb->view,v).next;
+	cache = &arr(View,gdb->view,v).lcache;
+
+	if (pair_alloc <= countv) {
+	    pair_alloc = countv + 1000;
+	    if (NULL == (pair = realloc(pair, pair_alloc * sizeof(*pair))))
+		return gerr_set(GERR_OUT_OF_MEMORY);
+	}
+
+	pair[countv].v = v;
+	pair[countv].rec = cache->rec;
+
+	countv++;
+    }
+    qsort(pair, countv, sizeof(*pair), qsort_view_rec_pair);
+
+    /*
+     * unlock each view in turn
+     */
+    for (i = 0; i < countv; i++) {
+	Cache *cache;
+
+	v = pair[i].v;
 	nextv = arr(View,gdb->view,v).next;
 	cache = &arr(View,gdb->view,v).lcache;
 
@@ -791,7 +824,7 @@ static int g_unlock_views(GDB *gdb, GView v)
 	    arr(View,gdb->view,v).flags = G_VIEW_USED;
 	    arr(View,gdb->view,v).next = -1;
 	} else {
-	    
+
 	    /* free view */
 	    g_free_view(gdb,v);
 	    g_forget_index(gfile, cache->rec);
