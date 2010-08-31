@@ -39,7 +39,7 @@ typedef GCardinal GRec;
 #define STANDARD_IFACE \
     /* Allocate and deallocate. Init is allocate() + lock + initialise */ \
     GRec (*create)(void *dbh, void *from);				  \
-    int (*destroy)(void *dbh, GRec rec);				  \
+    int (*destroy)(void *dbh, GRec rec, GView view);			  \
 									  \
     /* Locking and unlocking */						  \
     GView (*lock)(void *dbh, GRec rec, int mode);			  \

@@ -525,6 +525,9 @@ static int allocate(g_io *io, int type) {
 	    r = other_record++;
 	}
     } else {
+	if ((r = g_free_rec_(io->gdb, io->client, 0)) != G_NO_REC)
+	    return r;
+
 	r = record++;
 	if (type == GT_SeqBlock && r >= (1<<(31-SEQ_BLOCK_BITS))) {
 	    fprintf(stderr, "\n*** Too many database records to cope with the"
@@ -558,6 +561,10 @@ static int allocate(g_io *io, int type) {
     return record++;
 }
 #endif
+
+static int deallocate(g_io *io, GRec rec, GView v) {
+    return g_remove_(io->gdb, io->client, v);
+}
 
 static GView lock(g_io *io, int rec, int mode) {
     if (!mode)
@@ -619,9 +626,8 @@ static GRec io_generic_create(void *dbh, void *unused) {
     return allocate((g_io *)dbh, GT_Generic);
 }
 
-static int io_generic_destroy(void *dbh, GRec r) {
-    fprintf(stderr, "io_generic_free unimplemented yet\n");
-    return -1;
+static int io_generic_destroy(void *dbh, GRec r, GView v) {
+    return deallocate((g_io *)dbh, r, v);
 }
 
 static GView io_generic_lock(void *dbh, GRec r, int mode) {
@@ -1113,6 +1119,7 @@ static int io_database_create_files(char *fn) {
     auxheader.flags = (GFlags) 0;
     auxheader.spare1 = (GFlags) 0;
     auxheader.free_time = G_YEAR_DOT;
+    auxheader.free_record = G_NO_REC;
     for (i=G_Number(auxheader.spare)-1;i>=0;i--) auxheader.spare[i]=0;
     auxheader.format = bitsize;
 
@@ -2567,6 +2574,54 @@ static int io_bin_create(void *dbh, void *vfrom) {
 #endif
 }
 
+static int io_bin_destroy(void *dbh, GRec r, GView v) {
+    g_io *io = (g_io *)dbh;
+    GBin g;
+    unsigned char *buf, *cp;
+    size_t buf_len;
+    uint32_t bflag;
+
+    /* Load from disk */
+    buf = g_read_alloc(io, v, &buf_len);
+    if (!buf) {
+	/* Can happen when we create a new record and immediately try to
+	 * destroy it, which break contig sometimes does.
+	 */
+	return deallocate(io, r, v);
+    }
+
+    /* Decode */
+    cp = buf;
+
+    rdstats[GT_Bin] += buf_len;
+    rdcounts[GT_Bin]++;
+
+    assert(cp[0] == GT_Bin);
+    assert(cp[1] <= 1); /* format */
+    cp += 2;
+    cp += u72int(cp, &bflag);
+    if (!(bflag & BIN_POS_ZERO))
+	cp += s72int(cp, &g.pos);
+
+    if (!(bflag & BIN_SIZE_EQ_POS))
+	cp += u72int(cp, (uint32_t *)&g.size);
+
+    if (!(bflag & BIN_NO_RANGE)) {
+	GView rv;
+
+	cp += u72int(cp, (uint32_t *)&g.start);
+	cp += u72int(cp, (uint32_t *)&g.end);
+	g.end += g.start;
+	cp += u72int(cp, (uint32_t *)&g.range);
+
+	rv = lock(io, g.range, G_LOCK_RW);
+	deallocate(io, g.range, rv);
+	unlock(io, rv);
+    }
+
+    free(buf);
+    return deallocate(io, r, v);
+}
 
 /* ------------------------------------------------------------------------
  * track access methods
@@ -3598,7 +3653,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     int nb = 0;
     int have_sam_aux = 0;
     int nparts = 19;
-    int first_seq = 0;
+    int first_seq = -1;
 
     set_dna_lookup();
 
@@ -3652,6 +3707,9 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	    *out[0]++= 0; /* signifies sequence not present */
 	    continue;
 	}
+
+	if (first_seq == -1)
+	    first_seq = i;
 
 	out[0] += int2u7(s->bin, out[0]);
 	delta = s->bin_index - last_index;
@@ -4216,7 +4274,7 @@ static iface iface_g = {
     {
 	/* Bin */
 	io_bin_create,
-	io_generic_destroy,
+	io_bin_destroy,
 	io_generic_lock,
 	io_generic_unlock,
 	io_generic_upgrade,
