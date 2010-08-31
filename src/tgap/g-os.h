@@ -69,6 +69,7 @@ typedef int4     GView;
 
 #define G_NO_TOGGLE ((GToggle) -1)
 #define G_NO_IMAGE ((GImage) -1)
+#define G_NO_REC ((GCardinal) -1)
 #define G_YEAR_DOT ((GTimeStamp) 0)
 #define G_32BIT    0
 #define G_64BIT    1

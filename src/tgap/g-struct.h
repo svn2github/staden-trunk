@@ -87,6 +87,7 @@ typedef struct {
     GCardinal block_size;       /* size of each block (for allocation only) */
     GCardinal num_records;	/* number of records in record file */
     GCardinal max_records;	/* max number of records in record file */
+    GCardinal free_record;      /* first record on free list */
 } GHeaderInfo;
 
 typedef struct {
@@ -206,6 +207,7 @@ typedef struct _gdb_ {
 #define G_VIEW_ABANDONED (GFlags)(1<<3)	/* view has been requested to be abandoned */
 #define G_VIEW_UNLOCKED  (GFlags)(1<<4) /* view has been requested to be unlocked  */
 #define G_VIEW_FLUSHED   (GFlags)(1<<5) /* view has been requested to be flushed   */
+#define G_VIEW_DELETED   (GFlags)(1<<6) /* view is of record marked for deletion */
 
 
     

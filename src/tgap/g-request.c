@@ -614,7 +614,7 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
     }
     
     /*
-     *
+     * Get pointer to in-memory cached index
      */
     ind = g_read_index(gfile, rec);
     old_image = ind->aux_image;
@@ -630,6 +630,7 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
 	ind->flags = G_INDEX_NEW;	
     }
 
+    /* And write it back to hash and aux */
     g_write_index(gfile, rec, ind);
     err = g_write_aux_index(gfile,rec);
     /*
@@ -742,9 +743,21 @@ static int g_unlock_views(GDB *gdb, GView v)
 	cache = &arr(View,gdb->view,v).lcache;
 
 	/*
+	 * Is this a record we're attempting to remove?
+	 */
+	if (arr(View,gdb->view,v).flags & G_VIEW_DELETED) {
+	    cache->used = gfile->header.free_record;
+	    gfile->header.free_record = cache->rec;
+
+	    update_record(gfile, cache->rec, cache->image, cache->allocated,
+			  cache->used, edtime);
+
+	    updates++;
+
+	/*
 	 * Has there been an update?
 	 */
-	if (arr(View,gdb->view,v).flags & G_VIEW_UPDATED &&
+	} else if (arr(View,gdb->view,v).flags & G_VIEW_UPDATED &&
 	    !(arr(View,gdb->view,v).flags & G_VIEW_ABANDONED) ) {
 	    /*
 	     * Yes - we will have to write to the aux file
@@ -792,7 +805,9 @@ static int g_unlock_views(GDB *gdb, GView v)
      * than us!
      */
     /* g_sync_on(gfile); */
-    if (updates) update_header(gfile,edtime);
+    if (updates) {
+	update_header(gfile,edtime);
+    }
     /* g_sync_off(gfile); */
 
     gfile->check_header = 1;
@@ -947,7 +962,6 @@ int g_readv_(GDB *gdb, GClient c, GView v, GIOVec *vec, GCardinal vcnt)
 
 
 
-
 /* ARGSUSED */
 static int update_cache_for_write(GDB *gdb, GClient c, GView v, GCardinal len,
 				  int remove, Cache **cache_ret)
@@ -984,6 +998,8 @@ static int update_cache_for_write(GDB *gdb, GClient c, GView v, GCardinal len,
 	if (remove) {
 	    image = G_NO_IMAGE;
 	    allocate = 0;
+
+	    view->flags |= G_VIEW_DELETED;
 	} else {
 	    /* need to allocate a new image */
 	    image = heap_allocate(gdb->gfile->dheap,len,(uint32_t *)&allocate);
@@ -1043,6 +1059,9 @@ static int update_cache_for_write(GDB *gdb, GClient c, GView v, GCardinal len,
 	} else {
 	    allocate = 0;
 	    image = G_NO_IMAGE;
+	    //len = gdb->gfile->header.free_record;
+	    //gdb->gfile->header.free_record = cache->rec;
+	    view->flags |= G_VIEW_DELETED;
 	}
 
 	cache->image     = image;
@@ -1305,7 +1324,7 @@ int g_fast_write_N_(GDB *gdb, GClient c, GFileN file_N, GCardinal rec, void *buf
     ind = g_read_index(gfile, rec);
     if (ind->flags & G_INDEX_NEW) {
 	(void)initialise_record(gfile,rec);
-	ind = g_read_index(gfile, rec);
+ind = g_read_index(gfile, rec);
     }
 
     /* get next edtime */
@@ -1554,6 +1573,44 @@ int g_header_info_(GDB *gdb, GClient c, GFileN file_N, GHeaderInfo *info)
     info->block_size = gfile->header.block_size;
     info->num_records = gfile->header.num_records;
     info->max_records = gfile->header.max_records;
+    info->free_record = gfile->header.free_record;
 
     return 0;
+}
+
+
+/*
+ * Returns the next free record number and updates header to point to new
+ * free rec, or G_NO_REC if no free records available.
+ */
+/* ARGSUSED */
+int g_free_rec_(GDB *gdb, GClient c, GFileN file_N) {
+    GFile *gfile;
+    GRecInfo info;
+    GCardinal rec;
+    Index *ind;
+    
+    /* check arguments */
+    if (gdb==NULL || check_client(gdb,c))
+	return gerr_set(GERR_INVALID_ARGUMENTS);
+    gfile = gdb->gfile;
+
+    rec = gfile->header.free_record;
+    if (rec == G_NO_REC)
+	return G_NO_REC;
+    
+    if (check_record(gdb->gfile, rec))
+	return G_NO_REC;
+
+    ind = g_read_index(gdb->gfile, rec);
+    ind->flags |= G_INDEX_NEW;
+    g_write_index(gfile, rec, ind);
+
+    /*
+     * FIXME: this only works with one client as we assume
+     * exclusive rights to modify gdb->gfile->header.
+     */
+    gfile->header.free_record = ind->aux_used;
+
+    return rec;
 }

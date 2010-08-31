@@ -44,6 +44,7 @@ extern int g_remove_(GDB *gdb, GClient c, GView v);
 extern int g_view_info_(GDB *gdb, GClient c, GView v, GViewInfo *info);
 extern int g_rec_info_(GDB *gdb, GClient c, GFileN file_N, GCardinal rec, GRecInfo *info);
 extern int g_header_info_(GDB *gdb, GClient c, GFileN file_N, GHeaderInfo *info);
+extern int g_free_rec_(GDB *gdb, GClient c, GFileN file_N);
 
 
 #endif /*_G_REQUEST_H_*/

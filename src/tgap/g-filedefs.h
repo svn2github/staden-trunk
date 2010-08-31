@@ -38,7 +38,8 @@ typedef struct {
     GHFlags flags;		/* flags */
     GHFlags spare1;		/* a spare short */
     GTimeStamp free_time;	/* time of the last freetree save */
-    int4 spare[7];		/* for later use */
+    GCardinal free_record;	/* start of rec free list, -1 for none */
+    int4 spare[6];		/* for later use */
     int4 format;		/* 0=32-bit file_size, 1=64-bit file_size */
 } AuxHeader;	
 
@@ -52,7 +53,8 @@ typedef struct {
     GHFlags flags;		/* flags */
     GHFlags spare1;		/* a spare short */
     GTimeStamp free_time;	/* time of the last freetree save */
-    int4 spare[8];		/* for later use */
+    GCardinal free_record;	/* start of rec free list */
+    int4 spare[7];		/* for later use */
     int4 format;		/* 0=32-bit file_size, 1=64-bit file_size */
 } AuxHeader32;	
 

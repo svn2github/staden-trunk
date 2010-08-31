@@ -57,13 +57,13 @@ static void header_32to64(AuxHeader32 *rec32, AuxHeader *rec64) {
     rec64->flags       = rec32->flags;
     rec64->spare1      = rec32->spare1;
     rec64->free_time   = rec32->free_time;
+    rec64->free_record = rec32->free_record;
     rec64->spare[0]    = rec32->spare[0];
     rec64->spare[1]    = rec32->spare[1];
     rec64->spare[2]    = rec32->spare[2];
     rec64->spare[3]    = rec32->spare[3];
     rec64->spare[4]    = rec32->spare[4];
     rec64->spare[5]    = rec32->spare[5];
-    rec64->spare[6]    = rec32->spare[6];
     rec64->format      = rec32->format;
 }
 
@@ -76,14 +76,14 @@ static void header_64to32(AuxHeader *rec64, AuxHeader32 *rec32) {
     rec32->flags       = rec64->flags;
     rec32->spare1      = rec64->spare1;
     rec32->free_time   = rec64->free_time;
+    rec32->free_record = rec64->free_record;
     rec32->spare[0]    = rec64->spare[0];
     rec32->spare[1]    = rec64->spare[1];
     rec32->spare[2]    = rec64->spare[2];
     rec32->spare[3]    = rec64->spare[3];
     rec32->spare[4]    = rec64->spare[4];
     rec32->spare[5]    = rec64->spare[5];
-    rec32->spare[6]    = rec64->spare[6];
-    rec32->spare[7]    = 0;
+    rec32->spare[6]    = 0;
     rec32->format      = rec64->format;
 }
 
@@ -145,6 +145,7 @@ int write_aux_header_swapped32_(int fd, void *headerv, int num)
     swap_GHFlags(rec32.flags,         rec32.flags);
     swap_GHFlags(rec32.spare1,        rec32.spare1);
     swap_GTimeStamp(rec32.free_time,  rec32.free_time);
+    swap_GCardinal(rec32.free_record, rec32.free_record);
     swap_int4(rec32.spare[0],         rec32.spare[0]);
     swap_int4(rec32.spare[1],         rec32.spare[1]);
     swap_int4(rec32.spare[2],         rec32.spare[2]);
@@ -178,13 +179,13 @@ int write_aux_header_swapped64_(int fd, void *headerv, int num)
     swap_GHFlags(header->flags,swapped.flags);
     swap_GHFlags(header->spare1,swapped.spare1);
     swap_GTimeStamp(header->free_time,swapped.free_time);
+    swap_GCardinal(header->free_record, swapped.free_record);
     swap_int4(header->spare[0],swapped.spare[0]);
     swap_int4(header->spare[1],swapped.spare[1]);
     swap_int4(header->spare[2],swapped.spare[2]);
     swap_int4(header->spare[3],swapped.spare[3]);
     swap_int4(header->spare[4],swapped.spare[4]);
     swap_int4(header->spare[5],swapped.spare[5]);
-    swap_int4(header->spare[6],swapped.spare[6]);
     swap_int4(header->format,swapped.format);
 
     errno = 0;
@@ -241,6 +242,7 @@ int read_aux_header_swapped_(int fd, void *headerv, int num)
 	swap_GHFlags(rec32->flags,         swapped.flags);
 	swap_GHFlags(rec32->spare1,        swapped.spare1);
 	swap_GTimeStamp(rec32->free_time,  swapped.free_time);
+	swap_GCardinal(rec32->free_record, swapped.free_record);
 	swap_int4(rec32->spare[0],         swapped.spare[0]);
 	swap_int4(rec32->spare[1],         swapped.spare[1]);
 	swap_int4(rec32->spare[2],         swapped.spare[2]);
@@ -260,13 +262,13 @@ int read_aux_header_swapped_(int fd, void *headerv, int num)
 	swap_GHFlags(rec.flags,         rec.flags);
 	swap_GHFlags(rec.spare1,        rec.spare1);
 	swap_GTimeStamp(rec.free_time,  rec.free_time);
+	swap_GCardinal(rec.free_record, rec.free_record);
 	swap_int4(rec.spare[0],         rec.spare[0]);
 	swap_int4(rec.spare[1],         rec.spare[1]);
 	swap_int4(rec.spare[2],         rec.spare[2]);
 	swap_int4(rec.spare[3],         rec.spare[3]);
 	swap_int4(rec.spare[4],         rec.spare[4]);
 	swap_int4(rec.spare[5],         rec.spare[5]);
-	swap_int4(rec.spare[6],         rec.spare[6]);
 
 	memcpy(headerv, &rec, sizeof(AuxHeader));
     }
