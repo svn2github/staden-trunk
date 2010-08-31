@@ -10,6 +10,142 @@
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
 /*
+ * Recursive part of remove_empty_bins.
+ * Takes bin record.
+ * Removes the bin if it is empty and has no children.
+ * Modifies *first to contain the first bin record with data.
+ *
+ * Returns 1 if removed
+ *         0 if not.
+ */
+static int remove_empty_bins_r(GapIO *io, int brec, int *first) {
+    bin_index_t *bin = cache_search(io, GT_Bin, brec);
+    int i, empty[2]; /* Emptied or non-existant */
+    int this_is_empty;
+    int child[2], f[2];
+
+    /* Check if this bin is empty */
+    this_is_empty = 0;
+    if (!bin->rng || ArrayMax(bin->rng) == 0) {
+	this_is_empty = 1;
+    } else {
+	/* Check if ranges are all unused */
+	for (i = 0 ; i < ArrayMax(bin->rng); i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
+	    if (!(r->flags & GRANGE_FLAG_UNUSED))
+		break;
+	}
+
+	if (i == ArrayMax(bin->rng)) {
+	    this_is_empty = 1;
+	}
+    }
+
+
+    /* Temporary copies to avoid needing cache_incr */
+    child[0] = bin->child[0];
+    child[1] = bin->child[1];
+
+    f[0] = f[1] = 0;
+    empty[0] = child[0] ? remove_empty_bins_r(io, child[0], &f[0]) : 1;
+    empty[1] = child[1] ? remove_empty_bins_r(io, child[1], &f[1]) : 1;
+
+    /* Remove this bin if empty and children are too */
+    if (empty[0] && empty[1] && this_is_empty) {
+	printf("Bin %d: this & children are empty / non-existant\n", brec);
+	cache_rec_deallocate(io, GT_Bin, brec);
+	return 1;
+    }
+
+
+    /* If we removed a child bin but are keeping this, then fix links */
+    if ((empty[0] && child[0]) || (empty[1] && child[1])) {
+	bin = cache_search(io, GT_Bin, brec);
+	bin = cache_rw(io, bin);
+	if (empty[0]) {
+	    bin->flags |= BIN_BIN_UPDATED;
+	    bin->child[0] = 0;
+	}
+	if (empty[1]) {
+	    bin->flags |= BIN_BIN_UPDATED;
+	    bin->child[1] = 0;
+	}
+    }
+
+
+    /* Track first useful bin */
+    if (first && !*first) {
+	if ((f[0] && f[1]) || !this_is_empty) {
+	    *first = brec;
+	} else if (f[0]) {
+	    *first = f[0];
+	} else if (f[1]) {
+	    *first = f[1];
+	}
+    }
+
+    return 0;
+}
+
+/*
+ * Tidies up after break contig or disassemble readings, looking for now
+ * redundant bins.
+ *
+ * This has the following functions (not all implemented yet!)
+ * 1) If a contig is totally empty, remove the contig.
+ * 2) If a bin is empty and all below it, remove the bin.
+ * 3) If a bin is empty and all above it, remove parent bins and link
+ *    contig to new root. (TODO)
+ */
+static void remove_empty_bins(GapIO *io, int contig) {
+    contig_t *c = cache_search(io, GT_Contig, contig);
+    int first = 0;
+
+    cache_incr(io, c);
+
+    if (c->bin) {
+	if (remove_empty_bins_r(io, c->bin, &first)) {
+	    cache_decr(io, c);
+	    contig_destroy(io, contig);
+	    return;
+	}
+
+	if (first != c->bin) {
+	    bin_index_t *bin;
+	    int bp, br, offset, cdummy;
+
+	    /* Cut out the offending waste */
+	    bin = cache_search(io, GT_Bin, first);
+	    bin = cache_rw(io, bin);
+	    bp = bin->parent;
+
+	    // Find new bin offset
+	    bin_get_position(io, bin, &cdummy, &offset);
+	    assert(cdummy == contig);
+
+	    bin->pos = offset;
+	    bin->parent = contig;
+	    bin->parent_type = GT_Contig;
+	    bin->flags |= BIN_BIN_UPDATED;
+
+	    c = cache_rw(io, c);
+	    br = c->bin;
+	    c->bin = first;
+
+	    bin = cache_search(io, GT_Bin, bp);
+	    bin = cache_rw(io, bin);
+	    if (bin->child[0] == first) bin->child[0] = 0;
+	    if (bin->child[1] == first) bin->child[1] = 0;
+
+	    /* Recursively remove the bin tree from old root, br */
+	    bin_destroy_recurse(io, br);
+	}
+    }
+
+    cache_decr(io, c);
+}
+
+/*
  * Compute the visible statr position of a contig. This isn't just the extents
  * of start_used / end_used in the bins as this can included invisible
  * data such as cached consensus sequences.
@@ -21,13 +157,23 @@ int contig_visible_start(GapIO *io, int crec) {
     ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST | CITER_ISTART,
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANY);
+    if (!ci) {
+	contig_t *c = cache_search(io, GT_Contig, crec);
+	return c->start;
+    }
     
     while (r = contig_iter_next(io, ci)) {
+	int v;
+
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS)
 	    continue;
-	return r->start;
+
+	v = r->start;
+	contig_iter_del(ci);
+	return v;
     }
 
+    contig_iter_del(ci);
     return 0;
 }
 
@@ -43,13 +189,23 @@ int contig_visible_end(GapIO *io, int crec) {
     ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANY);
+    if (!ci) {
+	contig_t *c = cache_search(io, GT_Contig, crec);
+	return c->end;
+    }
     
     while (r = contig_iter_prev(io, ci)) {
+	int v;
+
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS)
 	    continue;
-	return r->end;
+	
+	v = r->end;
+	contig_iter_del(ci);
+	return v;
     }
 
+    contig_iter_del(ci);
     return 0;
 }
 
@@ -60,9 +216,9 @@ static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
     /* Add to */
     if (pto == cto->rec) {
 	/* Parent is a contig */
-	if (bin->rec != cto->bin)
-	    printf("Destroy old bin for contig %d (bin %u). New root=%d\n",
-		   cto->rec, cto->bin, bin->rec);
+	if (bin->rec != cto->bin) {
+	    cache_rec_deallocate(io, GT_Bin, cto->rec);
+	}
 	cto->bin = bin->rec;
 	cto->start = 1;
 	cto->end = bin->size;
@@ -176,6 +332,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
     bin_index_t *bin = get_bin(io, bin_num), *bin_dup ;
     //int bin_min, bin_max;
     int nseqs;
+    int opright; /* old pright, needed if we revert back */
 
     cache_incr(io, bin);
 
@@ -329,6 +486,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 	printf("%*sCreated dup for right, rec %d\n", level*4,"", bin_dup->rec);
 	break_contig_move_bin(io, bin_dup, cl, 0, cr, pright, child_no);
+	opright = pright;
 	pright = bin_dup->rec;
     } else {
 	bin_dup = NULL;
@@ -471,16 +629,25 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 							   r->rec);
 		/* If it's an annotation on a sequence < pos then we
 		 * still don't move.
+		 *
+		 * FIXME: we have no guarantee that the sequence being
+		 * annotated is in the same bin as this annotation, as
+		 * they may be different sizes and end up in different
+		 * bins. (Should we enforce anno always in same bin as seq?
+		 * If so, consensus annos fit anywhere?)
 		 */
 		if (a->obj_type == GT_Seq) {
 		    HacheItem *hi = HacheTableSearch(h,
 						     (char *)&r->pair_rec,
 						     sizeof(r->pair_rec));
 
-		    assert(hi);
-
-		    if (hi->data.i == 0)
-			cstart = pos-1;
+		    if (hi) {
+			if (hi->data.i == 0)
+			    cstart = pos-1;
+		    } else {
+			puts("FIXME: annotation for seq in unknown place - "
+			     "work out correct location and move if needed.");
+		    }
 		}
 	    }
 
@@ -513,6 +680,30 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 
 	ArrayMax(bin->rng) = j;
+
+#if 0
+	/*
+	 * Right now this causes problems, but I'm not sure why. Try again
+	 * after we've fixed the bin->nseqs issues and other deallocation
+	 * woes.
+	 */
+
+	if (ArrayMax(bin_dup->rng) == 0 && bin_dup->parent_type == GT_Bin) {
+	    /* We didn't need it afterall! Odd. */
+	    bin_index_t *pb;
+
+	    printf("Purging bin %d that we didn't need afterall\n",
+		   bin_dup->rec);
+	    cache_rec_deallocate(io, GT_Bin, bin_dup->rec);
+	    pb = cache_search(io, GT_Bin, bin_dup->parent);
+	    if (pb->child[0] == bin_dup->rec)
+		pb->child[0] = 0;
+	    if (pb->child[1] == bin_dup->rec)
+		pb->child[1] = 0;
+	    bin_dup = NULL;
+	    pright = opright;
+	}
+#endif
 
 	if (bin_dup)
 	    break_contig_reparent_seqs(io, bin_dup);
@@ -598,7 +789,7 @@ int remove_redundant_bins(GapIO *io, contig_t *c) {
  * a new contig.
  */
 int break_contig(GapIO *io, int crec, int cpos) {
-    contig_t *cl = (contig_t *)cache_search(io, GT_Contig, crec);
+    contig_t *cl;
     contig_t *cr;
     int cid;
     char cname[1024], *cname_end;
@@ -606,6 +797,8 @@ int break_contig(GapIO *io, int crec, int cpos) {
     bin_index_t *bin;
     int do_comp = 0;
     HacheTable *h;
+
+    cl = (contig_t *)cache_search(io, GT_Contig, crec);
 
     //contig_dump_ps(io, &cl, "/tmp/tree.ps");
 
@@ -683,6 +876,16 @@ int break_contig(GapIO *io, int crec, int cpos) {
 
     printf("Final left bin = %u, right bin = %u\n", cl->bin, cr->bin);
 
+    HacheTableDestroy(h, 0);
+
+    //if (cl->bin) contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
+    //if (cr->bin) contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
+
+    cache_flush(io);
+
+    remove_empty_bins(io, cl->rec);
+    remove_empty_bins(io, cr->rec);
+
     /* Empty contig? If so remove it completely */
     if (cl->bin == 0) {
 	printf("Removing empty contig %d\n", cl->rec);
@@ -693,15 +896,10 @@ int break_contig(GapIO *io, int crec, int cpos) {
 	contig_destroy(io, cr->rec);
     }
 
-    cache_flush(io);
-
-    HacheTableDestroy(h, 0);
-
-    //if (cl->bin) contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
-    //if (cr->bin) contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
-
     cache_decr(io, cl);
     cache_decr(io, cr);
+
+    cache_flush(io);
 
     return 0;
 }
