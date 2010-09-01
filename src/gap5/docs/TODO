@@ -22,8 +22,6 @@
 	between two sequences and get a menu, but it's not clear which
 	sequence it is for.
 
-*	Implement disassemble readings
-
 *	fasta2sam and fastq2sam tools, plus menu option to use them
         (via tg_index) to permit "Assemble into single read contigs".
 
