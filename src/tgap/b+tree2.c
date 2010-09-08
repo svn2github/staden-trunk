@@ -43,7 +43,7 @@ void btree_del_node(btree_node_t *n) {
     free(n);
 }
 
-btree_t *btree_new(void *cd, int root) {
+btree_t *btree_new(void *cd, BTRec root) {
     btree_t *t = malloc(sizeof(*t));
     t->cd = cd;
     if (root)
@@ -256,9 +256,6 @@ int btree_insert(btree_t *t, char *str, BTRec value) {
 
     //printf("Dup key %s\n", str);
     return btree_insert_key(t, n, ind, str, value);
-    
-
-    return 0;
 }
 
 BTRec btree_search(btree_t *t, char *str) {
@@ -328,7 +325,8 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
     btree_node_t *left, *right;
 
     do {
-	btree_node_t *par = btree_node_get(t->cd, n->parent);
+	btree_node_t *par = n->parent ? btree_node_get(t->cd, n->parent)
+	                              : NULL;
 
 	/* Remove index 'ind' */
 	if (n->keys[ind])
@@ -440,8 +438,6 @@ int btree_delete(btree_t *t, char *str) {
     btree_node_t *n;
     int ind;
 
-    printf("Btree_delete %s\n", str);
-
     n = btree_find_recurse(t, str, &ind);
     if (!n || !n->keys[ind] || 0 != strcmp(n->keys[ind], str))
 	return 0; /* No match */
@@ -454,10 +450,11 @@ void btree_print(btree_t *t, btree_node_t *n, int depth) {
 
     if (depth == 0)
 	puts("");
-    INDENT; printf("Node %d, leaf=%d, parent %d, next %d, used %d\n",
+    INDENT; printf("Node %"PRIbtr", leaf=%d, parent %"PRIbtr
+		   ", next %"PRIbtr", used %d\n",
 		   n->rec, n->leaf, n->parent, n->next, n->used);
     for (i = 0; i < n->used; i++) {
-	INDENT; printf("key %d = %s val %d\n",
+	INDENT; printf("key %d = %s val %"PRIbtr"\n",
 		       i, n->keys[i] ? n->keys[i] : "-", n->chld[i]);
 	if (!n->leaf && n->chld[i]) {
 	    btree_print(t, btree_node_get(t->cd, n->chld[i]), depth+2);
@@ -711,7 +708,7 @@ unsigned char *btree_node_encode(btree_node_t *n, size_t *size) {
  * Returns allocated btree_node_t on success
  *         NULL on failure
  */
-btree_node_t *btree_node_decode2(unsigned char *buf) {
+btree_node_t *btree_node_decode2(unsigned char *buf, int fmt) {
     btree_node_t *n;
     unsigned char *bufp, *bufp2, *bufp3;
     int i;
@@ -724,22 +721,34 @@ btree_node_t *btree_node_decode2(unsigned char *buf) {
     n->leaf = buf[0];
     n->used = (buf[1] << 8) | (buf[2] << 0);
 
-    n->parent =
-	(buf[4] << 24) |
-	(buf[5] << 16) |
-	(buf[6] <<  8) |
-	(buf[7] <<  0);
+    if (fmt == 1) {
+	n->parent =
+	    (buf[4] << 24) |
+	    (buf[5] << 16) |
+	    (buf[6] <<  8) |
+	    (buf[7] <<  0);
 
-    n->next =
-	(buf[8]  << 24) |
-	(buf[9]  << 16) |
-	(buf[10] <<  8) |
-	(buf[11] <<  0);
+	n->next =
+	    (buf[8]  << 24) |
+	    (buf[9]  << 16) |
+	    (buf[10] <<  8) |
+	    (buf[11] <<  0);
 
-    bufp = &buf[12];
-    for (i = 0; i < n->used; i++) {
-	uint32_t i4;
-	bufp += u72int(bufp, &i4); n->chld[i] = i4;
+	bufp = &buf[12];
+	for (i = 0; i < n->used; i++) {
+	    uint32_t i4;
+	    bufp += u72int(bufp, &i4); n->chld[i] = i4;
+	}
+    } else {
+	uint64_t i8;
+
+	bufp = &buf[4];
+	bufp += u72intw(bufp, &i8); n->parent = i8;
+	bufp += u72intw(bufp, &i8); n->next = i8;
+
+	for (i = 0; i < n->used; i++) {
+	    bufp += u72intw(bufp, &i8); n->chld[i] = i8;
+	}
     }
 
     /* And finally the variable sizes elements - the keys */
@@ -759,6 +768,10 @@ btree_node_t *btree_node_decode2(unsigned char *buf) {
 	bufp += l;
 
 	last = n->keys[i];
+    }
+    for (;i < BTREE_MAX; i++) {
+	n->keys[i] = NULL;
+	n->chld[i] = NULL;
     }
 
     return n;
@@ -780,7 +793,7 @@ btree_node_t *btree_node_decode2(unsigned char *buf) {
  *         NULL on failure
  */
 unsigned char *btree_node_encode2(btree_node_t *n, size_t *size,
-				  size_t *parts){
+				  size_t *parts, int fmt) {
     size_t alloc;
     unsigned char *buf, *bufp, *bufp2, *bufp3;
     int i;
@@ -805,43 +818,32 @@ unsigned char *btree_node_encode2(btree_node_t *n, size_t *size,
     buf[1] = (n->used >> 8) & 0xff;
     buf[2] = (n->used >> 0) & 0xff;
     buf[3] = 0;
-    
-    buf[4] = ((int)n->parent >> 24) & 0xff;
-    buf[5] = ((int)n->parent >> 16) & 0xff;
-    buf[6] = ((int)n->parent >>  8) & 0xff;
-    buf[7] = ((int)n->parent >>  0) & 0xff;
 
-    buf[8] = ((int)n->next >> 24) & 0xff;
-    buf[9] = ((int)n->next >> 16) & 0xff;
-    buf[10]= ((int)n->next >>  8) & 0xff;
-    buf[11]= ((int)n->next >>  0) & 0xff;
+    if (fmt == 1) {
+	buf[4] = ((int)n->parent >> 24) & 0xff;
+	buf[5] = ((int)n->parent >> 16) & 0xff;
+	buf[6] = ((int)n->parent >>  8) & 0xff;
+	buf[7] = ((int)n->parent >>  0) & 0xff;
 
-#if 0
-    for (i = 0; i < n->used; i++) {
-	buf[12+i*4] = ((int)n->chld[i] >> 24) & 0xff;
-	buf[13+i*4] = ((int)n->chld[i] >> 16) & 0xff;
-	buf[14+i*4] = ((int)n->chld[i] >>  8) & 0xff;
-	buf[15+i*4] = ((int)n->chld[i] >>  0) & 0xff;
+	buf[8] = ((int)n->next >> 24) & 0xff;
+	buf[9] = ((int)n->next >> 16) & 0xff;
+	buf[10]= ((int)n->next >>  8) & 0xff;
+	buf[11]= ((int)n->next >>  0) & 0xff;
 
-	/*
-	 * Better still is to encode all 1st bytes, all 2nd bytes, and
-	 * so on, applying each section as a new parts[] element to
-	 * compress separately. This seems to save another 7% of the
-	 * compressed btree, but the cost is it'll break when we move
-	 * to 64-bit record numbers.
-	 */
-	//buf[12+i+0*n->used] = ((int)n->chld[i] >> 24) & 0xff;
-	//buf[12+i+1*n->used] = ((int)n->chld[i] >> 16) & 0xff;
-	//buf[12+i+2*n->used] = ((int)n->chld[i] >>  8) & 0xff;
-	//buf[12+i+3*n->used] = ((int)n->chld[i] >>  0) & 0xff;
+	bufp = &buf[12];
+	for (i = 0; i < n->used; i++) {
+	    bufp += int2u7((int)n->chld[i], bufp);
+	}
+    } else {
+	bufp = &buf[4];
+	bufp += intw2u7(n->parent, bufp);
+	bufp += intw2u7(n->next, bufp);
+
+	for (i = 0; i < n->used; i++) {
+	    bufp += intw2u7(n->chld[i], bufp);
+	}
     }
-    bufp = &buf[12 + n->used*8];
-#else
-    bufp = &buf[12];
-    for (i = 0; i < n->used; i++) {
-	bufp += int2u7((int)n->chld[i], bufp);
-    }
-#endif
+
 
     /* And add in the variable sized element - key strings */
 

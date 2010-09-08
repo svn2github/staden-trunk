@@ -96,8 +96,26 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+b+tree2.o: $(SRCROOT)/Misc/array.h
+b+tree2.o: $(SRCROOT)/Misc/os.h
+b+tree2.o: $(SRCROOT)/Misc/xerror.h
 b+tree2.o: $(PWD)/staden_config.h
 b+tree2.o: $(SRCROOT)/tgap/b+tree2.h
+b+tree2.o: $(SRCROOT)/tgap/g-alloc.h
+b+tree2.o: $(SRCROOT)/tgap/g-connect.h
+b+tree2.o: $(SRCROOT)/tgap/g-db.h
+b+tree2.o: $(SRCROOT)/tgap/g-defs.h
+b+tree2.o: $(SRCROOT)/tgap/g-error.h
+b+tree2.o: $(SRCROOT)/tgap/g-filedefs.h
+b+tree2.o: $(SRCROOT)/tgap/g-io.h
+b+tree2.o: $(SRCROOT)/tgap/g-misc.h
+b+tree2.o: $(SRCROOT)/tgap/g-os.h
+b+tree2.o: $(SRCROOT)/tgap/g-request.h
+b+tree2.o: $(SRCROOT)/tgap/g-struct.h
+b+tree2.o: $(SRCROOT)/tgap/g.h
+b+tree2.o: $(SRCROOT)/tgap/hache_table.h
+b+tree2.o: $(SRCROOT)/tgap/tg_struct.h
+b+tree2.o: $(SRCROOT)/tgap/tg_utils.h
 g-alloc.o: $(SRCROOT)/Misc/os.h
 g-alloc.o: $(PWD)/staden_config.h
 g-alloc.o: $(SRCROOT)/tgap/g-alloc.h

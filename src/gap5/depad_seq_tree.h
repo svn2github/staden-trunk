@@ -19,7 +19,7 @@ typedef RB_HEAD(PAD_COUNT, pad_count) pad_count_t;
 RB_PROTOTYPE(PAD_COUNT, pad_count, link, pad_count_cmp);
 
 #ifndef TEST_MAIN
-pad_count_t *depad_consensus(GapIO *io, int crec);
+pad_count_t *depad_consensus(GapIO *io, tg_rec crec);
 #endif
 
 char *repad_seq_tree(char *seq, pad_count_t *tree);

@@ -125,7 +125,7 @@ typedef struct _cursor_t {
     int id;		/* Cursor identification number */
     int refs;		/* Number of concurrent uses for this cursor */
     int private;	/* Whether this is a private cursor */
-    int seq;		/* Cursor sequence number (0 for consensus) */
+    tg_rec seq;		/* Cursor sequence number (0 for consensus) */
     int pos;		/* Position from start of sequence */
     int abspos; 	/* Absolute position in contig */
     int sent_by;	/* reg id of display that created cursor */
@@ -155,9 +155,9 @@ typedef struct {
 } reg_number;
     
 typedef struct {
-    int job;	/* REG_JOIN_TO */
-    int contig;	/* New contig number */
-    int offset;	/* Offset of old contig into new contig */
+    int job;	   /* REG_JOIN_TO */
+    tg_rec contig; /* New contig number */
+    int offset;	   /* Offset of old contig into new contig */
 } reg_join;
 
 typedef struct {
@@ -219,12 +219,12 @@ typedef struct {
     int job;	   /* REG_REGISTER, REG_DEREGISTER */
     int id;	   /* Registration id */
     int type;	   /* Registration type */
-    int contig;    /* Contig number */
+    tg_rec contig; /* Contig number */
 } reg_register, reg_deregister;
 
 typedef struct {
     int job;	   /* REG_HIGHLIGHT_READ */
-    int seq;	   /* Gel reading number (-ve == contig consensus) */
+    tg_rec seq;	   /* Gel reading number (-ve == contig consensus) */
     int val;	   /* 1==highlight, 0==dehighlight */
 } reg_highlight_read;
 
@@ -245,6 +245,7 @@ typedef union _reg_data {
     reg_quit		quit;
     reg_get_ops		get_ops;
     reg_invoke_op	invoke_op;
+
     reg_params		params;
     reg_cursor_notify	cursor_notify;
     reg_anno		annotations;
@@ -258,7 +259,7 @@ typedef union _reg_data {
 
 
 typedef struct {
-    void (*func)(GapIO *io, int contig, void *fdata, reg_data *jdata);
+    void (*func)(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata);
     void *fdata;
     int id;
     time_t time;
@@ -291,7 +292,7 @@ typedef struct {
 typedef struct {
     char name[80];
     int id;
-    int contig;
+    tg_rec contig;
     contig_reg_t *r;
 } result_name_t;
 
@@ -332,8 +333,8 @@ int register_id(void);
  *
  * Returns 0 on success, and -1 for error. 
  */
-int contig_register(GapIO *io, int contig,
-		    void (*func)(GapIO *io, int contig, void *fdata,
+int contig_register(GapIO *io, tg_rec contig,
+		    void (*func)(GapIO *io, tg_rec contig, void *fdata,
 				 reg_data *jdata),
 		    void *fdata,
 		    int id, int flags, int type);
@@ -344,8 +345,8 @@ int contig_register(GapIO *io, int contig,
  *
  * Returns 0 for success, and -1 for error.
  */
-int contig_deregister(GapIO *io, int contig,
-		      void (*func)(GapIO *io, int contig, void *fdata,
+int contig_deregister(GapIO *io, tg_rec contig,
+		      void (*func)(GapIO *io, tg_rec contig, void *fdata,
 				   reg_data *jdata),
 		      void *fdata);
 
@@ -353,7 +354,7 @@ int contig_deregister(GapIO *io, int contig,
 /*
  * Uses the register list for a given contig to call a particular job.
  */
-void contig_notify(GapIO *io, int contig, reg_data *jdata);
+void contig_notify(GapIO *io, tg_rec contig, reg_data *jdata);
 
 
 /*
@@ -361,7 +362,7 @@ void contig_notify(GapIO *io, int contig, reg_data *jdata);
  *
  * Returns 0 for success, and -1 for error.
  */
-int contig_register_join(GapIO *io, int cfrom, int cto);
+int contig_register_join(GapIO *io, tg_rec cfrom, tg_rec cto);
 
 
 /*
@@ -369,7 +370,7 @@ int contig_register_join(GapIO *io, int cfrom, int cto);
  * Call this just after we delete it. It sends out notification events and
  * updated the contig_reg hash tables.
  */
-void contig_register_delete(GapIO *io, int contig);
+void contig_register_delete(GapIO *io, tg_rec contig);
 
 /*
  * Iterates through all contigs_reg_t registered with 'contig' and having
@@ -381,7 +382,7 @@ void contig_register_delete(GapIO *io, int contig);
  * Returns contig_reg_t* on success
  *         NULL on failure
  */
-contig_reg_t *get_reg_by_contig_id(GapIO *io, int contig, int id,
+contig_reg_t *get_reg_by_contig_id(GapIO *io, tg_rec contig, int id,
 				   HacheItem **start_from);
 contig_reg_t *get_reg_by_id(GapIO *io, int id,
 			    HacheItem **start_from);
@@ -430,7 +431,7 @@ void *result_data(GapIO *io, int id);
  *
  * We return only the first data for id found, or 0 if none found.
  */
-int type_to_result(GapIO *io, int type, int contig);
+int type_to_result(GapIO *io, int type, tg_rec contig);
 
 /*
  * Notifies all (or the first) registered items of a given type.
@@ -442,7 +443,7 @@ int type_notify(GapIO *io, int type, reg_data *jdata);
  * Notifies all (or the first) registered items of a given type within
  * a specified contig.
  */
-int type_contig_notify(GapIO *io, int contig, int type,
+int type_contig_notify(GapIO *io, tg_rec contig, int type,
 		       reg_data *jdata, int all);
 
 /*
@@ -451,7 +452,7 @@ int type_contig_notify(GapIO *io, int contig, int type,
  *
  * Returns 0 for success and -1 for failure.
  */
-int contig_lock_write(GapIO *io, int contig);
+int contig_lock_write(GapIO *io, tg_rec contig);
 
 /*
  * Create a cursor for this contig.
@@ -459,19 +460,19 @@ int contig_lock_write(GapIO *io, int contig);
  * Otherwise use an existing one if available
  * Returns the cursor pointer, or NULL for failure.
  */
-cursor_t *create_contig_cursor(GapIO *io, int contig, int private, int sent_by);
+cursor_t *create_contig_cursor(GapIO *io, tg_rec contig, int private, int sent_by);
 
 /*
  * Given a cursor identifier, return the cursor structure or NULL if not
  * found.
  */
-cursor_t *find_contig_cursor(GapIO *io, int contig, int id);
+cursor_t *find_contig_cursor(GapIO *io, tg_rec contig, int id);
 
 /*
  * Deletes a contig cursor for this option. If the cursor is in use
  * more than once then this simply decrements the reference count.
  * 'private' indicates whether this cursor was "your private one".
  */
-void delete_contig_cursor(GapIO *io, int contig, int id, int private);
+void delete_contig_cursor(GapIO *io, tg_rec contig, int id, int private);
 
 #endif

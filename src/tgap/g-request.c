@@ -772,7 +772,6 @@ static int g_unlock_views(GDB *gdb, GView v)
 	Cache *cache;
 
 	v = pair[i].v;
-	nextv = arr(View,gdb->view,v).next;
 	cache = &arr(View,gdb->view,v).lcache;
 
 	/*

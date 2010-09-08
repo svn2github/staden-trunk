@@ -6,9 +6,9 @@
  * Returns 0 for success
  *        -1 for failure.
  */
-int anno_ele_new(GapIO *io, int bin,
-		 int obj_type, int obj_rec, int anno_rec,
-		 int type, char *comment);
+tg_rec anno_ele_new(GapIO *io, tg_rec bin,
+		    int obj_type, tg_rec obj_rec, tg_rec anno_rec,
+		    int type, char *comment);
 
 /*
  * Removes an anno_ele from the gap database.
@@ -23,8 +23,8 @@ int anno_ele_destroy(GapIO *io, anno_ele_t *e);
  * Creates an anno_ele as per anno_ele_new, but also adds it to an object
  * and creates the bin Range entry too.
  */
-int anno_ele_add(GapIO *io, int obj_type, int obj_rec, int anno_rec,
-		 int type, char *comment, int start, int end);
+tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
+		    int type, char *comment, int start, int end);
 
 /*
  * Returns the range_t element from the bin holding this annotation.
@@ -34,7 +34,7 @@ int anno_ele_add(GapIO *io, int obj_type, int obj_rec, int anno_rec,
  * Returns a static range_t pointer on success (valid until next call)
  *         NULL on failure.
  */
-range_t *anno_get_range(GapIO *io, int anno_ele, int *contig, int rel);
+range_t *anno_get_range(GapIO *io, tg_rec anno_ele, tg_rec *contig, int rel);
 
 /*
  * Sets the comment for an annotation element.
@@ -66,11 +66,11 @@ int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str);
  * FIXME: this is almost identical to seq_get_position2, so maybe they
  * should both call a common function in tg_bin.c instead.
  */
-int anno_get_position2(GapIO *io, GRec anum, int *contig,
+int anno_get_position2(GapIO *io, tg_rec anum, tg_rec *contig,
 		       int *start, int *end, int *orient,
 		       range_t *r_out, seq_t **a_out);
 
-int anno_get_position(GapIO *io, GRec anum, int *contig,
+int anno_get_position(GapIO *io, tg_rec anum, tg_rec *contig,
 		      int *start, int *end, int *orient);
 
 

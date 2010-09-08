@@ -401,8 +401,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     baf_block *b, *co = NULL;
     int last_obj_type = 0;
     int last_obj_pos = 0;
-    int last_obj_rec = 0;
-    int last_cnt_rec = 0;
+    tg_rec last_obj_rec = 0;
+    tg_rec last_cnt_rec = 0;
     int last_cnt_pos = 0;
     int last_obj_orient = 0;
     
@@ -461,7 +461,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    seq_t seq;
 	    int flags;
 	    char *tname;
-	    int recno;
+	    tg_rec recno;
 	    int is_pair = 0;
 
 	    /* Construct seq struct */

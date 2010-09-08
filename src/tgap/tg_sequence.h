@@ -50,32 +50,32 @@ int sequence_set_trace_name  (GapIO *io, seq_t **s, char *trace_name);
 int sequence_set_seq         (GapIO *io, seq_t **s, char *seq);
 int sequence_set_conf        (GapIO *io, seq_t **s, char *conf);
 
-int sequence_new_from(GapIO *io, seq_t *s);
+tg_rec sequence_new_from(GapIO *io, seq_t *s);
 
-GRec sequence_index_query(GapIO *io, char *name);
-int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec);
+tg_rec sequence_index_query(GapIO *io, char *name);
+int sequence_index_update(GapIO *io, char *name, int name_len, tg_rec rec);
 
-int sequence_get_position(GapIO *io, GRec snum, int *contig,
+int sequence_get_position(GapIO *io, tg_rec snum, tg_rec *contig,
 			  int *start, int *end, int *orient);
-int sequence_get_position2(GapIO *io, GRec snum, int *contig,
+int sequence_get_position2(GapIO *io, tg_rec snum, tg_rec *contig,
 			   int *start, int *end, int *orient,
 			   range_t *r_out, seq_t **s_out);
-int sequence_get_orient(GapIO *io, GRec snum);
-int sequence_get_contig(GapIO *io, GRec snum);
-int sequence_get_pair(GapIO *io, seq_t *s);
+int sequence_get_orient(GapIO *io, tg_rec snum);
+tg_rec sequence_get_contig(GapIO *io, tg_rec snum);
+tg_rec sequence_get_pair(GapIO *io, seq_t *s);
 
 /*
  * Trivial one-off sequence query functions
  */
-int seq_pos(GapIO *io, int rec);
-int seq_len(GapIO *io, int rec);
-int seq_left(GapIO *io, int rec);
-int seq_right(GapIO *io, int rec);
-int seq_mapping_qual(GapIO *io, int rec);
-char *seq_name(GapIO *io, int rec);
-char *seq_trace_name(GapIO *io, int rec);
-char *seq_seq(GapIO *io, int rec);
-char *seq_conf(GapIO *io, int rec);
+int seq_pos(GapIO *io, tg_rec rec);
+int seq_len(GapIO *io, tg_rec rec);
+int seq_left(GapIO *io, tg_rec rec);
+int seq_right(GapIO *io, tg_rec rec);
+int seq_mapping_qual(GapIO *io, tg_rec rec);
+char *seq_name(GapIO *io, tg_rec rec);
+char *seq_trace_name(GapIO *io, tg_rec rec);
+char *seq_seq(GapIO *io, tg_rec rec);
+char *seq_conf(GapIO *io, tg_rec rec);
 
 /*
  * Reverses and complements a piece of DNA

@@ -25,7 +25,7 @@ char *get_active_list_item(void);
  */
 int rewind_active_list(void);
 
-int active_list_readings(GapIO *io, char *list, int *argc, int **argv);
+int active_list_readings(GapIO *io, char *list, int *argc, tg_rec **argv);
 
 int active_list_contigs(GapIO *io, char *list,
 			int *argc, contig_list_t **argv);

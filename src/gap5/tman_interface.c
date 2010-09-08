@@ -95,7 +95,7 @@ DisplayContext *tman_manage_trace(
 				  int baseSpacing,
 				  char *traceTitle,
 				  edview *xx,
-				  int seq,
+				  tg_rec seq,
 				  int allow_dup,
 				  int mini_trace
 				  ) {
@@ -137,8 +137,10 @@ DisplayContext *tman_manage_trace(
  * Converts editor consensus position to trace coordinate (bases)
  */
 int tman_get_trace_position(edview *xx, tman_dc *dc, int pos, int *end) {
-    int seq, p, num;
-    int cnum, cpos;
+    tg_rec seq;
+    int p, num;
+    tg_rec cnum;
+    int cpos;
     seq_t *s;
     int slen;
 
@@ -1058,7 +1060,7 @@ void edScrollTraces(edview *xx, char *path, char *command) {
     char *com_argv_tmp[5];
     double f1;
     int count;
-    int seq;
+    tg_rec seq;
     int scroll_mode;
 
     /* Find trace number */

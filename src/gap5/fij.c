@@ -66,22 +66,23 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 	    break;
 
 	case 2: /* Make join */ {
-	    printf("Make join between %d and %d\n",
+	    printf("Make join between %"PRIrec" and %"PRIrec"\n",
 		   obj->c1, obj->c2);
 	    break;
 	}
 
 	case -2: /* default */
         case 3: /* Invoke join editor */ {
-	    int cnum[2], llino[2], pos[2];
+	    tg_rec cnum[2], llino[2];
+	    int pos[2];
 	    int cl[2];
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    fij->current = obj - (obj_fij *)fij->match;
 	    Tcl_VarEval(GetInterp(), "CSLastUsed ", CPtr2Tcl(fij), NULL);
 
-	    cnum[0] = abs(obj->c1);
-	    cnum[1] = abs(obj->c2);
+	    cnum[0] = ABS(obj->c1);
+	    cnum[1] = ABS(obj->c2);
 
 	    /* Complement a contig if needed */
 	    if ((obj->c1 > 0) != (obj->c2 > 0)) {
@@ -125,8 +126,9 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 	}
 
 	case 4: /* Invoke contig editors */ {
-	    int cnum, llino, pos, reveal;
-
+	    tg_rec cnum, llino;
+	    int pos, reveal;
+	    
 	    cnum  = ABS(obj->c1);
 	    llino = io_clnbr(fij->io, cnum);
 	    pos   = obj->pos1;
@@ -154,7 +156,8 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 
     case OBJ_GET_BRIEF:
 	sprintf(buf,
-		"FIJ: %c#%d@%d with %c#%d@%d, len %d, score %d, mis %2.2f%%",
+		"FIJ: %c#%"PRIrec"@%d with %c#%"PRIrec"@%d, "
+		"len %d, score %d, mis %2.2f%%",
 		obj->c1 > 0 ? '+' : '-',
 		io_clnbr(fij->io, ABS(obj->c1)), obj->pos1,
 		obj->c2 > 0 ? '+' : '-',
@@ -175,7 +178,7 @@ static int sort_func(const void *p1, const void *p2) {
  * Match callback.
  * 'obj' is a match contained within the 'fij' list.
  */
-void fij_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
+void fij_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
     mobj_fij *r = (mobj_fij *)fdata;
     obj_cs *cs;
     int cs_id;
@@ -442,7 +445,8 @@ fij(GapIO *io,
 
     for (i = 0; i < counter; i++){
 	obj_fij *match = &FIJMatch->match[i];
-	int ustart, uend, last_c = 0;
+	int ustart, uend;
+	tg_rec last_c = 0;
 
 	/* FIXME: Inefficient - try caching this data */
 	if (match->c1 < 0) {
@@ -493,13 +497,13 @@ fij(GapIO *io,
 
 /* store hits of find internal joins */
 void
-buffij(int c1,
-	int pos1,
-	int c2,
-	int pos2,
-	int len,
-        int score,
-        double percent)
+buffij(tg_rec c1,
+       int pos1,
+       tg_rec c2,
+       int pos2,
+       int len,
+       int score,
+       double percent)
 {
     global_match->match[counter].func = fij_obj_func;
     global_match->match[counter].data = global_match;

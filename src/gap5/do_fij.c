@@ -20,7 +20,7 @@
 
 extern DLL_IMPORT int unknown_char;
 
-void buffij(int left_gel1, int seq2_start, int left_gel2, int seq1_start,
+void buffij(tg_rec left_gel1, int seq2_start, tg_rec left_gel2, int seq1_start,
 	    int len_align, int score, double percent_mismatch);
 
 int do_it_fij ( char seq[], int seq_len,
@@ -242,13 +242,13 @@ int do_it_fij ( char seq[], int seq_len,
 			    seq2_start_f = depad_to_pad2[overlap->left1]
 				- contig_list[contig2_num].contig_left_extension + 1 ; 
 			
-			    sprintf(name1,"%d",
+			    sprintf(name1,"%"PRIrec,
 				    contig_list[contig1_num].contig_left_gel);
-			    sprintf(name2,"%d",
+			    sprintf(name2,"%"PRIrec,
 				    contig_list[contig2_num].contig_left_gel);
 			    sprintf(buf,
-				    " Possible join between contig %d "
-				    "in the + sense and contig %d\n"
+				    " Possible join between contig %"PRIrec
+				    " in the + sense and contig %"PRIrec"\n"
 				    " Length %d",
 				    contig_list[contig1_num].contig_left_gel,
 				    contig_list[contig2_num].contig_left_gel,
@@ -271,9 +271,10 @@ int do_it_fij ( char seq[], int seq_len,
 					 percent_mismatch);
 			    }
 
-			    buffij(
-				   contig_list[contig1_num].contig_left_gel,seq2_start_f,
-				   contig_list[contig2_num].contig_left_gel,seq1_start_f,
+			    buffij(contig_list[contig1_num].contig_left_gel,
+				   seq2_start_f,
+				   contig_list[contig2_num].contig_left_gel,
+				   seq1_start_f,
 				   overlap->length, (int)overlap->score,
 				   percent_mismatch);
 			}
@@ -376,12 +377,12 @@ int do_it_fij ( char seq[], int seq_len,
 		            seq2_start_r = depad_to_pad2[overlap->left1]
 			        - contig_list[contig2_num].contig_left_extension + 1 ; 
 			
-			    sprintf(name1,"%d",
+			    sprintf(name1,"%"PRIrec,
 				    contig_list[contig1_num].contig_left_gel);
-			    sprintf(name2,"%d",
+			    sprintf(name2,"%"PRIrec,
 				    contig_list[contig2_num].contig_left_gel);
-			    sprintf(buf," Possible join between contig %d "
-				    "in the - sense and contig %d\n"
+			    sprintf(buf," Possible join between contig %"PRIrec
+				    " in the - sense and contig %"PRIrec"\n"
 				    " Length %d",
 				    contig_list[contig1_num].contig_left_gel,
 				    contig_list[contig2_num].contig_left_gel,
@@ -399,8 +400,7 @@ int do_it_fij ( char seq[], int seq_len,
 					 percent_mismatch);
 			    }
 			
-			    buffij(
-				   -contig_list[contig1_num].contig_left_gel,
+			    buffij(-contig_list[contig1_num].contig_left_gel,
 				   seq2_start_r,
 				   contig_list[contig2_num].contig_left_gel,
 				   seq1_end_r,

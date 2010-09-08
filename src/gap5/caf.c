@@ -62,8 +62,8 @@ typedef struct anno_type {
 
 // Next few functions are for string and file reading
 
-static int replace(char *str, char rep) {
-    int length = 0;
+static long replace(char *str, char rep) {
+    long length = 0;
 	
     if (str && (length = strlen(str))) {
     	if (str[length - 1] == '\n') {
@@ -76,8 +76,8 @@ static int replace(char *str, char rep) {
 
 
 // version of the perl favourite
-static int chomp(char *str) {
-    int length = 0;
+static long chomp(char *str) {
+    long length = 0;
 
     if (str && (length = strlen(str))) {
     	if (str[length - 1] == '\n') {
@@ -96,14 +96,14 @@ static int chomp(char *str) {
    Modifies the field string.
 */
 static char *get_value(char *key, char *field) {
-    int key_length, field_length;
+    size_t key_length, field_length;
     char *value = NULL;
     
     key_length   = strlen(key);
     field_length = strlen(field);
     
     if (strncmp(field, key, key_length) == 0) {
-    	int i;
+    	size_t i;
 	
 	for (i = key_length; i < field_length; i++) {
 	    if (!isspace(*(field + i))) break;
@@ -490,7 +490,7 @@ static int split_bases(caf_index *bases, caf_index *contig_entry, caf_index *rea
 
 static int parse_annotation(anno_type **annotation, int *anno_count, int *anno_size, char *value) {
     char *anno_entry = NULL;
-    int txt_len;
+    size_t txt_len;
 
     if (*anno_size == 0) {
 	*annotation = malloc(8 * sizeof(anno_type));
@@ -566,7 +566,7 @@ static int read_contig_section(zfp *fp, GapIO *io, contig_t **contig, tg_args *a
 	    if (a->data_type & DATA_ANNO) {
 		if (parse_annotation(&annotation, &anno_count, &anno_size, value)) {
 		    fprintf(stderr, "Out of memory, unable to process tags\n");
-		    return;
+		    return 1;
 		}
 	    }
 	}
@@ -759,7 +759,8 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 	int tr_len = 0;
 	char *template_name = NULL;
 	int tm_len = 0;
-	int recno, flags, is_pair = 0;
+	tg_rec recno;
+	int flags, is_pair = 0;
 	anno_type *annotation = NULL;
 	int anno_count  = 0;
 	int anno_size = 0;

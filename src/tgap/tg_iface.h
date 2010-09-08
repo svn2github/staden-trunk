@@ -31,6 +31,13 @@
  */
 
 
+/*
+ * The low level g-layer still uses GCardinal for records. This is fine as
+ * we know 32-bits is enough for genuine records that are read from and
+ * written to disc using the g-layer itself. However for any faked record
+ * type (eg blocked sequence/anno, copy-on-write seq as file offset, etc)
+ * the record numbers may be 64-bit and use tg_rec type instead.
+ */
 typedef GCardinal GRec;
 
 /*
@@ -38,17 +45,17 @@ typedef GCardinal GRec;
  */
 #define STANDARD_IFACE \
     /* Allocate and deallocate. Init is allocate() + lock + initialise */ \
-    GRec (*create)(void *dbh, void *from);				  \
-    int (*destroy)(void *dbh, GRec rec, GView view);			  \
+    tg_rec (*create)(void *dbh, void *from);				  \
+    int (*destroy)(void *dbh, tg_rec rec, GView view);			  \
 									  \
     /* Locking and unlocking */						  \
-    GView (*lock)(void *dbh, GRec rec, int mode);			  \
+    GView (*lock)(void *dbh, tg_rec rec, int mode);			  \
     int (*unlock)(void *dbh, GView view);				  \
     int (*upgrade)(void *dbh, GView view, int mode);			  \
     int (*abandon)(void *dbh, GView view);				  \
 									  \
     /* Read/Write */				                          \
-    cached_item *(*read)(void *dbh, GRec rec);	                          \
+    cached_item *(*read)(void *dbh, tg_rec rec);	                  \
     int (*write)(void *dbh, cached_item *ci);                             \
 									  \
     /* Queries on size */						  \
@@ -76,14 +83,16 @@ typedef struct {
 
 typedef struct {
     STANDARD_IFACE
-    GRec (*index_query)(void *dbh, char *name);
-    int  (*index_add)(void *dbh, char *name, GRec rec);
+    tg_rec (*index_query)(void *dbh, char *name);
+    int  (*index_add)(void *dbh, char *name, tg_rec rec);
+    int  (*index_del)(void *dbh, char *name);
 } io_contig;
 
 typedef struct {
     STANDARD_IFACE
-    GRec (*index_query)(void *dbh, char *name);
-    int  (*index_add)(void *dbh, char *name, GRec rec);
+    tg_rec (*index_query)(void *dbh, char *name);
+    int  (*index_add)(void *dbh, char *name, tg_rec rec);
+    int  (*index_del)(void *dbh, char *name);
 } io_seq;
 
 typedef struct {

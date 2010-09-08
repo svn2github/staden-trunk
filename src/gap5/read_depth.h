@@ -17,7 +17,7 @@ typedef struct {
  * Returns average sequence depth on success (plus first/res filled out)
  *         NULL on failure (first/res undefined).
  */
-int *avg_sequence_depth(GapIO *io, int cnum, int start, int end,
+int *avg_sequence_depth(GapIO *io, tg_rec cnum, int start, int end,
 			int *start_out, int *end_out, int *inc_out);
 
 /*
@@ -27,7 +27,7 @@ int *avg_sequence_depth(GapIO *io, int cnum, int start, int end,
  * Returns average sequence depth on success
  *         NULL on failure
  */
-min_max_avg_t *sequence_depth(GapIO *io, int cnum, int start, int end,
+min_max_avg_t *sequence_depth(GapIO *io, tg_rec cnum, int start, int end,
 			      int *start_out, int *end_out, int *inc_out);
 
 #endif /* _READ_DEPTH_H */

@@ -18,7 +18,6 @@ typedef struct {
     int min_bin_size;
     int fast_mode;
     bttmp_t *tmp;
-    int reserved_seqs;
     int data_type;
     int comp_mode;
     int repad;

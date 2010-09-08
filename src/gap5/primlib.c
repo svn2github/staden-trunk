@@ -5,6 +5,7 @@
 
 #include "gap_globals.h"
 #include "primlib.h"
+#include "text_output.h"
 
 /*
  * Copies values from primlib_args into the primlib_state structure.

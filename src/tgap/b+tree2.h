@@ -6,7 +6,8 @@
 #define BTREE_MAX 4000
 #define BTREE_MIN (BTREE_MAX/2)
 
-typedef int32_t BTRec;
+typedef int64_t BTRec;
+#define PRIbtr PRId64
 
 typedef struct btree_node {
     char *keys[BTREE_MAX+1];
@@ -24,7 +25,7 @@ typedef struct {
     btree_node_t *root;
 } btree_t;
 
-btree_t *btree_new(void *cd, int root);
+btree_t *btree_new(void *cd, BTRec root);
 void btree_del(btree_t *t);
 btree_node_t *btree_new_node(void);
 void btree_del_node(btree_node_t *n);
@@ -37,7 +38,8 @@ void btree_del_node(btree_node_t *n);
  *         NULL on failure
  */
 unsigned char *btree_node_encode(btree_node_t *n, size_t *size);
-unsigned char *btree_node_encode2(btree_node_t *n, size_t *size, size_t *prts);
+unsigned char *btree_node_encode2(btree_node_t *n, size_t *size, size_t *prts,
+				  int fmt);
 
 /*
  * Decodes the on-disk btree format into an in-memory C struct.
@@ -46,7 +48,7 @@ unsigned char *btree_node_encode2(btree_node_t *n, size_t *size, size_t *prts);
  *         NULL on failure
  */
 btree_node_t *btree_node_decode(unsigned char *buf);
-btree_node_t *btree_node_decode2(unsigned char *buf);
+btree_node_t *btree_node_decode2(unsigned char *buf, int fmt);
 
 int btree_insert(btree_t *t, char *str, BTRec value);
 int btree_delete(btree_t *t, char *str);

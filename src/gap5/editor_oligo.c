@@ -10,6 +10,7 @@
 #include "editor_view.h"
 #include "primlib.h"
 #include "dna_utils.h"
+#include "gap4_compat.h" /* bell */
 
 /*
  *----------------------------------------------------------------------------

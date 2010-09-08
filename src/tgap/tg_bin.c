@@ -28,7 +28,6 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
     bin.parent_type = parent_type;
     bin.child[0]    = 0;
     bin.child[1]    = 0;
-    bin.bin_id      = 0;
     bin.rng	    = NULL;
     bin.rng_rec     = 0;
     bin.flags       = BIN_BIN_UPDATED;
@@ -44,8 +43,8 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
 }
 #endif
 
-int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
-    int rec;
+tg_rec bin_new(GapIO *io, int pos, int sz, tg_rec parent, int parent_type) {
+    tg_rec rec;
     bin_index_t *bin;
 
     if (-1 == (rec = io->iface->bin.create(io->dbh, NULL)))
@@ -62,7 +61,6 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
     bin->parent_type = parent_type;
     bin->child[0]    = 0;
     bin->child[1]    = 0;
-    bin->bin_id      = 0;
     bin->rng	    = NULL;
     bin->rng_rec     = 0;
     bin->flags       = BIN_BIN_UPDATED;
@@ -83,9 +81,9 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
  * Returns -1 on failure.
  */
 static bin_index_t *contig_extend_bins_right(GapIO *io, contig_t **c) {
-    int old_root_id = contig_get_bin(c);
+    tg_rec old_root_id = contig_get_bin(c);
     bin_index_t *oroot = get_bin(io, old_root_id), *nroot;
-    int root_id;
+    tg_rec root_id;
     int sz = oroot->size;
 
     cache_incr(io, oroot);
@@ -125,9 +123,9 @@ static bin_index_t *contig_extend_bins_right(GapIO *io, contig_t **c) {
 }
 
 static bin_index_t *contig_extend_bins_left(GapIO *io, contig_t **c) {
-    int old_root_id = contig_get_bin(c);
+    tg_rec old_root_id = contig_get_bin(c);
     bin_index_t *oroot = get_bin(io, old_root_id), *nroot;
-    int root_id;
+    tg_rec root_id;
     int sz = oroot->size;
 
     cache_incr(io, oroot);
@@ -184,7 +182,7 @@ static int next_range(bin_index_t *bin) {
 	range_t *r = arrp(range_t, bin->rng, bin->rng_free);
 	
 	tmp = bin->rng_free;
-	bin->rng_free = r->rec;
+	bin->rng_free = (int)r->rec;
 	return tmp;
     }
 }
@@ -213,10 +211,10 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
     int f_a, f_b;
 
 #ifdef CACHE_LAST_BIN
-    static int last_c = 0;
+    static tg_rec last_c = 0;
     static GapIO *last_io = NULL;
     bin_index_t *last_bin = NULL;
-    static int last_bin_rec = 0;
+    static tg_rec last_bin_rec = 0;
     static int last_start = 0, last_end = 0;
     static int last_offset, last_complement;
 #endif
@@ -591,12 +589,12 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
  * Returns 0 on success
  *        -1 on failure
  */
-int bin_get_item_position(GapIO *io, int type, GRec rec,
-			  int *contig, int *start, int *end, int *orient,
-			  int *brec, range_t *r_out, void **i_out) {
+int bin_get_item_position(GapIO *io, int type, tg_rec rec,
+			  tg_rec *contig, int *start, int *end, int *orient,
+			  tg_rec *brec, range_t *r_out, void **i_out) {
     bin_index_t *bin;
-    int bnum, i;
-    int offset1 = 0, offset2 = 0, found = 0;
+    tg_rec bnum;
+    int i, offset1 = 0, offset2 = 0, found = 0;
     int comp = 0;
 
     if (type == GT_AnnoEle) {
@@ -689,7 +687,7 @@ int bin_get_item_position(GapIO *io, int type, GRec rec,
  *        -1 on failure
  */
 int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
-			     int type, int rec) {
+			     int type, tg_rec rec) {
     bin_index_t *bin;
     int i;
 
@@ -711,7 +709,7 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    continue;
 
 	r->flags |= GRANGE_FLAG_UNUSED;
-	r->rec = bin->rng_free;
+	r->rec = (tg_rec)bin->rng_free;
 	bin->rng_free = i;
 	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
@@ -731,10 +729,10 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
  * Returns 0 on success
  *        -1 on failure
  */
-int bin_remove_item(GapIO *io, contig_t **c, int type, int rec) {
+int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec) {
     bin_index_t *bin;
     int start, end;
-    int cnum, bnum;
+    tg_rec cnum, bnum;
 
     if (-1 == bin_get_item_position(io, type, rec, &cnum, &start, &end,
 				    NULL, &bnum, NULL, NULL))
@@ -757,14 +755,9 @@ int bin_remove_item(GapIO *io, contig_t **c, int type, int rec) {
  * Returns 0 on success (plus *contig & *pos)
  *        -1 on failure
  */
-int bin_get_position(GapIO *io, bin_index_t *bin, int *contig, int *pos) {
-    int bnum;
+int bin_get_position(GapIO *io, bin_index_t *bin, tg_rec *contig, int *pos) {
+    tg_rec bnum;
     int offset = 0;
-
-    /* FIXME: Complemented coordinates need more fixes here */
-    if (bin->flags & BIN_COMPLEMENTED) {
-	offset = bin->size-1 - offset;
-    }
 
     offset += bin->pos;
 
@@ -826,7 +819,7 @@ track_t *track_create_fake(int type, int size) {
  *         NULL on failure
  */
 track_t *bin_create_track(GapIO *io, bin_index_t *bin, int type) {
-    int rec;
+    tg_rec rec;
     track_t *t;
 
     if (-1 == (rec = io->iface->track.create(io->dbh, NULL)))
@@ -938,7 +931,7 @@ int bin_invalidate_track(GapIO *io, bin_index_t *bin, int type) {
 	if (bt->type == type || type == TRACK_ALL) {
 	    if (NULL == (bin = cache_rw(io, bin)))
 		return -1;
-	    printf("Update track for rec %d\n", bin->rec);
+	    printf("Update track for rec %"PRIrec"\n", bin->rec);
 	    bin->flags |= BIN_TRACK_UPDATED;
 	    bt = arrp(bin_track_t, bin->track, i);
 	    bt->flags &= ~TRACK_FLAG_VALID;
@@ -954,7 +947,8 @@ int bin_invalidate_track(GapIO *io, bin_index_t *bin, int type) {
  */
 
 track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
-    int pos, cnum;
+    int pos;
+    tg_rec cnum;
     track_t *track, *child;
     int nele;
     double bpv;
@@ -978,7 +972,8 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
      */
     if (bpv <= 2) { /* FIXME: was 1, need 1 to stop aliasing? */
 	track_t *fake;
-	int rec, *depth;
+	tg_rec rec;
+	int *depth;
 	fake = track_create_fake(type, bin->size);
 	fake->flag = TRACK_FLAG_FREEME;
 
@@ -997,7 +992,8 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
 	rec = io->iface->track.create(io->dbh, fake);
 	track = (track_t *)cache_search(io, GT_Track, rec);
 
-	printf("Initialising track %d flag %d in bin %d at bpv of 1\n",
+	printf("Initialising track %"PRIrec" flag %d in bin %"PRIrec
+	       " at bpv of 1\n",
 	       rec, track->flag, bin->rec);
 
 	bin_add_track(io, &bin, track);
@@ -1041,7 +1037,7 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
  * Returns 0 on success
  *        -1 on failure
  */
-int bin_invalidate_consensus(GapIO *io, int contig, int start, int end) {
+int bin_invalidate_consensus(GapIO *io, tg_rec contig, int start, int end) {
     int i, nr;
     rangec_t *r;
     contig_t *c;

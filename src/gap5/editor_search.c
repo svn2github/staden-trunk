@@ -34,7 +34,8 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
     int patlen;
     char *uppert, *upperb;
     int found = 0, at_end = 0;
-    int fseq, fpos, i, j;
+    tg_rec fseq;
+    int fpos, i, j;
 
     /*
      * Parse value search string. It optionally includes two extra params
@@ -225,7 +226,7 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
 
 int edview_search_name(edview *xx, int dir, int strand, char *value)
 {
-    int rec, cnum;
+    tg_rec rec, cnum;
     
     rec = sequence_index_query(xx->io, value);
     if (rec <= 0)

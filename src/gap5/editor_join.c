@@ -307,8 +307,8 @@ static int align(edview *xx0, int pos0, int len0,
 	exp0 = (char *) xmalloc(len0+len1+1);
 	exp1 = (char *) xmalloc(len0+len1+1);
 
-	sprintf(name0, "%d", xx0->cnum);
-	sprintf(name1, "%d", xx1->cnum);
+	sprintf(name0, "%"PRIrec, xx0->cnum);
+	sprintf(name1, "%"PRIrec, xx1->cnum);
 	cexpand(ol0+left0, ol1+left1, len0, len1,
 		exp0, exp1, &exp_len0, &exp_len1, 
 		ALIGN_J_SSH | ALIGN_J_PADS, S);
@@ -615,13 +615,13 @@ int edJoinMismatch(edview *xx, int *len, int *mismatch) {
  * Returns bin record number on success
  *         -1 on failure
  */
-int find_join_bin(GapIO *io, int lbin, int rbin, int offset, int offsetr,
-		  int junction) {
+tg_rec find_join_bin(GapIO *io, tg_rec lbin, tg_rec rbin, int offset,
+		     int offsetr, int junction) {
     bin_index_t *binl, *binr;
     int complement = 0;
     int i, f_a, f_b;
     int start, end;
-    int bnum;
+    tg_rec bnum;
 
     binr = (bin_index_t *)cache_search(io, GT_Bin, rbin);
     binl = (bin_index_t *)cache_search(io, GT_Bin, lbin);
@@ -664,7 +664,7 @@ int find_join_bin(GapIO *io, int lbin, int rbin, int offset, int offsetr,
 
 	    ch = get_bin(io, binl->child[i]);
 
-	    printf("Checking bin %d abs pos %d..%d vs %d..%d\n",
+	    printf("Checking bin %"PRIrec" abs pos %d..%d vs %d..%d\n",
 		   ch->rec,
 		   NMIN(ch->pos, ch->pos+ch->size-1),
 		   NMAX(ch->pos, ch->pos+ch->size-1),
@@ -685,7 +685,7 @@ int find_join_bin(GapIO *io, int lbin, int rbin, int offset, int offsetr,
 	}
     } while (lbin);
 
-    printf("Optimal bin to insert is above %d\n", bnum);
+    printf("Optimal bin to insert is above %"PRIrec"\n", bnum);
 
     return bnum;
 }
@@ -716,7 +716,7 @@ int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
 		bin->flags &= ~BIN_CONS_VALID;
 	    }
 
-	    printf("Invalidating consensus in ctg %s, bin %d: %d..%d (%d)\n",
+	    printf("Invalidating consensus in ctg %s, bin %"PRIrec": %d..%d (%d)\n",
 		   j ? "right" : "left",
 		   r[i].rec, r[i].start, r[i].end, r[i].end - r[i].start);
 	}
@@ -742,7 +742,8 @@ int edJoin(edview *xx) {
     contig_t *cl, *cr;
     GapIO *io = xx->io;
     bin_index_t *binp, *binl, *binr;
-    int offset, binp_id, above;
+    int offset;
+    tg_rec above, binp_id;
     reg_length rl;
     reg_join rj;
 

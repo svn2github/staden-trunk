@@ -34,7 +34,7 @@
  */
 int contig_set_start(GapIO *io, contig_t **c, int value);
 int contig_set_end  (GapIO *io, contig_t **c, int value);
-int contig_set_bin  (GapIO *io, contig_t **c, int value);
+int contig_set_bin  (GapIO *io, contig_t **c, tg_rec value);
 int contig_set_name (GapIO *io, contig_t **c, char *name);
 
 /*
@@ -49,8 +49,8 @@ int contig_delete_base(GapIO *io, contig_t **c, int pos);
 
 
 contig_t *find_contig_by_name(GapIO *io, char *name);
-GRec contig_index_query(GapIO *io, char *name);
-int contig_index_update(GapIO *io, char *name, int name_len, GRec rec);
+tg_rec contig_index_query(GapIO *io, char *name);
+int contig_index_update(GapIO *io, char *name, int name_len, tg_rec rec);
 
 contig_t *contig_new(GapIO *io, char *name);
 
@@ -93,7 +93,7 @@ typedef struct {
     rangec_t *r;     /* r[] array itself and size of it */
     int nitems;
     int index;       /* current index into r[] array */
-    int cnum;        /* contig number */
+    tg_rec cnum;     /* contig number */
     int start;       /* current region fetch coords */
     int end;
     int cstart;      /* requested limits of region to fetch */
@@ -150,10 +150,10 @@ int y_cmp(struct xy_pair *y1, struct xy_pair *y2);
  * Returns contig_iterator pointer on success
  *         NULL on failure
  */
-contig_iterator *contig_iter_new_by_type(GapIO *io, int cnum, int auto_extend,
-					 int whence, int start, int end,
-					 int type);
-contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
+contig_iterator *contig_iter_new_by_type(GapIO *io, tg_rec cnum,
+					 int auto_extend, int whence,
+					 int start, int end, int type);
+contig_iterator *contig_iter_new(GapIO *io, tg_rec cnum, int auto_extend,
 				 int whence, int start, int end);
 
 /*
@@ -193,7 +193,7 @@ void contig_dump_ps(GapIO *io, contig_t **c, char *fn);
  * Returns 0 for success
  *        -1 for failure
  */
-int contig_destroy(GapIO *io, int rec);
+int contig_destroy(GapIO *io, tg_rec rec);
 
 /* temp */
 int plot_seqs_in_range(GapIO *io, contig_t **c, int start, int end, void *template, void *drawing, 

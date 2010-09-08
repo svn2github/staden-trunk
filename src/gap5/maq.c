@@ -177,7 +177,7 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
 	hd.p = NULL;
 	hi = HacheTableAdd(libs, (char *)LB, strlen(LB), hd, &new);
 	if (new) {
-	    int lrec;
+	    tg_rec lrec;
 	    printf("New library %s\n", LB);
 
 	    lrec = library_new(io, LB);

@@ -122,7 +122,7 @@ typedef struct _cursor_t {
     int id;		/* Cursor identification number */
     int refs;		/* Number of concurrent uses for this cursor */
     int private;	/* Whether this is a private cursor */
-    int seq;		/* Cursor sequence number (0 for consensus) */
+    tg_rec seq;		/* Cursor sequence number (0 for consensus) */
     int pos;		/* Position from start of sequence */
     int abspos; 	/* Absolute position in contig */
     int sent_by;	/* reg id of display that created cursor */
@@ -221,7 +221,7 @@ typedef struct {
 
 typedef struct {
     int job;	   /* REG_HIGHLIGHT_READ */
-    int seq;	   /* Gel reading number (-ve == contig consensus) */
+    tg_rec seq;	   /* Gel reading number (-ve == contig consensus) */
     int val;	   /* 1==highlight, 0==dehighlight */
 } reg_highlight_read;
 
@@ -270,7 +270,7 @@ typedef struct {
  */
 typedef struct {
     int position;
-    int seq;
+    tg_rec seq;
 } task_editor_setcursor;
 
 typedef struct {

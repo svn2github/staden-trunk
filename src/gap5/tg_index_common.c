@@ -18,10 +18,10 @@
 
 
 typedef struct {
-    int rec;
-    int bin;
+    tg_rec rec;
+    tg_rec bin;
     int idx;
-    int crec;
+    tg_rec crec;
     int pos;
     int orient;
     int flags;
@@ -79,8 +79,8 @@ void bttmp_file_close(bttmp_t *tmp) {
  * Stores a name and record in a temporary file suitable for sorting and
  * adding to the name index at a later stage.
  */
-void bttmp_file_store(bttmp_t *tmp,  size_t name_len, char *name, int rec) {
-    fprintf(tmp->fp, "%.*s %d\n", (int)name_len, name, rec);
+void bttmp_file_store(bttmp_t *tmp,  size_t name_len, char *name, tg_rec rec) {
+    fprintf(tmp->fp, "%.*s %"PRIrec"\n", (int)name_len, name, rec);
 }
 
 /* Sort the temporary file, and rewind to start */
@@ -110,11 +110,11 @@ void bttmp_file_sort(bttmp_t *tmp) {
  * Return name on success and fills out rec.
  *       NULL on EOF (*rec==0) or failure (*rec==1)
  */
-char *bttmp_file_get(bttmp_t *tmp, int *rec) {
+char *bttmp_file_get(bttmp_t *tmp, tg_rec *rec) {
     static char line[8192];
-    static int recno;
+    int64_t recno;
 
-    if (fscanf(tmp->fp, "%s %d\n", line, &recno) == 2) {
+    if (fscanf(tmp->fp, "%s %"PRId64"\n", line, &recno) == 2) {
 	*rec = recno;
 	return line;
     }
@@ -126,18 +126,22 @@ char *bttmp_file_get(bttmp_t *tmp, int *rec) {
 
 /* debugging functions */
 static void print_pair(pair_loc_t *p) {
-    fprintf(stderr, "rec:%d bin:%d idx:%d crec:%d pos:%d\n", p->rec, p->bin, p->idx, p->crec, p->pos);
+    fprintf(stderr, "rec:%"PRIrec" bin:%"PRIrec" idx:%d crec:%"PRIrec
+	    " pos:%d\n",
+	    p->rec, p->bin, p->idx, p->crec, p->pos);
 } 
 
 static void print_range(range_t *r) {
-    fprintf(stderr, "start:%d end:%d rec:%d mqual:%d pair_rec:%d flags:%d\n", r->start, r->end, r->rec, r->mqual, r->pair_rec, r->flags);
+    fprintf(stderr, "start:%d end:%d rec:%"PRIrec" mqual:%d pair_rec:%"PRIrec
+	    " flags:%d\n",
+	    r->start, r->end, r->rec, r->mqual, r->pair_rec, r->flags);
 }
 
 
 
 /* temp file handling */
 static FILE *fp = NULL;
-static int max_bin = 0;
+static tg_rec max_bin = 0;
 
 int open_tmp_file(void) {
     
@@ -156,7 +160,7 @@ void close_tmp_file(void) {
  */
 
 /* save sequence, returns recno */
-int save_sequence(GapIO *io, seq_t *seq, bin_index_t *bin, range_t *r_out) {
+tg_rec save_sequence(GapIO *io, seq_t *seq, bin_index_t *bin, range_t *r_out) {
 
     seq->bin = bin->rec;
     seq->bin_index = r_out - ArrayBase(range_t, bin->rng);
@@ -165,7 +169,7 @@ int save_sequence(GapIO *io, seq_t *seq, bin_index_t *bin, range_t *r_out) {
 }
 
 
-void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname,
+void find_pair(GapIO *io, HacheTable *pair, tg_rec recno, char *tname,
 	       bin_index_t *bin, contig_t *c, seq_t *seq, tg_args *a,
 	       range_t *r_out, library_t *lib){		
     int new = 0;
@@ -202,7 +206,8 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname,
 	
 	if (!a->fast_mode) {
 	    /* TEMP - move later*/
-	    fprintf(fp, "%d %d %d %d\n", po->bin, po->idx, pl->rec, pl->flags);
+	    fprintf(fp, "%"PRIrec" %d %"PRIrec" %d\n",
+		    po->bin, po->idx, pl->rec, pl->flags);
 	
 	    if (po->bin > max_bin) max_bin = po->bin;
 	    
@@ -280,13 +285,13 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname,
 }
 
 
-int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
-			HacheTable *pair, int is_pair, char *tname,
-			contig_t *c, tg_args *a, int flags, library_t *lib) {
+tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
+			   HacheTable *pair, int is_pair, char *tname,
+			   contig_t *c, tg_args *a, int flags, library_t *lib) {
     range_t r, *r_out;
-    int recno;
+    tg_rec recno;
     bin_index_t *bin;
-    static int fake_recno = 1;
+    static tg_rec fake_recno = 1;
     int comp;
 
     /* Update sequence library, aka read-group */
@@ -432,16 +437,17 @@ int sort_pair_file (void) {
 void complete_pairs(GapIO *io) {
     bin_index_t *bo;
     range_t *ro;
-    int current_bin = -1;
+    tg_rec current_bin = -1;
     char line[100];
     int rec_count = 0;
     
     rewind(fp);
     
     while (fgets(line, 100, fp)) {
-    	int bin, idx, rec, flags;
+	int idx, flags;
+	tg_rec bin, rec;
 	
-        sscanf(line, "%d %d %d %d", &bin, &idx, &rec, &flags);
+        sscanf(line, "%"PRIrec" %d %"PRIrec" %d", &bin, &idx, &rec, &flags);
 	
 	if (bin != current_bin) {
 

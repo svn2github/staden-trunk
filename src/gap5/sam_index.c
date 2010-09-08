@@ -36,11 +36,11 @@ typedef struct {
     int mqual;
     int pos;
     int left;
-    int rec;
+    tg_rec rec;
 } bam_seq_t;
 
 typedef struct rec_list {
-    int rec;
+    tg_rec rec;
     struct rec_list *next;
 } rec_list_t;
 
@@ -1347,7 +1347,8 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     char *name;
     int name_len;
     char *aux;
-    int i, flags, recno;
+    int i, flags;
+    tg_rec recno;
     int paired, is_pair = 0;
     char *filter[] = {"RG"};
     int stech;
@@ -1371,7 +1372,7 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     hd.p = NULL;
     hi = HacheTableAdd(bio->libs, (char *)LB, strlen(LB), hd, &new);
     if (new) {
-	int lrec;
+	tg_rec lrec;
 	printf("New library %s\n", LB);
 
 	lrec = library_new(bio->io, (char *)LB);
@@ -1541,7 +1542,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     bam1_t *b;
     seq_t s;
     HacheItem *hi;
-    int recno, i, paired;
+    tg_rec recno;
+    int i, paired;
     int is_pair = 0;
     int flags;
     char tname[1024];
@@ -1578,7 +1580,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     hd.p = NULL;
     hi = HacheTableAdd(bio->libs, (char *)LB, strlen(LB), hd, &new);
     if (new) {
-	int lrec;
+	tg_rec lrec;
 	printf("New library %s\n", LB);
 
 	lrec = library_new(bio->io, (char *)LB);

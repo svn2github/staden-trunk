@@ -11,6 +11,7 @@
 #define ARG_DOUBLE 6
 #define ARG_DBL ARG_DOUBLE
 #define ARG_OBJ    7
+#define ARG_REC    8
 
 #define offsetofa(type, field) ((int) ((char *) ((type *)0)->field))
 

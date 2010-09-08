@@ -6,7 +6,7 @@
 #include "IO.h"
 
 typedef struct contig_list {
-    int contig;
+    tg_rec contig;
     int start;
     int end;
 } contig_list_t;
@@ -110,28 +110,28 @@ typedef struct contig_list {
 #define GGN_NAME 1
 #define GGN_ID 0
 
-int get_gel_num(GapIO *io, char *gel_name, int is_name);
-int chain_left(GapIO *io, int gel);
-int rnumtocnum(GapIO *io, int gel);
-int get_contig_num(GapIO *io, char *gel_name, int is_name);
+tg_rec get_gel_num(GapIO *io, char *gel_name, int is_name);
+tg_rec chain_left(GapIO *io, tg_rec gel);
+tg_rec rnumtocnum(GapIO *io, tg_rec gel);
+tg_rec get_contig_num(GapIO *io, char *gel_name, int is_name);
 
 int lget_gel_num(GapIO *io, int listArgc, char **listArgv,
-		 int *rargc, int **rargv);
+		 int *rargc, tg_rec **rargv);
 int lget_contig_num(GapIO *io, int listArgc, char **listArgv,
 		    int *rargc, contig_list_t **rargv);
 int lget_contig_num2(GapIO *io, int listArgc, char **listArgv,
 		     int *rargc, contig_list_t **rargv);
 int *to_contigs_only(int num_contigs, contig_list_t *cl);
 
-char *get_read_name(GapIO *io, int number);
-char *get_contig_name(GapIO *io, int number);
-char *get_vector_name(GapIO *io, int vector);
-char *get_template_name(GapIO *io, int tmplate);
-char *get_clone_name(GapIO *io, int clone);
+char *get_read_name(GapIO *io, tg_rec number);
+char *get_contig_name(GapIO *io, tg_rec number);
+char *get_vector_name(GapIO *io, tg_rec vector);
+char *get_template_name(GapIO *io, tg_rec tmplate);
+char *get_clone_name(GapIO *io, tg_rec clone);
 
-void cache_template_name(GapIO *io, int number, char *name);
-void cache_read_name(GapIO *io, int number, char *name);
-void cache_delete_read_name(GapIO *io, int number);
+void cache_template_name(GapIO *io, tg_rec number, char *name);
+void cache_read_name(GapIO *io, tg_rec number, char *name);
+void cache_delete_read_name(GapIO *io, tg_rec number);
 
 /*
  * Converts a template name to a template number.
@@ -143,9 +143,6 @@ void cache_delete_read_name(GapIO *io, int number);
  * Returns:
  *    0 for failure, otherwise the template number
  */
-int template_name_to_number(GapIO *io, char *tname);
-
-void update_rnumtocnum(GapIO *io, int gel, int contig);
-void invalidate_rnumtocnum(GapIO *io, int disable);
+tg_rec template_name_to_number(GapIO *io, char *tname);
 
 #endif /* _IO_UTILS_H */

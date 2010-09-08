@@ -31,7 +31,7 @@ typedef struct {
  * Returns 0 on success,
  *        -1 on failure
  */
-int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
+int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			       char *con, float *qual);
 
 /*
@@ -49,7 +49,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
  *        -1 on failure
  *
  */
-int calculate_consensus(GapIO *io, int contig, int start, int end,
+int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 			consensus_t *cons);
 
 /*
@@ -63,6 +63,6 @@ int calculate_consensus(GapIO *io, int contig, int start, int end,
  * Returns 0 for success
  *        -1 for failure.
  */
-int consensus_valid_range(GapIO *io, int contig, int *start, int *end);
+int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end);
 
 #endif /* _CONSENSUS_H_ */

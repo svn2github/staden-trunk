@@ -54,7 +54,8 @@ size_t sequence_extra_len(seq_t *s) {
  *        -1 on failure
  */
 int  sequence_copy(seq_t *s, seq_t *f) {
-    int rec, idx;
+    tg_rec rec;
+    int idx;
     seq_block_t *block;
 
     if (!s || !f)
@@ -117,8 +118,8 @@ int sequence_new_from(GapIO *io, seq_t *s) {
     return io->iface->seq.create(io->dbh, s);
 }
 #else
-int sequence_new_from(GapIO *io, seq_t *s) {
-    int rec;
+tg_rec sequence_new_from(GapIO *io, seq_t *s) {
+    tg_rec rec;
     seq_t *n;
 
     if (s && s->rec) {
@@ -421,42 +422,42 @@ int sequence_set_conf(GapIO *io, seq_t **s, char *conf) {return -1;}
 /* ------------------------------------------------------------------------ 
  * Trivial one-off sequence query functions
  */
-int seq_pos(GapIO *io, int rec) {
+int seq_pos(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_pos(&s);
 }
 
-int seq_len(GapIO *io, int rec) {
+int seq_len(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_len(&s);
 }
 
-int seq_left(GapIO *io, int rec) {
+int seq_left(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_left(&s);
 }
 
-int seq_right(GapIO *io, int rec) {
+int seq_right(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_right(&s);
 }
 
-int seq_mapping_qual(GapIO *io, int rec) {
+int seq_mapping_qual(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_mapping_qual(&s);
 }
 
-char *seq_name(GapIO *io, int rec) {
+char *seq_name(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_name(&s);
 }
 
-char *seq_seq(GapIO *io, int rec) {
+char *seq_seq(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_seq(&s);
 }
 
-char *seq_conf(GapIO *io, int rec) {
+char *seq_conf(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_conf(&s);
 }
@@ -582,13 +583,13 @@ void complement_seq_t(seq_t *s) {
     s->right = alen - (tmp-1);
 }
 
-GRec sequence_index_query(GapIO *io, char *name) {
+tg_rec sequence_index_query(GapIO *io, char *name) {
     return io->iface->seq.index_query(io->dbh, name);
 }
 
-int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec) {
+int sequence_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {
     char n2[1024];
-    GRec r;
+    tg_rec r;
     //sprintf(n2, "%.*s", name_len, name);
     strncpy(n2, name, name_len > 1024 ? 1024 : name_len);
     n2[name_len > 1024 ? 1024 : name_len] = 0;
@@ -599,7 +600,7 @@ int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec) {
 
     if (r != io->db->seq_name_index) {
 	io->db = cache_rw(io, io->db);
-	io->db->seq_name_index = r;
+	io->db->seq_name_index = (GCardinal)r;
     }
 
     return 0;
@@ -614,7 +615,7 @@ int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec) {
  * This will have had cache_incr() run on it, so the caller should
  * use cache_decr() to permit deallocation.
  */
-int sequence_get_position2(GapIO *io, GRec snum, int *contig,
+int sequence_get_position2(GapIO *io, tg_rec snum, tg_rec *contig,
 			   int *start, int *end, int *orient,
 			   range_t *r_out, seq_t **s_out) {
     return bin_get_item_position(io, GT_Seq, snum,
@@ -622,7 +623,7 @@ int sequence_get_position2(GapIO *io, GRec snum, int *contig,
 				 r_out, (void **)s_out);
 }
 
-int sequence_get_position(GapIO *io, GRec snum, int *contig,
+int sequence_get_position(GapIO *io, tg_rec snum, tg_rec *contig,
 			  int *start, int *end, int *orient) {
     return bin_get_item_position(io, GT_Seq, snum,
 				 contig, start, end, orient, NULL,
@@ -636,7 +637,8 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig,
  *        -1 on failure
  */
 int sequence_invalidate_consensus(GapIO *io, seq_t *s) {
-    int start, end, contig;
+    int start, end;
+    tg_rec contig;
 
     if (io->read_only)
 	return -1;
@@ -652,9 +654,9 @@ int sequence_invalidate_consensus(GapIO *io, seq_t *s) {
  * Given the record number for a sequence this returns the record
  * number for the contig containing it.
  */
-int sequence_get_contig(GapIO *io, GRec snum) {
+tg_rec sequence_get_contig(GapIO *io, tg_rec snum) {
     bin_index_t *bin;
-    int bnum;
+    tg_rec bnum;
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
 
     /* Bubble up bins until we hit the root */
@@ -672,9 +674,9 @@ int sequence_get_contig(GapIO *io, GRec snum) {
  * As per sequence_get_contig, but returns only the relative orientation of
  * this sequence vs the contig.
  */
-int sequence_get_orient(GapIO *io, GRec snum) {
+int sequence_get_orient(GapIO *io, tg_rec snum) {
     bin_index_t *bin;
-    int bnum;
+    tg_rec bnum;
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
     int comp = s->len < 0;
 
@@ -696,7 +698,7 @@ int sequence_get_orient(GapIO *io, GRec snum) {
  * if paired, or zero if not.
  * Returns -1 on failure.
  */
-int sequence_get_pair(GapIO *io, seq_t *s) {
+tg_rec sequence_get_pair(GapIO *io, seq_t *s) {
     bin_index_t *b;
     range_t *r;
 
@@ -1149,7 +1151,8 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
  */
 int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
     contig_t *c;
-    int start, end, orient, contig;
+    int start, end, orient;
+    tg_rec contig;
     rangec_t *r;
     int nr, i;
 

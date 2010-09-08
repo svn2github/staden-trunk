@@ -12,9 +12,9 @@
  * Returns record number on success
  *         -1 on failure
  */
-int library_new(GapIO *io, char *name);
+tg_rec library_new(GapIO *io, char *name);
 
-int accumulate_library_rec(GapIO *io, int rec, int type, int size);
+int accumulate_library_rec(GapIO *io, tg_rec rec, int type, int size);
 void accumulate_library(GapIO *io, library_t *lib, int type, int size);
 
 /*-----------------------------------------------------------------------------
@@ -62,6 +62,6 @@ int ibin_width(int ibin);
  * Returns 0 on success,
  *        -1 on failure
  */
-int library_stats(GapIO *io, int rec, double *mean, double *sd, int *type);
+int library_stats(GapIO *io, tg_rec rec, double *mean, double *sd, int *type);
 
 #endif /* _TG_LIBRARY_ */

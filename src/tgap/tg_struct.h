@@ -5,6 +5,21 @@
 #include <array.h>
 #include <inttypes.h>
 
+/*
+ * Record numbers. Note that on disc we assume record numbers are only
+ * 32-bit as that's what the "g" library supports with GRec and GCardinal.
+ * However internally we pack sequence and annotation records together
+ * using the bottom 10-bits (for example) as an index into SeqBlock and
+ * the remainder as the SeqBlock record itself. This means with 32-bit
+ * data we only have 22bits (realistically 21bit with signed data) of
+ * record space, or ~2 million records. Using 64-bit records as a handle
+ * for fetching data solves this, even if the actual records written
+ * (SeqBlocks instead of Seq) are only ever 32-bit.
+ */
+typedef int64_t tg_rec;
+#define PRIrec PRId64
+
+
 /* FIXME: fixed sized buffers are so last decade! */
 /* Suitable for solexa data, eg "slxa_0025_7_0021_3265" */
 #define MAX_NAME_LEN 25
@@ -37,13 +52,13 @@ typedef struct {
     GCardinal size;
     GCardinal start;
     GCardinal end;
-    GCardinal parent_type;   /* GT_Bin or GT_Contig */ // FIXME: to add
-    GCardinal parent;   /* recno */                    // FIXME: to add
-    GCardinal child[2]; /* recno */
-    GCardinal range;    /* recno */
-    GCardinal id;
+    GCardinal parent_type; /* GT_Bin or GT_Contig */
+    tg_rec parent;         /* recno */
+    tg_rec child[2];       /* recno */
+    tg_rec range;          /* recno */
+    GCardinal id;          /* unused */
     GCardinal flags;
-    GCardinal track;
+    tg_rec track;
     GCardinal nseqs;
     GCardinal rng_free; /* forms a linked list of items in rng that are free */
 } GBin;
@@ -51,9 +66,9 @@ typedef struct {
 typedef struct {
     GCardinal start;
     GCardinal end;
-    GCardinal rec; /* recno */
     GCardinal mqual; /* mapping quality */
-    GCardinal pair_rec; /* paired end data */
+    tg_rec    rec; /* recno */
+    tg_rec    pair_rec; /* paired end data */
     GCardinal flags; /* see below */
     /* Move library here? */
     GCardinal y; /* Not stored on disc, just cached */
@@ -94,7 +109,7 @@ typedef struct {
 typedef struct {
     GCardinal type;
     GCardinal flags;
-    GCardinal rec;
+    GCardinal rec; /* Should be tg_rec, but tracks not in use at the moment */
 } GBinTrack; /* An element of the bin->track record */
 
 typedef struct {
@@ -125,7 +140,7 @@ typedef struct {
  */
 #define DB_VERSION 1 /* 1.2.6 */
 
-/* Copied from gap4 - mostly unused at present */
+/* g-layer equivalent of database_t : this is as it's written on disc */
 typedef struct { 
     GCardinal version;
 
@@ -140,6 +155,21 @@ typedef struct {
     GCardinal seq_name_index;	/* rec of type GT_Index */
     GCardinal contig_name_index;/* rec of type GT_Index */
 } GDatabase; 
+
+typedef struct {
+    int    version;
+
+    /* Arrays */
+    int    Ncontigs;		/* N.elements in array */
+    tg_rec contig_order;	/* rec. of array of contig rec. nos */
+
+    int    Nlibraries;       /* N.elements in array */
+    tg_rec library;          /* rec. of array o library rec. nos */
+
+    /* Indices */
+    tg_rec seq_name_index;	/* rec of type GT_Index */
+    tg_rec contig_name_index;/* rec of type GT_Index */
+} database_t;
 
 /* ----------------------------------------------------------------------
  * In-memory versions of the above structures where we deem it more
@@ -169,12 +199,12 @@ struct seq_block;
 typedef struct {
     signed int  pos;  /* left end, regardless of direction */
     signed int len;   /* +ve or -ve indicates direction */
-    int bin;
+    tg_rec bin;
     int bin_index;    /* index to bin->rng array */
     int left, right;  /* clip left/right coordinates */
-    int parent_rec;   /* template record or seq record if type == GT_Seq */
+    tg_rec parent_rec;/* template record or seq record if type == GT_Seq */
     int parent_type;  /* GT_Seq, GT_Template, GT_Ligation, etc */
-    int rec;          /* recno of this seq_t */
+    tg_rec rec;       /* recno of this seq_t */
     unsigned int seq_tech:3;
     unsigned int flags:3;
     unsigned int format:2;
@@ -201,7 +231,6 @@ typedef struct {
 #define SEQ_BLOCK_SZ (1<<SEQ_BLOCK_BITS)
 typedef struct seq_block {
     int    est_size;
-    int    rec[SEQ_BLOCK_SZ];
     seq_t *seq[SEQ_BLOCK_SZ];
 } seq_block_t;
 
@@ -227,30 +256,29 @@ typedef struct seq_block {
 #define SEQ_FORMAT_CNF6  3      /* 8-bit base, 6 conf (ins/del too) */
 
 typedef struct {
-    int rec;
+    tg_rec rec;
     signed int start, end;
-    unsigned int bin;
-    int anno_rec; /* FIXME */
+    tg_rec bin;
+    tg_rec anno_rec; /* FIXME */
     char *name;
     char *data;
 } contig_t;
 
 
 typedef struct index {
-    int rec;
+    tg_rec rec;
     int pos;
     int size;
     int start_used;
     int end_used;
     int parent_type;
-    int parent;   /* -1 implies none */
-    int child[2]; /* -ve implies saved already with record -child[?] */
+    tg_rec parent;   /* -1 implies none */
+    tg_rec child[2]; /* -ve implies saved already with record -child[?] */
     Array rng;    /* NULL => not loaded */
-    int rng_rec;
-    int bin_id;
+    tg_rec rng_rec;
     int flags;
     Array track;  /* array of bin_track_t objects */
-    int track_rec;
+    tg_rec track_rec;
     int nseqs;
     int rng_free; /* forms a linked list of items in rng that are free */
 } bin_index_t;
@@ -296,10 +324,10 @@ typedef struct index {
 typedef struct {
     int start;
     int end;
-    int rec;
+    tg_rec rec;
     int mqual; /* Mapping qual */
     int comp;  /* complemented y/n */
-    int pair_rec;
+    tg_rec pair_rec;
     int pair_start;
     int pair_end;
     int pair_mqual;
@@ -311,45 +339,27 @@ typedef struct {
     /* Derived fields, placed here to make sorting easier */
     int seq_tech;
 
-    int orig_rec; /* From bin record and index into bin->rng array. */
-    int orig_ind; /*    Used to update cached range_t->y field. */
+    tg_rec orig_rec; /* From bin record and index into bin->rng array. */
+    int orig_ind;    /*    Used to update cached range_t->y field. */
 } rangec_t;
 
+/* This is binary compatible with the GRange type */
 typedef struct {
-    int start;
-    int end;
-    int rec; /* or alternatively an index if range_t is free */
-#if 0
-    int type;
-    union {
-	struct {
-	    int mqual;
-	    int pair_rec;
-	    int flags;
-	} seq;
-	struct {
-	    int obj_type;
-	    int obj_rec;
-	    int anno_rec;
-	} anno;
-	struct {
-	    int a, b, c;
-	} generic;
-    } u;
-#else
-    int mqual;
-    int pair_rec;
-    int flags;
+    int    start;
+    int    end;
+    int    mqual;
+    tg_rec rec; /* or alternatively an index if range_t is free */
+    tg_rec pair_rec;
+    int    flags;
     /* Move library here? */
-#endif
-    int y; /* Not stored on disc, just cached */
+    int    y; /* Not stored on disc, just cached */
 } range_t;
 
 /* Decoded from GTrack_header above */
 typedef struct {
     int type;      /* GC %, read-depth, etc. See TRACK_* macros */
     int flag;      /* bit 0 => updated or not, 1 => can free */
-    int rec;       /* record number */
+    tg_rec rec;    /* record number */
     int bin_size;  /* size of corresponding bin, in bases */
     int item_size; /* size of each element in data[] */
     int nitems;    /* Number of items in data[] */
@@ -359,7 +369,7 @@ typedef struct {
 typedef struct {
     int type;
     int flags;
-    int rec;
+    tg_rec rec;
     track_t *track;
 } bin_track_t;
 
@@ -383,30 +393,29 @@ typedef struct {
  */
 struct anno_ele_block;
 typedef struct {
-    int tag_type;  /* short 4-byte tag type code */
-    char *comment; /* Possibly blank, but a per-region comment too */
-    int rec;       /* record */
-    int bin;       /* bin containing this element */
-    int obj_type;  /* type of object referred to by record */
-    int obj_rec;   /* record number of object the tag is attached to */
-    int anno_rec;  /* link to anno_t record below */
+    int tag_type;    /* short 4-byte tag type code */
+    char *comment;   /* Possibly blank, but a per-region comment too */
+    tg_rec rec;      /* record */
+    tg_rec bin;      /* bin containing this element */
+    int obj_type;    /* type of object referred to by record */
+    tg_rec obj_rec;  /* record number of object the tag is attached to */
+    tg_rec anno_rec; /* link to anno_t record below */
     struct anno_ele_block *block;
     int idx; 
-    char *data;    /* location of packed comment */
+    char *data;      /* location of packed comment */
 } anno_ele_t;
 
 #define ANNO_ELE_BLOCK_BITS 10
 #define ANNO_ELE_BLOCK_SZ (1<<ANNO_ELE_BLOCK_BITS)
 typedef struct anno_ele_block {
     int        est_size;
-    int        rec[ANNO_ELE_BLOCK_SZ];
     anno_ele_t *ae[ANNO_ELE_BLOCK_SZ];
 } anno_ele_block_t;
 
 typedef struct {
     char *key;        /* the tag type and text */
     char *value;
-    int rec;          /* rec of this anno */
+    tg_rec rec;       /* rec of this anno */
     Array ele;        /* recs of anno_ele_t */
 } anno_t;
 
@@ -446,7 +455,7 @@ typedef struct {
 #define LIB_T_SAME    2 /* Reads are in the same orientation */
 
 typedef struct {
-    int rec;             /* DB record */
+    tg_rec rec;          /* DB record */
     int insert_size[3];  /* Mean insert size */
     double sd[3];        /* standard deviation of insert size */
     int machine;         /* Type of machine, see STECH_* defines above */

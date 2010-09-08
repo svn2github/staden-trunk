@@ -17,7 +17,9 @@
  * overlapping consensus tags to the new contigs. This choice only refers to
  * consensus tags; reading tags are always copied.
  */
-int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
+int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
                          int remove_holes, int duplicate_tags);
+
+void bin_destroy_recurse(GapIO *io, tg_rec rec);
 
 #endif

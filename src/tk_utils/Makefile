@@ -255,6 +255,8 @@ tkTrace.o: $(SRCROOT)/tk_utils/tkTrace.h
 tkTrace.o: $(SRCROOT)/tk_utils/tkTraceIO.h
 tkTrace.o: $(SRCROOT)/tk_utils/tk_defs.h
 tkTrace.o: $(SRCROOT)/tk_utils/trace_print.h
+tkTraceComp.o: $(SRCROOT)/Misc/os.h
+tkTraceComp.o: $(PWD)/staden_config.h
 tkTraceComp.o: $(SRCROOT)/tk_utils/cli_arg.h
 tkTraceComp.o: $(SRCROOT)/tk_utils/postscript.h
 tkTraceComp.o: $(SRCROOT)/tk_utils/tkTrace.h

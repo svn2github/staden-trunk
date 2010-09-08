@@ -33,8 +33,8 @@ typedef struct {
 /* determines the position of a base in terms of the entire database */
 int
 find_position_in_DB(GapIO *io, 
-		 int c_num, 
-		 int64_t position);
+		    tg_rec c_num, 
+		    int64_t position);
 
 void
 PlotRepeats(GapIO *io, 
@@ -62,7 +62,7 @@ update_contig_order(Tcl_Interp *interp,
 
 void
 ReOrder(GapIO *io, 
-	GCardinal *order,
+	tg_rec *order,
 	int c_from,
 	int c_to); 
 

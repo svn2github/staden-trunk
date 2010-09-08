@@ -51,7 +51,7 @@ enum States {StateDown=0,StateUp};
 typedef struct _edview {
     /* A derived IO struct */
     GapIO *io;
-    int cnum;
+    tg_rec cnum;
     contig_t *contig;
 
     /* Necessary Tcl/Tk bits and bobs */
@@ -73,17 +73,17 @@ typedef struct _edview {
     void (*dispFunc)(void *, int, int, int, void *);
     enum States editorState;
     int refresh_flags;
-    int refresh_seq;
+    tg_rec refresh_seq;
 
     /* Cached data */
     char        displayedConsensus[MAX_DISPLAY_WIDTH];
     consensus_t cachedConsensus[MAX_DISPLAY_WIDTH];
 
     /* Cursor coordinates, sequence number and position in seq */
-    int cursor_type;
-    int cursor_rec;
-    int cursor_pos;
-    int cursor_apos; /* absolute position in contig */
+    int    cursor_type;
+    tg_rec cursor_rec;
+    int    cursor_pos;
+    int    cursor_apos; /* absolute position in contig */
     cursor_t *cursor;
     int reg_id; /* registration id */
 
@@ -112,10 +112,10 @@ typedef struct _edview {
     HacheTable *rec_hash;
 
     /* Selection */
-    int select_made;
-    int select_seq;
-    int select_start;
-    int select_end;
+    int    select_made;
+    tg_rec select_seq;
+    int    select_start;
+    int    select_end;
 } edview;
 
 typedef struct _EdLink {
@@ -128,13 +128,13 @@ typedef struct _EdLink {
 /*
  * A C interface to the edit_contig and join_contig Tcl functions.
  */
-int edit_contig(GapIO *io, int cnum, int rnum, int pos);
-int join_contig(GapIO *io, int cnum[2], int rnum[2], int pos[2]);
+int edit_contig(GapIO *io, tg_rec cnum, tg_rec rnum, int pos);
+int join_contig(GapIO *io, tg_rec cnum[2], tg_rec rnum[2], int pos[2]);
 
 /*
  * Allocates and initialises a new edview
  */
-edview *edview_new(GapIO *io, int contig, int crec, int cpos,
+edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
 		   Editor *ed, edNames *names,
 		   void (*dispFunc)(void *, int, int, int, void *),
 		   Tcl_Interp *interp);
@@ -156,20 +156,20 @@ int set_displayPos(edview *xx, int pos);
  * Formats tag information for the status line. This is done using a format
  * string where certain % rules are replaced by appropriate components.
  */
-char *edGetBriefTag(edview *xx, int anno_ele, char *format);
+char *edGetBriefTag(edview *xx, tg_rec anno_ele, char *format);
 
 /*
  * Formats reading information for the status line. This is done using a format
  * string where certain % rules are replaced by appropriate components.
  */
-char *edGetBriefSeq(edview *xx, int seq, int pos, char *format);
+char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format);
 
 /*
  * Formats consensus information for the status line.
  * This is done using a format string where certain % rules are replaced by
  * appropriate components.
  */
-char *edGetBriefCon(edview *xx, int crec, int pos, char *format);
+char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format);
 
 /*
  * Given an X,Y coordinate return the reading id under this position.
@@ -190,11 +190,11 @@ int edGetGelNumber(edview *xx, int x, int y);
  *         -1 on failure (eg numbers, off screen, etc)
  */
 int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
-		       int seq_only, int *rec, int *pos);
+		       int seq_only, tg_rec *rec, int *pos);
 
 /* Cursor movement control */
 void edSetApos(edview *xx);
-int edSetCursorPos(edview *xx, int type, int rec, int pos, int visible);
+int edSetCursorPos(edview *xx, int type, tg_rec rec, int pos, int visible);
 int edCursorUp(edview *xx);
 int edCursorDown(edview *xx);
 int edCursorLeft(edview *xx);
@@ -205,6 +205,17 @@ int edReadEnd(edview *xx);
 int edReadEnd2(edview *xx);
 int edContigStart(edview *xx);
 int edContigEnd(edview *xx);
+
+/*
+ * Force the cursor to be visible. If x_safe or y_safe are true then
+ * we omit some of the searching and assume there is no reason to check
+ * that x or y is still visible.
+ *
+ * Returns 1 if redraw has taken place
+ *         0 if not
+ */
+int showCursor(edview *xx, int x_safe, int y_safe);
+
 
 int inJoinMode(edview *xx);
 void edDisplayTrace(edview *xx);
@@ -218,7 +229,7 @@ void edDisplayTrace(edview *xx);
  * Returns pointer to array of records of size *nrec on success
  *         NULL on failure (or zero found)
  */
-int *edGetTemplateReads(edview *xx, int seqrec, int *nrec);
+tg_rec *edGetTemplateReads(edview *xx, tg_rec seqrec, int *nrec);
 
 /*
  * Handles the align button in the join editor
@@ -248,7 +259,7 @@ int edview_visible_items(edview *xx, int start, int end);
 int edSelectClear(edview *xx);
 void edSelectFrom(edview *xx, int pos);
 void edSelectTo(edview *xx, int pos);
-void edSelectSet(edview *xx, int rec, int start, int end);
+void edSelectSet(edview *xx, tg_rec rec, int start, int end);
 
 /*
  * Searching - see edview_search.c
@@ -263,6 +274,10 @@ int edview_search(edview *xx, int forwards, int strand,
  * Returns 0 on success and stores via x and y pointers.
  *        -1 on failure (rec/pos not visible).
  */
-int edGetXY(edview *xx, int rec_type, int rec, int pos, int *x, int *y);
+int edGetXY(edview *xx, int rec_type, tg_rec rec, int pos, int *x, int *y);
+
+
+/* In editor_join.c */
+int edJoinMismatch(edview *xx, int *len, int *mismatch);
 
 #endif /* _EDITOR_VIEW_H_ */

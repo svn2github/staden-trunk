@@ -449,7 +449,6 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 
     while (ai = next_ace_item(fp)) {
 	seq_t seq;
-	int recno;
 
 	switch (ai->type) {
 	case ACE_AS:

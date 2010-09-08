@@ -9,7 +9,7 @@
 #include <tg_gio.h>
 #include "gap_cli_arg.h"
 #include "import_gff.h"
-
+#include "consensus.h"
 
 /* Maximum GFF line length */
 #define MAX_GFF_LINE 8192
@@ -237,10 +237,10 @@ static char *gff_find_attrib(gff_entry *gff, char *key) {
 }
 
 
-static int *cached_map   = NULL;
-static int  cached_crec  = -1;
-static int  cached_start = 0;    /* Bounds in cached_map */
-static int  cached_end   = 0;
+static int   *cached_map   = NULL;
+static tg_rec cached_crec  = -1;
+static int    cached_start = 0;    /* Bounds in cached_map */
+static int    cached_end   = 0;
 
 /*
  * Adds a gff entry as a tag.
@@ -249,7 +249,8 @@ static int  cached_end   = 0;
  *        -1 on failure
  */
 static int gff_add_tag(GapIO *io, gff_entry *gff, int padded) {
-    int rec, rec_type;
+    tg_rec rec;
+    int rec_type;
     char *type, *txt;
     range_t r;
     bin_index_t *bin;
@@ -319,7 +320,8 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded) {
 	}
 
     } else if ((rec = sequence_index_query(io, gff->seqid)) >= 0) {
-	int s_start, s_end, s_contig, s_orient;
+	int s_start, s_end, s_orient;
+	tg_rec s_contig;
 
 	rec_type = GT_Seq;
 	r.flags |= GRANGE_FLAG_TAG_SEQ;

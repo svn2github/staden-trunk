@@ -160,7 +160,7 @@ void padtree_dump(pad_count_t *tree) {
 
 
 #ifndef TEST_MAIN
-pad_count_t *depad_consensus(GapIO *io, int crec) {
+pad_count_t *depad_consensus(GapIO *io, tg_rec crec) {
     contig_t *c = cache_search(io, GT_Contig, crec);
     int first = c->start;
     int last = c->end;

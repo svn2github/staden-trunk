@@ -14,7 +14,7 @@
 typedef struct tman_dc_ {
     DisplayContext *dc;
     int type;
-    int seq;
+    tg_rec seq;
     int pos;
     int derivative_seq; /* zero if none */
     int derivative_offset; /* diff in base position from der.seq */
@@ -35,7 +35,7 @@ extern DisplayContext *tman_manage_trace(
 					 int baseSpacing,
 					 char *traceTitle,
 					 edview *xx,
-					 int seq,
+					 tg_rec seq,
 					 int allow_dup,
 					 int mini_trace
 					 );

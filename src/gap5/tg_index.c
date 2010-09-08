@@ -83,7 +83,6 @@ void usage(void) {
     fprintf(stderr, "\n");
     fprintf(stderr, "      -f                   Fast mode: read-pair links are unidirectional\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "      -r nseq              Reserve space. Only necessary for exceptionally\n");
     fprintf(stderr, "                           large databases, eg n.seq > 100 million.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "      -d data_types        Only copy over certain data types. This is a comma\n"
@@ -111,7 +110,6 @@ int main(int argc, char **argv) {
     a.merge_contigs  = -1;
     a.min_bin_size   = MIN_BIN_SIZE;
     a.fast_mode      = 0;
-    a.reserved_seqs  = 0;
     a.data_type      = DATA_ALL;
     a.comp_mode      = COMP_MODE_ZLIB;
     a.repad          = 0;
@@ -191,13 +189,6 @@ int main(int argc, char **argv) {
 	    a.fast_mode = 1;
 	    break;
 
-	case 'r':
-	    a.reserved_seqs = strtol(optarg, &cp, 10);
-	    if (*cp == 'k' || *cp == 'K') a.reserved_seqs *= 1024;
-	    if (*cp == 'm' || *cp == 'M') a.reserved_seqs *= 1024*1024;
-	    if (*cp == 'g' || *cp == 'G') a.reserved_seqs *= 1024*1024*1024;
-	    break;
-
 	case 'd':
 	    a.data_type = parse_data_type(optarg);
 	    break;
@@ -235,9 +226,6 @@ int main(int argc, char **argv) {
     }
     if (a.merge_contigs == -1)
 	a.merge_contigs = 0;
-
-    if (a.reserved_seqs)
-	set_reserved_seqs(a.reserved_seqs);
 
     if (optind == argc) {
 	usage();
@@ -321,7 +309,7 @@ int main(int argc, char **argv) {
     /* Add to our sequence name B+Tree */
     if (a.tmp) {
 	char *name;
-	int rec;
+	tg_rec rec;
 
 	puts("Sorting sequence name index");
 	bttmp_file_sort(a.tmp);

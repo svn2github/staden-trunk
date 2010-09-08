@@ -23,7 +23,7 @@
  */
 typedef struct cached_item_s {
     GView view;
-    GCardinal rec;
+    tg_rec rec;
     int lock_mode:7;
     unsigned int updated:1;
     unsigned int forgetme:1;
@@ -40,7 +40,7 @@ typedef struct cached_item_s {
 #define ci_ptr(c) \
     ((cached_item *)((char *)(c) - offsetof(cached_item, data)))
 
-cached_item *cache_new(int type, GCardinal rec, GView v,
+cached_item *cache_new(int type, tg_rec rec, GView v,
 		       HacheItem *hi, size_t e_len);
 
 #endif /* _TG_CACHE_ITEM_H_ */

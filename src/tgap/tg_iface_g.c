@@ -493,10 +493,10 @@ void set_reserved_seqs(int rseqs) {
     other_record_start = other_record;
 }
 
-static int allocate(g_io *io, int type) {
-    static int record = -1;
-    int r;
-
+static tg_rec allocate(g_io *io, int type) {
+    static tg_rec record = -1;
+    tg_rec r;
+    
     if (record == -1)
 	record = io->gdb->gfile->header.num_records;
 
@@ -529,6 +529,7 @@ static int allocate(g_io *io, int type) {
 	    return r;
 
 	r = record++;
+#if 0
 	if (type == GT_SeqBlock && r >= (1<<(31-SEQ_BLOCK_BITS))) {
 	    fprintf(stderr, "\n*** Too many database records to cope with the"
 		    " sequence 'blocking factor'.");
@@ -543,6 +544,7 @@ static int allocate(g_io *io, int type) {
 		    "to reserve record space for\n    more annotations\n");
 	    exit(1);
 	}
+#endif
     }
 
     return r;
@@ -562,15 +564,15 @@ static int allocate(g_io *io, int type) {
 }
 #endif
 
-static int deallocate(g_io *io, GRec rec, GView v) {
+static int deallocate(g_io *io, tg_rec rec, GView v) {
     return g_remove_(io->gdb, io->client, v);
 }
 
-static GView lock(g_io *io, int rec, int mode) {
+static GView lock(g_io *io, tg_rec rec, int mode) {
     if (!mode)
 	mode = G_LOCK_EX;
 
-    return g_lock_N_(io->gdb, io->client, 0, rec, mode);
+    return g_lock_N_(io->gdb, io->client, 0, (GRec)rec, mode);
 }
 
 static int unlock(g_io *io, GView v) {
@@ -622,15 +624,15 @@ static int g_flush(g_io *io, GView v) {
 
 
 /* Generic functions - shared by all objects within the g library */
-static GRec io_generic_create(void *dbh, void *unused) {
+static tg_rec io_generic_create(void *dbh, void *unused) {
     return allocate((g_io *)dbh, GT_Generic);
 }
 
-static int io_generic_destroy(void *dbh, GRec r, GView v) {
+static int io_generic_destroy(void *dbh, tg_rec r, GView v) {
     return deallocate((g_io *)dbh, r, v);
 }
 
-static GView io_generic_lock(void *dbh, GRec r, int mode) {
+static GView io_generic_lock(void *dbh, tg_rec r, int mode) {
     return lock((g_io *)dbh, r, mode);
 }
 
@@ -687,7 +689,63 @@ static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
     return card;
 }
 
-static cached_item *io_generic_read(void *dbh, GRec rec, int type) {
+/*
+ * Generic reading and writing of N tg_rec integer values
+ */
+static tg_rec *io_generic_read_rec(g_io *io, GView v, int type,
+				   size_t *nitems) {
+    unsigned char *buf, *cp;
+    size_t buf_len;
+    uint64_t i, ni, i64;
+    uint32_t i32;
+    tg_rec *recs;
+    int fmt;
+
+    /* Load from disk */
+    cp = buf = g_read_alloc(io, v, &buf_len);
+    if (buf_len < 2) {
+	*nitems = 0;
+	return NULL;
+    }
+
+    assert(cp[0] == type);
+    fmt = (cp[1] & 0x3f);
+    assert(fmt <= 1);
+
+    cp += 2;
+    if (fmt == 0) {
+	cp += u72intw(cp, &i64);
+	ni = i64;
+    } else {
+	cp += u72int(cp, &i32);
+	ni = i32;
+    }
+    *nitems = ni;
+
+    if (NULL == (recs = (tg_rec *)malloc(*nitems * sizeof(*recs)))) {
+	free(buf);
+        return NULL;
+    }
+
+    if (fmt == 0) {
+	for (i = 0; i < ni; i++) {
+	    cp += u72int(cp, &i32);
+	    recs[i] = i32;
+	}
+    } else {
+	for (i = 0; i < ni; i++) {
+	    cp += u72intw(cp, &i64);
+	    recs[i] = i64;
+	}
+    }
+
+    assert(cp-buf == buf_len);
+    free(buf);
+
+    return recs;
+}
+
+static cached_item *io_generic_read(void *dbh, tg_rec rec, int type) {
     GView v;
     unsigned char *buf, *cp;
     size_t buf_len;
@@ -753,6 +811,32 @@ static int io_generic_write_i4(g_io *io, GView v, int type,
     return ret ? -1 : cp - cp_start;
 }
 
+/*
+ * Generic reading and writing of N tg_rec integer values
+ */
+static int io_generic_write_rec(g_io *io, GView v, int type,
+				tg_rec *recs, size_t nrec) {
+    int ret, i;
+    unsigned char *cp_start, *cp;
+
+    /* Allocate memory based on worst case sizes */
+    if (NULL == (cp = cp_start = malloc(10 * nrec + 2 + 10)))
+	return -1;
+
+    *cp++ = type;
+    *cp++ = 1; /* fmt=0 for 32-bit only, fmt=1 for 64-bit recs */
+    cp += intw2u7(nrec, cp);
+    for (i = 0; i < nrec; i++) {
+	cp += intw2u7((uint64_t)recs[i], cp);
+    }
+
+    ret = g_write(io, v, cp_start, cp - cp_start);
+    g_flush(io, v); /* Should we auto-flush? */
+
+    free(cp_start);
+    return ret ? -1 : cp - cp_start;
+}
+
 static int io_generic_write(void *dbh, cached_item *ci) {
     assert(ci->lock_mode >= G_LOCK_RW);
 
@@ -806,11 +890,11 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
     }
 
     assert(buf[0] == GT_BTree);
-    assert((buf[1] & 0x3f) <= 1); /* format number */
     fmt = buf[1] & 0x3f;
+    assert(fmt <= 2); /* format number */
     comp_mode = ((unsigned char)buf[1]) >> 6;
 
-    if (fmt == 1) {
+    if (fmt >= 1) {
 	size_t ssz;
 	char *unpacked = mem_inflate(comp_mode, buf+2, len-2, &ssz);
 
@@ -825,10 +909,16 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
     rdcounts[GT_BTree]++;
 
     /* Decode the btree element */
-    if (fmt == 1) {
-	n = btree_node_decode2((unsigned char *)buf2);
-    } else {
+    switch (fmt) {
+    case 0:
 	n = btree_node_decode((unsigned char *)buf2);
+	break;
+    case 1:
+    case 2:
+	n = btree_node_decode2((unsigned char *)buf2, fmt);
+	break;
+    default:
+	abort();
     }
     n->rec = rec;
 
@@ -867,7 +957,8 @@ static int btree_write(g_io *io, btree_node_t *n) {
     size_t len, gzlen;
     size_t parts[4];
     GView v;
-    char *data = (char *)btree_node_encode2(n, &len, parts);
+    int bfmt = 2;
+    char *data = (char *)btree_node_encode2(n, &len, parts, bfmt);
     char fmt[2];
     GIOVec vec[2];
     cached_item *ci = n->cache;
@@ -875,7 +966,7 @@ static int btree_write(g_io *io, btree_node_t *n) {
 
     /* Set up data type and version */
     fmt[0] = GT_BTree;
-    fmt[1] = 1 | (io->comp_mode << 6);
+    fmt[1] = bfmt | (io->comp_mode << 6);
     vec[0].buf = fmt;  vec[0].len = 2;
 
     gzout = mem_deflate_parts(io->comp_mode, data, parts, 4, &gzlen);
@@ -891,7 +982,7 @@ static int btree_write(g_io *io, btree_node_t *n) {
 	g_flush(io, ci->view);
     } else {
 	if (-1 == (v = lock(io, n->rec, G_LOCK_EX))) {
-	    fprintf(stderr, "Failed to lock btree node %d\n", n->rec);
+	    fprintf(stderr, "Failed to lock btree node %"PRIbtr"\n", n->rec);
 	    return -1;
 	}
 	wrstats[GT_BTree] += len;
@@ -904,7 +995,7 @@ static int btree_write(g_io *io, btree_node_t *n) {
     free(data);
 
     if (ret) {
-	fprintf(stderr, "Failed to write btree node %d\n", n->rec);
+	fprintf(stderr, "Failed to write btree node %"PRIbtr"\n", n->rec);
     }
 
     return ret ? -1 : 0;
@@ -923,7 +1014,7 @@ btree_node_t *btree_node_get(void *clientdata, BTRec r) {
     if (hi) {
 	return (btree_node_t *)(((cached_item *)hi->data.p)->data);
     } else {
-	fprintf(stderr, "Failed to load btree %d\n", r);
+	fprintf(stderr, "Failed to load btree %"PRIbtr"\n", r);
 	return NULL;
     }
 }
@@ -934,8 +1025,8 @@ btree_node_t *btree_node_get(void *clientdata, BTRec r) {
  * Returns the record number on success
  *         -1 on failure
  */
-int btree_node_create(g_io *io, HacheTable *h) {
-    GRec rec;
+tg_rec btree_node_create(g_io *io, HacheTable *h) {
+    tg_rec rec;
     btree_node_t *n;
     cached_item *ci;
     GView v;
@@ -967,7 +1058,7 @@ int btree_node_create(g_io *io, HacheTable *h) {
 
 btree_node_t *btree_node_new(void *cd) {
     btree_query_t *bt = (btree_query_t *)cd;
-    int rec = btree_node_create(bt->io, bt->h);
+    tg_rec rec = btree_node_create(bt->io, bt->h);
     
     return btree_node_get(cd, rec);
 }
@@ -1286,11 +1377,124 @@ static int io_database_disconnect(void *dbh) {
     return 0;
 }
 
-static GRec io_database_create(void *dbh, void *from) {
+
+static cached_item *io_database_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
-    GCardinal db_rec = allocate(io, GT_Database);
+    database_t *db;
+    cached_item *ci;
     GView v;
-    GDatabase db;
+    unsigned char *buf, *cp;
+    size_t buf_len;
+    uint32_t nitems, i32;
+    int fmt;
+
+    /* Load from disk */
+    if (-1 == (v = io_generic_lock(dbh, rec, G_LOCK_RO)))
+	return NULL;
+
+    cp = buf = g_read_alloc((g_io *)dbh, v, &buf_len);
+    if (buf_len < 2)
+	return NULL;
+
+    fmt = cp[1] & 0x3f;
+    assert(cp[0] == GT_Database);
+    assert(fmt <= 1); /* initial format */
+    cp += 2;
+
+    if (fmt == 0) {
+	cp += u72int(cp, &nitems); /* ignore now */
+    }
+
+    /* Generate in-memory data structure */
+    if (!(ci = cache_new(GT_Database, rec, v, NULL, sizeof(*db))))
+	return NULL;
+    db = (database_t *)&ci->data;
+
+    cp += u72int(cp, (uint32_t *)&db->version);
+    cp += u72int(cp, (uint32_t *)&db->Ncontigs);
+    cp += u72int(cp, &i32); db->contig_order = i32;
+    cp += u72int(cp, (uint32_t *)&db->Nlibraries);
+    cp += u72int(cp, &i32); db->library = i32;
+    cp += u72int(cp, &i32); db->seq_name_index = i32;
+    cp += u72int(cp, &i32); db->contig_name_index = i32;
+
+    assert(cp-buf == buf_len);
+    free(buf);
+
+#ifdef INDEX_NAMES
+    /* Initialise the seq_name btree if needed */
+    if (io->seq_name_tree)
+	return ci;
+
+    /* Read the root */
+    if (db->seq_name_index) {
+	btree_query_t *bt = (btree_query_t *)io->seq_name_hash->clientdata;
+	bt->io = io;
+	bt->h = io->seq_name_hash;
+	io->seq_name_tree = btree_new(bt, db->seq_name_index);
+	if (!io->seq_name_tree || !io->seq_name_tree->root)
+	    return NULL;
+    }
+
+    //printf("seq_name_hash=%p\n", io->seq_name_hash);
+#endif
+
+    if (db->contig_name_index) {
+	btree_query_t *bt = (btree_query_t *)io->contig_name_hash->clientdata;
+	bt->io = io;
+	bt->h = io->contig_name_hash;
+	io->contig_name_tree = btree_new(bt, db->contig_name_index);
+	if (!io->contig_name_tree || !io->contig_name_tree->root)
+	    return NULL;
+    }
+
+    return ci;
+
+}
+
+
+static int io_database_write_view(g_io *io, database_t *db, GView v) {
+    unsigned char buf[sizeof(*db)*2], *cp = buf;
+
+    /* Construct the on-disc format */
+    *cp++ = GT_Database;
+    *cp++ = 1; /* format */
+
+    cp += int2u7(db->version, cp);
+    cp += int2u7(db->Ncontigs, cp);
+    cp += intw2u7(db->contig_order, cp);
+    cp += int2u7(db->Nlibraries, cp);
+    cp += intw2u7(db->library, cp);
+    cp += intw2u7(db->seq_name_index, cp);
+    cp += intw2u7(db->contig_name_index, cp);
+    
+    /* Write it out */
+    if (-1 == g_write(io, v, buf, cp-buf))
+	return -1;
+
+    g_flush(io, v);
+    return 0;
+}
+
+/*
+ * Writes a database_t record.
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int io_database_write(void *dbh, cached_item *ci) {
+    g_io *io = (g_io *)dbh;
+    database_t *db = (database_t *)&ci->data;;
+
+    assert(ci->lock_mode >= G_LOCK_RW);
+    return io_database_write_view(io, db, ci->view);
+}
+
+
+static tg_rec io_database_create(void *dbh, void *from) {
+    g_io *io = (g_io *)dbh;
+    tg_rec db_rec = allocate(io, GT_Database);
+    GView v;
+    database_t db;
 
     /* init_db is only called on a blank database => first record is 0 */
     assert(db_rec == 0);
@@ -1326,54 +1530,14 @@ static GRec io_database_create(void *dbh, void *from) {
 
     /* Database struct itself */
     v = lock(io, db_rec, G_LOCK_EX);
-    if (-1 == io_generic_write_i4(io, v, GT_Database, (void *)&db, sizeof(db)))
+    if (-1 == io_database_write_view(io, &db, v))
 	return -1;
-    g_flush(io, v);
+
     unlock(io, v);
 
     io_database_commit(io);
    
     return 0;
-}
-
-static cached_item *io_database_read(void *dbh, GRec rec) {
-    g_io *io = (g_io *)dbh;
-    GDatabase *db;
-    cached_item *ci;
-
-    if (NULL == (ci = io_generic_read(dbh, rec, GT_Database)))
-	return NULL;
-    db = (GDatabase *)&ci->data;
-
-#ifdef INDEX_NAMES
-    /* Initialise the seq_name btree if needed */
-    if (io->seq_name_tree)
-	return ci;
-
-    /* Read the root */
-    if (db->seq_name_index) {
-	btree_query_t *bt = (btree_query_t *)io->seq_name_hash->clientdata;
-	bt->io = io;
-	bt->h = io->seq_name_hash;
-	io->seq_name_tree = btree_new(bt, db->seq_name_index);
-	if (!io->seq_name_tree || !io->seq_name_tree->root)
-	    return NULL;
-    }
-
-    //printf("seq_name_hash=%p\n", io->seq_name_hash);
-#endif
-
-    if (db->contig_name_index) {
-	btree_query_t *bt = (btree_query_t *)io->contig_name_hash->clientdata;
-	bt->io = io;
-	bt->h = io->contig_name_hash;
-	io->contig_name_tree = btree_new(bt, db->contig_name_index);
-	if (!io->contig_name_tree || !io->contig_name_tree->root)
-	    return NULL;
-    }
-
-    return ci;
-
 }
 
 /*
@@ -1383,7 +1547,7 @@ int io_database_create_index(void *dbh, cached_item *ci, int type) {
     g_io *io = (g_io *)dbh;
     HacheTable *h = HacheTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
     btree_query_t *bt;
-    GDatabase *db = (GDatabase *)&ci->data;
+    database_t *db = (database_t *)&ci->data;
 
     if (NULL == (bt = (btree_query_t *)malloc(sizeof(*bt))))
 	return -1;
@@ -1434,7 +1598,7 @@ int io_database_create_index(void *dbh, cached_item *ci, int type) {
 /* ------------------------------------------------------------------------
  * contig_t access methods
  */
-static cached_item *io_contig_read(void *dbh, GRec rec) {
+static cached_item *io_contig_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
@@ -1504,7 +1668,7 @@ static int io_contig_write_view(g_io *io, contig_t *c, GView v) {
     *cp++ = 0; /* format version */
     cp += int2s7(c->start, cp);
     cp += int2s7(c->end, cp);
-    cp += int2u7(c->bin, cp);
+    cp += int2u7((int32_t)c->bin, cp);
     cp += int2u7(nlen, cp);
     if (c->name) {
 	memcpy(cp, c->name, nlen);
@@ -1533,9 +1697,9 @@ static int io_contig_write(void *dbh, cached_item *ci) {
     return io_contig_write_view(io, c, ci->view);
 }
 
-static GRec io_contig_create(void *dbh, void *vfrom) {
+static tg_rec io_contig_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
-    GRec rec;
+    tg_rec rec;
     GView v;
     contig_t *from = (contig_t *)vfrom;
 
@@ -1557,7 +1721,7 @@ static GRec io_contig_create(void *dbh, void *vfrom) {
     return rec;
 }
 
-static GRec io_contig_index_query(void *dbh, char *name) {
+static tg_rec io_contig_index_query(void *dbh, char *name) {
     g_io *io = (g_io *)dbh;
     
     if (!io->contig_name_tree)
@@ -1566,7 +1730,7 @@ static GRec io_contig_index_query(void *dbh, char *name) {
     return btree_search(io->contig_name_tree, name);
 }
 
-static int io_contig_index_add(void *dbh, char *name, GRec rec) {
+static int io_contig_index_add(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
     if (!io->contig_name_tree)
@@ -1576,10 +1740,19 @@ static int io_contig_index_add(void *dbh, char *name, GRec rec) {
     return io->contig_name_tree->root->rec;
 }
 
+static int io_contig_index_del(void *dbh, char *name) {
+    g_io *io = (g_io *)dbh;
+    
+    if (!io->contig_name_tree)
+	return -1;
+
+    return btree_delete(io->contig_name_tree, name);
+}
+
 /* ------------------------------------------------------------------------
  * Array access methods
  */
-static cached_item *io_array_read(void *dbh, GRec rec) {
+static cached_item *io_array_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
@@ -1597,9 +1770,9 @@ static cached_item *io_array_read(void *dbh, GRec rec) {
     rdstats[GT_RecArray] += vi.used;
     rdcounts[GT_RecArray]++;
 
-    ar = ArrayCreate(sizeof(GCardinal), 0);
+    ar = ArrayCreate(sizeof(tg_rec), 0);
     if (ar->base) free(ar->base);
-    ar->base = io_generic_read_i4(io, v, GT_RecArray, &ar->dim);
+    ar->base = io_generic_read_rec(io, v, GT_RecArray, &ar->dim);
     ar->max = ar->dim;
 
     memcpy(&ci->data, ar, sizeof(*ar));
@@ -1616,9 +1789,9 @@ static int io_array_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     ar = (Array)&ci->data;
-    ret = io_generic_write_i4(io, ci->view, GT_RecArray,
-			      ArrayBase(GCardinal, ar),
-			      ArrayMax(ar) * sizeof(GCardinal));
+    ret = io_generic_write_rec(io, ci->view, GT_RecArray,
+			       ArrayBase(tg_rec, ar),
+			       ArrayMax(ar));
 
     wrstats[GT_RecArray] += ret;
     wrcounts[GT_RecArray]++;
@@ -1645,7 +1818,7 @@ static int io_array_write(void *dbh, cached_item *ci) {
  * ? byte comment length (L)
  * L bytes of comment
  */
-static cached_item *io_anno_ele_read(void *dbh, GRec rec) {
+static cached_item *io_anno_ele_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     void *bloc;
     unsigned char *cp;
@@ -1722,11 +1895,11 @@ static int io_anno_ele_write_view(g_io *io, anno_ele_t *e, GView v) {
     cpstart = cp;
     *cp++ = GT_AnnoEle;
     *cp++ = 0; /* format */ 
-    cp += int2u7(e->bin, cp);
+    cp += int2u7((int32_t)e->bin, cp);
     cp += int2u7(e->tag_type, cp);
     cp += int2u7(e->obj_type, cp);
-    cp += int2u7(e->obj_rec, cp);
-    cp += int2u7(e->anno_rec, cp);
+    cp += intw2u7(e->obj_rec, cp);
+    cp += intw2u7(e->anno_rec, cp);
     cp += int2u7(comment_len, cp);
     if (comment_len) {
 	memcpy(cp, e->comment, comment_len);
@@ -1753,10 +1926,10 @@ static int io_anno_ele_write(void *dbh, cached_item *ci) {
     return io_anno_ele_write_view(io, e, ci->view);
 }
 
-static int io_anno_ele_create(void *dbh, void *vfrom) {
+static tg_rec io_anno_ele_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
     anno_ele_t *from = (anno_ele_t *)vfrom;
-    GRec rec;
+    tg_rec rec;
     GView v;
 
     rec = allocate(io, GT_AnnoEle);
@@ -1779,7 +1952,7 @@ static int io_anno_ele_create(void *dbh, void *vfrom) {
 /* ------------------------------------------------------------------------
  * anno access methods
  */
-static cached_item *io_anno_read(void *dbh, GRec rec) {
+static cached_item *io_anno_read(void *dbh, tg_rec rec) {
     return io_generic_read(dbh, rec, GT_Anno);
 }
 
@@ -1791,7 +1964,7 @@ static int io_anno_write(void *dbh, cached_item *ci) {
 /* ------------------------------------------------------------------------
  * dnasrc access methods
  */
-static cached_item *io_library_read(void *dbh, GRec rec) {
+static cached_item *io_library_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
@@ -1934,7 +2107,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
 /* ------------------------------------------------------------------------
  * vector access methods
  */
-static cached_item *io_vector_read(void *dbh, GRec rec) {
+static cached_item *io_vector_read(void *dbh, tg_rec rec) {
     return io_generic_read(dbh, rec, 0 /*GT_Vector*/);
 }
 
@@ -1942,7 +2115,8 @@ static cached_item *io_vector_read(void *dbh, GRec rec) {
 /* ------------------------------------------------------------------------
  * bin access methods
  */
-static char *pack_rng_array(int comp_mode, GRange *rng, int nr, int *sz) {
+static char *pack_rng_array(int comp_mode, int fmt,
+			    GRange *rng, int nr, int *sz) {
     int i;
     size_t part_sz[7];
     GRange last, last_tag;
@@ -1963,10 +2137,13 @@ static char *pack_rng_array(int comp_mode, GRange *rng, int nr, int *sz) {
 	GRange r = rng[i];
 
 	if (r.flags & GRANGE_FLAG_UNUSED) {
-	    cp[2] += int2u7(r.rec, cp[2]);
+	    if (fmt == 0)
+		cp[2] += int2u7((int32_t)r.rec, cp[2]);
 	    cp[4] += int2u7(GRANGE_FLAG_UNUSED, cp[4]);
 	    continue;
 	}
+	
+	//printf("%04d %d\t%d\t", i, r.rec, r.start);
 
 	if ((r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    r.end   -= r.start;
@@ -1978,20 +2155,38 @@ static char *pack_rng_array(int comp_mode, GRange *rng, int nr, int *sz) {
 	    r.rec   -= last.rec;
 	}
 
-	cp[0] += int2u7(r.start, cp[0]);
-	cp[1] += int2u7(r.end,   cp[1]);
-	cp[2] += int2u7(r.rec,   cp[2]);
-	cp[3] += int2u7(r.mqual, cp[3]);
-	cp[4] += int2u7(r.flags, cp[4]);
+	if (fmt == 0) {
+	    cp[0] += int2u7(r.start, cp[0]);
+	    cp[1] += int2u7(r.end,   cp[1]);
+	    cp[2] += int2u7((int32_t)r.rec,   cp[2]);
+	    cp[3] += int2u7(r.mqual, cp[3]);
+	    cp[4] += int2u7(r.flags, cp[4]);
 
-	if ((r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	    if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
-		cp[5] += int2s7(r.pair_rec - last_tag.pair_rec, cp[5]);
-	    last_tag = rng[i];
+	    if ((r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
+		    cp[5] += int2s7(r.pair_rec - last_tag.pair_rec, cp[5]);
+		last_tag = rng[i];
+	    } else {
+		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
+		    cp[5] += int2s7(r.pair_rec - last.pair_rec, cp[5]);
+		last = rng[i];
+	    }
 	} else {
-	    if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
-		cp[5] += int2s7(r.pair_rec - last.pair_rec, cp[5]);
-	    last = rng[i];
+	    cp[0] += int2s7 (r.start, cp[0]);
+	    cp[1] += int2u7 (r.end,   cp[1]);
+	    cp[2] += intw2s7(r.rec,   cp[2]);
+	    cp[3] += int2u7 (r.mqual, cp[3]);
+	    cp[4] += int2u7 (r.flags, cp[4]);
+
+	    if ((r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
+		    cp[5] += intw2s7(r.pair_rec - last_tag.pair_rec, cp[5]);
+		last_tag = rng[i];
+	    } else {
+		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
+		    cp[5] += intw2s7(r.pair_rec - last.pair_rec, cp[5]);
+		last = rng[i];
+	    }
 	}
     }
 
@@ -2041,7 +2236,8 @@ static char *pack_rng_array(int comp_mode, GRange *rng, int nr, int *sz) {
     return out_orig;
 }
 
-static GRange *unpack_rng_array(int comp_mode, unsigned char *packed,
+static GRange *unpack_rng_array(int comp_mode, int fmt,
+				unsigned char *packed,
 				int packed_sz, int *nr) {
     uint32_t i, off[6];
     unsigned char *cp[6], *zpacked = NULL;
@@ -2072,47 +2268,88 @@ static GRange *unpack_rng_array(int comp_mode, unsigned char *packed,
     for (i = 0; i < *nr; i++) {
 	r[i].y = 0;
 
-	cp[2] += u72int(cp[2], (uint32_t *)&r[i].rec);
+	if (fmt == 0)
+	    cp[2] += u72int(cp[2], (uint32_t *)&r[i].rec);
 	cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
 	if (r[i].flags & GRANGE_FLAG_UNUSED) {
+	    if (fmt != 0)
+		r[i].rec = 0;
 	    r[i].start = 0;
 	    r[i].end = 0;
 	    r[i].mqual = 0;
 	    r[i].pair_rec = 0;
 	    continue;
 	}
-
-	cp[0] += u72int(cp[0], (uint32_t *)&r[i].start);
-	cp[1] += u72int(cp[1], (uint32_t *)&r[i].end);
-	cp[3] += u72int(cp[3], (uint32_t *)&r[i].mqual);
-	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	    if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
-		int32_t pr;
-		cp[5] += s72int(cp[5], &pr);
-		r[i].pair_rec = pr + lt->pair_rec;
-	    } else {
-		r[i].pair_rec = 0;
-	    }
+	
+	if (fmt == 0) {
+	    cp[0] += u72int(cp[0], (uint32_t *)&r[i].start);
+	    cp[1] += u72int(cp[1], (uint32_t *)&r[i].end);
+	    cp[3] += u72int(cp[3], (uint32_t *)&r[i].mqual);
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+		if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
+		    int32_t pr;
+		    cp[5] += s72int(cp[5], &pr);
+		    r[i].pair_rec = pr + lt->pair_rec;
+		} else {
+		    r[i].pair_rec = 0;
+		}
 	    
-	    r[i].rec += lt->rec;
-	    r[i].start += lt->start;
-	    r[i].end += r[i].start;
+		r[i].rec += lt->rec;
+		r[i].start += lt->start;
+		r[i].end += r[i].start;
 
-	    lt = &r[i];
+		lt = &r[i];
+	    } else {
+		if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
+		    int32_t pr;
+		    cp[5] += s72int(cp[5], &pr);
+		    r[i].pair_rec = pr + ls->pair_rec;
+		} else {
+		    r[i].pair_rec = 0;
+		}
+	    
+		r[i].rec += ls->rec;
+		r[i].start += ls->start;
+		r[i].end += r[i].start;
+
+		ls = &r[i];
+	    }
 	} else {
-	    if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
-		int32_t pr;
-		cp[5] += s72int(cp[5], &pr);
-		r[i].pair_rec = pr + ls->pair_rec;
-	    } else {
-		r[i].pair_rec = 0;
-	    }
+	    int64_t rec_tmp;
+	    cp[0] += s72int (cp[0], (int32_t *)&r[i].start);
+	    cp[1] += u72int (cp[1], (uint32_t *)&r[i].end);
+	    cp[2] += s72intw(cp[2], (int64_t *)&rec_tmp);
+	    cp[3] += u72int (cp[3], (uint32_t *)&r[i].mqual);
+	    r[i].rec = rec_tmp;
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+		if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
+		    int64_t pr;
+		    cp[5] += s72intw(cp[5], &pr);
+		    r[i].pair_rec = pr + lt->pair_rec;
+		} else {
+		    r[i].pair_rec = 0;
+		}
 	    
-	    r[i].rec += ls->rec;
-	    r[i].start += ls->start;
-	    r[i].end += r[i].start;
+		r[i].rec += lt->rec;
+		r[i].start += lt->start;
+		r[i].end += r[i].start;
 
-	    ls = &r[i];
+		lt = &r[i];
+	    } else {
+		if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
+		    int64_t pr;
+		    cp[5] += s72intw(cp[5], &pr);
+		    r[i].pair_rec = pr + ls->pair_rec;
+		} else {
+		    r[i].pair_rec = 0;
+		}
+	    
+		r[i].rec += ls->rec;
+		r[i].start += ls->start;
+		r[i].end += r[i].start;
+
+		ls = &r[i];
+	    }
 	}
     }
 
@@ -2136,7 +2373,7 @@ static GRange *unpack_rng_array(int comp_mode, unsigned char *packed,
 #define BIN_CONS_CACHED_  (1<<8)
 #define BIN_CONS_VALID_   (1<<9)
 
-static cached_item *io_bin_read(void *dbh, GRec rec) {
+static cached_item *io_bin_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
@@ -2147,6 +2384,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     uint32_t bflag;
     int version;
     int comp_mode;
+    uint64_t i64;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -2204,31 +2442,35 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	cp += u72int(cp, (uint32_t *)&g.start);
 	cp += u72int(cp, (uint32_t *)&g.end);
 	g.end += g.start;
-	cp += u72int(cp, (uint32_t *)&g.range);
+	cp += u72intw(cp, &i64); g.range = i64;
     }
 
-    if (bflag & BIN_NO_LCHILD)
+    if (bflag & BIN_NO_LCHILD) {
 	g.child[0] = 0;
-    else
-	cp += u72int(cp, (uint32_t *)&g.child[0]);
+    } else {
+	cp += u72intw(cp, &i64); g.child[0] = i64;
+    }
 
-    if (bflag & BIN_NO_RCHILD)
+    if (bflag & BIN_NO_RCHILD) {
 	g.child[1] = 0;
-    else
-	cp += u72int(cp, (uint32_t *)&g.child[1]);
+    } else {
+	cp += u72intw(cp, &i64); g.child[1] = i64;
+    }
 
-    if (bflag & BIN_NO_TRACK)
+    if (bflag & BIN_NO_TRACK) {
 	g.track = 0;
-    else
-	cp += u72int(cp, (uint32_t *)&g.track);
+    } else {
+	cp += u72intw(cp, &i64); g.track = i64;
+    }
 
-    cp += u72int(cp, (uint32_t *)&g.parent);
+    cp += u72intw(cp, &i64); g.parent = i64;
     cp += u72int(cp, (uint32_t *)&g.nseqs);
 
-    if (version > 0)
+    if (version > 0) {
 	cp += s72int(cp, &g.rng_free);
-    else
+    } else {
 	g.rng_free = -1;
+    }
 
  empty_bin:
     /*
@@ -2251,7 +2493,6 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     bin->end_used    = b->end;
     bin->child[0]    = b->child[0];
     bin->child[1]    = b->child[1];
-    bin->bin_id      = b->id;
     bin->flags       = b->flags;
     bin->parent      = b->parent;
     bin->parent_type = b->parent_type;
@@ -2269,16 +2510,19 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	GRange *r;
 	unsigned char *buf;
 
-	v = lock(io, b->range, G_LOCK_RO);
+	v = lock(io, (int)b->range, G_LOCK_RO);
 	g_view_info_(io->gdb, io->client, v, &vi);
 	
 	if (vi.used) {
+	    unsigned int fmt;
+
 	    buf = malloc(vi.used);
 	    g_read(io, v, buf, vi.used);
+	    fmt = buf[1] & 0x3f;
 	    assert(buf[0] == GT_Range);
-	    assert((buf[1] & 0x3f) == 0);
+	    assert(fmt <= 1);
 	    comp_mode = ((unsigned char)buf[1]) >> 6;
-	    r = unpack_rng_array(comp_mode, buf+2, vi.used-2, &nranges);
+	    r = unpack_rng_array(comp_mode, fmt, buf+2, vi.used-2, &nranges);
 	    free(buf);
 
 	    rdstats[GT_Range] += vi.used;
@@ -2306,7 +2550,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	size_t nitems, i;
 	GBinTrack *bt;
 
-	if (-1 == (v = lock(io, b->track, G_LOCK_RO)))
+	if (-1 == (v = lock(io, (int)b->track, G_LOCK_RO)))
 	    return NULL;
 
 	g_view_info_(io->gdb, io->client, v, &vi);
@@ -2343,9 +2587,10 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	char *cp, fmt[2];
 	int sz;
 	GIOVec vec[2];
+	int fmt2 = 1;
 
 	fmt[0] = GT_Range;
-	fmt[1] = 0 | (io->comp_mode << 6);
+	fmt[1] = fmt2 | (io->comp_mode << 6);
 
 	bin->flags &= ~BIN_RANGE_UPDATED;
 
@@ -2354,7 +2599,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    bin->flags |= BIN_BIN_UPDATED;
 	}
 
-	cp = pack_rng_array(io->comp_mode, ArrayBase(GRange, bin->rng),
+	cp = pack_rng_array(io->comp_mode, fmt2, ArrayBase(GRange, bin->rng),
 			    ArrayMax(bin->rng),
 			    /* bin->start_used, */ &sz);
 	//printf("Packed %d ranges in %d bytes\n", ArrayMax(bin->rng), sz);
@@ -2373,7 +2618,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	}
 #endif
 
-	v = lock(io, bin->rng_rec, G_LOCK_EX);
+	v = lock(io, (int)bin->rng_rec, G_LOCK_EX);
 	//	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
 	//	       sizeof(GRange) * ArrayMax(bin->rng));
 	wrstats[GT_Range] += sz+2;
@@ -2405,7 +2650,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
 		bt[j].type  = from->type;
 		bt[j].flags = from->flags;
-		bt[j].rec   = from->rec;
+		bt[j].rec   = (GCardinal)from->rec;
 		j++;
 	    }
 
@@ -2418,7 +2663,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 		    bin->flags |= BIN_BIN_UPDATED;
 		}
 
-		v = lock(io, bin->track_rec, G_LOCK_EX);
+		v = lock(io, (int)bin->track_rec, G_LOCK_EX);
 
 		if ((o = io_generic_write_i4(io, v, GT_RecArray, bt,
 					     j * sizeof(GBinTrack))) < 0)
@@ -2443,7 +2688,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	g.size        = bin->size;
 	g.start       = bin->start_used;
 	g.end         = bin->end_used;
-	g.id          = bin->bin_id;
+	g.id          = 0; /* unused */
 	g.flags       = bin->flags;
 	g.parent      = bin->parent;
 	g.parent_type = bin->parent_type;
@@ -2498,12 +2743,12 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (!(bflag & BIN_NO_RANGE)) {
 	    cp += int2u7(g.start, cp);
 	    cp += int2u7(g.end - g.start, cp);
-	    cp += int2u7(g.range, cp);
+	    cp += intw2u7(g.range, cp);
 	}
-	if (!(bflag & BIN_NO_LCHILD))    cp += int2u7(g.child[0], cp);
-	if (!(bflag & BIN_NO_RCHILD))    cp += int2u7(g.child[1], cp);
-	if (!(bflag & BIN_NO_TRACK))     cp += int2u7(g.track, cp);
-	cp += int2u7(g.parent, cp);
+	if (!(bflag & BIN_NO_LCHILD))    cp += intw2u7(g.child[0], cp);
+	if (!(bflag & BIN_NO_RCHILD))    cp += intw2u7(g.child[1], cp);
+	if (!(bflag & BIN_NO_TRACK))     cp += intw2u7(g.track, cp);
+	cp += intw2u7(g.parent, cp);
 	cp += int2u7(g.nseqs, cp);
 	if (g.rng_free != -1)
 	    cp += int2s7(g.rng_free, cp);
@@ -2527,10 +2772,10 @@ static int io_bin_write(void *dbh, cached_item *ci) {
     return io_bin_write_view(io, bin, ci->view);
 }
 
-static int io_bin_create(void *dbh, void *vfrom) {
+static tg_rec io_bin_create(void *dbh, void *vfrom) {
     //bin_index_t *from = vfrom;
     g_io *io = (g_io *)dbh;
-    GRec rec;
+    tg_rec rec;
 
     rec = allocate(io, GT_Bin);
     return rec;
@@ -2574,7 +2819,7 @@ static int io_bin_create(void *dbh, void *vfrom) {
 #endif
 }
 
-static int io_bin_destroy(void *dbh, GRec r, GView v) {
+static int io_bin_destroy(void *dbh, tg_rec r, GView v) {
     g_io *io = (g_io *)dbh;
     GBin g;
     unsigned char *buf, *cp;
@@ -2614,8 +2859,8 @@ static int io_bin_destroy(void *dbh, GRec r, GView v) {
 	g.end += g.start;
 	cp += u72int(cp, (uint32_t *)&g.range);
 
-	rv = lock(io, g.range, G_LOCK_RW);
-	deallocate(io, g.range, rv);
+	rv = lock(io, (int)g.range, G_LOCK_RW);
+	deallocate(io, (int)g.range, rv);
 	unlock(io, rv);
     }
 
@@ -2634,7 +2879,7 @@ typedef struct {
     int depth;
 } cstat;
 
-static cached_item *io_track_read(void *dbh, GRec rec) {
+static cached_item *io_track_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
@@ -2762,10 +3007,10 @@ static int io_track_write(void *dbh, cached_item *ci) {
     return io_track_write_view(io, track, ci->view);
 }
 
-static int io_track_create(void *dbh, void *vfrom) {
+static tg_rec io_track_create(void *dbh, void *vfrom) {
     track_t *from = vfrom;
     g_io *io = (g_io *)dbh;
-    GRec rec;
+    tg_rec rec;
     GView v;
 
     rec = allocate(io, GT_Track);
@@ -2818,7 +3063,7 @@ static int io_track_create(void *dbh, void *vfrom) {
  * Returns a pointer to a seq_t struct
  *      or NULL on failure.
  */
-static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
+static cached_item *seq_decode(unsigned char *buf, size_t len, tg_rec rec) {
     cached_item *ci;
     unsigned char *cp, flags, mapping_qual, seq_tech, format;
     size_t slen;
@@ -2972,7 +3217,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     return ci;
 }
 
-static cached_item *io_seq_read(void *dbh, GRec rec) {
+static cached_item *io_seq_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     void *bloc;
     size_t bloc_len;
@@ -2994,7 +3239,7 @@ static cached_item *io_seq_read(void *dbh, GRec rec) {
     ci = seq_decode(bloc, bloc_len, rec);
     free(bloc);
 
-    printf("Read rec %d => %p\n", rec, ci);
+    printf("Read rec %"PRIrec" => %p\n", rec, ci);
 
     if (!ci)
 	return NULL;
@@ -3005,7 +3250,7 @@ static cached_item *io_seq_read(void *dbh, GRec rec) {
 }
 
 /* See seq_decode for the storage format */
-static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
+static int io_seq_write_view(g_io *io, seq_t *seq, GView v, tg_rec rec) {
     int err = 0;
     int i, j, seq_len, name_len, trace_name_len, data_len;
     unsigned char block[1024], *cp = block, *cpstart;
@@ -3098,14 +3343,14 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     cpstart = cp;
     *cp++ = GT_Seq;
     *cp++ = 0; /* format */
-    cp += int2u7(seq->bin, cp);
+    cp += intw2u7(seq->bin, cp);
     cp += int2u7(seq->bin_index, cp);
     cp += int2u7(seq->left, cp);
     cp += int2u7(seq->right, cp);
     cp += int2u7(seq_len, cp);
 
     /* Read-pair info */
-    cp += int2u7(seq->parent_rec, cp);
+    cp += intw2u7(seq->parent_rec, cp);
     *cp++ = seq->parent_type;
 
     /* flags & m.quality */
@@ -3231,15 +3476,15 @@ static int io_seq_write(void *dbh, cached_item *ci) {
     seq_t *seq = (seq_t *)&ci->data;
 
     assert(ci->lock_mode >= G_LOCK_RW);
-    return io_seq_write_view(io, seq, ci->view, ci->rec);
+    return io_seq_write_view(io, seq, ci->view, (GRec)ci->rec);
 }
 
-static int io_seq_create(void *dbh, void *vfrom) {
+static tg_rec io_seq_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
     return allocate(io, GT_Seq);
 }
 
-static GRec io_seq_index_query(void *dbh, char *name) {
+static tg_rec io_seq_index_query(void *dbh, char *name) {
     g_io *io = (g_io *)dbh;
     
     if (!io->seq_name_tree)
@@ -3248,7 +3493,7 @@ static GRec io_seq_index_query(void *dbh, char *name) {
     return btree_search(io->seq_name_tree, name);
 }
 
-static int io_seq_index_add(void *dbh, char *name, GRec rec) {
+static int io_seq_index_add(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
     if (!io->seq_name_tree)
@@ -3256,6 +3501,15 @@ static int io_seq_index_add(void *dbh, char *name, GRec rec) {
 
     btree_insert(io->seq_name_tree, name, rec);
     return io->seq_name_tree->root->rec;
+}
+
+static int io_seq_index_del(void *dbh, char *name) {
+    g_io *io = (g_io *)dbh;
+    
+    if (!io->seq_name_tree)
+	return -1;
+
+    return btree_delete(io->seq_name_tree, name);
 }
 
 /* ------------------------------------------------------------------------
@@ -3282,7 +3536,7 @@ static int io_seq_index_add(void *dbh, char *name, GRec rec) {
  * is adjusted to indicate whether reordering took place.
  */
 
-static cached_item *io_seq_block_read(void *dbh, GRec rec) {
+static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     GView v;
     cached_item *ci;
@@ -3294,6 +3548,9 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     int reorder_by_read_group = 0;
     int sam_aux = 0;
     int first_seq = 0;
+    int wide_recs = 0;
+    uint32_t i32;
+    uint64_t i64;
 
     set_dna_lookup();
 
@@ -3312,18 +3569,19 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 
     if (!buf_len) {
 	b->est_size = 0;
-	memset(&b->rec[0], 0, SEQ_BLOCK_SZ*sizeof(b->rec[0]));
 	memset(&b->seq[0], 0, SEQ_BLOCK_SZ*sizeof(b->seq[0]));
 	free(buf);
 	return ci;
     }
 
     assert(buf[0] == GT_SeqBlock);
-    assert((buf[1] & 0x3f) <= 2); /* format */
+    assert((buf[1] & 0x3f) <= 7); /* format */
     if ((buf[1] & 0x3f) >= 1)
 	reorder_by_read_group = 1;
-    if ((buf[1] & 0x3f) >= 2)
+    if ((buf[1] & 0x3f) & 2)
 	sam_aux = 1;
+    if ((buf[1] & 0x3f) & 4)
+	wide_recs = 1;
 
     /* Ungzip it too */
     if (1) {
@@ -3339,8 +3597,17 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 
     /* Decode the fixed size components of our sequence structs */
     /* Bin */
-    for (i = 0; i < SEQ_BLOCK_SZ; i++)
-	cp += u72int(cp, (uint32_t *)&in[i].bin);
+    if (wide_recs) {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    cp += u72intw(cp, &i64);
+	    in[i].bin = i64;
+	}
+    } else {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    cp += u72int(cp, &i32);
+	    in[i].bin = i32;
+	}
+    }
 
     /* Bin index */
     for (last = i = 0; i < SEQ_BLOCK_SZ; i++) {
@@ -3370,9 +3637,18 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     }
 
     /* parent rec */
-    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
-	if (!in[i].bin) continue;
-	cp += u72int(cp, (uint32_t *)&in[i].parent_rec);
+    if (wide_recs) {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    cp += u72intw(cp, &i64);
+	    in[i].parent_rec = i64;
+	}
+    } else {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    cp += u72int(cp, &i32);
+	    in[i].parent_rec = i32;
+	}
     }
 
     /* parent type */
@@ -3411,7 +3687,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 
 	for (i = k = 0; i < SEQ_BLOCK_SZ; i++) {
 	    if (!in[i].bin) continue;
-	    
+
 	    /*
 	     * If this is one we've already processed, then continue.
 	     * We mark "already processed" by negating the parent_rec.
@@ -3481,15 +3757,13 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	    if (!(si = cache_new(GT_Seq, 0, 0, NULL, extra_len)))
 		return NULL;
 
-	    b->rec[i] = (rec << SEQ_BLOCK_BITS) + i;
 	    b->seq[i] = (seq_t *)&si->data;
-	    in[i].rec = (rec << SEQ_BLOCK_BITS) + i;
+	    in[i].rec = ((tg_rec)rec << SEQ_BLOCK_BITS) + i;
 	    in[i].anno = NULL;
 	    *b->seq[i] = in[i];
 	    b->seq[i]->block = b;
 	    b->seq[i]->idx = i;
 	} else {
-	    b->rec[i] = 0;
 	    b->seq[i] = NULL;
 	}
     }
@@ -3654,6 +3928,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     int have_sam_aux = 0;
     int nparts = 19;
     int first_seq = -1;
+    int wide_recs = sizeof(tg_rec) > sizeof(uint32_t);
 
     set_dna_lookup();
 
@@ -3668,12 +3943,12 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	    continue;
 	}
 
-	out_size[0] += 5; /* bin */
+	out_size[0] += 10;/* bin */
 	out_size[1] += 5; /* bin_index */
 	out_size[2] += 5; /* left */
 	out_size[3] += 5; /* right */
 	out_size[4] += 5; /* len */
-	out_size[5] += 5; /* parent_rec */
+	out_size[5] += 10;/* parent_rec */
 	out_size[6] ++;   /* parent type */
 	out_size[7] ++;   /* format */
 	out_size[8] ++;   /* m.qual */
@@ -3711,7 +3986,11 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	if (first_seq == -1)
 	    first_seq = i;
 
-	out[0] += int2u7(s->bin, out[0]);
+	if (wide_recs) {
+	    out[0] += intw2u7(s->bin, out[0]);
+	} else {
+	    out[0] += int2u7((int32_t)s->bin, out[0]);
+	}
 	delta = s->bin_index - last_index;
 	last_index = s->bin_index;
 	out[1] += int2s7(delta, out[1]);
@@ -3719,7 +3998,11 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	out[3] += int2u7(s->right, out[3]);
 	out[4] += int2u7(ABS(s->len), out[4]);
 
-	out[5] += int2u7(s->parent_rec, out[5]);
+	if (wide_recs) {
+	    out[5] += intw2u7(s->parent_rec, out[5]);
+	} else {
+	    out[5] += int2u7((int32_t)s->parent_rec, out[5]);
+	}
 	*out[6]++ = s->parent_type;
 	
 	/* flags & m.quality */
@@ -3920,8 +4203,20 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     }
 
     /* Finally write the serialised data block */
+    /* Format:
+     * bit 0     0 => orig format (1 => reorder by RG, also any other bit)
+     * bit 1     0 => no sam_aux, 1 => have them
+     * bit 2     0 => 32-bit rec, 1 => 64-bit rec
+     * bit 3-5   reserved (0)
+     * bit 6-7   Compression method
+     *
+     * NB: any bit 0-5 set also implies reorder by RG. Ie format 2 originally
+     * meant reorder + sam_aux (and so still does).
+     */
     fmt[0] = GT_SeqBlock;
     fmt[1] = (have_sam_aux ? 2 : 1) | (io->comp_mode << 6); /* format */
+    if (wide_recs)
+	fmt[1] |= (1<<2);
     vec[0].buf = fmt;      vec[0].len = 2;
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
     
@@ -3937,9 +4232,9 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     return err ? -1 : 0;
 }
 
-static GRec io_seq_block_create(void *dbh, void *vfrom) {
+static tg_rec io_seq_block_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
-    GRec rec;
+    tg_rec rec;
     GView v;
 
     rec = allocate(io, GT_SeqBlock);
@@ -3956,7 +4251,7 @@ static GRec io_seq_block_create(void *dbh, void *vfrom) {
 /* ------------------------------------------------------------------------
  * seq_block access methods
  */
-static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
+static cached_item *io_anno_ele_block_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     GView v;
     cached_item *ci;
@@ -3964,7 +4259,8 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
     unsigned char *buf, *cp;
     size_t buf_len;
     anno_ele_t in[ANNO_ELE_BLOCK_SZ];
-    int i, last;
+    int i;
+    uint64_t last, i64;
     int comment_len[ANNO_ELE_BLOCK_SZ];
 
     /* Load from disk */
@@ -3979,7 +4275,6 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
 
     if (!buf_len) {
 	b->est_size = 0;
-	memset(&b->rec[0], 0, ANNO_ELE_BLOCK_SZ*sizeof(b->rec[0]));
 	memset(&b->ae[0],  0, ANNO_ELE_BLOCK_SZ*sizeof(b->ae[0]));
 	free(buf);
 	return ci;
@@ -4005,8 +4300,10 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
 
     /* Decode the fixed size components of our sequence structs */
     /* Bin */
-    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++)
-	cp += u72int(cp, (uint32_t *)&in[i].bin);
+    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+	cp += u72intw(cp, &i64);
+	in[i].bin = i64;
+    }
 
     /* Tag type */
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
@@ -4022,9 +4319,9 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
     
     /* Obj record */
     for (last = i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
-	int32_t tmp;
+	int64_t tmp;
 	if (!in[i].bin) continue;
-	cp += s72int(cp, &tmp);
+	cp += s72intw(cp, &tmp);
 	in[i].obj_rec = last + tmp;
 	last = in[i].obj_rec;
 	//cp += u72int(cp, (uint32_t *)&in[i].obj_rec);
@@ -4032,9 +4329,9 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
 
     /* Anno record */
     for (last = i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
-	int32_t tmp;
+	int64_t tmp;
 	if (!in[i].bin) continue;
-	cp += s72int(cp, &tmp);
+	cp += s72intw(cp, &tmp);
 	in[i].anno_rec = last + tmp;
 	tmp = in[i].anno_rec;
 	//cp += u72int(cp, (uint32_t *)&in[i].anno_rec);
@@ -4057,15 +4354,13 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
 	    if (!(si = cache_new(GT_AnnoEle, 0, 0, NULL, extra_len)))
 		return NULL;
 
-	    b->rec[i] = (rec << ANNO_ELE_BLOCK_BITS) + i;
 	    b->ae[i]  = (anno_ele_t *)&si->data;
-	    in[i].rec = (rec << ANNO_ELE_BLOCK_BITS) + i;
+	    in[i].rec = ((tg_rec)rec << ANNO_ELE_BLOCK_BITS) + i;
 	    *b->ae[i] = in[i];
 	    b->ae[i]->block = b;
 	    b->ae[i]->idx = i;
 	    b->ae[i]->comment = (char *)&b->ae[i]->data;
 	} else {
-	    b->rec[i] = 0;
 	    b->ae[i] = NULL;
 	}
     }
@@ -4090,7 +4385,8 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     int err;
     g_io *io = (g_io *)dbh;
     anno_ele_block_t *b = (anno_ele_block_t *)&ci->data;
-    int i, last_obj_rec, last_anno_rec;
+    int i;
+    tg_rec last_obj_rec, last_anno_rec;
     unsigned char *cp, *cp_start;
     unsigned char *out[7], *out_start[7];
     size_t out_size[7], total_size;
@@ -4102,18 +4398,18 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     for (i = 0; i < 7; i++) {
 	out_size[i] = 0;
     }
-    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
 	anno_ele_t *e = b->ae[i];
 	if (!e) {
 	    out_size[0]++;
 	    continue;
 	}
 
-	out_size[0] += 5; /* bin */
+	out_size[0] += 10;/* bin */
 	out_size[1] += 5; /* tag type */
 	out_size[2] += 5; /* obj type */
-	out_size[3] += 5; /* obj record */
-	out_size[4] += 5; /* anno record */
+	out_size[3] += 10;/* obj record */
+	out_size[4] += 10;/* anno record */
 	out_size[5] += 5; /* comment length */
 	out_size[6] += e->comment ? strlen(e->comment) : 0; /* comments */
     }
@@ -4123,7 +4419,7 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     /* serialised annotations, separated by type of data */
     last_obj_rec = last_anno_rec = 0;
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
-	int delta;
+	tg_rec delta;
 	anno_ele_t *e = b->ae[i];
 
 	if (!e) {
@@ -4131,18 +4427,18 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 	    continue;
 	}
 
-	out[0] += int2u7(e->bin, out[0]);
+	out[0] += intw2u7(e->bin, out[0]);
 	out[1] += int2u7(e->tag_type, out[1]);
 	out[2] += int2u7(e->obj_type, out[2]);
 
 	delta = e->obj_rec - last_obj_rec;
 	last_obj_rec = e->obj_rec;
-	out[3] += int2s7(delta, out[3]);
+	out[3] += intw2s7(delta, out[3]);
 	//out[3] += int2u7(e->obj_rec, out[3]);
 
 	delta = e->anno_rec - last_anno_rec;
 	last_anno_rec = e->anno_rec;
-	out[4] += int2s7(delta, out[4]);
+	out[4] += intw2s7(delta, out[4]);
 	//out[4] += int2u7(e->anno_rec, out[4]);
 
 	if (e->comment) {
@@ -4202,9 +4498,9 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     return err ? -1 : 0;
 }
 
-static GRec io_anno_ele_block_create(void *dbh, void *vfrom) {
+static tg_rec io_anno_ele_block_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
-    GRec rec;
+    tg_rec rec;
     GView v;
 
     rec = allocate(io, GT_AnnoEleBlock);
@@ -4251,7 +4547,7 @@ static iface iface_g = {
 	io_generic_upgrade,
 	io_generic_abandon,
 	io_database_read,
-	io_generic_write,
+	io_database_write,
 	io_generic_info,
 	io_database_create_index,
     },
@@ -4269,6 +4565,7 @@ static iface iface_g = {
 	io_generic_info,
 	io_contig_index_query,
 	io_contig_index_add,
+	io_contig_index_del,
     },
 
     {
@@ -4310,6 +4607,7 @@ static iface iface_g = {
 	io_generic_info,
 	io_seq_index_query,
 	io_seq_index_add,
+	io_seq_index_del,
     },
 
     {

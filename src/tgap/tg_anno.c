@@ -6,13 +6,13 @@
 
 /*
  * Allocates a new annotation element.
- * Returns 0 for success
+ * Returns rec for success
  *        -1 for failure.
  */
-int anno_ele_new(GapIO *io, int bin,
-		 int obj_type, int obj_rec, int anno_rec,
-		 int type, char *comment) {
-    int rec;
+tg_rec anno_ele_new(GapIO *io, tg_rec bin,
+		    int obj_type, tg_rec obj_rec, tg_rec anno_rec,
+		    int type, char *comment) {
+    tg_rec rec;
     anno_ele_t e;
 
     e.bin      = bin;
@@ -31,12 +31,12 @@ int anno_ele_new(GapIO *io, int bin,
  * Creates an anno_ele as per anno_ele_new, but also adds it to an object
  * and creates the bin Range entry too.
  */
-int anno_ele_add(GapIO *io, int obj_type, int obj_rec, int anno_rec,
-		 int type, char *comment, int start, int end) {
+tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
+		    int type, char *comment, int start, int end) {
     range_t r;
     anno_ele_t *e;
     contig_t *c;
-    int crec;
+    tg_rec crec;
     bin_index_t *bin;
 
     /* Find contig for obj_rec/obj_type */
@@ -208,10 +208,11 @@ int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str) {
  * Returns a static range_t pointer on success (valid until next call)
  *         NULL on failure.
  */
-range_t *anno_get_range(GapIO *io, int anno_ele, int *contig, int rel) {
+range_t *anno_get_range(GapIO *io, tg_rec anno_ele, tg_rec *contig, int rel) {
     anno_ele_t *e = (anno_ele_t *)cache_search(io, GT_AnnoEle, anno_ele);
     bin_index_t *bin;
-    int bnum, offset1, offset2, comp = 0, i;
+    tg_rec bnum;
+    int offset1, offset2, comp = 0, i;
     range_t *r;
     static range_t r2;
 
@@ -289,7 +290,7 @@ range_t *anno_get_range(GapIO *io, int anno_ele, int *contig, int rel) {
  * This will have had cache_incr() run on it, so the caller should
  * use cache_decr() to permit deallocation.
  */
-int anno_get_position2(GapIO *io, GRec anum, int *contig,
+int anno_get_position2(GapIO *io, tg_rec anum, tg_rec *contig,
 		       int *start, int *end, int *orient,
 		       range_t *r_out, seq_t **a_out) {
     return bin_get_item_position(io, GT_AnnoEle, anum,
@@ -297,7 +298,7 @@ int anno_get_position2(GapIO *io, GRec anum, int *contig,
 				 r_out, (void **)a_out);
 }
 
-int anno_get_position(GapIO *io, GRec anum, int *contig,
+int anno_get_position(GapIO *io, tg_rec anum, tg_rec *contig,
 		      int *start, int *end, int *orient) {
     return bin_get_item_position(io, GT_AnnoEle, anum,
 				 contig, start, end, orient, NULL,

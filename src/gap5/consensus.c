@@ -41,7 +41,8 @@ static double *lo2r = logodds2remainder+128;
 static unsigned char logodds2phred[256];
 static unsigned char *lo2ph = logodds2phred+128;
 
-static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
+static int calculate_consensus_bit(GapIO *io, tg_rec contig,
+				   int start, int end,
 				   consensus_t *cons);
 
 
@@ -60,7 +61,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
  *        -1 on failure
  */
 #define Q_CUTOFF -4 
-int calculate_consensus_simple2(GapIO *io, int contig, int start, int end,
+int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 				char *con, float *qual) {
     int i, j;
     consensus_t q[CONS_BLOCK_SIZE];
@@ -100,14 +101,14 @@ int calculate_consensus_simple2(GapIO *io, int contig, int start, int end,
     return 0;
 }
 
-int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
+int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			       char *con, float *qual) {
     int i, nr;
     rangec_t *r;
     contig_t *c;
-    int left;
+    int left, right;
     
-    printf("Calculate_consensus_simple(contig=%d, range=%d..%d)\n",
+    printf("Calculate_consensus_simple(contig=%"PRIrec", range=%d..%d)\n",
 	   contig, start, end);
 
     /*
@@ -125,19 +126,22 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
     left = start;
     for (i = 0; i < nr; i++) {
 	bin_index_t *bin;
+	int right;
 	//int f_a, f_b;
 
 	/* Skip entirely overlapping bins */
 	if (r[i].end < left)
 	    continue;
 
-	printf("Bin %d: %d..%d (%d)\n", r[i].rec, r[i].start, r[i].end,
+	right = MIN(r[i].start-1, end);
+
+	printf("Bin %"PRIrec": %d..%d (%d)\n", r[i].rec, r[i].start, r[i].end,
 	       r[i].end - r[i].start);
 	bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
 
 	if (r[i].start > left) {
-	    printf("Filling missing region %d..%d\n", left, r[i].start-1);
-	    calculate_consensus_simple2(io, contig, left, r[i].start-1,
+	    printf("Filling missing region %d..%d\n", left, right);
+	    calculate_consensus_simple2(io, contig, left, right,
 					con  ? &con[left-start]  : NULL,
 					qual ? &qual[left-start] : NULL); 
 	}
@@ -183,7 +187,8 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 	    } else {
 		/* Not cached, or is cached but needs updating */
 		range_t r2, *r_out;
-		int recno, comp;
+		tg_rec recno;
+		int comp;
 		float *tmp_qual;
 
 		//bstart = MAX(r[i].start, c->start);
@@ -209,7 +214,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 			s->len = -s->len;
 		    
 		} else {
-		    printf("Creating new cached cons %d..%d bin #%d\n",
+		    printf("Creating new cached cons %d..%d bin #%"PRIrec"\n",
 			   bstart, bend, bin->rec);
 		    memset(&seq, 0, sizeof(seq));
 		    seq.pos    = bstart;
@@ -325,8 +330,11 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 	     */
 	    if (start < bstart) {
 		if (con) {
-		    memcpy(&con[bstart - start], s->seq,
-			   MIN(bend, end) - bstart + 1);
+		    if (bstart > start &&
+			MIN(bend, end) + 1 > bstart) {
+			memcpy(&con[bstart - start], s->seq,
+			       MIN(bend, end) - bstart + 1);
+		    }
 		}
 		if (qual) {
 		    int en = MIN(bend, end) - bstart + 1;
@@ -336,8 +344,11 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 		}
 	    } else {
 		if (con) {
-		    memcpy(con, &s->seq[start - bstart],
-			   MIN(bend, end) - start + 1);
+		    if (start > bstart &&
+			MIN(bend, end) + 1 > start) {
+			memcpy(con, &s->seq[start - bstart],
+			       MIN(bend, end) - start + 1);
+		    }
 		}
 		if (qual) {
 		    int en = MIN(bend, end) - start + 1;
@@ -389,7 +400,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
  *        -1 on failure
  *
  */
-int calculate_consensus(GapIO *io, int contig, int start, int end,
+int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 			consensus_t *cons) {
     int i;
 
@@ -423,7 +434,8 @@ typedef struct {
  * consensus data, meaning we only need to load bin tracks instead of
  * all the sequences themselves.
  */
-static int contig_consensus_in_range2(GapIO *io, int brec, int start, int end,
+static int contig_consensus_in_range2(GapIO *io, tg_rec brec,
+				      int start, int end,
 				      int offset, cstat *cv, int complement) {
     double slx_overcall_prob  = 1.0/4350000, lover,  lomover;
     double slx_undercall_prob = 1.0/2800000, lunder, lomunder;
@@ -619,7 +631,8 @@ int contig_consensus_in_range(GapIO *io, contig_t **c, int start, int end,
  * Returns 0 on success,
  *        -1 on failure
  */
-static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
+static int calculate_consensus_bit(GapIO *io, tg_rec contig,
+				   int start, int end,
 				   consensus_t *cons) {
     int i, j, nr;
     rangec_t *r = NULL;
@@ -926,7 +939,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
  *        -1 for failure.
  */
 #define CONS_SZ 1024
-int consensus_valid_range(GapIO *io, int contig, int *start, int *end) {
+int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
     consensus_t cons[CONS_SZ];
     signed int pos, i;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);

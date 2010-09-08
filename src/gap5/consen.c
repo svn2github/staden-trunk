@@ -109,7 +109,8 @@ void set_mask_lookup() {
  *
  * <project_name.left_gelnumber-->
  */
-void add_contig_title(char *consensus, char *project_name, int left_gelnumber)
+void add_contig_title(char *consensus, char *project_name,
+		      tg_rec left_gelnumber)
 {
 
     int  plen, rlen;
@@ -118,7 +119,7 @@ void add_contig_title(char *consensus, char *project_name, int left_gelnumber)
     char *cp;
 
     /* Find out how many digits for reading name */
-    rlen = sprintf(buf, "%d", left_gelnumber);
+    rlen = sprintf(buf, "%"PRIrec, left_gelnumber);
 
     /* Length of project name */
     if (cp = strchr(project_name, '.'))
@@ -129,19 +130,10 @@ void add_contig_title(char *consensus, char *project_name, int left_gelnumber)
 	plen = 20 - rlen - 3;
     }
     
-    sprintf(consensus, "<%.*s.%.*d%.*s>",
+    sprintf(consensus, "<%.*s.%.*"PRIrec"%.*s>",
 	    plen, project_name,
 	    rlen, left_gelnumber,
 	    17-plen-rlen, dashes);
-}
-
-f_proc_ret cadtit_(char *consensus, char *project_name, f_int *leftgel,
-		   f_implicit consensus_l, f_implicit name_l) {
-    /*
-     * Don't need to Fstr2Cstr as we never check the end of project_name,
-     * we only look for the dot.
-     */
-    add_contig_title(consensus, project_name, *leftgel);
 }
 
 /*int comparecontigs ( int *l1, int *l2 );*/
@@ -225,7 +217,7 @@ Contig_parms *get_contig_list (int database_size, GapIO *io,
 	    contig_list[i].contig_start_offset = 0;
 	    contig_list[i].contig_end_offset = 0;
 	} else {
-	    contig_list[i].contig_number = i+1;
+	    contig_list[i].contig_number = arr(tg_rec, io->contig_order, i);
 	    contig_list[i].contig_start  = 1;
 	    contig_list[i].contig_end    = ABS(io_clength(io, i+1));
 	    contig_list[i].contig_left_extension  = 0;
@@ -246,7 +238,7 @@ Contig_parms *get_contig_list (int database_size, GapIO *io,
  */
 
 int contig_listel_from_con_pos ( Contig_parms *contig_list, 
-				   int number_of_contigs, int pos_in_contig ) {
+				 int number_of_contigs, int pos_in_contig ) {
 
     int i;
 
@@ -271,7 +263,7 @@ void maskit ( char *seq, int seq_length, int job) {
 
     /*	routine to do masking and marking	*/
 
-int i;
+    int i;
 
     switch (job) {
 
@@ -306,21 +298,6 @@ int i;
 	break;
     }
 }
-/**********************************************************************/
-
-void maskc_ (char *seq, f_int *seq_len, f_int *jobin, f_implicit seq_l) {
-
-    int seq_length, job;
-
-
-    seq_length = *seq_len;
-    job = *jobin;
-
-    (void) maskit ( seq, seq_length, job );
-}
-
-
-
 
 /****************************************************************************/
 #if 0
@@ -494,7 +471,7 @@ int unknown_base(char base) {
 
 
 int bad_data_start ( char *seq, int window_len, int max_unknown,
-		    int seq_length, int dir) {
+		     int seq_length, int dir) {
 
     int max_unknownp1, *unknown_ptr, leftu, rightu, num_bad, i;
     int istart, iend, cycle;
@@ -554,9 +531,9 @@ int bad_data_start ( char *seq, int window_len, int max_unknown,
 /************************************************************/
 
 int end_of_good ( char *seq, 
-		 int start,
-		 int window_len1, 
-		 int max_unknown1) {
+		  int start,
+		  int window_len1, 
+		  int max_unknown1) {
 
 
     int window_len, max_unknown, jstart, bad_start;
@@ -623,7 +600,7 @@ int scan_right(Hidden_params p, int1 *conf, int start_pos, int len) {
 }
 
 #if 0
-int get_hidden_seq (GapIO *io, int read_number,
+int get_hidden_seq (GapIO *io, tg_rec read_number,
 		   char *hidden_seq,
 		   int *length_hidden) {
 
@@ -1035,7 +1012,8 @@ int make_consensus( int task_mask, GapIO *io,
 		   int *consensus_length, int max_read_length,
 		   Hidden_params p, float percd ) {
 		   
-    int contig,left_gel_number,i,j, start, end;
+    tg_rec contig, left_gel_number;
+    int i,j, start, end;
     int contig_length, consensus_start, contig_start;
     int left_extension, right_extension, max_consensus;
     char *hidden_seq,*t_hidden_seq;
@@ -1323,10 +1301,11 @@ int make_consensus( int task_mask, GapIO *io,
  * the number of contigs PLUS ONE.
  */
 int find_contig_ends ( char *seq, int seq_len, 
-		       int *contig_ends, int *contig_numbers ) {
+		       int *contig_ends, tg_rec *contig_numbers ) {
 
 
-    int i,left_gel,contig_index;
+    tg_rec left_gel;
+    int i, contig_index;
     char *dot;
 
     contig_index = 0;
@@ -1465,8 +1444,8 @@ int fasta_fmt_output ( FILE *fp, char *seq, int seq_len, char *entry_name,
  */
 
 int expt_fmt_output(GapIO *io, mFILE *fp, char *seq, float *qual,
-		    int left_read, int lreg, int rreg,
-		    int gel_anno, int truncate, int gel_notes, int nopads) {
+		    tg_rec left_read, int lreg, int rreg,
+		    tg_rec gel_anno, int truncate, int gel_notes, int nopads) {
     GContigs c;
     GReadings r;
     Exp_info *e;
@@ -1644,11 +1623,12 @@ int write_consensus (GapIO *io, FILE *fp,
 		     int num_contigs, contig_list_t *contig_array,
 		     int nopads, int name_format) {
 
-    int contig_index, number_of_contigs, *contig_ends, *contig_numbers;
+    int contig_index, number_of_contigs, *contig_ends;
+    tg_rec *contig_numbers;
     mFILE *mf = NULL;
 
-    contig_ends    = (int *) malloc ( max_contigs * sizeof ( int ) );
-    contig_numbers = (int *) malloc ( max_contigs * sizeof ( int ) );
+    contig_ends    = (int *)    malloc ( max_contigs * sizeof ( int ) );
+    contig_numbers = (tg_rec *) malloc ( max_contigs * sizeof ( tg_rec ) );
 
     number_of_contigs =
 	find_contig_ends (seq, seq_len, contig_ends, contig_numbers);

@@ -114,8 +114,9 @@ int database_info(int job, void *mydata, info_arg_t *theirdata) {
 	{
 	    gel_info_t *gel_info = &theirdata->gel_info;
 	    seq_t *s;
-	    int cnum, pos;
-
+	    tg_rec cnum;
+	    int pos;
+	    
 	    if (NULL == (s = (seq_t *)cache_search(io, GT_Seq, gel_info->gel)))
 		return -1;
 	    if (-1 == sequence_get_position(io, gel_info->gel, &cnum, &pos, NULL, NULL))
@@ -159,7 +160,7 @@ int database_info(int job, void *mydata, info_arg_t *theirdata) {
  * Count the frequence of each confidence value, returning an array of
  * 101 integers for frequences of values 0 to 100 inclusive.
  */
-int *count_confidence(GapIO *io, int contig, int start, int end)
+int *count_confidence(GapIO *io, tg_rec contig, int start, int end)
 {
     char *con;
     float *qual;
@@ -254,7 +255,7 @@ int list_confidence(int *freqs, int length)
  * Returns 0 on success
  *        -1 on failure
  */
-int get_base_confidences(GapIO *io, int contig,
+int get_base_confidences(GapIO *io, tg_rec contig,
 			 int *match_freqs, int *mismatch_freqs) {
 #if 0
     int rnum;

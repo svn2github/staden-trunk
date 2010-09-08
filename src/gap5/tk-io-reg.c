@@ -45,7 +45,8 @@ int tk_result_names(ClientData clientData, Tcl_Interp *interp,
 
     Tcl_DStringInit(&ds);
     for (i = 0; i < nres; i++) {
-	sprintf(buf, "%d %d {%s}", res[i].contig, res[i].id, res[i].name);
+	sprintf(buf, "%"PRIrec" %d {%s}",
+		res[i].contig, res[i].id, res[i].name);
 	Tcl_DStringAppendElement(&ds, buf);
     }
 
@@ -176,7 +177,7 @@ int tk_reg_notify_update(ClientData clientData, Tcl_Interp *interp,
     contig_arg args;
     cli_args a[] = {
         {"-io",       ARG_IO,  1, NULL, offsetof(contig_arg, io)},
-        {"-contig",   ARG_INT, 1, NULL, offsetof(contig_arg, contig)},
+        {"-contig",   ARG_REC, 1, NULL, offsetof(contig_arg, contig)},
         {NULL,        0,       0, NULL, 0}
     };
     reg_length rl;
@@ -330,7 +331,7 @@ typedef struct {
 int tk_reg_notify_highlight(ClientData clientData, Tcl_Interp *interp,
 		     int objc, Tcl_Obj *CONST objv[]) {
     notify_arg args;
-    int r_num;
+    tg_rec r_num;
     int is_name;
 
     cli_args a[] = {
@@ -413,7 +414,7 @@ typedef struct {
     int ref;
 } cr_type;
 
-static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
+static void tk_contig_register_cmd(GapIO *io, tg_rec contig, void *fdata,
 reg_data *jdata);
 
 
@@ -733,7 +734,7 @@ static int cjob_str2int(Tcl_Interp *interp, char *str)
 
 typedef struct {
     GapIO *io;
-    int contig;
+    tg_rec contig;
     int id;
     char *command;
     char *flags;
@@ -745,7 +746,7 @@ int tk_contig_register(ClientData clientData, Tcl_Interp *interp,
     cr_arg args;
     cli_args a[] = {
         {"-io",       ARG_IO,  1, NULL, offsetof(cr_arg, io)},
-	{"-contig",   ARG_INT, 1, NULL, offsetof(cr_arg, contig)},
+	{"-contig",   ARG_REC, 1, NULL, offsetof(cr_arg, contig)},
 	{"-command",  ARG_STR, 1, NULL, offsetof(cr_arg, command)},
 	{"-flags",    ARG_STR, 1, "",   offsetof(cr_arg, flags)},
 	{"-type",     ARG_STR, 1, "TYPE_UNKNOWN", offsetof(cr_arg, type)},
@@ -843,7 +844,7 @@ int tk_contig_deregister(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
-static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
+static void tk_contig_register_cmd(GapIO *io, tg_rec contig, void *fdata,
 				   reg_data *jdata)
 {
     Tcl_DString ds;
@@ -852,7 +853,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
     char buf[1024];
 
     Tcl_DStringInit(&ds);
-    sprintf(buf, "{contig_num %d} ", contig);
+    sprintf(buf, "{contig_num %"PRIrec"} ", contig);
     Tcl_DStringAppend(&ds, buf, -1);
     
     switch (jdata->job) {
@@ -863,7 +864,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
 	break;
 
     case REG_JOIN_TO:
-	sprintf(buf, "{contig %d} {offset %d}",
+	sprintf(buf, "{contig %"PRIrec"} {offset %d}",
 		jdata->join.contig,
 		jdata->join.offset);
 	Tcl_DStringAppend(&ds, buf, -1);
@@ -939,7 +940,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
 	    first = 0;
 	}
 	strcat(job, "}");
-	sprintf(buf, "{id %d} {seq %d} {pos %d} {abspos %d} {refs %d} "
+	sprintf(buf, "{id %d} {seq %"PRIrec"} {pos %d} {abspos %d} {refs %d} "
 		"{sent_by %d} {job %s}",
 		jdata->cursor_notify.cursor->id,
 		jdata->cursor_notify.cursor->seq,
@@ -953,7 +954,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
     }
     case REG_REGISTER:
     case REG_DEREGISTER:
-	sprintf(buf, "{id %d} {type %s} {contig %d}",
+	sprintf(buf, "{id %d} {type %s} {contig %"PRIrec"}",
 		jdata->c_register.id,
 		reg_type2str(jdata->c_register.type),
 		jdata->c_register.contig);
@@ -961,7 +962,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
 	break;
 
     case REG_HIGHLIGHT_READ:
-	sprintf(buf, "{seq %d} {val %d}",
+	sprintf(buf, "{seq %"PRIrec"} {val %d}",
 		jdata->highlight.seq,
 		jdata->highlight.val);
 	Tcl_DStringAppend(&ds, buf, -1);
@@ -1044,7 +1045,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
  *        -1 on error or no notification required
  */
 int str2reg_data(Tcl_Interp *interp, GapIO *io, 
-		 int cnum, char *type, char *str, reg_data *rd) {
+		 tg_rec cnum, char *type, char *str, reg_data *rd) {
     int itype = reg_str2flags(interp, type);
     rd->job = itype;
 
@@ -1146,7 +1147,7 @@ int str2reg_data(Tcl_Interp *interp, GapIO *io,
 
 typedef struct {
     GapIO *io;
-    int cnum;
+    tg_rec cnum;
     char *type;
     char *args;
 } cn_arg;
@@ -1160,7 +1161,7 @@ int tk_contig_notify(ClientData clientData, Tcl_Interp *interp,
     cn_arg args;
     cli_args a[] = {
         {"-io",       ARG_IO,  1, NULL, offsetof(cn_arg, io)},
-	{"-cnum",     ARG_INT, 1, NULL, offsetof(cn_arg, cnum)},
+	{"-cnum",     ARG_REC, 1, NULL, offsetof(cn_arg, cnum)},
 	{"-type",     ARG_STR, 1, NULL, offsetof(cn_arg, type)},
 	{"-args",     ARG_STR, 1, NULL, offsetof(cn_arg, args)},
         {NULL,        0,       0, NULL, 0}
@@ -1218,7 +1219,7 @@ int tk_result_notify(ClientData clientData, Tcl_Interp *interp,
 
 typedef struct {
     GapIO *io;
-    int cnum;
+    tg_rec cnum;
     int ref;
     int id;
 } c_ref_arg;
@@ -1292,7 +1293,7 @@ static char *reg_get_arg(char *name)
 typedef struct {
     GapIO *io;
     int cursorid;
-    int cnum;
+    tg_rec cnum;
 } qc_arg;
 
 /*
@@ -1305,7 +1306,7 @@ int tk_query_cursor(ClientData clientData, Tcl_Interp *interp,
     cli_args a[] = {
         {"-io",       ARG_IO,  1, NULL, offsetof(qc_arg, io)},
 	{"-cursorid", ARG_INT, 1, NULL, offsetof(qc_arg, cursorid)},
-	{"-cnum",     ARG_INT, 1, "0",  offsetof(qc_arg, cnum)},
+	{"-cnum",     ARG_REC, 1, "0",  offsetof(qc_arg, cnum)},
         {NULL,        0,       0, NULL, 0}
     };
     cursor_t *gc;
@@ -1324,7 +1325,7 @@ int tk_query_cursor(ClientData clientData, Tcl_Interp *interp,
 
 typedef struct {
     GapIO *io;
-    int cnum;
+    tg_rec cnum;
     int private;
     int sent_by;
 } ccc_arg;
@@ -1338,7 +1339,7 @@ int tk_create_cursor(ClientData clientData, Tcl_Interp *interp,
     ccc_arg args;
     cli_args a[] = {
         {"-io",       ARG_IO,  1, NULL, offsetof(ccc_arg, io)},
-	{"-cnum",     ARG_INT, 1, NULL, offsetof(ccc_arg, cnum)},
+	{"-cnum",     ARG_REC, 1, NULL, offsetof(ccc_arg, cnum)},
 	{"-private",  ARG_INT, 1, "0", offsetof(ccc_arg, private)},
 	{"-sent_by",  ARG_INT, 1, "0", offsetof(ccc_arg, sent_by)},
         {NULL,        0,       0, NULL, 0}
@@ -1356,7 +1357,7 @@ int tk_create_cursor(ClientData clientData, Tcl_Interp *interp,
 
 typedef struct {
     GapIO *io;
-    int cnum;
+    tg_rec cnum;
     int id;
     int private;
 } dc_arg;
@@ -1370,7 +1371,7 @@ int tk_delete_cursor(ClientData clientData, Tcl_Interp *interp,
     dc_arg args;
     cli_args a[] = {
         {"-io",       ARG_IO,  1, NULL, offsetof(dc_arg, io)},
-	{"-cnum",     ARG_INT, 1, "0",  offsetof(dc_arg, cnum)},
+	{"-cnum",     ARG_REC, 1, "0",  offsetof(dc_arg, cnum)},
 	{"-id",       ARG_INT, 1, NULL, offsetof(dc_arg, id)},
 	{"-private",  ARG_INT, 1, "0",  offsetof(dc_arg, private)},
         {NULL,        0,       0, NULL, 0}
@@ -1396,7 +1397,7 @@ int tk_cursor_ref(ClientData clientData, Tcl_Interp *interp,
 
     cli_args a[] = {
         {"-io",   ARG_IO,  1, NULL, offsetof(c_ref_arg, io)},
-	{"-cnum", ARG_INT, 1, NULL, offsetof(c_ref_arg, cnum)},
+	{"-cnum", ARG_REC, 1, NULL, offsetof(c_ref_arg, cnum)},
 	{"-ref",  ARG_INT, 1, NULL, offsetof(c_ref_arg, ref)},
 	{"-id",   ARG_INT, 1, NULL, offsetof(c_ref_arg, id)},
         {NULL,        0,       0, NULL, 0}
@@ -1433,7 +1434,7 @@ int tk_contig_lock_write(ClientData clientData, Tcl_Interp *interp,
 
     cli_args a[] = {
         {"-io",   ARG_IO,  1, NULL, offsetof(cn_arg, io)},
-	{"-cnum", ARG_INT, 1, NULL, offsetof(cn_arg, cnum)},
+	{"-cnum", ARG_REC, 1, NULL, offsetof(cn_arg, cnum)},
         {NULL,        0,       0, NULL, 0}
     };
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))

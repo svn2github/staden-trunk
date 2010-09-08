@@ -124,6 +124,7 @@ compare_spans.o: $(SRCROOT)/spin/readpam.h
 compare_spans.o: $(SRCROOT)/spin/sip_hash.h
 dinuc_freqs.o: $(SRCROOT)/seq_utils/dna_utils.h
 emboss_input_funcs.o: $(SRCROOT)/Misc/xalloc.h
+emboss_input_funcs.o: $(PWD)/staden_config.h
 emboss_input_funcs.o: $(SRCROOT)/seq_utils/sequence_formats.h
 emboss_input_funcs.o: $(SRCROOT)/spin/emboss_input_funcs.h
 emboss_input_funcs.o: $(SRCROOT)/spin/seq_plot_funcs.h

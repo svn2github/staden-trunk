@@ -17,7 +17,7 @@ typedef struct {
     int x[4];          /* coordinates */
     int t_strand;      /* template strand */
     int mq;            /* mapping qual */
-    int rec;	       /* used for yspread */
+    tg_rec rec;	       /* used for yspread */
 } tline;
 
 
@@ -50,7 +50,7 @@ typedef struct {
     gap_filter_t old_filter; // old filter settings for comparison
     gap_filter_t new_filter; // new filter settings
     gap_depth_t  *depth;     // store depth
-    int crec;
+    tg_rec crec;
 } gap_range_t;
 
 /* If bit set we filter our this data type */

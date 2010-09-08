@@ -189,7 +189,7 @@ void *tolist_(char *name_p, char *info_p,
  * Simple utility functions to combine routines
  *----------------------------------------------------------------------------
  */
-int active_list_readings(GapIO *io, char *list, int *argc, int **argv) {
+int active_list_readings(GapIO *io, char *list, int *argc, tg_rec **argv) {
     if (-1 == set_active_list(list))
 	return -1;
 

@@ -19,7 +19,8 @@ int *track_read_depth_r1(GapIO *io, bin_index_t *bin) {
     int i, j;
     int *depth;
     rangec_t *r;
-    int cnum, nr, pos;
+    tg_rec cnum;
+    int nr, pos;
     contig_t *c;
     
     depth = (int *)xcalloc(bin->size, sizeof(*depth));

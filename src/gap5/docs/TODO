@@ -1,3 +1,15 @@
+*	Fix CurContig var and SetContigGlobals func in tcl. This is
+        all tied up with db_info longest_contig too (unimplemented).
+
+	Currently CurContig is a reading name, which is a carry over
+	from gap4 days. It needs to be a contig record number.
+
+*	The tg_tcl.c anno_ele_cmd function doesn't yet implement all
+        the get/set methods.
+
+*	Add check for X11/Intrinsic.h in configure. It's in libxt-dev
+        on debian/ubuntu, which isn't a standard package.
+
 *	BUG: cut and paste from a reading in a complemented contig
         gives the wrong sequence
 

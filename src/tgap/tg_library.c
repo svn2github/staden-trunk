@@ -76,8 +76,8 @@ int ibin_width(int ibin) {
  * Returns record number on success
  *         -1 on failure
  */
-int library_new(GapIO *io, char *name) {
-    int rec;
+tg_rec library_new(GapIO *io, char *name) {
+    tg_rec rec;
     library_t *lib;
     int i;
 
@@ -110,12 +110,12 @@ int library_new(GapIO *io, char *name) {
     /* Add it to the global library array too */
     io->library = cache_rw(io, io->library);
     io->db = cache_rw(io, io->db);
-    ARR(GCardinal, io->library, io->db->Nlibraries++) = rec;
+    ARR(tg_rec, io->library, io->db->Nlibraries++) = rec;
 
     return rec;
 }
 
-int accumulate_library_rec(GapIO *io, int rec, int type, int size) {
+int accumulate_library_rec(GapIO *io, tg_rec rec, int type, int size) {
     library_t *lib = get_lib(io, rec);
 
     assert(type >= 0 && type <= 2);
@@ -141,7 +141,7 @@ void accumulate_library(GapIO *io, library_t *lib, int type, int size) {
  * Returns 0 on success,
  *        -1 on failure
  */
-int library_stats(GapIO *io, int rec, double *mean, double *sd, int *type) {
+int library_stats(GapIO *io, tg_rec rec, double *mean, double *sd, int *type) {
     library_t *lib = cache_search(io, GT_Library, rec);
     int i, j;
     double sum[3]    = {0, 0, 0};

@@ -249,7 +249,7 @@ static int attach_edview(Tcl_Interp *interp, Editor *ed,
     }
     name_sheet = (edNames *)cmdinfo.clientData;
 
-    xx = edview_new(io, atoi(argv[3]), atoi(argv[4]), atoi(argv[5]),
+    xx = edview_new(io, atorec(argv[3]), atorec(argv[4]), atoi(argv[5]),
 		    ed, name_sheet, NULL, interp);
     if (!xx) {
 	return TCL_ERROR;
@@ -510,7 +510,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	
     /* Contig record number */
     case _CONTIG_REC:
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(xx->cnum));
+	Tcl_SetObjResult(interp, Tcl_NewWideIntObj(xx->cnum));
 	break;
 
     /* Save contig */
@@ -630,7 +630,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
      */
     case _GET_NUMBER: {
 	char buf[100];
-	int x, y, type, rec, pos;
+	int x, y, type, pos;
+	tg_rec rec;
 
 	if (argc != 2 && !(argc >= 4 && argc <= 6)) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -647,11 +648,11 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	    if (-1 != (type = edview_item_at_pos(ed->xx, y, x, 0, exact,
 						 seq_only, &rec, &pos))) {
-		sprintf(buf, "%d %d %d", type, rec, pos);
+		sprintf(buf, "%d %"PRIrec" %d", type, rec, pos);
 		Tcl_AppendResult(interp, buf, NULL);
 	    } /* otherwise return a blank */
 	} else {
-	    sprintf(buf, "%d %d %d",
+	    sprintf(buf, "%d %"PRIrec" %d",
 		    ed->xx->cursor_type,
 		    ed->xx->cursor_rec,
 		    ed->xx->cursor_pos);
@@ -666,7 +667,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
      * of current sequence) via get_number.
      */
     case _GET_XY: {
-	int type, rec, pos;
+	int type, pos;
+	tg_rec rec;
 	int x,y;
 
 	if (argc != 2 && argc != 5) {
@@ -679,7 +681,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	if (argc == 5) {
 	    type = atoi(argv[2]);
-	    rec  = atoi(argv[3]);
+	    rec  = atorec(argv[3]);
 	    pos  = atoi(argv[4]);
 	} else {
 	    type = ed->xx->cursor_type;
@@ -709,7 +711,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	if (argc >= 6)
 	    Tcl_GetInt(interp, argv[5], &visible);
-	edSetCursorPos(ed->xx, atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+	edSetCursorPos(ed->xx, atoi(argv[2]), atorec(argv[3]), atoi(argv[4]),
 		       visible);
 	break;
     }
@@ -824,15 +826,15 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	switch (atoi(argv[2])) {
 	case GT_Seq:
-	    msg = edGetBriefSeq(ed->xx, atoi(argv[3]), atoi(argv[4]), argv[5]);
+	    msg = edGetBriefSeq(ed->xx, atorec(argv[3]), atoi(argv[4]), argv[5]);
 	    break;
 
 	case GT_Contig:
-	    msg = edGetBriefCon(ed->xx, atoi(argv[3]), atoi(argv[4]), argv[5]);
+	    msg = edGetBriefCon(ed->xx, atorec(argv[3]), atoi(argv[4]), argv[5]);
 	    break;
 
 	case GT_AnnoEle:
-	    msg = edGetBriefTag(ed->xx, atoi(argv[3]), argv[5]);
+	    msg = edGetBriefTag(ed->xx, atorec(argv[3]), argv[5]);
 	    break;
 
 	default:
@@ -844,7 +846,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     case _GET_TEMPLATE_SEQS: {
-	int nrec, *rec, i;
+	int nrec, i;
+	tg_rec *rec;
 	dstring_t *ds = dstring_create(NULL);
 
 	if (argc != 3) {
@@ -854,7 +857,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    goto fail;
 	}
 
-	rec = edGetTemplateReads(ed->xx, atoi(argv[2]), &nrec);	
+	rec = edGetTemplateReads(ed->xx, atorec(argv[2]), &nrec);	
 	for (i = 0; i < nrec; i++) {
 	    dstring_appendf(ds, "%d ", rec[i]);
 	}
@@ -1033,7 +1036,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    }
 
 	} else if (index == SET) {
-	    int rn = ed->xx->cnum;
+	    tg_rec rn = ed->xx->cnum;
 	    int bs = 0;
 	    int be = 0;
 
@@ -1049,7 +1052,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 		bs = atoi(argv[3]);
 		be = atoi(argv[4]);
 	    } else {
-		rn = atoi(argv[4]);
+		rn = atorec(argv[4]);
 		bs = atoi(argv[5]);
 		be = atoi(argv[6]);
 	    }
@@ -1110,7 +1113,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	break;
     case _INCR_CONTIG:
 	if (argc == 3)
-	    ed->xx->cnum = atoi(argv[2]);
+	    ed->xx->cnum = atorec(argv[2]);
 	ed->xx->contig = cache_search(ed->xx->io, GT_Contig, ed->xx->cnum);
 	cache_incr(ed->xx->io, ed->xx->contig);
 	break;

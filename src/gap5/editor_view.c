@@ -21,20 +21,21 @@ static void redisplaySelection(edview *xx);
 /*
  * A C interface to the edit_contig and join_contig Tcl functions.
  */
-int edit_contig(GapIO *io, int cnum, int rnum, int pos) {
+int edit_contig(GapIO *io, tg_rec cnum, tg_rec rnum, int pos) {
     char cmd[1024];
 
-    sprintf(cmd, "edit_contig -io %s -contig %d -reading %d -pos %d\n",
+    sprintf(cmd, "edit_contig -io %s -contig %"PRIrec
+	    " -reading %"PRIrec" -pos %d\n",
 	    io_obj_as_string(io), cnum, rnum, pos);
     return Tcl_Eval(GetInterp(), cmd);
 }
 
-int join_contig(GapIO *io, int cnum[2], int rnum[2], int pos[2]) {
+int join_contig(GapIO *io, tg_rec cnum[2], tg_rec rnum[2], int pos[2]) {
     char cmd[1024];
     int ret;
 
-    sprintf(cmd, "join_contig -io %s -contig %d -reading %d -pos %d "
-	    "-contig2 %d -reading2 %d -pos2 %d",
+    sprintf(cmd, "join_contig -io %s -contig %"PRIrec" -reading %"PRIrec
+	    " -pos %d -contig2 %"PRIrec" -reading2 %"PRIrec" -pos2 %d",
 	    io_obj_as_string(io),
 	    cnum[0], rnum[0], pos[0],
 	    cnum[1], rnum[1], pos[1]);
@@ -48,7 +49,7 @@ int join_contig(GapIO *io, int cnum[2], int rnum[2], int pos[2]) {
 /*
  * Allocates and initialises a new edview
  */
-edview *edview_new(GapIO *io, int contig, int crec, int cpos,
+edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
 		   Editor *ed, edNames *names,
 		   void (*dispFunc)(void *, int, int, int, void *),
 		   Tcl_Interp *interp)
@@ -132,7 +133,7 @@ void edview_destroy(edview *xx) {
     xfree(xx);
 }
 
-static seq_t *get_seq(GapIO *io, int rec) {
+static seq_t *get_seq(GapIO *io, tg_rec rec) {
     return (seq_t *)cache_search(io, GT_Seq, rec);
 }
 
@@ -150,6 +151,19 @@ static void add_number(char *buf, int *j, int l1, int l2, int val) {
 	    *j += sprintf(buf + *j, "%.*d", l2, val);
 	else
 	    *j += sprintf(buf + *j, "%d", val);
+}
+
+static void add_number64(char *buf, int *j, int l1, int l2, int64_t val) {
+    if (l1)
+	if (l2)
+	    *j += sprintf(buf + *j, "%*.*"PRId64, l1, l2, val);
+	else
+	    *j += sprintf(buf + *j, "%*"PRId64, l1, val);
+    else
+	if (l2)
+	    *j += sprintf(buf + *j, "%.*"PRId64, l2, val);
+	else
+	    *j += sprintf(buf + *j, "%"PRId64, val);
 }
 
 static void add_double(char *buf, int *j, int l1, int l2, double val) {
@@ -193,7 +207,7 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
  * Additionally, some formats (p, l, n and c) can be specified as
  * %<number><format> (eg %80c) to allow AT MOST that many characters.
  */
-char *edGetBriefTag(edview *xx, int anno_ele, char *format) {
+char *edGetBriefTag(edview *xx, tg_rec anno_ele, char *format) {
     static char status_buf[8192]; /* NB: no bounds checking! */
     int i, j, l1, l2, raw;
     char *cp;
@@ -254,7 +268,7 @@ char *edGetBriefTag(edview *xx, int anno_ele, char *format) {
 	}
 
 	case '#': /* Number */
-	    add_number(status_buf, &j, l1, l2, e->rec);
+	    add_number64(status_buf, &j, l1, l2, e->rec);
 	    break;
 
 
@@ -320,13 +334,13 @@ char *edGetBriefTag(edview *xx, int anno_ele, char *format) {
  * The special format %** is used to terminate decoding of the format if
  * the sequence is single-ended.
  */
-char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
+char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
     static char status_buf[8192]; /* NB: no bounds checking! */
     int i, j, l1, l2, raw;
     char *cp;
     GapIO *io = xx->io;
     seq_t *s1 = get_seq(io, seq), *s2 = NULL, *s;
-    int pair = 0;
+    tg_rec pair = 0;
     
     for (i = j = 0; format[i]; i++) {
 	if (format[i] != '%') {
@@ -371,18 +385,19 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	    break;
 
 	case '#':
-	    add_number(status_buf, &j, l1, l2, s->rec);
+	    add_number64(status_buf, &j, l1, l2, s->rec);
 	    break;
 
 	case 'n':
 	    if (raw)
-		add_number(status_buf, &j, l1, l2, s->rec);
+		add_number64(status_buf, &j, l1, l2, s->rec);
 	    else
 		add_string(status_buf, &j, l1, l2, s->name);
 	    break;
 
 	case 'p': {
-	    int cnum, cpos;
+	    tg_rec cnum;
+	    int cpos;
 	    if (0 == sequence_get_position(xx->io, s->rec, &cnum, &cpos, NULL,
 					   NULL)) {
 		
@@ -595,7 +610,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
  * be displayed. This only works for some fields. Eg %Rp displays 0 to 4, but
  * %p displays, for instance, "forward universal"
  */
-char *edGetBriefCon(edview *xx, int crec, int pos, char *format) {
+char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format) {
     static char status_buf[8192]; /* NB: no bounds checking! */
     int i, j, l1, l2, raw;
     char *cp;
@@ -627,12 +642,12 @@ char *edGetBriefCon(edview *xx, int crec, int pos, char *format) {
 	    break;
 
 	case '#':
-	    add_number(status_buf, &j, l1, l2, crec);
+	    add_number64(status_buf, &j, l1, l2, crec);
 	    break;
 
 	case 'n':
 	    if (raw)
-		add_number(status_buf, &j, l1, l2, crec);
+		add_number64(status_buf, &j, l1, l2, crec);
 	    else
 		add_string(status_buf, &j, l1, l2,
 			   contig_get_name(&xx->contig));
@@ -813,7 +828,7 @@ int edview_visible_items(edview *xx, int start, int end) {
     xx->max_height = 0;
     for (i = 0; i < xx->nr; i++) {
 	HacheData hd;
-	int key = xx->r[i].rec;
+	tg_rec key = xx->r[i].rec;
 
 	if (xx->max_height < xx->r[i].y)
 	    xx->max_height = xx->r[i].y;
@@ -831,7 +846,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 				     HASH_ALLOW_DUP_KEYS);
     xx->anno_hash->name = "anno_hash";
     for (i = 0; i < xx->nr; i++) {
-	int key = xx->r[i].pair_rec; /* aka obj_rec */
+	tg_rec key = xx->r[i].pair_rec; /* aka obj_rec */
 	HacheData hd;
 
 	if ((xx->r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
@@ -853,7 +868,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 #if 0
     puts("");
     for (i = 0; i < xx->nr; i++) {
-	int rec;
+	tg_rec rec;
 
 	if ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    anno_ele_t *a = (anno_ele_t *)cache_search(xx->io, GT_AnnoEle,
@@ -1004,7 +1019,7 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
 
     if (s) {
 	/* A sequence */
-	int key = s->rec;
+	tg_rec key = s->rec;
 	int p, p2, l = s->len >= 0 ? s->len : -s->len;
 
 	if (l > xx->displayWidth - (sp-xx->displayPos))
@@ -1037,7 +1052,7 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
     } else {
 	/* Consensus */
 	int j, p2;
-	int key = xx->cnum;
+	tg_rec key = xx->cnum;
 
 	for (hi = HacheTableSearch(xx->anno_hash,
 			       (char *)&key, sizeof(key));
@@ -1576,7 +1591,7 @@ static void tk_redisplayCursor(edview *xx, rangec_t *r, int nr) {
     if (xx->cursor_rec == xx->cnum) {
 	y = xx->y_cons;
     } else {
-	int key;
+	tg_rec key;
 	HacheItem *hi;
 	
 	key = xx->cursor_rec;
@@ -1631,7 +1646,8 @@ int showCursor(edview *xx, int x_safe, int y_safe) {
 
     /* Y position */
     if (!y_safe && xx->cursor_type != GT_Contig) {
-	int i, key;
+	int i;
+	tg_rec key;
 	int sheight = xx->displayHeight - xx->y_seq_end - xx->y_seq_start;
 	HacheItem *hi;
 	
@@ -1714,7 +1730,7 @@ static void cursor_notify(edview *xx) {
  * there is no point in changing it as 'seq' will never be visible
  * (it's not overlapping this X coord).
  */
-int edview_seq_visible(edview *xx, int seq, int *new_y) {
+int edview_seq_visible(edview *xx, tg_rec seq, int *new_y) {
     int i, y_pos, vis = 0;
     int sheight = xx->displayHeight - xx->y_seq_end - xx->y_seq_start;
     HacheItem *hi;
@@ -1784,9 +1800,10 @@ int set_displayPos(edview *xx, int pos) {
 	xx = xx->link->xx[0];
 
     for (i = 0; i < 2; i++) {
-	int new_y, vis_rec1, vis_rec2, vis_pos;
+	int new_y = -1, vis_pos;
+	tg_rec vis_rec1, vis_rec2;
 	int sheight;
-	int vis_cur;
+	tg_rec vis_cur;
 
 	xx2[i] = xx;
 
@@ -1884,7 +1901,8 @@ void edSetApos(edview *xx) {
 	break;
 
     case GT_Seq: {
-	int cnum, cpos;
+	tg_rec cnum;
+	int cpos;
 	sequence_get_position(xx->io, xx->cursor_rec, &cnum, &cpos, NULL,
 			      NULL);
 	xx->cursor_apos = cpos + xx->cursor_pos;
@@ -1892,7 +1910,7 @@ void edSetApos(edview *xx) {
     }
 
     case GT_AnnoEle: {
-	int cnum;
+	tg_rec cnum;
 	range_t *r = anno_get_range(xx->io, xx->cursor_rec, &cnum, 0);
 	xx->cursor_apos = r->start + xx->cursor_pos;
 	break;
@@ -1907,7 +1925,7 @@ void edSetApos(edview *xx) {
     cursor_notify(xx);
 }
 
-int edSetCursorPos(edview *xx, int type, int rec, int pos, int visible) {
+int edSetCursorPos(edview *xx, int type, tg_rec rec, int pos, int visible) {
     if (!xx)
 	return 0;
 
@@ -1995,7 +2013,7 @@ int edSetCursorPos(edview *xx, int type, int rec, int pos, int visible) {
  * Returns 0 on success and stores via x and y pointers.
  *        -1 on failure (rec/pos not visible).
  */
-int edGetXY(edview *xx, int rec_type, int rec, int pos, int *x, int *y) {
+int edGetXY(edview *xx, int rec_type, tg_rec rec, int pos, int *x, int *y) {
     int i;
 
     edview_visible_items(xx, xx->displayPos,
@@ -2054,7 +2072,7 @@ int edCursorUp(edview *xx) {
 	j = xx->nr;
     } else {
 	HacheItem *hi;
-	int key = xx->cursor_rec;
+	tg_rec key = xx->cursor_rec;
 
 	if (!xx->rec_hash)
 	    return 0;
@@ -2123,7 +2141,7 @@ int edCursorDown(edview *xx) {
 	j = -1;
     } else {
 	HacheItem *hi;
-	int key = xx->cursor_rec;
+	tg_rec key = xx->cursor_rec;
 
 	if (!xx->rec_hash)
 	    return 0;
@@ -2450,7 +2468,7 @@ int edview_redraw(edview *xx) {
  *         -1 on failure (eg numbers, off screen, etc)
  */
 int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
-		       int seq_only, int *rec, int *pos) {
+		       int seq_only, tg_rec *rec, int *pos) {
     int i;
     int type = -1;
     int best_delta = INT_MAX;
@@ -2560,7 +2578,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
  * Returns Y coordinate (and optionally min/max X coordinates) if found
  *        -1 if not (with xmin/xmax unset).
  */
-int edview_row_for_item(edview *xx, int rec, int *xmin, int *xmax) {
+int edview_row_for_item(edview *xx, tg_rec rec, int *xmin, int *xmax) {
     int i, r = -1;
     HacheItem *hi;
 
@@ -2643,9 +2661,9 @@ void edDisplayTrace(edview *xx) {
  * Returns pointer to array of records of size *nrec on success
  *         NULL on failure (or zero found)
  */
-int *edGetTemplateReads(edview *xx, int seqrec, int *nrec) {
+tg_rec *edGetTemplateReads(edview *xx, tg_rec seqrec, int *nrec) {
     seq_t *s = get_seq(xx->io, seqrec);
-    int *r = NULL, p;
+    tg_rec *r = NULL, p;
 
     if (!s)
 	return NULL;
@@ -2656,7 +2674,7 @@ int *edGetTemplateReads(edview *xx, int seqrec, int *nrec) {
     p = sequence_get_pair(xx->io, s);
     if (p > 0) {
 	*nrec = 1;
-	r = (int *)malloc(sizeof(*r));
+	r = malloc(sizeof(*r));
 	*r = p;
     } else {
 	*nrec = 0;
@@ -2672,7 +2690,7 @@ int *edGetTemplateReads(edview *xx, int seqrec, int *nrec) {
 /*
  * (Un)draws the selection - toggles it on or off
  */
-static void toggle_select(edview *xx, int seq, int from_pos, int to_pos) {
+static void toggle_select(edview *xx, tg_rec seq, int from_pos, int to_pos) {
     int row, xmin, xmax;
 
     if (from_pos > to_pos) {
@@ -2739,8 +2757,8 @@ void edSelectFrom(edview *xx, int pos) {
     xx->select_seq = xx->cursor_rec;
     pos += xx->displayPos;
     if (xx->select_seq != xx->cnum) {
-	int cnum, cpos;
-	int left, right, orient;
+	tg_rec cnum;
+	int cpos, left, right, orient;
 	seq_t *s = get_seq(xx->io, xx->select_seq);
 
 	cache_incr(xx->io, s);
@@ -2788,8 +2806,8 @@ void edSelectTo(edview *xx, int pos) {
     /* Set start/end */
     pos += xx->displayPos;
     if (xx->select_seq != xx->cnum) {
-	int cnum, cpos;
-	int left, right, orient;
+ 	tg_rec cnum;
+	int cpos, left, right, orient;
 	seq_t *s = get_seq(xx->io, xx->select_seq);
 
 	cache_incr(xx->io, s);
@@ -2823,7 +2841,7 @@ void edSelectTo(edview *xx, int pos) {
     redisplaySelection(xx);
 }
 
-void edSelectSet(edview *xx, int rec, int start, int end) {
+void edSelectSet(edview *xx, tg_rec rec, int start, int end) {
     int do_x = 0;
 
     /* Undisplay an old selection */

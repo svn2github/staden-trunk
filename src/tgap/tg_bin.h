@@ -7,7 +7,7 @@
 /* Size of bin to use for depth track */
 #define RD_ELEMENTS 8192
 
-int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type);
+tg_rec bin_new(GapIO *io, int pos, int sz, tg_rec parent, int parent_type);
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 			   range_t **r_out, int *complemented);
 
@@ -78,7 +78,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
  * Returns 0 on success (plus *contig & *pos)
  *        -1 on failure
  */
-int bin_get_position(GapIO *io, bin_index_t *bin, int *contig, int *pos);
+int bin_get_position(GapIO *io, bin_index_t *bin, tg_rec *contig, int *pos);
 
 /*
  * Removes a record referenced from a known bin
@@ -87,7 +87,7 @@ int bin_get_position(GapIO *io, bin_index_t *bin, int *contig, int *pos);
  *        -1 on failure
  */
 int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
-			     int type, int rec);
+			     int type, tg_rec rec);
 
 /*
  * Removes a record referenced from a bin. As above but we only know the
@@ -96,7 +96,7 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
  * Returns 0 on success
  *        -1 on failure
  */
-int bin_remove_item(GapIO *io, contig_t **c, int type, int rec);
+int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec);
 
 /*
  * Finds the contig number and position of a record number.
@@ -111,9 +111,9 @@ int bin_remove_item(GapIO *io, contig_t **c, int type, int rec);
  * Returns 0 on success
  *        -1 on failure
  */
-int bin_get_item_position(GapIO *io, int type, GRec rec,
-			  int *contig, int *start, int *end, int *orient,
-			  int *bin, range_t *r_out, void **i_out);
+int bin_get_item_position(GapIO *io, int type, tg_rec rec,
+			  tg_rec *contig, int *start, int *end, int *orient,
+			  tg_rec *bin, range_t *r_out, void **i_out);
 
 /*
  * Adds 'n' to the nseq counter for a bin and all parent bins chaining up
@@ -132,6 +132,6 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n);
  * Returns 0 on success
  *        -1 on failure
  */
-int bin_invalidate_consensus(GapIO *io, int contig, int start, int end);
+int bin_invalidate_consensus(GapIO *io, tg_rec contig, int start, int end);
 
 #endif /* _TG_CONTIG_H_ */

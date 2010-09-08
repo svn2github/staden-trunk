@@ -17,6 +17,8 @@ static void parse_args_set(cli_args *a, char *store, char *val) {
 	return; /* no default possible */
     } else if (a->type == ARG_INT) {
 	*((int *)&store[a->offset]) = atoi(val);
+    } else if (a->type == ARG_REC) {
+	*((tg_rec *)&store[a->offset]) = atorec(val);
     } else if (a->type == ARG_OBJ) {
 	/* Cannot initialise objs */
 	*((Tcl_Obj **)&store[a->offset]) = NULL;
@@ -47,6 +49,15 @@ static void parse_args_obj_set(cli_args *a, char *store, Tcl_Obj *val) {
 	} else {
 	    *((int *)&store[a->offset]) =
 		atoi(Tcl_GetStringFromObj(val, NULL));
+	}
+    } else if (a->type == ARG_REC) {
+	Tcl_WideInt i;
+
+	if (Tcl_GetWideIntFromObj(NULL, val, &i) == TCL_OK) {	
+	    *((tg_rec *)&store[a->offset]) = i;
+	} else {
+	    *((tg_rec *)&store[a->offset]) =
+		atorec(Tcl_GetStringFromObj(val, NULL));
 	}
     } else if (a->type == ARG_FLOAT) {
 	double d;

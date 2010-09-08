@@ -263,7 +263,8 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
      */
     case GET_NUMBER: {
 	char buf[100];
-	int x, y, type, rec, pos;
+	int x, y, type, pos;
+	tg_rec rec;
 
 	if (argc != 2 && argc != 4) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -279,11 +280,11 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    if (-1 != (type = edview_item_at_pos(xx, y, x, 1,
 						 xx->ed->stack_mode,
 						 1, &rec,&pos))) {
-		sprintf(buf, "%d %d %d", type, rec, pos);
+		sprintf(buf, "%d %"PRIrec" %d", type, rec, pos);
 		Tcl_AppendResult(interp, buf, NULL);
 	    } /* otherwise return a blank */
 	} else {
-	    sprintf(buf, "%d %d %d",
+	    sprintf(buf, "%d %"PRIrec" %d",
 		    xx->cursor_type,
 		    xx->cursor_rec,
 		    xx->cursor_pos);

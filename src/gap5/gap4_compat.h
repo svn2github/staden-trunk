@@ -4,13 +4,13 @@
 #define GGN_NAME 1
 #define GGN_ID 0
 
-int io_clength(GapIO *io, int cnum);
-int io_clnbr(GapIO *io, int cnum);
-int io_crnbr(GapIO *io, int cnum);
-int io_length(GapIO *io, int rnum);
-int io_relpos(GapIO *io, int rnum);
-int io_lnbr(GapIO *io, int rnum);
-int io_rnbr(GapIO *io, int rnum);
+int io_clength(GapIO *io, tg_rec cnum);
+tg_rec io_clnbr(GapIO *io, tg_rec cnum);
+tg_rec io_crnbr(GapIO *io, tg_rec cnum);
+int io_length(GapIO *io, tg_rec rnum);
+int io_relpos(GapIO *io, tg_rec rnum);
+tg_rec io_lnbr(GapIO *io, tg_rec rnum);
+tg_rec io_rnbr(GapIO *io, tg_rec rnum);
 
 #define NumContigs(io) ((io)->db->Ncontigs)
 #define flush2t cache_flush
@@ -42,6 +42,6 @@ void bell(void);
  * Returns 0 for success
  *        -1 for failure
  */
-int complement_contig(GapIO *io, int crec);
+int complement_contig(GapIO *io, tg_rec crec);
 
 void bell(void);

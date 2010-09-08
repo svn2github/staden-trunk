@@ -124,20 +124,20 @@ struct qual_data {
 };
 
 typedef struct {
-    int (*qual)[2]; /* base type (0-5) and base conf */
-    int start;
-    int end;
-    int gel;
-    int dir;
-    int chem;
-    int template;
+    int   (*qual)[2]; /* base type (0-5) and base conf */
+    int    start;
+    int    end;
+    tg_rec gel;
+    int    dir;
+    int    chem;
+    int    template;
 } seq_frag;
 
 static signed int clookup[256];
 static int clookup_old[256];
 static int vlookup_old[256];
 
-static int calc_contig_info(int contig, int start, int end, int both,
+static int calc_contig_info(tg_rec contig, int start, int end, int both,
 			    void (*eval_func)(int (*c_qual1)[7],
 					      int (*c_qual2)[7],
 					      int   len,
@@ -157,7 +157,7 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 
 static void init_clookup(void);
 
-static int calc_contig_info_phred(int contig, int start, int end,
+static int calc_contig_info_phred(tg_rec contig, int start, int end,
 				  char *con, float *qual,
 				  char *con2, float *qual2,
 				  float cons_cutoff, int qual_cutoff,
@@ -321,16 +321,16 @@ static void quality_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
     }
 }
 
-int calc_quality(int   contig,
-		 int   start,
-		 int   end,
-		 char *qual,
-		 float cons_cutoff,
-		 int   qual_cutoff,
-		 int (*info_func)(int        job,
-				  void       *mydata,
-				  info_arg_t *theirdata),
-		 void *info_data)
+int calc_quality(tg_rec contig,
+		 int    start,
+		 int    end,
+		 char  *qual,
+		 float  cons_cutoff,
+		 int    qual_cutoff,
+		 int  (*info_func)(int        job,
+				   void       *mydata,
+				   info_arg_t *theirdata),
+		 void  *info_data)
 {
     struct qual_data qual_d;
 
@@ -371,17 +371,17 @@ int calc_quality(int   contig,
  * NOTE: This does not find the two end cases as 'holes' when both strands end
  * at the same base.
  */
-int next_hole(int contig,
-	      int position,
-	      int rreg,
-	      float cons_cutoff,
-	      int   qual_cutoff,
+int next_hole(tg_rec contig,
+	      int    position,
+	      int    rreg,
+	      float  cons_cutoff,
+	      int    qual_cutoff,
 	      char **reason,
-	      int *len,
-	      int (*info_func)(int        job,
-			       void       *mydata,
-			       info_arg_t *theirdata),
-	      void *info_data)
+	      int   *len,
+	      int  (*info_func)(int        job,
+				void       *mydata,
+				info_arg_t *theirdata),
+	      void  *info_data)
 {
     info_arg_t info;
     register int i;
@@ -518,7 +518,7 @@ static void init_clookup(void) {
  * Creates and returns a `length' by 2 deep array of integers representing
  * the called sequence and it's quality.
  */
-static int (*get_gel_qual(int gel, int start, int end,
+static int (*get_gel_qual(tg_rec gel, int start, int end,
 			  int (*info_func)(int         job,
 					   void       *mydata,
 					   info_arg_t *theirdata),
@@ -593,7 +593,7 @@ static int (*get_gel_qual(int gel, int start, int end,
  *
  * Returns -1 for failure, 0 for success.
  */
-static int calc_contig_info(int contig, int start, int end, int both,
+static int calc_contig_info(tg_rec contig, int start, int end, int both,
 			    void (*eval_func)(int (*c_qual1)[7],
 					      int (*c_qual2)[7],
 					      int len,
@@ -994,20 +994,20 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
  * that array. (Ie it is possible to see the real consensus cutoff value for
  * that base.)
  */
-int calc_consensus(int   contig,
-		   int   start,
-		   int   end,
-		   int   mode,
-		   char *con,
-		   char *con2,
+int calc_consensus(tg_rec contig,
+		   int    start,
+		   int    end,
+		   int    mode,
+		   char  *con,
+		   char  *con2,
 		   float *qual,
 		   float *qual2,
-		   float cons_cutoff,
-		   int   qual_cutoff,
-		   int (*info_func)(int        job,
-				    void       *mydata,
-				    info_arg_t *theirdata),
-		   void *info_data)
+		   float  cons_cutoff,
+		   int    qual_cutoff,
+		   int  (*info_func)(int        job,
+				     void       *mydata,
+				     info_arg_t *theirdata),
+		   void  *info_data)
 {
     register int i;
     char *conp = con, *conp2;
@@ -3043,7 +3043,7 @@ static void process_frags_9(seq_frag *frag, int *num_frags, int from, int to,
 }
 #endif
 
-static int calc_contig_info_phred(int contig, int start, int end,
+static int calc_contig_info_phred(tg_rec contig, int start, int end,
 				  char *con, float *qual,
 				  char *con2, float *qual2,
 				  float cons_cutoff, int qual_cutoff,
@@ -3290,17 +3290,17 @@ static void process_frags_old(seq_frag *frag, int *num_frags, int from, int to,
 
 
 
-int calc_discrepancies(int   contig,
-		       int   start,
-		       int   end,
-		       float *qual1,
-		       float *qual2,
-		       float cons_cutoff,
-		       int   qual_cutoff,
-		       int (*info_func)(int        job,
-					void       *mydata,
-					info_arg_t *theirdata),
-		       void *info_data)
+int calc_discrepancies(tg_rec contig,
+		       int    start,
+		       int    end,
+		       float  *qual1,
+		       float  *qual2,
+		       float  cons_cutoff,
+		       int    qual_cutoff,
+		       int  (*info_func)(int        job,
+					 void       *mydata,
+					 info_arg_t *theirdata),
+		       void  *info_data)
 {
     init_clookup();
 

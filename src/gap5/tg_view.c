@@ -33,10 +33,7 @@
 
 //#define TEST_MODE
 
-static seq_t *get_seq(GapIO *io, int rec) {
-    return (seq_t *)cache_search(io, GT_Seq, rec);
-}
-
+#define get_seq(io, rec) ((seq_t *)cache_search((io), GT_Seq, (rec)))
 
 /* ------------------------------------------------------------------------ */
 /* Consensus generation functions */
@@ -289,7 +286,7 @@ void whelp(WINDOW *win) {
     wgetch(win);
 }
 
-static void complement_bin(GapIO *io, int bnum) {
+static void complement_bin(GapIO *io, tg_rec bnum) {
     bin_index_t *bin = get_bin(io, bnum);
     bin->flags ^= BIN_COMPLEMENTED;
 }
@@ -466,7 +463,7 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 
 	/*
 	fprintf(stderr, "Bin-%d: %d+%d %d..%d\n",
-		bin->bin_id,
+		bin->rec,
 		bin->pos, bin->size,
 		bin->start_used, bin->end_used);
 	*/
@@ -602,13 +599,14 @@ void curses_loop(GapIO *io, contig_t **cp, int xpos, int mode) {
 
 	case 'G': {
 	    char *seq = wgotoseq(gotowin);
-	    int n;
+	    tg_rec n;
 	    if (seq) {
 		if ((n = sequence_index_query(io, seq)) < 0) {
 		    putchar('\a');
 		    fflush(stdout);
 		} else {
-		    int c, x;
+		    tg_rec c;
+		    int x;
 		    sequence_get_position(io, n, &c, &x, NULL, NULL);
 		    /* FIXME: check c and *cp are same contig */
 		    xpos = x;

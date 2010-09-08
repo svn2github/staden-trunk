@@ -73,7 +73,8 @@ void *find_oligo_obj_func1(int job,
 
 	case -2: /* default */
         case 2: /* Invoke join editor */ {
-	    int cnum[2], llino[2], pos[2];
+	    tg_rec cnum[2], llino[2];
+	    int pos[2];
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    find_oligo->current = obj - find_oligo->match;
@@ -126,8 +127,9 @@ void *find_oligo_obj_func1(int job,
 	}
 
 	case 3: /* Invoke contig editors */ {
-	    int cnum, llino, pos;
-
+	    tg_rec cnum, llino;
+	    int pos;
+	    
 	    cnum  = ABS(obj->c1);
 	    llino = io_clnbr(find_oligo->io, cnum);
 	    pos   = obj->pos1;
@@ -152,7 +154,8 @@ void *find_oligo_obj_func1(int job,
 
     case OBJ_GET_BRIEF:
 	sprintf(buf,
-		"Oligo: %c#%d@%d with %c#%d@%d, len %d, match %2.2f%%",
+		"Oligo: %c#%"PRIrec"@%d with %c#%"PRIrec"@%d, "
+		"len %d, match %2.2f%%",
 		obj->c1 > 0 ? '+' : '-',
 		io_clnbr(find_oligo->io, ABS(obj->c1)), obj->pos1,
 		obj->c2 > 0 ? '+' : '-',
@@ -207,10 +210,11 @@ void *find_oligo_obj_func2(int job,
 
 	case -2: /* default */
 	case 2: /* Invoke contig editor */ {
-	    int cnum, llino, pos;
+	    tg_rec cnum, llino;
+	    int pos;
 
 	    obj->flags |= OBJ_FLAG_VISITED;
-	    find_oligo->current = obj - find_oligo->match;
+	    find_oligo->current = (int)(obj - find_oligo->match);
 
 	    cnum  = ABS(obj->c1);
 	    llino = 0;
@@ -242,7 +246,8 @@ void *find_oligo_obj_func2(int job,
 
     case OBJ_GET_BRIEF:
 	sprintf(buf,
-		"Oligo: %c#%d@%d with %c#%d@%d, len %d, match %2.2f%%",
+		"Oligo: %c#%"PRIrec"@%d with %c#%"PRIrec"@%d, "
+		"len %d, match %2.2f%%",
 		obj->c1 > 0 ? '+' : '-',
 		io_clnbr(find_oligo->io, ABS(obj->c1)), obj->pos1,
 		obj->c2 > 0 ? '+' : '-',
@@ -263,7 +268,7 @@ static int sort_func(const void *p1, const void *p2) {
  * Match callback.
  * 'obj' is a match contained within the 'find_oligo' list.
  */
-void find_oligo_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
+void find_oligo_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
     mobj_find_oligo *r = (mobj_find_oligo *)fdata;
     obj_cs *cs;
     int cs_id;
@@ -384,8 +389,8 @@ RegFindOligo(GapIO *io,
 	     int *pos2,
 	     int *score,
 	     int *length,
-	     int *c1,
-	     int *c2,
+	     tg_rec *c1,
+	     tg_rec *c2,
 	     int n_matches)
 {
     mobj_find_oligo *find_oligo;
@@ -743,8 +748,8 @@ StringMatch(GapIO *io,                                                 /* in */
 	    int *pos2,                                                /* out */
 	    int *score,                                               /* out */
 	    int *length,                                              /* out */
-	    int *c1,                                                  /* out */
-	    int *c2,                                                  /* out */
+	    tg_rec *c1,                                               /* out */
+	    tg_rec *c2,                                               /* out */
 	    int max_matches,                                           /* in */
 	    int consensus_only,                                        /* in */
 	    int cutoff_data)					       /* in */
@@ -867,9 +872,10 @@ StringMatch(GapIO *io,                                                 /* in */
 		     */
 		    if (pos1[j] >= contig_array[i].start &&
 			pos1[j] <= contig_array[i].end) {
-			sprintf(name1, "%d", io_clnbr(io, ABS(c1[j])));
-			sprintf(title, "Match found with contig #%d read #%d "
-				"in the %c sense",
+			sprintf(name1, "%"PRIrec"", io_clnbr(io, ABS(c1[j])));
+			sprintf(title, "Match found with contig #%"PRIrec
+				" read #%"PRIrec
+				" in the %c sense",
 				contig_array[i].contig,
 				ci ? r->rec : 0,
 				c2[j] > 0 ? '+' : '-');
@@ -940,8 +946,8 @@ find_oligos(GapIO *io,
     int *pos2 = NULL;
     int *score = NULL;
     int *length = NULL;
-    int *c1 = NULL;
-    int *c2 = NULL;
+    tg_rec *c1 = NULL;
+    tg_rec *c2 = NULL;
     int max_matches, abs_max;
     int seq_len;
     int n_matches;
@@ -961,17 +967,17 @@ find_oligos(GapIO *io,
     if (max_matches > abs_max)
 	max_matches = abs_max;
 
-    if (NULL == (pos1 = (int *)xmalloc((max_matches + 1) * sizeof(int ))))
+    if (NULL == (pos1 = (int *)xmalloc((max_matches + 1) * sizeof(int))))
 	goto error;
-    if (NULL == (pos2 = (int *)xmalloc((max_matches + 1) * sizeof(int ))))
+    if (NULL == (pos2 = (int *)xmalloc((max_matches + 1) * sizeof(int))))
 	goto error;
-    if (NULL == (score = (int *)xmalloc((max_matches + 1) * sizeof(int ))))
+    if (NULL == (score = (int *)xmalloc((max_matches + 1) * sizeof(int))))
 	goto error;
-    if (NULL == (length = (int *)xmalloc((max_matches + 1) * sizeof(int ))))
+    if (NULL == (length = (int *)xmalloc((max_matches + 1) * sizeof(int))))
 	goto error;
-    if (NULL == (c1 = (int *)xmalloc((max_matches + 1) * sizeof(int ))))
+    if (NULL == (c1 = (tg_rec *)xmalloc((max_matches + 1) * sizeof(tg_rec))))
 	goto error;
-    if (NULL == (c2 = (int *)xmalloc((max_matches + 1) * sizeof(int ))))
+    if (NULL == (c2 = (tg_rec *)xmalloc((max_matches + 1) * sizeof(tg_rec))))
 	goto error;
 
     /* save consensus for each contig */

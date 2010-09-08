@@ -11,8 +11,8 @@ typedef struct {
 } handle_arg;
 
 typedef struct {
-      GapIO *io;
-      int contig;
+    GapIO *io;
+    tg_rec contig;
 } contig_arg;
 
 typedef struct {
@@ -115,7 +115,7 @@ typedef struct {
 
 typedef struct {
     GapIO *io;
-    int contig;
+    tg_rec contig;
     int pos;
 } break_contig_arg;
 
@@ -318,14 +318,14 @@ typedef struct {
     int item;
     GapIO *io;
     int id;
-    int contig;
+    tg_rec contig;
 } enz_name_arg;
 
 typedef struct {
     int enzyme;
     GapIO *io;
     int id;
-    int contig;
+    tg_rec contig;
 } enz_info_arg;
 
 typedef struct {
@@ -354,7 +354,7 @@ typedef struct {
 typedef struct {
     GapIO *io;
     int id;
-    int contig;
+    tg_rec contig;
     int strand;
     int update;
 } refresh_codon_arg;
@@ -458,7 +458,7 @@ typedef struct {
 typedef struct {
     GapIO *io;
     int id;
-    int contig;
+    tg_rec contig;
     int cx;
 } l_cursor_arg;
 

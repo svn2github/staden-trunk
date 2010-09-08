@@ -22,6 +22,9 @@
 #include "tg_gio.h"
 #include "gap_cli_arg.h"
 
+extern Tcl_Command Tcl_GetCommandFromObj(Tcl_Interp *interp,
+					 Tcl_Obj *objPtr);
+
 /* ------------------------------------------------------------------------ */
 /* Some standard argument types */
 typedef struct {
@@ -206,25 +209,26 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case SEQ_NAME2REC: {
 	char *seq = Tcl_GetStringFromObj(objv[2], NULL);
-	vTcl_SetResult(interp, "%d", sequence_index_query(io, seq));
+	vTcl_SetResult(interp, "%"PRIrec, sequence_index_query(io, seq));
 	break;
     }
 
     case NEW_CONTIG: {
 	contig_t *c = contig_new(io, "contig");
-	vTcl_SetResult(interp, "%d", c->rec);
+	vTcl_SetResult(interp, "%"PRIrec, c->rec);
 	break;
     }
 
     case NEW_SEQUENCE: {
 	seq_t s;
 	memset(&s, 0, sizeof(s));
-	vTcl_SetResult(interp, "%d", cache_item_create(io, GT_Seq, &s));
+	vTcl_SetResult(interp, "%"PRIrec, cache_item_create(io, GT_Seq, &s));
 	break;
     }
 
     case NEW_ANNO_ELE: {
-	int obj_type, obj_rec, start, end;
+	int obj_type, start, end;
+	Tcl_WideInt obj_rec;
 
 	if (objc != 6) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
@@ -234,11 +238,11 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	Tcl_GetIntFromObj(interp, objv[2], &obj_type);
-	Tcl_GetIntFromObj(interp, objv[3], &obj_rec);
+	Tcl_GetWideIntFromObj(interp, objv[3], &obj_rec);
 	Tcl_GetIntFromObj(interp, objv[4], &start);
 	Tcl_GetIntFromObj(interp, objv[5], &end);
 
-	vTcl_SetResult(interp, "%d",
+	vTcl_SetResult(interp, "%"PRIrec,
 		       anno_ele_add(io, obj_type, obj_rec,
 				    0 /* anno_rec */,
 				    str2type("COMM"), "",
@@ -357,13 +361,13 @@ static int tcl_contig_seqs_range(tcl_contig *tc, Tcl_Interp *interp,
 
 	e4[0]  = Tcl_NewIntObj(r[i].start);
 	e4[1]  = Tcl_NewIntObj(r[i].end);
-	e4[2]  = Tcl_NewIntObj(r[i].rec);
+	e4[2]  = Tcl_NewWideIntObj(r[i].rec);
 	e4[3]  = Tcl_NewIntObj(r[i].mqual);
 	e4[4]  = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP1) ? 1 : 0);
 	e4[5]  = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_END_MASK) ? 1 : 0);
 	e4[6]  = Tcl_NewIntObj(r[i].pair_start);
 	e4[7]  = Tcl_NewIntObj(r[i].pair_end);
-	e4[8]  = Tcl_NewIntObj(r[i].pair_rec);
+	e4[8]  = Tcl_NewWideIntObj(r[i].pair_rec);
 	e4[9]  = Tcl_NewIntObj(r[i].pair_mqual);
 	e4[10] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP2) ? 1 : 0);
 	e4[11] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_PEND_MASK) ? 1 : 0);
@@ -409,13 +413,13 @@ static int tcl_contig_anno_range(tcl_contig *tc, Tcl_Interp *interp,
 
 	e4[0]  = Tcl_NewIntObj(r[i].start);
 	e4[1]  = Tcl_NewIntObj(r[i].end);
-	e4[2]  = Tcl_NewIntObj(r[i].rec);
+	e4[2]  = Tcl_NewWideIntObj(r[i].rec);
 	e4[3]  = Tcl_NewIntObj(r[i].mqual);
 	e4[4]  = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP1) ? 1 : 0);
 	e4[5]  = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_END_MASK) ? 1 : 0);
 	e4[6]  = Tcl_NewIntObj(r[i].pair_start);
-	e4[7]  = Tcl_NewIntObj(r[i].pair_end);
-	e4[8]  = Tcl_NewIntObj(r[i].pair_rec);
+	e4[7]  = Tcl_NewWideIntObj(r[i].pair_end);
+	e4[8]  = Tcl_NewWideIntObj(r[i].pair_rec);
 	e4[9]  = Tcl_NewIntObj(r[i].pair_mqual);
 	e4[10] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP2) ? 1 : 0);
 	e4[11] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_PEND_MASK) ? 1 : 0);
@@ -470,9 +474,9 @@ static int tcl_contig_pileup(tcl_contig *tc, Tcl_Interp *interp,
 	    base = '?';
 	    conf = 1;
 	    fprintf(stderr, "ERROR: failed to read base at position %d "
-		    "in seq #%d\n", pos, r[i].rec);
+		    "in seq #%"PRIrec"\n", pos, r[i].rec);
 	}
-	e5[0] = Tcl_NewIntObj(r[i].rec);
+	e5[0] = Tcl_NewWideIntObj(r[i].rec);
 	e5[1] = Tcl_NewIntObj(pos - r[i].start);
 	e5[2] = Tcl_NewStringObj(&base, 1);
 	e5[3] = Tcl_NewIntObj(conf);
@@ -580,7 +584,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case GET_REC:
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), ci_ptr(tc->contig)->rec);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), ci_ptr(tc->contig)->rec);
 	break;
 
     case GET_START:
@@ -644,7 +648,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     case REMOVE_SEQUENCE: {
-	int rec;
+	Tcl_WideInt rec;
 	seq_t *s;
 	bin_index_t *b;
 	range_t *r;
@@ -656,7 +660,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	    return TCL_ERROR;
 	}
 
-	Tcl_GetIntFromObj(interp, objv[2], &rec);
+	Tcl_GetWideIntFromObj(interp, objv[2], &rec);
 
 	/* Get old range and pair data */
 	s = cache_search(tc->io, GT_Seq, rec);
@@ -664,19 +668,19 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	r = arrp(range_t, b->rng, s->bin_index);
 	assert(r->rec == s->rec);
 
-	vTcl_SetResult(interp, "%d %d", r->pair_rec, r->flags);
+	vTcl_SetResult(interp, "%"PRIrec" %d", r->pair_rec, r->flags);
 
 	bin_remove_item(tc->io, &tc->contig, GT_Seq, rec);
 	break;
     }
 
     case ADD_SEQUENCE: {
-	int rec;
+	Tcl_WideInt rec;
 	int pos;
 	range_t r, *r_out;
 	seq_t *s;
 	bin_index_t *bin;
-	int pair_rec;
+	Tcl_WideInt pair_rec;
 	int flags;
 
 	if (objc < 4 || objc > 6) {
@@ -686,7 +690,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	    return TCL_ERROR;
 	}
 
-	Tcl_GetIntFromObj(interp, objv[2], &rec);
+	Tcl_GetWideIntFromObj(interp, objv[2], &rec);
 	Tcl_GetIntFromObj(interp, objv[3], &pos);
 
 	s = (seq_t *)cache_search(tc->io, GT_Seq, rec);
@@ -697,7 +701,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	r.mqual = s->mapping_qual;
 
 	if (objc >= 5) {
-	    Tcl_GetIntFromObj(interp, objv[4], &pair_rec);
+	    Tcl_GetWideIntFromObj(interp, objv[4], &pair_rec);
 	    r.pair_rec = pair_rec;
 	} else {
 	    /* Insufficient in most cases, but we can override it */
@@ -724,7 +728,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL);
 	if (s->bin != bin->rec) {
-	    int new_comp, old_comp, old_bin = s->bin;
+	    int new_comp, old_comp;
+	    tg_rec old_bin = s->bin;
 
 	    //printf("New seq bin %d->%d\n", s->bin, bin->rec);
 
@@ -780,7 +785,7 @@ static void _cmd_delete(ClientData clientData) {
 static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 			   int objc, Tcl_Obj *CONST objv[]) {
     contig_t *c;
-    int cnum;
+    Tcl_WideInt cnum;
     tcl_contig *tc;
     Tcl_Obj *res;
 
@@ -791,11 +796,11 @@ static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     }
 
-    Tcl_GetIntFromObj(interp, objv[1], &cnum);
+    Tcl_GetWideIntFromObj(interp, objv[1], &cnum);
     if (cnum > 0)
 	c = (contig_t *)cache_search(io, GT_Contig, cnum);
     else
-	gio_read_contig(io, -cnum, &c); /* contig order lookup */
+	gio_read_contig(io, -(int)cnum, &c); /* contig order lookup */
 
     if (NULL == (tc = (tcl_contig *)ckalloc(sizeof(*tc))))
 	return TCL_ERROR;
@@ -823,7 +828,8 @@ static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 
 static int tcl_contig_order(GapIO *io, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *CONST objv[]) {
-    int cnum, crec;
+    int cind;
+    tg_rec crec;
 
     if (objc != 2) {
 	vTcl_SetResult(interp, "wrong # args: should be "
@@ -832,10 +838,10 @@ static int tcl_contig_order(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     }
 
-    Tcl_GetIntFromObj(interp, objv[1], &cnum);
-    crec = arr(GCardinal, io->contig_order, cnum);
+    Tcl_GetIntFromObj(interp, objv[1], &cind);
+    crec = arr(tg_rec, io->contig_order, cind);
 
-    vTcl_SetResult(interp, "%d", crec);
+    vTcl_SetResult(interp, "%"PRIrec, crec);
     return TCL_OK;
 }
 
@@ -935,7 +941,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case GET_REC:
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), ts->seq->rec);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), ts->seq->rec);
 	break;
 
     case GET_LEN:
@@ -1040,23 +1046,23 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case GET_CONTIG: {
-	int rec = ts->seq->rec;
-	int cnum = sequence_get_contig(ts->io, rec);
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), cnum);
+	tg_rec rec = ts->seq->rec;
+	tg_rec cnum = sequence_get_contig(ts->io, rec);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), cnum);
 	break;
     }
 
     case GET_POSITION: {
-	int rec = ts->seq->rec;
-	int cnum, pos;
+	tg_rec rec = ts->seq->rec, cnum;
+	int pos;
 	sequence_get_position(ts->io, rec, &cnum, &pos, NULL, NULL);
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), pos);
 	break;
     }
 
     case GET_ORIENT: {
-	int rec = ts->seq->rec;
-	int cnum, pos, dir;
+	tg_rec rec = ts->seq->rec, cnum;
+	int pos, dir;
 	range_t r;
 	seq_t *s;
 	sequence_get_position2(ts->io, rec, &cnum, &pos, NULL, &dir, &r, &s);
@@ -1070,8 +1076,8 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case GET_PAIR:
-	Tcl_SetIntObj(Tcl_GetObjResult(interp),
-		      sequence_get_pair(ts->io, ts->seq));
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp),
+			  sequence_get_pair(ts->io, ts->seq));
 	break;
 
     case GET_BASE: {
@@ -1189,7 +1195,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
 			     int objc, Tcl_Obj *CONST objv[]) {
     seq_t *s;
-    int snum;
+    Tcl_WideInt snum;
     tcl_sequence *ts;
     Tcl_Obj *res;
 
@@ -1200,7 +1206,7 @@ static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     }
 
-    Tcl_GetIntFromObj(interp, objv[1], &snum);
+    Tcl_GetWideIntFromObj(interp, objv[1], &snum);
     s = (seq_t *)cache_search(io, GT_Seq, snum);
 
     if (NULL == (ts = (tcl_sequence *)ckalloc(sizeof(*ts))))
@@ -1344,26 +1350,26 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case GET_REC:
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->rec);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), te->anno->rec);
 	break;
 
     case GET_CONTIG: {
-	int contig;
+	tg_rec contig;
 	if (NULL == anno_get_range(te->io, te->anno->rec, &contig, 0))
 	    return TCL_ERROR;
 
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), contig);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), contig);
 	
 	break;
     }
 
     case GET_POSITION: {
-	int contig;
+	tg_rec contig;
 	range_t *r = anno_get_range(te->io, te->anno->rec, &contig, 1);
 	if (NULL == r)
 	    return TCL_ERROR;
 
-	vTcl_SetResult(interp, "%d %d %d", 
+	vTcl_SetResult(interp, "%d %d %"PRIrec, 
 		       r->start, r->end, contig);
 	break;
     }
@@ -1435,11 +1441,11 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     case GET_OBJ_REC:
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->obj_rec);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), te->anno->obj_rec);
 	break;
 
     case SET_OBJ_REC: {
-	int orec;
+	Tcl_WideInt orec;
 
 	if (objc != 3) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
@@ -1448,17 +1454,17 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	    return TCL_ERROR;
 	}
 
-	Tcl_GetIntFromObj(interp, objv[2], &orec);
-	te->anno->obj_rec = orec;
+	Tcl_GetWideIntFromObj(interp, objv[2], &orec);
+	te->anno->obj_rec = (tg_rec)orec;
 	break;
     }
 
     case GET_ANNO_REC:
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->anno_rec);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), te->anno->anno_rec);
 	break;
 
     case SET_ANNO_REC: {
-	int rec;
+	Tcl_WideInt rec;
 
 	if (objc != 3) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
@@ -1467,8 +1473,8 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	    return TCL_ERROR;
 	}
 
-	Tcl_GetIntFromObj(interp, objv[2], &rec);
-	te->anno->anno_rec = rec;
+	Tcl_GetWideIntFromObj(interp, objv[2], &rec);
+	te->anno->anno_rec = (tg_rec)rec;
 	break;
     }
     }
@@ -1479,7 +1485,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 static int tcl_anno_ele_read(GapIO *io, Tcl_Interp *interp,
 			     int objc, Tcl_Obj *CONST objv[]) {
     anno_ele_t *e;
-    int elenum;
+    Tcl_WideInt elenum;
     tcl_anno_ele *te;
     Tcl_Obj *res;
 
@@ -1490,7 +1496,7 @@ static int tcl_anno_ele_read(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     }
 
-    Tcl_GetIntFromObj(interp, objv[1], &elenum);
+    Tcl_GetWideIntFromObj(interp, objv[1], &elenum);
     e = (anno_ele_t *)cache_search(io, GT_AnnoEle, elenum);
 
     if (NULL == (te = (tcl_anno_ele *)ckalloc(sizeof(*te))))
@@ -1583,7 +1589,7 @@ static int library_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case GET_REC:
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), tl->library->rec);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), tl->library->rec);
 	break;
 
     case GET_ORIENT:
@@ -1651,7 +1657,7 @@ static int library_cmd(ClientData clientData, Tcl_Interp *interp,
 	    Tcl_SetStringObj(Tcl_GetObjResult(interp), tl->library->name, -1);
 	} else {
 	    char buf[100];
-	    sprintf(buf, "rec#%d", tl->library->rec);
+	    sprintf(buf, "rec#%"PRIrec, tl->library->rec);
 	    Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, -1);
 	}
 	break;
@@ -1686,7 +1692,7 @@ static int library_from_any(Tcl_Interp *interp, Tcl_Obj *obj) {
 
 static int tcl_library_read(GapIO *io, Tcl_Interp *interp,
 			   int objc, Tcl_Obj *CONST objv[]) {
-    int rec;
+    Tcl_WideInt rec;
     library_t *l;
     tcl_library *tl;
     Tcl_Obj *res;
@@ -1698,7 +1704,7 @@ static int tcl_library_read(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     }
 
-    Tcl_GetIntFromObj(interp, objv[1], &rec);
+    Tcl_GetWideIntFromObj(interp, objv[1], &rec);
     l = (library_t *)cache_search(io, GT_Library, rec);
 
     if (NULL == (tl = (tcl_library *)ckalloc(sizeof(*tl))))
@@ -1806,12 +1812,14 @@ static int database_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case GET_LIBRARY_REC: {
 	int idx;
-	if (objc < 2) {
+	if (objc != 3) {
+	    Tcl_WrongNumArgs(interp, 1, objv, "get_library_rec library_index");
+	    return TCL_ERROR;
 	}
 	
 	Tcl_GetIntFromObj(interp, objv[2], &idx);
-	Tcl_SetIntObj(Tcl_GetObjResult(interp),
-		      arr(GCardinal, io->library, idx));
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp),
+			  arr(tg_rec, io->library, idx));
 	break;
     }
 

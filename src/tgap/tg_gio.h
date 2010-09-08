@@ -40,7 +40,7 @@ typedef struct GapIO {
     void *dbh; /* Database handle to pass into iface functions */
 
     /* Cached components of the database */
-    GDatabase *db; /* Cached database and view */
+    database_t *db; /* Cached database and view */
 
     /* Contig order array, also maps contig number to rec.num */
     ArrayStruct *contig_order;
@@ -75,10 +75,10 @@ int cache_create(GapIO *io);
 void cache_destroy(GapIO *io);
 int cache_flush(GapIO *io);
 int cache_updated(GapIO *io);
-void *cache_search(GapIO *io, int type, int GRec);
-void *cache_search_no_load(GapIO *io, int type, GRec rec);
+void *cache_search(GapIO *io, int type, tg_rec rec);
+void *cache_search_no_load(GapIO *io, int type, tg_rec rec);
 int cache_upgrade(GapIO *io, cached_item *ci, int mode);
-void *cache_lock(GapIO *io, int type, GRec rec, int mode);
+void *cache_lock(GapIO *io, int type, tg_rec rec, int mode);
 void *cache_item_resize(void *item, size_t size);
 
 void *cache_rw(GapIO *io, void *data);
@@ -88,12 +88,10 @@ void cache_incr(GapIO *io, void *data);
 void cache_decr(GapIO *io, void *data);
 
 /* Create and initialise a new item. */
-int cache_item_create(GapIO *io, int type, void *from);
-int cache_item_init(GapIO *io, int type, void *from, int rec);
-int cache_item_remove(GapIO *io, int type, int rec);
-
-/* A temporary hack until GRec becomes 64-bit */
-void set_reserved_seqs(int rseqs);
+tg_rec cache_item_create(GapIO *io, int type, void *from);
+int cache_item_init(GapIO *io, int type, void *from, tg_rec rec);
+int cache_item_remove(GapIO *io, int type, tg_rec rec);
+int cache_rec_deallocate(GapIO *io, int type, tg_rec rec);
 
 /* ------------------------------------------------------------------------- */
 /* And now the object specific defintions */

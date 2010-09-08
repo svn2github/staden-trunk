@@ -49,7 +49,7 @@ int contig_set_end(GapIO *io, contig_t **c, int value) {
  * Returns 0 on success
  *        -1 on failure
  */
-int contig_set_bin(GapIO *io, contig_t **c, int value) {
+int contig_set_bin(GapIO *io, contig_t **c, tg_rec value) {
     contig_t *n;
     if (!(n = cache_rw(io, *c)))
 	return -1;
@@ -112,7 +112,7 @@ int contig_offset(GapIO *io, contig_t **c) {
  * Returns 0 for success
  *        -1 for failure
  */
-static int contig_insert_base2(GapIO *io, int bnum,
+static int contig_insert_base2(GapIO *io, tg_rec bnum,
 			       int pos, int offset, char base, int conf) {
     int i;
     bin_index_t *bin;
@@ -243,10 +243,10 @@ static int bin_delete(GapIO *io, bin_index_t *bin) {
     parent = get_bin(io, bin->parent);
     cache_incr(io, parent);
 
-    if (parent->child[0] == bin->bin_id)
+    if (parent->child[0] == bin->rec)
 	parent->child[0] = 0;
 
-    if (parent->child[1] == bin->bin_id)
+    if (parent->child[1] == bin->rec)
 	parent->child[1] = 0;
 
     parent->flags |= BIN_BIN_UPDATED;
@@ -256,7 +256,7 @@ static int bin_delete(GapIO *io, bin_index_t *bin) {
     return 0;
 }
 
-static int contig_delete_base2(GapIO *io, int bnum,
+static int contig_delete_base2(GapIO *io, tg_rec bnum,
 			       int pos, int offset) {
     int i;
     bin_index_t *bin;
@@ -289,7 +289,7 @@ static int contig_delete_base2(GapIO *io, int bnum,
 	     */
 	    if (MIN(r->start, r->end) == MAX(r->start, r->end)) {
 		/* Remove object entirely */
-		fprintf(stderr, "Delete sequence/tag #%d\n", r->rec);
+		fprintf(stderr, "Delete sequence/tag #%"PRIrec"\n", r->rec);
 		r->flags |= GRANGE_FLAG_UNUSED;
 		r->rec = bin->rng_free;
 
@@ -319,7 +319,7 @@ static int contig_delete_base2(GapIO *io, int bnum,
     /* Adjust the bin dimensions */
     if (--bin->size <= 0) {
 	/* Remove object entirely */
-	fprintf(stderr, "Delete bin bin-%d\n", bin->bin_id);
+	fprintf(stderr, "Delete bin bin-%"PRIrec"\n", bin->rec);
 	bin->size = 0;
 	bin_delete(io, bin);
     } else {
@@ -384,7 +384,7 @@ int contig_delete_base(GapIO *io, contig_t **c, int pos) {
 }
 
 contig_t *contig_new(GapIO *io, char *name) {
-    int rec;
+    tg_rec rec;
     contig_t *c;
 
     /* Allocate our contig */
@@ -402,7 +402,7 @@ contig_t *contig_new(GapIO *io, char *name) {
     /* Add it to the contig order too */
     io->contig_order = cache_rw(io, io->contig_order);
     io->db = cache_rw(io, io->db);
-    ARR(GCardinal, io->contig_order, io->db->Ncontigs++) = rec;
+    ARR(tg_rec, io->contig_order, io->db->Ncontigs++) = rec;
 
     return c;
 }
@@ -414,17 +414,17 @@ contig_t *contig_new(GapIO *io, char *name) {
  *         NULL on failure (not found)
  */
 contig_t *find_contig_by_name(GapIO *io, char *name) {
-    int rec = io->iface->contig.index_query(io->dbh, name);
+    tg_rec rec = io->iface->contig.index_query(io->dbh, name);
     return rec > 0 ? (contig_t *)cache_search(io, GT_Contig, rec) : NULL;
 }
 
-GRec contig_index_query(GapIO *io, char *name) {
+tg_rec contig_index_query(GapIO *io, char *name) {
     return io->iface->contig.index_query(io->dbh, name);
 }
 
-int contig_index_update(GapIO *io, char *name, int name_len, GRec rec) {
+int contig_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {
     char n2[1024];
-    GRec r;
+    tg_rec r;
     sprintf(n2, "%.*s", name_len, name);
 
     r = io->iface->contig.index_add(io->dbh, n2, rec);
@@ -433,7 +433,7 @@ int contig_index_update(GapIO *io, char *name, int name_len, GRec rec) {
 
     if (r != io->db->contig_name_index) {
 	io->db = cache_rw(io, io->db);
-	io->db->contig_name_index = r;
+	io->db->contig_name_index = (GCardinal)r;
     }
 
     return 0;
@@ -600,8 +600,13 @@ static int sort_range_by_x(const void *v1, const void *v2) {
     }
 #endif
 
-    /* And finally by recno. */
-    return r1->rec - r2->rec;
+    /* And finally by recno, allowing for 64-bit quantities. */
+    if (r1->rec > r2->rec)
+	return 1;
+    else if (r1->rec < r2->rec)
+	return -1;
+    else
+	return 0;
 }
 
 /*
@@ -617,8 +622,13 @@ static int sort_range_by_x_end(const void *v1, const void *v2) {
     if ((d = r1->end - r2->end))
 	return d;
     
-    /* And finally by recno. */
-    return r1->rec - r2->rec;
+    /* And finally by recno, allowing for 64-bit quantities. */
+    if (r1->rec > r2->rec)
+	return 1;
+    else if (r1->rec < r2->rec)
+	return -1;
+    else
+	return 0;
 }
 
 /* Sort comparison function for range_t; sort by ascending position */
@@ -648,8 +658,13 @@ static int sort_range_by_tech_x(const void *v1, const void *v2) {
     }
 #endif
 
-    /* And finally by recno. */
-    return r1->rec - r2->rec;
+    /* And finally by recno, allowing for 64-bit quantities. */
+    if (r1->rec > r2->rec)
+	return 1;
+    else if (r1->rec < r2->rec)
+	return -1;
+    else
+	return 0;
 }
 
 /* Sort comparison function for range_t; sort by ascending position */
@@ -955,7 +970,8 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
  *        -1 on failure
  */
 static int compute_ypos_tags(rangec_t *r, int nr) {
-    int i, key;
+    int i;
+    tg_rec key;
     HacheTable *h;
     HacheData hd;
 
@@ -1018,7 +1034,7 @@ static int compute_ypos_tags(rangec_t *r, int nr) {
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
-static int contig_seqs_in_range2(GapIO *io, int bin_num,
+static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
 				 int start, int end, int offset,
 				 rangec_t **results, int *alloc, int used,
 				 int complement, int mask, int val) {
@@ -1131,7 +1147,8 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
  * in the tg_cache.c data structs. (If not still in cache, do nothing.)
  */
 void update_range_y(GapIO *io, rangec_t *r, int count) {
-    int i, last_bin = -1;
+    int i;
+    tg_rec last_bin = -1;
 
     for (i = 0; i < count; i++) {
 	bin_index_t *bin;
@@ -1308,7 +1325,7 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 /*
  * As per contig_seqs_in_range, but consensus sequences only.
  */
-static int contig_cons_in_range2(GapIO *io, int bin_num,
+static int contig_cons_in_range2(GapIO *io, tg_rec bin_num,
 				 int start, int end, int offset,
 				 rangec_t **results, int *alloc, int used,
 				 int complement) {
@@ -1434,7 +1451,7 @@ rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 }
 
 
-static int contig_bins_in_range2(GapIO *io, int bin_num,
+static int contig_bins_in_range2(GapIO *io, tg_rec bin_num,
 				 int start, int end, int offset,
 				 rangec_t **results, int *alloc, int used,
 				 int complement, int min_size,
@@ -1528,13 +1545,14 @@ rangec_t *contig_bins_in_range(GapIO *io, contig_t **c, int start, int end,
 }
 
 
-static void contig_bin_dump2(GapIO *io, int bin_num, int level) {
+static void contig_bin_dump2(GapIO *io, tg_rec bin_num, int level) {
     int i;
     bin_index_t *bin = get_bin(io, bin_num);
 
     cache_incr(io, bin);
 
-    printf("%*sBin %d\tpos %d\tsize %d\tleft %d\tright %d\tflags %d\n", 
+    printf("%*sBin %"PRIrec"\tpos %d\tsize %d\tleft %"PRIrec
+	   "\tright %"PRIrec"\tflags %d\n", 
 	   level*4, "", bin->rec, bin->pos, bin->size,
 	   bin->child[0], bin->child[1], bin->flags);
 
@@ -1547,7 +1565,7 @@ static void contig_bin_dump2(GapIO *io, int bin_num, int level) {
     cache_decr(io, bin);
 }
 
-void contig_bin_dump(GapIO *io, int cnum) {
+void contig_bin_dump(GapIO *io, tg_rec cnum) {
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
     contig_bin_dump2(io, contig_get_bin(&c), 0);
 }
@@ -1561,7 +1579,7 @@ void contig_bin_dump(GapIO *io, int cnum) {
  *        -1 on failure (typically fallen off the end of the contig)
  */
 static int range_populate(GapIO *io, contig_iterator *ci,
-			  int cnum, int start, int end) {
+			  tg_rec cnum, int start, int end) {
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
 
     if (ci->r) {
@@ -1649,9 +1667,9 @@ void contig_iter_del(contig_iterator *ci) {
  * Returns contig_iterator pointer on success
  *         NULL on failure
  */
-contig_iterator *contig_iter_new_by_type(GapIO *io, int cnum, int auto_extend,
-					 int whence, int start, int end,
-					 int type) {
+contig_iterator *contig_iter_new_by_type(GapIO *io, tg_rec cnum,
+					 int auto_extend, int whence,
+					 int start, int end, int type) {
     contig_iterator *ci = (contig_iterator *)malloc(sizeof(*ci));
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
     
@@ -1698,7 +1716,7 @@ contig_iterator *contig_iter_new_by_type(GapIO *io, int cnum, int auto_extend,
 /*
  * The old interface, which is hardcoded to only iterate through sequences.
  */
-contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
+contig_iterator *contig_iter_new(GapIO *io, tg_rec cnum, int auto_extend,
 				 int whence, int start, int end) {
     return contig_iter_new_by_type(io, cnum, auto_extend, whence,
 				   start, end, GRANGE_FLAG_ISSEQ);
@@ -1787,7 +1805,7 @@ typedef struct {
  * Returns 0 on success
  *        -1 on failure
  */
-static int contig_get_track2(GapIO *io, int bin_num, int start, int end,
+static int contig_get_track2(GapIO *io, tg_rec bin_num, int start, int end,
 			     int type, double bpv, int offset,
 			     tvalues_t **tv, int *alloc, int used,
 			     int complement) {
@@ -1809,7 +1827,8 @@ static int contig_get_track2(GapIO *io, int bin_num, int start, int end,
 	f_b = offset;
     }
 
-    printf("%*scontig_get_track2 want %5.1f got ~%5.1f bin %d (%d+%d) l=%d r=%d\n",
+    printf("%*scontig_get_track2 want %5.1f got ~%5.1f bin %"PRIrec
+	   " (%d+%d) l=%"PRIrec" r=%"PRIrec"\n",
 	   depth, "",
 	   bpv, bin->size / (double)RD_ELEMENTS, bin_num,  offset, bin->size,
 	   bin->child[0], bin->child[1]);
@@ -1918,7 +1937,7 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
     int bin_off;
     int *data, *data3;
     bin_index_t *start_bin;
-    int start_bin_rec;
+    tg_rec start_bin_rec;
 
     printf("Query %d..%d bpv %f\n", start, end, bpv);
 
@@ -2036,31 +2055,41 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
  * Returns 0 for success
  *        -1 for failure
  */
-int contig_destroy(GapIO *io, int rec) {
+int contig_destroy(GapIO *io, tg_rec rec) {
     int i, j;
+    contig_t *c;
 
+    /* Delete from the btree index */
+    if (!(c = cache_search(io, GT_Contig, rec)))
+	return -1;
+
+    if (c->name)
+	io->iface->contig.index_del(io->dbh, c->name);
+
+    /* Remove from contig order */
     io->contig_order = cache_rw(io, io->contig_order);
     io->db = cache_rw(io, io->db);
 
     for (i = j = 0; i < io->db->Ncontigs; i++) {
-	if (arr(GCardinal, io->contig_order, i) == rec) {
+	if (arr(tg_rec, io->contig_order, i) == rec) {
 	    continue;
 	}
-	arr(GCardinal, io->contig_order, j) =
-	    arr(GCardinal, io->contig_order, i);
+	arr(tg_rec, io->contig_order, j) = arr(tg_rec, io->contig_order, i);
 	j++;
     }
 
     if (i == j) {
-	fprintf(stderr, "Attempted to remove unknown contig, rec %d\n",
+	fprintf(stderr, "Attempted to remove unknown contig, rec %"PRIrec"\n",
 		rec);
 	return -1;
     }
 
     io->db->Ncontigs--;
 
+    /* Remove from registration system */
     contig_register_delete(io, rec);
 
+    /* And finally, deallocate on disk to allow record to be reused */
     cache_rec_deallocate(io, GT_Contig, rec);
 
     return 0;
@@ -2074,11 +2103,11 @@ int contig_destroy(GapIO *io, int rec) {
  * pright	The parent bin/-contig in the right new contig
  * child_no     0 or 1 - whether this bin is the left/right child of its parent
  */
-#define H 10
-#define G 20
+#define H 30
+#define G 10
 static int bin_dump_recurse(GapIO *io, contig_t **c,
 			    char *fn, int child,
-			    int bin_num, int offset,
+			    tg_rec bin_num, int offset,
 			    int level, int complement,
 			    double rootx, double rooty,
 			    int do_seqs) {
@@ -2214,7 +2243,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 		level*(H+G)+H+2);
 
     /* Bin record ID */
-    fprintf(gv, "%f %d moveto (#%d/%d) show\n",
+    fprintf(gv, "%f %d moveto (#%"PRIrec"/%d) show\n",
 	    scale * (offset+bin->size/2)-10, level*(H+G)+H/2-2, bin->rec,
 	    bin->nseqs);
 
@@ -2255,7 +2284,7 @@ void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
     //HacheTableRefInfo(io->cache, stdout);
     cache_incr(io, *c);
     bin_dump_recurse(io, c, fn, 0, contig_get_bin(c),
-		     contig_offset(io, c), 0, 0, 0.0, 0.0, 0 /*1*/);
+		     contig_offset(io, c), 0, 0, 0.0, 0.0, 1);
     cache_decr(io, *c);
     //HacheTableRefInfo(io->cache, stdout);
 }

@@ -63,7 +63,8 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 
 	case -2: /* default */
 	case 2: /* Invoke join editor */ {
-	    int cnum[2], llino[2], pos[2];
+	    tg_rec cnum[2], llino[2];
+	    int pos[2];
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    repeat->current = obj - repeat->match;
@@ -112,7 +113,8 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	}
 
 	case 3: /* Invoke contig editors */ {
-	    int cnum, llino, pos;
+	    tg_rec cnum, llino;
+	    int pos;
 
 	    cnum  = ABS(obj->c1);
 	    llino = io_clnbr(repeat->io, cnum);
@@ -135,7 +137,7 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	break;
 
     case OBJ_GET_BRIEF:
-	sprintf(buf, "Repeat: %c#%d@%d with %c#%d@%d, len %d",
+	sprintf(buf, "Repeat: %c#%"PRIrec"@%d with %c#%"PRIrec"@%d, len %d",
 		obj->c1 > 0 ? '+' : '-',
 		io_clnbr(repeat->io, ABS(obj->c1)), obj->pos1,
 		obj->c2 > 0 ? '+' : '-',
@@ -152,7 +154,7 @@ static int sort_func(const void *p1, const void *p2) {
     return m2->score - m1->score;
 }
 
-void repeat_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
+void repeat_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
     mobj_repeat *r = (mobj_repeat *)fdata;
     obj_cs *cs;
     int cs_id;
@@ -269,9 +271,9 @@ void repeat_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 void
 plot_rpt(GapIO *io,
 	 int nres,
-	 int c1[],
+	 tg_rec c1[],
 	 int pos1[],
-	 int c2[],
+	 tg_rec c2[],
 	 int pos2[],
 	 int len[])
 {
@@ -367,8 +369,8 @@ find_repeats(GapIO *io,
 	     contig_list_t *contig_array,
 	     char *out_name)
 {
-
-    int *sav1, *sav2, *sav3, *sav4, *sav5;
+    tg_rec *crec1, *crec2;
+    int *pos1, *pos2, *len; /* position in crec1/2 and joint length */
     char *consensus;
     int max_read_length, database_size, number_of_contigs;
     int consensus_length, ret, task_mask;
@@ -390,16 +392,16 @@ find_repeats(GapIO *io,
     max_matches = 10000; /* FIXME: make this adjustable */
     consensus = NULL;
     contig_list = NULL;
-    sav1 = sav2 = sav3 = sav4 = sav5 = NULL;
+    crec1 = crec2 = NULL;
+    pos1 = pos2 = len = NULL;
 
-    if ((sav2 = (int *)xmalloc(max_matches * sizeof(int)))==NULL){
+    if ((pos1 = (int *)xmalloc(max_matches * sizeof(int)))==NULL){
 	goto bail_out;
     }
-
-    if ((sav4 = (int *)xmalloc(max_matches * sizeof(int)))==NULL){
+    if ((pos2 = (int *)xmalloc(max_matches * sizeof(int)))==NULL){
 	goto bail_out;
     }
-    if ((sav5 = (int *)xmalloc(max_matches * sizeof(int)))==NULL){
+    if ((len = (int *)xmalloc(max_matches * sizeof(int)))==NULL){
 	goto bail_out;
     }
 
@@ -427,36 +429,38 @@ find_repeats(GapIO *io,
 	goto bail_out;
     }
 
-    ret =  repeat_search (
-			      mode, min_match, &sav4, &sav2, &sav5, max_matches,
-			      consensus, consensus_length, &num_f_matches, &num_r_matches );
+    ret =  repeat_search ( mode, min_match, &pos2, &pos1, &len, max_matches,
+			   consensus, consensus_length,
+			   &num_f_matches, &num_r_matches );
 
     if( ret < 0 ) {
 	goto bail_out;
     }
 
     /* get the output arrays filled in to fit with old routines!!*/
-    if ((sav1 = (int *)xmalloc((num_f_matches + num_r_matches + 1) * sizeof(int)))==NULL){
+    if ((crec1 = (tg_rec *)xmalloc((num_f_matches + num_r_matches + 1) * sizeof(tg_rec)))==NULL){
 	goto bail_out;
     }
 
-    if ((sav3 = (int *)xmalloc((num_f_matches + num_r_matches + 1) * sizeof(int)))==NULL){
+    if ((crec2 = (tg_rec *)xmalloc((num_f_matches + num_r_matches + 1) * sizeof(tg_rec)))==NULL){
 	goto bail_out;
     }
 
     for ( i=0;i<num_f_matches; i++ ) {
 	if ( -1 != (j = (contig_listel_from_con_pos ( contig_list, number_of_contigs,
-					sav2[i] )))) {
-	    sav1[i] = contig_list[j].contig_left_gel;
-	    sav2[i] = sav2[i] + contig_list[j].contig_start - contig_list[j].contig_start_offset - 1;
+					pos1[i] )))) {
+	    crec1[i] = contig_list[j].contig_left_gel;
+	    pos1[i] += contig_list[j].contig_start
+		     - contig_list[j].contig_start_offset - 1;
 	}
 	else {
 	    goto bail_out;
 	}
 	if ( -1 != (j = (contig_listel_from_con_pos ( contig_list, number_of_contigs,
-					sav4[i] )))) {
-	    sav3[i] = contig_list[j].contig_left_gel;
-	    sav4[i] = sav4[i] + contig_list[j].contig_start - contig_list[j].contig_start_offset - 1;
+					pos2[i] )))) {
+	    crec2[i] = contig_list[j].contig_left_gel;
+	    pos2[i] += contig_list[j].contig_start
+		     - contig_list[j].contig_start_offset - 1;
 	}
 	else {
 	    goto bail_out;
@@ -465,17 +469,19 @@ find_repeats(GapIO *io,
 
     for ( i=num_f_matches; i<num_f_matches+num_r_matches;i++ ) {
 	if ( -1 != (j = (contig_listel_from_con_pos ( contig_list, number_of_contigs,
-					sav2[i] )))) {
-	    sav1[i] = -contig_list[j].contig_left_gel;
-	    sav2[i] = sav2[i] + contig_list[j].contig_start - contig_list[j].contig_start_offset - 1;;
+					pos1[i] )))) {
+	    crec1[i] = -contig_list[j].contig_left_gel;
+	    pos1[i] += contig_list[j].contig_start
+		     - contig_list[j].contig_start_offset - 1;;
 	}
 	else {
 	    goto bail_out;
 	}
 	if ( -1 != (j = (contig_listel_from_con_pos ( contig_list, number_of_contigs,
-					sav4[i] )))) {
-	    sav3[i] = contig_list[j].contig_left_gel;
-	    sav4[i] = sav4[i] + contig_list[j].contig_start - contig_list[j].contig_start_offset - 1;
+					pos2[i] )))) {
+	    crec2[i] = contig_list[j].contig_left_gel;
+	    pos2[i] += contig_list[j].contig_start
+		     - contig_list[j].contig_start_offset - 1;
 	}
 	else {
 	    goto bail_out;
@@ -489,29 +495,29 @@ find_repeats(GapIO *io,
     /* FIXME write_tags needs arguments changing from f_int to int */
 #if 0
     if (out_name) {
-	write_tags(io, out_name, num_f_matches+num_r_matches, sav1, sav2, sav3, sav4, sav5);
+	write_tags(io, out_name, num_f_matches+num_r_matches, crec1, pos1, crec2, pos2, len);
     }
 #endif
 
-    plot_rpt(io, num_f_matches+num_r_matches, sav1, sav2, sav3, sav4, sav5);
+    plot_rpt(io, num_f_matches+num_r_matches, crec1, pos1, crec2, pos2, len);
 
-	if ( sav1 ) xfree(sav1);
-	if ( sav2 ) xfree(sav2);
-	if ( sav3 ) xfree(sav3);
-	if ( sav4 ) xfree(sav4);
-	if ( sav5 ) xfree(sav5);
-	if ( consensus ) xfree(consensus);
+	if ( crec1 ) xfree(crec1);
+	if ( pos1 )  xfree(pos1);
+	if ( crec2 ) xfree(crec2);
+	if ( pos2 )  xfree(pos2);
+	if ( len )   xfree(len);
+	if ( consensus )   xfree(consensus);
 	if ( contig_list ) xfree(contig_list);
 
 	return 0;
  bail_out:
 
-	if ( sav1 ) xfree(sav1);
-	if ( sav2 ) xfree(sav2);
-	if ( sav3 ) xfree(sav3);
-	if ( sav4 ) xfree(sav4);
-	if ( sav5 ) xfree(sav5);
-	if ( consensus ) xfree(consensus);
+	if ( crec1 ) xfree(crec1);
+	if ( pos1 )  xfree(pos1);
+	if ( crec2 ) xfree(crec2);
+	if ( pos2 )  xfree(pos2);
+	if ( len )   xfree(len);
+	if ( consensus )   xfree(consensus);
 	if ( contig_list ) xfree(contig_list);
 
 	return -1;

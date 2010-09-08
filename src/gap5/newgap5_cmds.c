@@ -140,7 +140,7 @@ int db_info(ClientData clientData,
 	    goto db_error;
 	}
 	a3 = Tcl_GetStringFromObj(objv[3], NULL);
-	vTcl_SetResult(interp, "%d", get_gel_num(io, a3, GGN_ID));
+	vTcl_SetResult(interp, "%"PRIrec, get_gel_num(io, a3, GGN_ID));
 	return TCL_OK;
     }
 
@@ -149,7 +149,7 @@ int db_info(ClientData clientData,
 	    goto db_error;
 	}
 	a3 = Tcl_GetStringFromObj(objv[3], NULL);
-	vTcl_SetResult(interp, "%d", template_name_to_number(io, a3));
+	vTcl_SetResult(interp, "%"PRIrec, template_name_to_number(io, a3));
 	return TCL_OK;
     }
 
@@ -158,7 +158,7 @@ int db_info(ClientData clientData,
 	    goto db_error;
 	}
 	a3 = Tcl_GetStringFromObj(objv[3], NULL);
-	vTcl_SetResult(interp, "%d", get_contig_num(io, a3, GGN_ID));
+	vTcl_SetResult(interp, "%"PRIrec, get_contig_num(io, a3, GGN_ID));
 	return TCL_OK;
     }
 
@@ -188,7 +188,7 @@ int db_info(ClientData clientData,
 	Tcl_IncrRefCount(lobj);
 
 	for (i = 0; i < outArgc; i++) {
-	    iobj = Tcl_NewIntObj(outArgv[i].contig);
+	    iobj = Tcl_NewWideIntObj(outArgv[i].contig);
 	    Tcl_ListObjAppendElement(interp, lobj, iobj);
 	}
 	xfree(outArgv);
@@ -199,7 +199,7 @@ int db_info(ClientData clientData,
     }
 
     if (strcmp(cmd, "chain_left") == 0) {
-	int i;
+	tg_rec i;
 
 	if (objc != 4) {
 	    goto db_error;
@@ -207,13 +207,13 @@ int db_info(ClientData clientData,
 
 	a3 = Tcl_GetStringFromObj(objv[3], NULL);
 	i = get_gel_num(io, a3, GGN_ID);
-	vTcl_SetResult(interp, "%d", i == -1 ? -1 : chain_left(io, i));
+	vTcl_SetResult(interp, "%"PRIrec, i == -1 ? -1 : chain_left(io, i));
 	return TCL_OK;
     }
 
     if (strcmp(cmd, "longest_contig") == 0) {
 	//vTcl_SetResult(interp, "%"PRId64, CalcLongContig(io));
-	vTcl_SetResult(interp, "%d", arr(GCardinal, io->contig_order, 0));
+	vTcl_SetResult(interp, "%"PRIrec, arr(tg_rec, io->contig_order, 0));
 	return TCL_OK;
     }
 
@@ -400,7 +400,7 @@ int tcl_contig_order_to_number(ClientData clientData, Tcl_Interp *interp,
 	return TCL_ERROR;
 	
     vTcl_SetResult(interp, "%d",
-		   arr(GCardinal, args.io->contig_order, args.order));
+		   arr(tg_rec, args.io->contig_order, args.order));
     return TCL_OK;
 }
 
@@ -415,7 +415,7 @@ tcl_save_contig_order(ClientData clientData,
     int num_contigs = 0;
     int i;
     GapIO *io;
-    GCardinal *order;
+    tg_rec *order;
     reg_order ro;
     reg_buffer_start rs;
     reg_buffer_end re;
@@ -441,7 +441,7 @@ tcl_save_contig_order(ClientData clientData,
 
     /* Update the IO structure with the new contig and save it */
     io->contig_order = cache_rw(io, io->contig_order);
-    order = ArrayBase(GCardinal, io->contig_order);
+    order = ArrayBase(tg_rec, io->contig_order);
     for (i = 0; i < num_contigs; i++) {
 	order[i] = contig_array[i].contig;
     }
@@ -458,14 +458,14 @@ tcl_save_contig_order(ClientData clientData,
     ro.job = REG_ORDER;
 
     for (i = 1; i <= NumContigs(io); i++) {
-	ro.pos = order[i-1];
-	contig_notify(io, i, (reg_data *)&ro);
+	ro.pos = i;
+	contig_notify(io, order[i-1], (reg_data *)&ro);
     }
 
     /* Notify the end of our updates */
     re.job = REG_BUFFER_END;
     for (i = 1; i <= NumContigs(io); i++)
-	contig_notify(io, 1, (reg_data *)&re);
+	contig_notify(io, i, (reg_data *)&re);
 
     return TCL_OK;
 }
@@ -1247,7 +1247,7 @@ tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
     break_contig_arg args;
     cli_args a[] = {
 	{"-io",	    ARG_IO,  1, NULL, offsetof(break_contig_arg, io)},
-	{"-contig", ARG_INT, 1, NULL, offsetof(break_contig_arg, contig)},
+	{"-contig", ARG_REC, 1, NULL, offsetof(break_contig_arg, contig)},
 	{"-pos",    ARG_INT, 1, NULL, offsetof(break_contig_arg, pos)},
 	{NULL,	 0,	  0, NULL, 0}
     };
@@ -1271,8 +1271,8 @@ tcl_disassemble_readings(ClientData clientData, Tcl_Interp *interp,
 {
     dis_reading_arg args;
     char **reads = NULL;
-    int *rnums, i, j;
-    int num_reads;
+    tg_rec *rnums;
+    int num_reads, i, j;
     cli_args a[] = {
 	{"-io",	      ARG_IO,  1, NULL, offsetof(dis_reading_arg, io)},
 	{"-readings", ARG_STR, 1, NULL, offsetof(dis_reading_arg, list)},
@@ -1294,7 +1294,7 @@ tcl_disassemble_readings(ClientData clientData, Tcl_Interp *interp,
     if (Tcl_SplitList(interp, args.list, &num_reads, &reads) != TCL_OK)
         return TCL_ERROR;
 
-    if (NULL == (rnums = (int *)xmalloc(num_reads * sizeof(int))))
+    if (NULL == (rnums = (tg_rec *)xmalloc(num_reads * sizeof(*rnums))))
         return TCL_ERROR;
 
     for (i = j = 0; i < num_reads; i++) {
@@ -1490,7 +1490,6 @@ tcl_import_reads(ClientData clientData,
 	{"-index_names",   ARG_INT, 1, "0",    offsetof(ir_arg, index_names)},
 	{"-merge_contigs", ARG_INT, 1, "-1",   offsetof(ir_arg, a.merge_contigs)},
 	{"-fast_mode",     ARG_INT, 1, "0",    offsetof(ir_arg, a.fast_mode)},
-	{"-reserved_seqs", ARG_INT, 1, "0",    offsetof(ir_arg, a.reserved_seqs)},
 	{"-repad",         ARG_INT, 1, "0",    offsetof(ir_arg, a.repad)},
 	{"-pair_reads",    ARG_INT, 1, "1",    offsetof(ir_arg, a.pair_reads)},
 	{"-store_unmapped",ARG_INT, 1, "0",    offsetof(ir_arg, a.store_unmapped)},
@@ -1559,7 +1558,7 @@ tcl_import_reads(ClientData clientData,
     /* Add to our sequence name B+Tree */
     if (args.a.tmp) {
 	char *name;
-	int rec;
+	tg_rec rec;
 
 	vmessage("Sorting sequence name index\n");
 	bttmp_file_sort(args.a.tmp);
@@ -1610,10 +1609,11 @@ int tcl_consensus_valid_range(ClientData clientData, Tcl_Interp *interp,
     res = Tcl_NewListObj(0, NULL);
     for (i = 0; i < rargc; i++) {
 	Tcl_Obj *l = Tcl_NewListObj(0, NULL);
-	int crec = rargv[i].contig, start, end;
+	tg_rec crec = rargv[i].contig;
+	int start, end;
 
 	consensus_valid_range(args.io, crec, &start, &end);
-	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(crec));
+	Tcl_ListObjAppendElement(interp, l, Tcl_NewWideIntObj(crec));
 	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(start));
 	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(end));
 	Tcl_ListObjAppendElement(interp, res, l);

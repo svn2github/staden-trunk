@@ -25,3 +25,5 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+init_exp.o: $(SRCROOT)/Misc/os.h
+init_exp.o: $(PWD)/staden_config.h

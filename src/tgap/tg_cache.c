@@ -41,7 +41,7 @@ static int write_counts[100];
 
 /* The cache key - a combination of record number and data type. */
 typedef struct {
-    GRec rec;
+    tg_rec rec;
     char type;
 } cache_key_t;
 
@@ -54,7 +54,7 @@ typedef struct {
  * Returns ptr on success.
  *         NULL on failure
  */
-cached_item *cache_new(int type, GRec rec, GView v,
+cached_item *cache_new(int type, tg_rec rec, GView v,
 		       HacheItem *hi, size_t e_len) {
     cached_item *ci;
 
@@ -439,7 +439,7 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
  * Ensure key is initialised correctly, making sure that it is blank
  * in the gaps between structure elements and the padding at the end.
  */
-cache_key_t construct_key(GRec rec, int type) {
+cache_key_t construct_key(tg_rec rec, int type) {
     cache_key_t k;
     memset(&k, 0, sizeof(k));
     k.rec = rec;
@@ -656,7 +656,7 @@ int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
  * Returns locked object pointer on success
  *        NULL for failure.
  */
-void *cache_lock(GapIO *io, int type, GRec rec, int mode) {
+void *cache_lock(GapIO *io, int type, tg_rec rec, int mode) {
     cache_key_t key = construct_key(rec, type);
     cached_item *ci;
     HacheTable *h = io->cache;
@@ -1094,9 +1094,10 @@ int cache_updated(GapIO *io) {
  * Returns a pointer to the object on success
  *         NULL on failure
  */
-void *cache_search(GapIO *io, int type, GRec rec) {
+void *cache_search(GapIO *io, int type, tg_rec rec) {
     int sub_rec = 0;
-    int otype = type, orec = rec;
+    int otype = type;
+    tg_rec orec = rec;
     cache_key_t k;
     HacheItem *hi;
     
@@ -1171,9 +1172,10 @@ void *cache_search(GapIO *io, int type, GRec rec) {
  * Returns a pointer to the object on success
  *         NULL on failure or if not in cache
  */
-void *cache_search_no_load(GapIO *io, int type, GRec rec) {
+void *cache_search_no_load(GapIO *io, int type, tg_rec rec) {
     int sub_rec = 0;
-    int otype = type, orec = rec;
+    int otype = type;
+    tg_rec orec = rec;
     cache_key_t k;
     HacheItem *hi;
     
@@ -1222,11 +1224,11 @@ void *cache_search_no_load(GapIO *io, int type, GRec rec) {
 /*
  * Creates a new seq_t item.
  */
-static int cache_item_init_seq(GapIO *io, void *from, int rec) {
+static int cache_item_init_seq(GapIO *io, void *from, tg_rec rec) {
     seq_t *s, *f = (seq_t *)from;
     int slen = sizeof(seq_t) + sequence_extra_len(f);
     cached_item *ci = cache_new(GT_Seq, 0, 0, NULL, slen);
-    int brec, sub_rec;
+    tg_rec brec, sub_rec;
     seq_block_t *b;
 
     sub_rec = rec & (SEQ_BLOCK_SZ-1);
@@ -1240,16 +1242,16 @@ static int cache_item_init_seq(GapIO *io, void *from, int rec) {
 
     s->rec = rec;
     s->block = b;
-    s->idx = sub_rec;
+    s->idx = (int)sub_rec;
     b->seq[sub_rec] = s;
     b->est_size += 15 + sequence_extra_len(s);
 
     return 0;
 }
 
-static int cache_item_create_seq(GapIO *io, void *from) {
-    static int brec = 0;
-    static int sub_rec = SEQ_BLOCK_SZ;
+static tg_rec cache_item_create_seq(GapIO *io, void *from) {
+    static tg_rec brec = 0;
+    static tg_rec sub_rec = SEQ_BLOCK_SZ;
     seq_block_t *b;
 
     if (sub_rec == SEQ_BLOCK_SZ) {
@@ -1268,15 +1270,14 @@ static int cache_item_create_seq(GapIO *io, void *from) {
     }
 
     b = cache_rw(io, b);
-    b->rec[sub_rec] = (brec << SEQ_BLOCK_BITS) + sub_rec;
 
     /* FIXME: move this somewhere sensible */
     if (from) {
-	if (cache_item_init_seq(io, from, b->rec[sub_rec]))
+	if (cache_item_init_seq(io, from, (brec << SEQ_BLOCK_BITS) + sub_rec))
 	    return -1;
     }
 
-    assert(brec < (1<<(31-SEQ_BLOCK_BITS)));
+    //assert(brec < (1<<(31-SEQ_BLOCK_BITS)));
 
     return (brec << SEQ_BLOCK_BITS) + sub_rec++;
 }
@@ -1284,16 +1285,16 @@ static int cache_item_create_seq(GapIO *io, void *from) {
 /*
  * Creates a new seq_t item.
  */
-static int cache_item_init_anno_ele(GapIO *io, void *from, int rec) {
+static int cache_item_init_anno_ele(GapIO *io, void *from, tg_rec rec) {
     anno_ele_t *t, *f = (anno_ele_t *)from;
     int slen = sizeof(anno_ele_t) +
 	(f->comment ? strlen(f->comment) : 0)+1;
     cached_item *ci = cache_new(GT_AnnoEle, 0, 0, NULL, slen);
-    int brec, sub_rec;
+    tg_rec brec, sub_rec;
     anno_ele_block_t *b;
 
-    sub_rec = rec & (SEQ_BLOCK_SZ-1);
-    brec    = rec >> SEQ_BLOCK_BITS;
+    sub_rec = rec & (ANNO_ELE_BLOCK_SZ-1);
+    brec    = rec >> ANNO_ELE_BLOCK_BITS;
 
     t = (anno_ele_t *)&ci->data;
     *t = *f;
@@ -1304,16 +1305,16 @@ static int cache_item_init_anno_ele(GapIO *io, void *from, int rec) {
 
     t->rec = (brec << ANNO_ELE_BLOCK_BITS) + sub_rec;
     t->block = b;
-    t->idx = sub_rec;
+    t->idx = (int)sub_rec;
     b->ae[sub_rec] = t;
     b->est_size += strlen(t->comment) + 10;
 
     return 0;
 }
 
-static int cache_item_create_anno_ele(GapIO *io, void *from) {
-    static int brec = 0;
-    static int sub_rec = ANNO_ELE_BLOCK_SZ;
+static tg_rec cache_item_create_anno_ele(GapIO *io, void *from) {
+    static tg_rec brec = 0;
+    static tg_rec sub_rec = ANNO_ELE_BLOCK_SZ;
     anno_ele_block_t *b;
 
     if (sub_rec == ANNO_ELE_BLOCK_SZ) {
@@ -1331,14 +1332,13 @@ static int cache_item_create_anno_ele(GapIO *io, void *from) {
     }
 
     b = cache_rw(io, b);
-    b->rec[sub_rec] = (brec << ANNO_ELE_BLOCK_BITS) + sub_rec;
 
     if (from) {
-	if (cache_item_init_anno_ele(io, from, b->rec[sub_rec]))
+	if (cache_item_init_anno_ele(io, from, (brec << ANNO_ELE_BLOCK_BITS) + sub_rec))
 	    return -1;
     }
 
-    assert(brec < (1<<(31-ANNO_ELE_BLOCK_BITS)));
+    //assert(brec < (1<<(31-ANNO_ELE_BLOCK_BITS)));
 
     return (brec << ANNO_ELE_BLOCK_BITS) + sub_rec++;
 }
@@ -1346,7 +1346,7 @@ static int cache_item_create_anno_ele(GapIO *io, void *from) {
 /*
  * Creates a new item.
  */
-int cache_item_create(GapIO *io, int type, void *from) {
+tg_rec cache_item_create(GapIO *io, int type, void *from) {
     switch (type) {
     case GT_Seq:
 	return cache_item_create_seq(io, from);
@@ -1367,7 +1367,7 @@ int cache_item_create(GapIO *io, int type, void *from) {
  * Removes an item from one of the blocked structures.
  * The caller is expected to deallocate the seq/anno record too.
  */
-int cache_item_remove(GapIO *io, int type, int rec) {
+int cache_item_remove(GapIO *io, int type, tg_rec rec) {
     int sub_rec = 0;
     seq_block_t *sb;
     anno_ele_block_t *ab;
@@ -1404,7 +1404,7 @@ int cache_item_remove(GapIO *io, int type, int rec) {
  * from == NULL. This allows us to pre-allocate a record number and then
  * initialise it once we know the full details.
  */
-int cache_item_init(GapIO *io, int type, void *from, int rec) {
+int cache_item_init(GapIO *io, int type, void *from, tg_rec rec) {
     switch (type) {
     case GT_Seq:
 	return cache_item_init_seq(io, from, rec);
@@ -1500,9 +1500,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	case GT_SeqBlock: {
 	    int i;
 	    /* Duplicate our arrays */
-	    seq_block_t *ob = (seq_block_t *)&ci->data;
 	    seq_block_t *b = (seq_block_t *)&ci_new->data;
-	    memcpy(b->rec, ob->rec, SEQ_BLOCK_SZ * sizeof(*b->rec));
 
 	    /*
 	     * When duplicating a seq_block we know that we're in a child
@@ -1583,9 +1581,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	case GT_AnnoEleBlock: {
 	    int i;
 	    /* Duplicate our arrays */
-	    anno_ele_block_t *ob = (anno_ele_block_t *)&ci->data;
 	    anno_ele_block_t *b = (anno_ele_block_t *)&ci_new->data;
-	    memcpy(b->rec, ob->rec, ANNO_ELE_BLOCK_SZ * sizeof(*b->rec));
 
 	    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
 		b->ae[i] = NULL;
@@ -1717,7 +1713,7 @@ void *cache_rw(GapIO *io, void *data) {
     /* Ensure it's locked RW */
     if (mi->lock_mode < G_LOCK_RW) {
 	if (-1 == cache_upgrade(io, mi, G_LOCK_RW)) {
-	    fprintf(stderr, "lock denied for rec %d\n", mi->rec);
+	    fprintf(stderr, "lock denied for rec %"PRIrec"\n", mi->rec);
 	    return NULL;
 	}
     }
@@ -1756,7 +1752,7 @@ int cache_deallocate(GapIO *io, void *data) {
  * As above, but destroys a type/record instead of a cache object we
  * have a pointer to.
  */
-int cache_rec_deallocate(GapIO *io, int type, int rec) {
+int cache_rec_deallocate(GapIO *io, int type, tg_rec rec) {
     void *v = cache_search(io, type, rec);
     cached_item *ci;
 
@@ -1764,7 +1760,7 @@ int cache_rec_deallocate(GapIO *io, int type, int rec) {
 	/* Need write access to remove a record */
 	if (ci->lock_mode < G_LOCK_RW) {
 	    if (-1 == cache_upgrade(io, ci, G_LOCK_RW)) {
-		fprintf(stderr, "lock denied for rec %d\n", ci->rec);
+		fprintf(stderr, "lock denied for rec %"PRIrec"\n", ci->rec);
 		return -1;
 	    }
 	}

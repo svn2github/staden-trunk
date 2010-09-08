@@ -25,5 +25,9 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+conf.o: $(SRCROOT)/Misc/os.h
+conf.o: $(PWD)/staden_config.h
 conf.o: $(SRCROOT)/eba/conf.h
+qual.o: $(SRCROOT)/Misc/os.h
+qual.o: $(PWD)/staden_config.h
 qual.o: $(SRCROOT)/eba/conf.h

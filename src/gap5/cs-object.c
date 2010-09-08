@@ -257,7 +257,7 @@ int obj_get_next(mobj_repeat *mobj) {
  * 'r' isn't always a mobj_repeat, but sometimes a mobj_template or
  * mobj_fij. For the time being though these are all equivalent.
  */
-void csmatch_join_to(GapIO *io, int contig, reg_join *j, mobj_repeat *r,
+void csmatch_join_to(GapIO *io, tg_rec contig, reg_join *j, mobj_repeat *r,
 		     HTablePtr T[], char *cs_plot) {
     int i;
     /*
@@ -265,13 +265,13 @@ void csmatch_join_to(GapIO *io, int contig, reg_join *j, mobj_repeat *r,
        contig, j->contig, j->offset);
        */
     for (i = 0; i < r->num_match; i++) {
-	if (abs(r->match[i].c1) == contig) {
+	if (ABS(r->match[i].c1) == contig) {
 	    r->match[i].pos1 += j->offset;
 	    r->match[i].c1 = r->match[i].c1 > 0
 		? j->contig : -j->contig;
 	}
 
-	if (abs(r->match[i].c2) == contig) {
+	if (ABS(r->match[i].c2) == contig) {
 	    r->match[i].pos2 += j->offset;
 	    r->match[i].c2 = r->match[i].c2 > 0
 		? j->contig : -j->contig;
@@ -301,7 +301,7 @@ void csmatch_join_to(GapIO *io, int contig, reg_join *j, mobj_repeat *r,
 /*
  * Handle a REG_COMPLEMENT request for match objects
  */
-void csmatch_complement(GapIO *io, int contig, mobj_repeat *r,
+void csmatch_complement(GapIO *io, tg_rec contig, mobj_repeat *r,
 			HTablePtr T[], char *cs_plot) {
     int n, i;
     int ustart, uend;
@@ -314,13 +314,13 @@ void csmatch_complement(GapIO *io, int contig, mobj_repeat *r,
 
     n = r->num_match;
     for (i = 0; i < n; i++) {
-	if (abs(r->match[i].c1) == contig) {
+	if (ABS(r->match[i].c1) == contig) {
 	    r->match[i].pos1 = ustart + uend - (r->match[i].pos1 +
 						r->match[i].length - 1);
 	    r->match[i].c1 = -r->match[i].c1;
 	}
 
-	if (abs(r->match[i].c2) == contig) {
+	if (ABS(r->match[i].c2) == contig) {
 	    r->match[i].pos2 = ustart + uend - (r->match[i].pos2 +
 						r->match[i].length - 1);
 	    r->match[i].c2 = -r->match[i].c2;
@@ -362,7 +362,7 @@ void csmatch_configure(GapIO *io, char *cs_plot, mobj_repeat *r) {
 void csmatch_remove(GapIO *io, char *cs_plot,
 		    mobj_repeat *reg_dat,
 		    HTablePtr T[]) {
-    int c;
+    //    int c;
 
     /* Delete from the canvas and hash table */
     DeleteRepeats(GetInterp(), reg_dat, cs_plot, T);
@@ -371,8 +371,9 @@ void csmatch_remove(GapIO *io, char *cs_plot,
      * Remove from the registration lists.
      * Loop through all contigs for time being.
      */
-    for (c = 1; c <= NumContigs(io); c++)
-	contig_deregister(io, c, reg_dat->reg_func, reg_dat);
+    //    for (c = 1; c <= NumContigs(io); c++)
+    //	contig_deregister(io, c, reg_dat->reg_func, reg_dat);
+    contig_deregister(io, 0, reg_dat->reg_func, reg_dat);
 
     /*
      * Pop down configuration window if visible
@@ -500,16 +501,16 @@ void csmatch_hide(Tcl_Interp *interp, char *cs_plot, mobj_repeat *r,
 /*
  * Handle a REG_NUMBER_CHANGE request for match objects
  */
-void csmatch_renumber(GapIO *io, int old_contig, int new_contig,
+void csmatch_renumber(GapIO *io, tg_rec old_contig, tg_rec new_contig,
 		      mobj_repeat *r, HTablePtr T[], char *cs_plot) {
     int n, i;
 
     n = r->num_match;
     for (i = 0; i < n; i++) {
-	if (abs(r->match[i].c1) == old_contig)
+	if (ABS(r->match[i].c1) == old_contig)
 	    r->match[i].c1 = r->match[i].c1 > 0 ? new_contig : -new_contig;
 
-	if (abs(r->match[i].c2) == old_contig)
+	if (ABS(r->match[i].c2) == old_contig)
 	    r->match[i].c2 = r->match[i].c2 > 0 ? new_contig : -new_contig;
     }
 
@@ -535,13 +536,13 @@ void csmatch_replot(GapIO *io, mobj_repeat *r, HTablePtr T[], char *cs_plot) {
 /*
  * Handle a REG_DELETE request for match objects
  */
-void csmatch_contig_delete(GapIO *io, mobj_repeat *r, int contig,
+void csmatch_contig_delete(GapIO *io, mobj_repeat *r, tg_rec contig,
 			   char *cs_plot, HTablePtr T[]) {
     int i, n;
 
     n = r->num_match;
     for (i = 0; i < n; i++) {
-	if (abs(r->match[i].c1) == contig || abs(r->match[i].c2 == contig)) {
+	if (ABS(r->match[i].c1) == contig || ABS(r->match[i].c2 == contig)) {
 	    /*
 	     * Found a match to be removed - we copy the last match in our
 	     * array to this match and decrement our num_match count

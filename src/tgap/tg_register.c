@@ -246,11 +246,11 @@ void broadcast_event(GapIO *io, HacheTable *h,
  * We need to be particularly careful here about what happens if the
  * callback function triggers new items to be registered or removed.
  */
-static void send_event(GapIO *io, HacheTable *h, int contig,
+static void send_event(GapIO *io, HacheTable *h, tg_rec contig,
 		       reg_data *msg, int except) {
     HacheItem *hi;
     int bitcheck = msg->job;
-    int ocontig = contig;
+    tg_rec ocontig = contig;
 
     if (!h)
 	return;
@@ -318,8 +318,8 @@ static void send_event(GapIO *io, HacheTable *h, int contig,
  *
  * Returns 0 on success, and -1 for error. 
  */
-int contig_register(GapIO *io, int contig,
-		    void (*func)(GapIO *io, int contig, void *fdata,
+int contig_register(GapIO *io, tg_rec contig,
+		    void (*func)(GapIO *io, tg_rec contig, void *fdata,
 				 reg_data *jdata),
 		    void *fdata,
 		    int id, int flags, int type) {
@@ -400,8 +400,8 @@ int contig_register(GapIO *io, int contig,
  * Returns 0 for success
  *        -1 for failure
  */
-int contig_deregister(GapIO *io, int contig,
-		      void (*func)(GapIO *io, int contig, void *fdata,
+int contig_deregister(GapIO *io, tg_rec contig,
+		      void (*func)(GapIO *io, tg_rec contig, void *fdata,
 				   reg_data *jdata),
 		      void *fdata) {
     contig_reg_t *r = NULL;
@@ -469,7 +469,7 @@ int contig_deregister(GapIO *io, int contig,
  * Call this just after we delete it. It sends out notification events and
  * updated the contig_reg hash tables.
  */
-void contig_register_delete(GapIO *io, int contig) {
+void contig_register_delete(GapIO *io, tg_rec contig) {
     HacheTable *h = io_contig_reg(io);
     HacheItem *hi;
     reg_delete rd;
@@ -506,7 +506,7 @@ static int cursor_id = 0;
  * Returns the head of the cursor list for 'contig'
  *         NULL if none found.
  */
-static cursor_t *io_cursor_get(GapIO *io, int contig) {
+static cursor_t *io_cursor_get(GapIO *io, tg_rec contig) {
     HacheItem *hi;
     HacheTable *h = io_cursor_reg(io);
 
@@ -521,7 +521,7 @@ static cursor_t *io_cursor_get(GapIO *io, int contig) {
 }
 
 /* Sets the cursor list to 'gc' */
-static void io_cursor_set(GapIO *io, int contig, cursor_t *gc) {
+static void io_cursor_set(GapIO *io, tg_rec contig, cursor_t *gc) {
     
     /* Remove old incase gc == NULL or we have an old anyway */
     HacheTableRemove(io_cursor_reg(io), (char *)&contig, sizeof(contig), 0);
@@ -544,7 +544,8 @@ static void io_cursor_set(GapIO *io, int contig, cursor_t *gc) {
  * user at any one time.
  * Returns the cursor pointer, or NULL for failure.
  */
-cursor_t *create_contig_cursor(GapIO *io, int contig, int private, int sent_by)
+cursor_t *create_contig_cursor(GapIO *io, tg_rec contig, int private,
+			       int sent_by)
 {
     cursor_t *gc, *gcend;
     reg_cursor_notify cn;
@@ -610,7 +611,7 @@ cursor_t *create_contig_cursor(GapIO *io, int contig, int private, int sent_by)
  * id of -1 implies use the first cursor in this contig.
  *
  */
-cursor_t *find_contig_cursor(GapIO *io, int contig, int id)
+cursor_t *find_contig_cursor(GapIO *io, tg_rec contig, int id)
 {
     cursor_t *gc;
 
@@ -631,10 +632,10 @@ cursor_t *find_contig_cursor(GapIO *io, int contig, int id)
  * being destroyed (abspos = -1), or to say that the reference count
  * (and possible private status) have changed.
  */
-void delete_contig_cursor(GapIO *io, int contig, int id, int private)
+void delete_contig_cursor(GapIO *io, tg_rec contig, int id, int private)
 {
     cursor_t *gc, *gcp;
-    int c = contig;
+    tg_rec c = contig;
     reg_cursor_notify cn;
 
     if (!(gc = find_contig_cursor(io, c, id)))
@@ -686,7 +687,7 @@ void delete_contig_cursor(GapIO *io, int contig, int id, int private)
  * Contig 0 is a special registration list for windows that want to track
  * all contigs, so we always duplicate data there too.
  */
-void contig_notify(GapIO *io, int contig, reg_data *jdata) {
+void contig_notify(GapIO *io, tg_rec contig, reg_data *jdata) {
     while (io->base)
 	io = io->base;
 
@@ -695,7 +696,7 @@ void contig_notify(GapIO *io, int contig, reg_data *jdata) {
 	send_event(io, io_contig_reg(io), -contig, jdata, -1);
 }
 
-void contig_notify_except(GapIO *io, int contig, reg_data *jdata, int id) {
+void contig_notify_except(GapIO *io, tg_rec contig, reg_data *jdata, int id) {
     while (io->base)
 	io = io->base;
 
@@ -717,7 +718,7 @@ void contig_notify_except(GapIO *io, int contig, reg_data *jdata, int id) {
  *
  * Returns 0 for success, and -1 for error.
  */
-int contig_register_join(GapIO *io, int cfrom, int cto) {
+int contig_register_join(GapIO *io, tg_rec cfrom, tg_rec cto) {
     HacheTable *h = io_contig_reg(io);
     HacheItem *hif, *hit;
     contig_reg_t *rf, *rt;
@@ -744,7 +745,7 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
 
 	if (!hit) {
 	    /* Id not found, so move hif to new contig */
-	    if (!HacheTableRehash(h, hif, (char *)&cto, sizeof(cto))) {
+	    if (HacheTableRehash(h, hif, (char *)&cto, sizeof(cto)) == -1) {
 		fprintf(stderr, "Failed to rehash hi=%p\n", hif);
 	    }
 	} else {
@@ -773,7 +774,8 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
 	    gc->pos += offset;
 	    gc->abspos = gc->pos;
 	} else {
-	    int cnum, pos;
+	    tg_rec cnum;
+	    int pos;
 	    sequence_get_position(io, gc->seq, &cnum, &pos, NULL, NULL);
 	    gc->abspos = pos + gc->pos;
 	}
@@ -802,7 +804,7 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
  * Returns contig_reg_t* on success
  *         NULL on failure
  */
-contig_reg_t *get_reg_by_contig_id(GapIO *io, int contig, int id,
+contig_reg_t *get_reg_by_contig_id(GapIO *io, tg_rec contig, int id,
 				   HacheItem **start_from) {
     HacheItem *hi;
     HacheTable *h;
@@ -1039,7 +1041,7 @@ int type_notify(GapIO *io, int type, reg_data *jdata) {
  *
  * We return only the first data for id found, or 0 if none found.
  */
-int type_to_result(GapIO *io, int type, int contig) {
+int type_to_result(GapIO *io, int type, tg_rec contig) {
     int nres;
     contig_reg_t **res = get_reg_by_type(io, type, &nres);
     int id = -1;
@@ -1059,7 +1061,7 @@ int type_to_result(GapIO *io, int type, int contig) {
  *-----------------------------------------------------------------------------
  */
 
-void busy_dialog(GapIO *io, int contig) {
+void busy_dialog(GapIO *io, tg_rec contig) {
     char buf[1024];
 
     sprintf(buf, "tk_messageBox \
@@ -1079,7 +1081,7 @@ void busy_dialog(GapIO *io, int contig) {
  *
  * Returns 0 for success and -1 for failure.
  */
-int contig_lock_write(GapIO *io, int contig) {
+int contig_lock_write(GapIO *io, tg_rec contig) {
     reg_get_lock lg;
     reg_set_lock ls;
 

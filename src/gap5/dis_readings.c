@@ -10,6 +10,7 @@
 
 #include "dis_readings.h"
 #include "misc.h"
+#include "break_contig.h"
 
 /*-----------------------------------------------------------------------------
  * Databse checking code.
@@ -26,17 +27,17 @@
 //static FILE *errfp = stderr;
 static FILE *errfp = NULL;;
 
-static int check_contig_bins_r(GapIO *io, int brec, int ptype, int prec) {
+static int check_contig_bins_r(GapIO *io, tg_rec brec, int ptype, tg_rec prec){
     bin_index_t *b;
-    int copy_c0, copy_c1, copy_nseq;
-    int i, ns, nseq;
+    tg_rec copy_c0, copy_c1;
+    int copy_nseq, i, ns, nseq;
 
     /* Check prec/ptype */
     b = cache_search(io, GT_Bin, brec);
 
     if (b->parent != prec || b->parent_type != ptype) {
-	fprintf(errfp, "ERROR: bin parent record/type mismatch for bin %d : "
-		"parent = %d/%d type = %d/%d\n",
+	fprintf(errfp, "ERROR: bin parent record/type mismatch for bin %"
+		PRIrec" : parent = %"PRIrec"/%"PRIrec" type = %d/%d\n",
 		brec, b->parent, prec, b->parent_type, ptype);
 	abort();
 	return -1;
@@ -72,7 +73,7 @@ static int check_contig_bins_r(GapIO *io, int brec, int ptype, int prec) {
     }
 
     if (ns != copy_nseq) {
-	fprintf(errfp, "ERROR: nseq mismatch for bin %d : %d/%d\n",
+	fprintf(errfp, "ERROR: nseq mismatch for bin %"PRIrec" : %d/%d\n",
 		brec, ns, copy_nseq);
 	abort();
 	return -1;
@@ -91,7 +92,7 @@ int check_contig_bins(GapIO *io) {
 	return 0;
 
     for (i = 0; i < io->db->Ncontigs; i++) {
-	int crec = arr(GCardinal, io->contig_order, i);
+	tg_rec crec = arr(tg_rec, io->contig_order, i);
 	contig_t *c = cache_search(io, GT_Contig, crec);
 	//printf("Check contig %d root %d\n", crec, c->bin);
 	if (c->bin) {
@@ -106,11 +107,11 @@ int check_contig_bins(GapIO *io) {
 }
 
 /* Singular of above */
-int check_contig_bin(GapIO *io, int crec) {
+int check_contig_bin(GapIO *io, tg_rec crec) {
     contig_t *c = cache_search(io, GT_Contig, crec);
     errfp = stdout;
 
-    printf("Check contig %d root %d\n", crec, c->bin);
+    printf("Check contig %"PRIrec" root %"PRIrec"\n", crec, c->bin);
     if (c->bin) {
 	if (check_contig_bins_r(io, c->bin, GT_Contig, crec) == -1)
 	    return -1;
@@ -126,10 +127,10 @@ int check_contig_bin(GapIO *io, int crec) {
  */
 
 typedef struct {
-    int contig;
+    tg_rec contig;
     int start;
     int end;
-    int rec;          /* sequence record */
+    tg_rec rec;       /* sequence record */
     range_t rng;      /* rng in original bin */
     rangec_t *anno;   /* Annotation ranges */
     int n_anno;
@@ -161,11 +162,11 @@ typedef struct {
  * Returns 0 on success
  *        -1 on failure
  */
-static int unlink_read(GapIO *io, int rec, r_pos_t *pos, int remove) {
+static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
     contig_t *c;
     bin_index_t *bin;
     seq_t *seq;
-    int brec;
+    tg_rec brec;
     int i, j;
 
     //printf("%soving record #%d\n", remove ? "Rem" : "M", rec);
@@ -252,7 +253,7 @@ static int unlink_read(GapIO *io, int rec, r_pos_t *pos, int remove) {
     return 0;
 }
 
-void bin_destroy_recurse(GapIO *io, int rec) {
+void bin_destroy_recurse(GapIO *io, tg_rec rec) {
     bin_index_t *bin = cache_search(io, GT_Bin,rec);
 
     cache_incr(io, bin);
@@ -267,7 +268,7 @@ void bin_destroy_recurse(GapIO *io, int rec) {
  * Looks for contig gaps between start..end in contig and if it finds them,
  * breaking the contig in two.
  */
-static int remove_contig_holes(GapIO *io, int contig, int start, int end,
+static int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 			       int empty_contigs_only) {
     contig_t *c;
     bin_index_t *bin;
@@ -275,7 +276,7 @@ static int remove_contig_holes(GapIO *io, int contig, int start, int end,
     rangec_t *r;
     int last;
 
-    printf("Finding contig holes in contig %d between %d..%d\n",
+    printf("Finding contig holes in contig %"PRIrec" between %d..%d\n",
 	   contig, start, end);
 
 
@@ -401,7 +402,8 @@ static int pos_sort_end(const void *vp1, const void *vp2) {
  */
 static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
 		     int remove_holes) {
-    int i, start, end, contig;
+    int i, start, end;
+    tg_rec contig;
 
     if (npos == 0)
 	return 0;
@@ -458,11 +460,14 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
     /* Remove from relevant seq_block array */
     cache_item_remove(io, GT_Seq, pos->rec);
 
-    /* Deallocate seq struct itself */
+    /* Remove from sequence name btree index */
     if (!(s = cache_search(io, GT_Seq, pos->rec)))
 	return -1;
     cache_incr(io, s);
     
+    io->iface->seq.index_del(io->dbh, s->name);
+
+    /* Deallocate seq struct itself */
     if (!(b = cache_search(io, GT_Bin, s->bin))) {
 	cache_decr(io, s);
 	return -1;
@@ -507,7 +512,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
     contig_t *c_old, *c_new;
     char name[8192];
     static int last_count=1;
-    static int last_contig=-1;
+    static tg_rec last_contig=-1;
     int offset;
     bin_index_t *bin;
     int old_comp;
@@ -607,7 +612,8 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
  * based on overlaps. Calls create_contig_from to do the grunt work.
  */
 static int move_reads(GapIO *io, r_pos_t *pos, int npos) {
-    int i, start, end, contig;
+    int i, start, end;
+    tg_rec contig;
     int i_start, err = 0;
 
     if (!npos)
@@ -663,7 +669,7 @@ static int move_reads(GapIO *io, r_pos_t *pos, int npos) {
  * Returns 0 on success
  *        -1 on failure
  */
-int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
+int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
                          int remove_holes, int duplicate_tags)
 {
     int i,err = 0;
@@ -714,7 +720,7 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 	hd.i = 0;
 	HacheTableAdd(dup_hash, (char *)&rnums[i], sizeof(rnums[i]), hd, &n);
 	if (!n) {
-	    printf("Skipping duplicate entry %d\n", rnums[i]);
+	    printf("Skipping duplicate entry %"PRIrec"\n", rnums[i]);
 	    pos[i].contig = 0;
 	    continue;
 	}

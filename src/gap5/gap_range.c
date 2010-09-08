@@ -29,8 +29,8 @@ static void grange_cmd_delete(ClientData clientData) {
 			
 
 typedef struct {
-     GapIO *io;
-     int cnum;
+    GapIO *io;
+    tg_rec cnum;
 } grange_arg;
 
 /* forward declaration */
@@ -44,7 +44,7 @@ static int tcl_range(ClientData clientData, Tcl_Interp *interp,
     grange_arg args;
     cli_args a[] = {
 	{"-io",     ARG_IO,  1, NULL, offsetof(grange_arg, io)},
-	{"-cnum",   ARG_INT, 1, NULL, offsetof(grange_arg, cnum)},
+	{"-cnum",   ARG_REC, 1, NULL, offsetof(grange_arg, cnum)},
 	{NULL,	    0,	     0, NULL, 0}
     };
 
@@ -273,7 +273,7 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		if (gr->new_filter.accuracy && !(r->pair_start || r->pair_end)) {
 		    /* Pair was off-screen, so get the results */
 		    seq_t *s;
-		    int crec;
+		    tg_rec crec;
 		    
 		    sequence_get_position(gr->io, r->pair_rec, &crec, &r->pair_start, &r->pair_end, NULL);
 		    s = (seq_t *)cache_search(gr->io, GT_Seq, r->pair_rec);

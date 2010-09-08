@@ -31,7 +31,7 @@ HTablePtr csplot_hash[HASHMODULUS] = {0};
  * Prototypes
  *---------------------------------------------------------------------------
  */
-static void cs_callback(GapIO *io, int contig, void *fdata,
+static void cs_callback(GapIO *io, tg_rec contig, void *fdata,
 			reg_data *jdata);
 int
 DoClipping(GapIO *io,                                                  /* in */
@@ -39,7 +39,7 @@ DoClipping(GapIO *io,                                                  /* in */
 
 int
 find_left_position(GapIO *io,
-		   GCardinal *order,
+		   tg_rec *order,
 		   double wx);
 
 /*
@@ -83,8 +83,8 @@ PlotRepeats(GapIO *io,
 	* printf("match pos1 %d pos2 %d length %d \n",
 	* match->pos1, match->pos2, match->length);
 	*/
-	pos1 = find_position_in_DB(io, abs(new_match.c1), new_match.pos1);
-	pos2 = find_position_in_DB(io, abs(new_match.c2), new_match.pos2);
+	pos1 = find_position_in_DB(io, ABS(new_match.c1), new_match.pos1);
+	pos2 = find_position_in_DB(io, ABS(new_match.c2), new_match.pos2);
 
 	/* convert contig code back to sense ie -ve contig number means
 	 * match on opposite strand
@@ -133,15 +133,15 @@ PlotRepeats(GapIO *io,
 	if (pos1 > pos2){
 	    sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
 		    " %"PRId64" -width %d -capstyle round "
-		    "-tags {num_%d num_%d %s S} -fill %s",
-		    cs->window, x1, y1, x2, y2, width, abs(new_match.c1),
-		    abs(new_match.c2), tag_id, colour);
+		    "-tags {num_%"PRIrec" num_%"PRIrec" %s S} -fill %s",
+		    cs->window, x1, y1, x2, y2, width, ABS(new_match.c1),
+		    ABS(new_match.c2), tag_id, colour);
 	} else {
 	    sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
 		    " %"PRId64" -width %d -capstyle round "
-		    "-tags \"num_%d num_%d %s S\" -fill %s",
-		    cs->window, y1, x1, y2, x2, width, abs(new_match.c1),
-		    abs(new_match.c2), tag_id, colour);
+		    "-tags \"num_%"PRIrec" num_%"PRIrec" %s S\" -fill %s",
+		    cs->window, y1, x1, y2, x2, width, ABS(new_match.c1),
+		    ABS(new_match.c2), tag_id, colour);
 	}
 	/* printf("cmd %s \n", cmd); */
 	if (TCL_ERROR == Tcl_Eval(GetInterp(), cmd))
@@ -196,39 +196,39 @@ display_contigs(Tcl_Interp *interp,                                   /* in */
 #ifdef DEBUG
     printf("num contigs %d \n", NumContigs(io));
     for (i = 0; i < NumContigs(io); i++ ){
-	printf("i %d %d\n", i, arr(GCardinal, io->contig_order, i));
+	printf("i %d %d\n", i, arr(tg_rec, io->contig_order, i));
     }
 #endif
 
     for (i = 0; i < NumContigs(io); i++){
-	if (arr(GCardinal, io->contig_order, i) > 0) {
-	    int clen = io_clength(io, arr(GCardinal, io->contig_order, i));
+	if (arr(tg_rec, io->contig_order, i) > 0) {
+	    int clen = io_clength(io, arr(tg_rec, io->contig_order, i));
 	    if (strcmp(direction, "horizontal")==0){
 		x1 = x2;
 		x2 = clen + x2;
 		/*
 		  printf("i %d num %d length %d x1 %d x2 %d \n",
-		  i, arr(GCardinal, io->contig_order, i), clen,
+		  i, arr(tg_rec, io->contig_order, i), clen,
 		  x1, x2);
 		*/
 		/* contig line */
 		sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
 			" %"PRId64" -fill %s -width %d "
-			"-tags {contig c_%d num_%d hl_%d S}\n",
+			"-tags {contig c_%d num_%"PRIrec" hl_%"PRIrec" S}\n",
 			win_name, x1, offset, x2, offset,
 			colour, width, i+1,
-			arr(GCardinal, io->contig_order, i),
-			arr(GCardinal, io->contig_order, i));
+			arr(tg_rec, io->contig_order, i),
+			arr(tg_rec, io->contig_order, i));
 	    } else if (strcmp(direction, "vertical")==0){
 		y1 = y2;
 		y2 = clen + y2;
 		sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
 			" %"PRId64" -fill %s -width %d "
-			"-tags {contig c_%d num_%d hl_%d S}\n",
+			"-tags {contig c_%d num_%"PRIrec" hl_%"PRIrec" S}\n",
 			win_name, offset, y1, offset, y2,
 			colour, width, i+1,
-			arr(GCardinal, io->contig_order, i),
-			arr(GCardinal, io->contig_order, i));
+			arr(tg_rec, io->contig_order, i),
+			arr(tg_rec, io->contig_order, i));
 	    }
 	    /* printf("cmd %s \n", cmd); */
 	    Tcl_Eval(interp, cmd);
@@ -270,7 +270,7 @@ update_contig_order(Tcl_Interp *interp,
 		    int num_contigs,
 		    int64_t cx)
 {
-    GCardinal *order = ArrayBase(GCardinal, io->contig_order);
+    tg_rec *order = ArrayBase(tg_rec, io->contig_order);
     obj_cs *cs;
     int i, j;
     double wx, wy;
@@ -348,12 +348,12 @@ update_contig_order(Tcl_Interp *interp,
 
 void
 ReOrder(GapIO *io,
-	GCardinal *order,
+	tg_rec *order,
 	int c_from,
 	int c_to)
 {
     int length;
-    GCardinal tmp;
+    tg_rec tmp;
     tmp = order[c_from];
 
 #ifdef DEBUG
@@ -369,13 +369,13 @@ ReOrder(GapIO *io,
     /* if shifting array elements up */
     if (c_from < c_to) {
 	c_to = c_to - 1;
-	length = abs(c_from - c_to);
+	length = ABS(c_from - c_to);
 	memmove(&order[c_from], &order[c_from]+1,
 		length * sizeof(int));
     }
     /* if shifting array elements down */
     else {
-	length = abs(c_from - c_to);
+	length = ABS(c_from - c_to);
 	memmove(&order[c_to]+1, &order[c_to], length * sizeof(int));
     }
     order[c_to] = tmp;
@@ -395,12 +395,12 @@ ReOrder(GapIO *io,
  */
 int
 find_left_position(GapIO *io,
-		   GCardinal *order,
+		   tg_rec *order,
 		   double wx)
 {
 
     int num_contigs;
-    int cur_contig;
+    tg_rec cur_contig;
     int64_t length, prev_len;
     int nearest_contig;
     int i;
@@ -415,8 +415,8 @@ find_left_position(GapIO *io,
 	prev_len = length;
 	length += ABS(io_clength(io, cur_contig));
 #ifdef DEBUG
-	printf("i %d length %d prev %d curcontig %d wx %f\n", i, length,
-	       prev_len, cur_contig, wx);
+	printf("i %d length %d prev %d curcontig %"PRIrec" wx %f\n",
+	       i, length, prev_len, cur_contig, wx);
 #endif
 	if (wx < length) {
 	    if (ABS(wx - prev_len) >= ABS(wx - length)) {
@@ -434,10 +434,10 @@ find_left_position(GapIO *io,
 /* determines the position of a base in terms of the entire database */
 int
 find_position_in_DB(GapIO *io,
-		    int c_num,
+		    tg_rec c_num,
 		    int64_t position)
 {
-    GCardinal *order = ArrayBase(GCardinal, io->contig_order);
+    tg_rec *order = ArrayBase(tg_rec, io->contig_order);
     int i;
     int64_t cur_length = 0;
     int64_t cur_contig;
@@ -468,8 +468,8 @@ CSLocalCursor(GapIO *io,
     int64_t offset = 0;
     int64_t prev_offset = 0;
     int num_contigs;
-    GCardinal *order = ArrayBase(GCardinal, io->contig_order);
-    int cur_contig;
+    tg_rec *order = ArrayBase(tg_rec, io->contig_order);
+    tg_rec cur_contig;
 
     num_contigs = NumContigs(io);
     /*
@@ -519,7 +519,7 @@ DoClipping(GapIO *io,                                                  /* in */
     }
 
     /* clip the length of contig 1 if necessary */
-    c1_len = io_clength(io, abs(match->c1));
+    c1_len = io_clength(io, ABS(match->c1));
     if (match->pos1 + match->length > c1_len) {
 	length[2] = c1_len - match->pos1;
 	if (length[2] < 1) length[2] = 1;
@@ -528,7 +528,7 @@ DoClipping(GapIO *io,                                                  /* in */
     }
 
     /* clip the length of contig 1 if necessary */
-    c2_len = io_clength(io, abs(match->c2));
+    c2_len = io_clength(io, ABS(match->c2));
     if (match->pos2 + match->length > c2_len) {
 	length[3] = c2_len - match->pos2;
 	if (length[3] < 1) length[3] = 1;
@@ -943,9 +943,10 @@ static void cs_shutdown(GapIO *io, obj_cs *cs) {
      * need to deregister AFTER done type_notify requests because they need
      * the cs data structure which is deleted during deregistration
      */
-    for (i = 1; i <= NumContigs(io); i++) {
-	contig_deregister(io, i, cs_callback, (void *)cs);
-    }
+    //    for (i = 1; i <= NumContigs(io); i++) {
+    //	contig_deregister(io, i, cs_callback, (void *)cs);
+    //    }
+    contig_deregister(io, 0, cs_callback, (void *)cs);
 
     if (TCL_ERROR == Tcl_VarEval(GetInterp(), "DeleteContigSelector ",
 				 cs->frame, NULL)) {
@@ -967,7 +968,7 @@ static void cs_shutdown(GapIO *io, obj_cs *cs) {
 }
 
 void
-cs_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
+cs_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
     char cmd[1024];
     obj_cs *cs = (obj_cs *)fdata;
 

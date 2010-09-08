@@ -501,14 +501,14 @@ static void fifo_queue_swap(fifo_queue_t *f, fifo_t *a, fifo_t *b) {
  */
 static char *false_name(GapIO *io, seq_t *s, int suffix, int *name_len) {
     static char false_name[1024];
-    int p = sequence_get_pair(io, s);
+    tg_rec p = sequence_get_pair(io, s);
 
     if (suffix)
-	sprintf(false_name, "seq_%d%s",
+	sprintf(false_name, "seq_%"PRIrec"%s",
 		s->rec < p ? p : s->rec,
 		s->rec < p ? ".f" : ".r");
     else
-	sprintf(false_name, "seq_%d",
+	sprintf(false_name, "seq_%"PRIrec,
 		s->rec < p ? p : s->rec);
 
     if (name_len)
@@ -537,14 +537,14 @@ static int export_header_sam(GapIO *io, FILE *fp,
 
     /* Libraries - well read-groups in SAM. */
     for (i = 0; i < io->db->Nlibraries; i++) {
-	int lrec = arr(GCardinal, io->library, i);
+	tg_rec lrec = arr(tg_rec, io->library, i);
 	library_t *lib = cache_search(io, GT_Library, lrec);
 	if (lib->name) {
 	    fprintf(fp, "@RG\tID:%s\tSM:%s\tLB:%s\n",
 		    lib->name, "unknown", lib->name);
 	} else {
 	    char buf[100];
-	    sprintf(buf, "rg#%d", lib->rec);
+	    sprintf(buf, "rg#%"PRIrec, lib->rec);
 	    fprintf(fp, "@RG\tID:SM:%s\t%s\tLB:%s\n",
 		    buf, "unknown", buf);
 	}
@@ -559,8 +559,8 @@ static int export_header_sam(GapIO *io, FILE *fp,
  *
  * We use Zs:Z:type|pos|len|comment and Zc:Z: for these.
  */
-static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
-			  int fixmates, int crec, contig_t *c, int offset) {
+static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
+			   int fixmates, tg_rec crec, contig_t *c, int offset){
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec), *sorig = s;
     int len = s->len < 0 ? -s->len : s->len, olen = len;
 
@@ -570,7 +570,7 @@ static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     int iend, isize;
     char *mate_ref;
     library_t *lib = NULL;
-    int last_lrec = -1;
+    tg_rec last_lrec = -1;
     int mqual;
     char *cigar_tmp;
     char rg_buf[1024], *aux_ptr;
@@ -627,7 +627,7 @@ static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	tname = false_name(io, s, 0, &tname_len);
 
     if (cp = strchr(s->name, '/'))
-	tname_len = cp-s->name;
+	tname_len = (int)(cp-s->name);
 
 
 
@@ -775,7 +775,8 @@ static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
     /*--- Compute insert sizes */
     if (fixmates && fi->r.pair_rec) {
-	int other_c, other_st, other_en, other_dir, comp;
+	tg_rec other_c;
+	int other_st, other_en, other_dir, comp;
 	seq_t *pair_s;
 	range_t pair_r;
 
@@ -856,7 +857,7 @@ static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	if (lib->name)
 	    sprintf(rg_buf, "\tRG:Z:%s", lib->name);
 	else
-	    sprintf(rg_buf, "\tRG:Z:rg#%d", lib->rec);
+	    sprintf(rg_buf, "\tRG:Z:rg#%"PRIrec, lib->rec);
 
 	dstring_append(ds, rg_buf);
     } else {
@@ -929,7 +930,7 @@ static int sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 }
 
 static int export_contig_sam(GapIO *io, FILE *fp,
-			     int crec, int start, int end,
+			     tg_rec crec, int start, int end,
 			     int fixmates) {
     contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
 						  start, end,
@@ -1033,7 +1034,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 
 /* #define FASTQ_COMPLEMENTED */
 static int export_contig_fastq(GapIO *io, FILE *fp,
-			       int crec, int start, int end) {
+			       tg_rec crec, int start, int end) {
     contig_iterator *ci = contig_iter_new(io, crec, 0, CITER_FIRST,
 					  start, end);
     rangec_t *r;
@@ -1093,7 +1094,7 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
 }
 
 static int export_contig_fasta(GapIO *io, FILE *fp,
-			       int crec, int start, int end) {
+			       tg_rec crec, int start, int end) {
     contig_iterator *ci = contig_iter_new(io, crec, 0, CITER_FIRST,
 					  start, end);
     rangec_t *r;
@@ -1226,7 +1227,7 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
 }
 
 static int export_contig_baf(GapIO *io, FILE *fp,
-			     int crec, int start, int end) {
+			     tg_rec crec, int start, int end) {
     contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
 						  start, end,
 						  GRANGE_FLAG_ISANY);
@@ -1315,7 +1316,7 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	name[s->name_len] = 0;
 	/* Best guess - not sure what else we can do atm. */
 	if ((cp = strchr(name, '.')) == NULL) {
-	    sprintf(name+strlen(name), ".%d", s->rec);
+	    sprintf(name+strlen(name), ".%"PRIrec, s->rec);
 	}
     } else {
 	name = false_name(io, s, 1, NULL);
@@ -1425,7 +1426,7 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 }
 
 static int export_contig_caf(GapIO *io, FILE *fp,
-			     int crec, int start, int end) {
+			     tg_rec crec, int start, int end) {
     contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
 						  start, end,
 						  GRANGE_FLAG_ISANY);
@@ -1547,7 +1548,7 @@ static int export_header_ace(GapIO *io, FILE *fp,
 
 /* NB: Ignores start and end */
 static int export_contig_ace(GapIO *io, FILE *fp,
-			     int crec, int start, int end) {
+			     tg_rec crec, int start, int end) {
     contig_iterator *ci;
     rangec_t *r;
     int qalloc = 0;
@@ -1785,7 +1786,7 @@ static int export_header_tags_gff(GapIO *io, FILE *fp,
  *        -1 on failure
  */
 static int export_tags_gff(GapIO *io, FILE *fp,
-			   int crec, int start, int end,
+			   tg_rec crec, int start, int end,
 			   int consensus, int unpadded) {
     contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
 						  start, end,

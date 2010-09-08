@@ -57,7 +57,7 @@ typedef struct obj_match_t {
     struct mobj_repeat_t *data;
 
     int inum;
-    int c1, c2;
+    tg_rec c1, c2;
     int pos1, pos2;
     int length;
     int flags;
@@ -87,7 +87,7 @@ typedef struct obj_read_pair_t {
     struct mobj_repeat_t *data;
 
     int inum;
-    int c1, c2;
+    tg_rec c1, c2;
     int pos1, pos2;
     int length;
     int flags;
@@ -112,7 +112,7 @@ typedef struct obj_fij_t {
     struct mobj_fij_t *data;
 
     int inum;
-    int c1, c2;
+    tg_rec c1, c2;
     int pos1, pos2;
     int length;
     int flags;
@@ -162,7 +162,7 @@ typedef struct mobj_repeat_t {
 
     GapIO *io;
     int match_type;
-    void (*reg_func)(GapIO *io, int contig, void *fdata,
+    void (*reg_func)(GapIO *io, tg_rec contig, void *fdata,
 		     reg_data *jdata);
 } mobj_repeat, mobj_template, mobj_find_oligo;
 
@@ -178,7 +178,7 @@ typedef struct mobj_fij_t {
 
     GapIO *io;
     int match_type;
-    void (*reg_func)(GapIO *io, int contig, void *fdata,
+    void (*reg_func)(GapIO *io, tg_rec contig, void *fdata,
 		     reg_data *jdata);
 } mobj_fij;
 
@@ -195,7 +195,7 @@ typedef struct mobj_checkass_t {
     GapIO *io;
 
     int match_type;
-    void (*reg_func)(GapIO *io, int contig, void *fdata,
+    void (*reg_func)(GapIO *io, tg_rec contig, void *fdata,
 		     reg_data *jdata);
 
     /* Private to mobj_checkass only */
@@ -238,9 +238,9 @@ void obj_reveal(Tcl_Interp *interp, char *csplot, obj_match *obj,
 void obj_remove(Tcl_Interp *interp, char *cs_plot, obj_match *obj,
 		mobj_repeat *r, HTablePtr T[]);
 
-void csmatch_join_to(GapIO *io, int contig, reg_join *j, mobj_repeat *r,
+void csmatch_join_to(GapIO *io, tg_rec contig, reg_join *j, mobj_repeat *r,
 		     HTablePtr *T, char *cs_plot);
-void csmatch_complement(GapIO *io, int contig, mobj_repeat *r,
+void csmatch_complement(GapIO *io, tg_rec contig, mobj_repeat *r,
 			HTablePtr *T, char *cs_plot);
 void csmatch_configure(GapIO *io, char *cs_plot, mobj_repeat *r);
 
@@ -256,10 +256,10 @@ void csmatch_hide(Tcl_Interp *interp, char *cs_plot, mobj_repeat *r,
 		  HTablePtr T[]);
 
 
-void csmatch_renumber(GapIO *io, int old_contig, int new_contig,
+void csmatch_renumber(GapIO *io, tg_rec old_contig, tg_rec new_contig,
 		      mobj_repeat *r, HTablePtr T[], char *cs_plot);
 
-void csmatch_contig_delete(GapIO *io, mobj_repeat *r, int contig,
+void csmatch_contig_delete(GapIO *io, mobj_repeat *r, tg_rec contig,
 			   char *cs_plot, HTablePtr T[]);
 
 void csmatch_replot(GapIO *io, mobj_repeat *r, HTablePtr T[], char *cs_plot);

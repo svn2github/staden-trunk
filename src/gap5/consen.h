@@ -34,10 +34,10 @@
  ****************************************************************************/
 
 typedef struct contig_parms_ {
-    int contig_number;
+    tg_rec contig_number;
     int contig_start;
     int contig_end;
-    int contig_left_gel;
+    tg_rec contig_left_gel;
     int contig_left_extension;
     int contig_right_extension;
     int contig_start_offset;
@@ -96,7 +96,7 @@ void set_mask_lookup(void);
 
    <project_name.left_gelnumber-->
 */
-void add_contig_title(char *consensus, char *project_name, int left_gelnumber);
+void add_contig_title(char *consensus, char *project_name, tg_rec left_gelnumber);
 
 
 
@@ -219,7 +219,7 @@ int make_consensus( int task_mask, GapIO *io,
  */
 
 int find_contig_ends ( char *seq, int seq_len, 
-		       int *contig_ends, int *contig_numbers );
+		       int *contig_ends, tg_rec *contig_numbers );
 
 
 int end_of_good ( char *seq, 
