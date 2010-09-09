@@ -2239,7 +2239,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 static GRange *unpack_rng_array(int comp_mode, int fmt,
 				unsigned char *packed,
 				int packed_sz, int *nr) {
-    uint32_t i, off[6];
+    uint32_t i, off[6], i32;
     unsigned char *cp[6], *zpacked = NULL;
     GRange last, *r, *ls = &last, *lt = &last;
     size_t ssz;
@@ -2268,8 +2268,9 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
     for (i = 0; i < *nr; i++) {
 	r[i].y = 0;
 
-	if (fmt == 0)
-	    cp[2] += u72int(cp[2], (uint32_t *)&r[i].rec);
+	if (fmt == 0) {
+	    cp[2] += u72int(cp[2], &i32); r[i].rec = i32;
+	}
 	cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
 	if (r[i].flags & GRANGE_FLAG_UNUSED) {
 	    if (fmt != 0)
