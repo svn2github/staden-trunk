@@ -52,7 +52,8 @@ btree_node_t *btree_node_decode2(unsigned char *buf, int fmt);
 
 int btree_insert(btree_t *t, char *str, BTRec value);
 int btree_delete(btree_t *t, char *str);
-BTRec btree_search(btree_t *t, char *str);
+BTRec btree_search(btree_t *t, char *str, int prefix);
+BTRec *btree_search_all(btree_t *t, char *str, int prefix, int *nhits);
 
 /* Access methods to be supplied by whatever is calling the btree code */
 extern btree_node_t *btree_node_get(void *cd, BTRec r);

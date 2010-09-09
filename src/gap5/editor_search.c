@@ -226,19 +226,100 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
 
 int edview_search_name(edview *xx, int dir, int strand, char *value)
 {
-    tg_rec rec, cnum;
+    tg_rec rec, *rp, cnum, best_rec;
+    int best_pos;
+    int nr, i;
+    rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
+    int start, end;
+    contig_iterator *iter;
+
+    /* Find all hits matching this name */
+    rp = sequence_index_query_all(xx->io, value, 1, &nr);
+
+    /* Also get an position-based iterator */
+    if (dir) {
+	start    = xx->cursor_apos + 1;
+	end      = xx->contig->end;
+	ifunc    = contig_iter_next;
+	best_pos = end + 1;
+    } else {
+	start    = xx->contig->start;
+	end      = xx->cursor_apos - 1;
+	ifunc    = contig_iter_prev;
+	best_pos = start - 1;
+    }
+
+    iter = contig_iter_new_by_type(xx->io, xx->cnum, 1,
+				   dir == 1 ? CITER_FIRST : CITER_LAST,
+				   start-1, end+1, GRANGE_FLAG_ISSEQ);
+
+    /*
+     * The iterator also finds overlapping objects, not just ones beyond this
+     * point. That's fine if we're on the consensus as we probably want to
+     * jump to the first seq-name overlapping this point.
+     *
+     * However if we're on a sequence already, we want the first one
+     * after or before that sequence. So we skip along iterator until we're
+     * at the current record.
+     */
+    if (xx->cursor_type == GT_Seq) {
+	rangec_t *r;
+	while ((r = ifunc(xx->io, iter))) {
+	    if (r->rec == xx->cursor_rec)
+		break;
+	}
+    }
+				   
+
+    /* Alternate between the by-name and by-position scan */
+    best_rec = -1;
+    for (i = 0; i < nr; i++) {
+	int start, end;
+	rangec_t *r;
+
+	/* From name index */
+	rec = rp[i++];
+	sequence_get_position(xx->io, rec, &cnum, &start, &end, NULL);
+	if (cnum == xx->cnum) {
+	    if ((dir  && best_pos > start && start > xx->cursor_apos) ||
+		(!dir && best_pos < start && start < xx->cursor_apos)) {
+		best_pos = start;
+		best_rec = rec;
+	    }
+	}
+
+	/* From iterator */
+	if ((r = ifunc(xx->io, iter))) {
+	    seq_t *s;
+	    if (NULL == (s = cache_search(xx->io, GT_Seq, r->rec))) {
+		/* No match */
+		best_rec = -1;
+		break;
+	    }
+	    
+	    if (strncmp(s->name, value, strlen(value)) == 0) {
+		/* prefix match */
+		puts("Found by pos iterator");
+		best_rec = r->rec;
+		break;
+	    }
+	} else {
+	    /* End of contig - bail out early */
+	    best_rec = -1;
+	    break;
+	}
+    }
+
+    contig_iter_del(iter);
+    if (rp)
+	free(rp);
     
-    rec = sequence_index_query(xx->io, value);
-    if (rec <= 0)
-	return -1;
+    if (best_rec != -1) {
+	edSetCursorPos(xx, GT_Seq, best_rec, 0, 1);
+	return 0;
+    }
 
-    /* Is this sequence in this contig? */
-    sequence_get_position(xx->io, rec, &cnum, NULL, NULL, NULL);
-    if (cnum != xx->cnum)
-	return -1;
-
-    edSetCursorPos(xx, GT_Seq, rec, 0, 1);
-    return 0;
+    return -1;
 }
 
 int edview_search_tag_type(edview *xx, int dir, int strand, char *value) {

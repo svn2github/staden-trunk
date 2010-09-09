@@ -584,7 +584,16 @@ void complement_seq_t(seq_t *s) {
 }
 
 tg_rec sequence_index_query(GapIO *io, char *name) {
-    return io->iface->seq.index_query(io->dbh, name);
+    return io->iface->seq.index_query(io->dbh, name, 0);
+}
+
+tg_rec sequence_index_query_prefix(GapIO *io, char *prefix) {
+    return io->iface->seq.index_query(io->dbh, prefix, 1);
+}
+
+tg_rec *sequence_index_query_all(GapIO *io, char *name, int prefix,
+				 int *nrecs) {
+    return io->iface->seq.index_query_all(io->dbh, name, prefix, nrecs);
 }
 
 int sequence_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {

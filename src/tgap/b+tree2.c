@@ -258,14 +258,62 @@ int btree_insert(btree_t *t, char *str, BTRec value) {
     return btree_insert_key(t, n, ind, str, value);
 }
 
-BTRec btree_search(btree_t *t, char *str) {
+
+BTRec btree_search(btree_t *t, char *str, int prefix) {
     int ind;
     btree_node_t *n = btree_find_recurse(t, str, &ind);
 
-    if (!n || !n->keys[ind] || 0 != strcmp(n->keys[ind], str))
-	return -1;
+    if (prefix) {
+	if (!n || !n->keys[ind] || 0 != strncmp(n->keys[ind], str,strlen(str)))
+	    return -1;
+    } else {
+	if (!n || !n->keys[ind] || 0 != strcmp(n->keys[ind], str))
+	    return -1;
+    }
 
     return n->chld[ind];
+}
+
+BTRec *btree_search_all(btree_t *t, char *str, int prefix, int *nhits) {
+    int ind;
+    btree_node_t *n = btree_find_recurse(t, str, &ind);
+    BTRec *results = NULL;
+    size_t res_size = 0;
+    size_t res_alloc = 0;
+
+    if (!n || !n->keys[ind]) {
+	*nhits = 0;
+	return NULL;
+    }
+
+    /*
+     * n->keys[ind] is the first hit, or the nearest one preceeding it.
+     * We now iterate from here on.
+     */
+    do {
+	if (( prefix && strncmp(n->keys[ind], str, strlen(str)) == 0) ||
+	    (!prefix && strcmp(n->keys[ind], str) == 0)) {
+	    /* Store a match */
+	    if (res_size >= res_alloc) {
+		res_alloc = res_alloc ? res_alloc*2 : 16;
+		results = realloc(results, res_alloc * sizeof(*results));
+		if (!results)
+		    return NULL;
+	    }
+	    results[res_size++] = n->chld[ind];
+
+	    /* Increment to next potential one */
+	    if (++ind >= n->used) {
+		n = n->next ? btree_node_get(t->cd, n->next) : NULL;
+		ind = 0;
+	    }
+	} else {
+	    break;
+	}
+    } while (n);
+
+    *nhits = res_size;
+    return results;
 }
 
 /* Redistributes data between 'from' and 'to' evenly */
@@ -453,6 +501,7 @@ void btree_print(btree_t *t, btree_node_t *n, int depth) {
     INDENT; printf("Node %"PRIbtr", leaf=%d, parent %"PRIbtr
 		   ", next %"PRIbtr", used %d\n",
 		   n->rec, n->leaf, n->parent, n->next, n->used);
+    btree_inc_ref(t->cd, n);
     for (i = 0; i < n->used; i++) {
 	INDENT; printf("key %d = %s val %"PRIbtr"\n",
 		       i, n->keys[i] ? n->keys[i] : "-", n->chld[i]);
@@ -460,6 +509,7 @@ void btree_print(btree_t *t, btree_node_t *n, int depth) {
 	    btree_print(t, btree_node_get(t->cd, n->chld[i]), depth+2);
 	}
     }
+    btree_dec_ref(t->cd, n);
 }
 
 char *btree_check(btree_t *t, btree_node_t *n, char *pleaf) {
@@ -771,7 +821,7 @@ btree_node_t *btree_node_decode2(unsigned char *buf, int fmt) {
     }
     for (;i < BTREE_MAX; i++) {
 	n->keys[i] = NULL;
-	n->chld[i] = NULL;
+	n->chld[i] = 0;
     }
 
     return n;

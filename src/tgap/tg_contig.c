@@ -414,12 +414,16 @@ contig_t *contig_new(GapIO *io, char *name) {
  *         NULL on failure (not found)
  */
 contig_t *find_contig_by_name(GapIO *io, char *name) {
-    tg_rec rec = io->iface->contig.index_query(io->dbh, name);
+    tg_rec rec = io->iface->contig.index_query(io->dbh, name, 0);
     return rec > 0 ? (contig_t *)cache_search(io, GT_Contig, rec) : NULL;
 }
 
 tg_rec contig_index_query(GapIO *io, char *name) {
-    return io->iface->contig.index_query(io->dbh, name);
+    return io->iface->contig.index_query(io->dbh, name, 0);
+}
+
+tg_rec contig_index_query_prefix(GapIO *io, char *prefix) {
+    return io->iface->contig.index_query(io->dbh, prefix, 0);
 }
 
 int contig_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {

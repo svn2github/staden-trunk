@@ -83,14 +83,15 @@ typedef struct {
 
 typedef struct {
     STANDARD_IFACE
-    tg_rec (*index_query)(void *dbh, char *name);
+    tg_rec (*index_query)(void *dbh, char *name, int prefix);
     int  (*index_add)(void *dbh, char *name, tg_rec rec);
     int  (*index_del)(void *dbh, char *name);
 } io_contig;
 
 typedef struct {
     STANDARD_IFACE
-    tg_rec (*index_query)(void *dbh, char *name);
+    tg_rec (*index_query)(void *dbh, char *name, int prefix);
+    tg_rec *(*index_query_all)(void *dbh, char *name, int prefix, int *nrecs);
     int  (*index_add)(void *dbh, char *name, tg_rec rec);
     int  (*index_del)(void *dbh, char *name);
 } io_seq;
