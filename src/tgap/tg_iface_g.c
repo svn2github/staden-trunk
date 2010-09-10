@@ -2131,7 +2131,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 
     /* Pack the 6 structure elements to their own arrays */
     for (i = 0; i < 6; i++)
-	cp[i] = cp_orig[i] = malloc(nr * 5);
+	cp[i] = cp_orig[i] = malloc(nr * 10);
 
     for (i = 0; i < nr; i++) {
 	GRange r = rng[i];
