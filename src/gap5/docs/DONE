@@ -1,3 +1,7 @@
+*	BUG: Adjusting clip points of two adjacent seqs in editor
+        triggers assertion.
+	tg_cache.c:1484: 'ci->updated == 0 || ci->hi->ref_count > 0'
+
 *	Implement disassemble readings
 
 *	Further improvements to scrolling. We could store the Y

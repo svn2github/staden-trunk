@@ -1675,6 +1675,9 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    s->block = b;
 	    b->seq[s->idx] = s;
 
+	    /* Bump reference count of master again */
+	    HacheTableIncRef(ci_new->hi->h, ci_new->hi);
+
 	    break;
 	}
 
@@ -1698,6 +1701,10 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    e->comment = (char *)&e->data;
 	    e->block = b;
 	    b->ae[e->idx] = e;
+
+	    /* Bump reference count of master again */
+	    HacheTableIncRef(ci_new->hi->h, ci_new->hi);
+
 	    break;
 	}
 
