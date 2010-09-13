@@ -132,60 +132,6 @@ void free_dlist(void *dl) {
 
 /*
  *----------------------------------------------------------------------------
- * Fortran interfaces
- *----------------------------------------------------------------------------
- */
-
-/*
- * Get next reading (an interface to get_alist_item).
- */
-int gnread_(char *ITEM, f_implicit ITEM_l)
-{
-    char *citem;
-
-    if (NULL == (citem = get_active_list_item()))
-	return 1;
-
-    Cstr2Fstr(citem, ITEM, ITEM_l);
-
-    return 0;
-}
-
-/* fortran interface to add_to_list() */
-void *tolist_(char *name_p, char *info_p,
-	      f_implicit name_l, f_implicit info_l) {
-    char name[256], info[256];
-    static char *last = NULL;
-    static void *dl = NULL;
-
-    /* Init */
-    if (name_p == NULL && name_l != 0) {
-	dl = NULL;
-	last = NULL;
-	return NULL;
-    }
-
-    /* Return list */
-    if (name_p == NULL && name_l == 0) {
-	return dl;
-    }
-
-    if (last != name_p) {
-	last = name_p;
-
-	dl = alloc_dlist();
-    }
-
-    Fstr2Cstr(name_p, name_l, name, 255);
-    Fstr2Cstr(info_p, info_l, info, 255);
-
-    add_to_dlist(dl, info);
-
-    return NULL;
-}
-
-/*
- *----------------------------------------------------------------------------
  * Simple utility functions to combine routines
  *----------------------------------------------------------------------------
  */

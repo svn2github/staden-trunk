@@ -61,6 +61,4 @@ char *add_to_dlist(void *dl, char *item);
 void free_dlist(void *dl);
 char *read_dlist(void *dl);
 
-void *tolist_(char *, char *, int, int);
-
 #endif
