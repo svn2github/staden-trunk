@@ -485,6 +485,16 @@ static void _repaint_colour(Sheet *sw, int c, int r, int l, sheet_ink ink, char 
 		   );
      }
 
+     if (ink->sh & (sh_box | sh_box_alt)) {
+	 XDrawRectangle(sw->display,
+			p,
+			sw->sparegc,
+			(int) COL_TO_PIXEL(sw,c),
+			(int) ROW_TO_PIXEL(sw,r-1),
+			sw->font_width * l - 1,
+			sw->fm.linespace - 1);
+     }
+
      /* add ruler tick if required */
      if (ink->sh & sh_tick) {
 	 int i;
@@ -565,18 +575,28 @@ static void _repaint_monochrome(Sheet *sw, int c, int r, int l, sheet_ink ink, c
 		  );
     }
 
-   /* add ruler tick if required */
-   if (ink->sh & sh_tick) {
-       int i;
-       for (i = 0; i < l; i++) {
-	   XDrawRectangle(sw->display,
-			  sw->window,
-			  sw->sparegc,
-			  (int) COL_TO_PIXEL(sw,c+i) + COL_TO_PIXEL(sw,1)/2-1,
-			  (int) ROW_TO_BASELINE_PIXEL(sw,r)+1,
-			  1, 2);
-       }
-   }
+     if (ink->sh & (sh_box | sh_box_alt)) {
+	 XDrawRectangle(sw->display,
+			sw->window,
+			fg_gc,
+			(int) COL_TO_PIXEL(sw,c),
+			(int) ROW_TO_PIXEL(sw,r-1),
+			sw->font_width * l - 1,
+			sw->fm.linespace - 1);
+     }
+
+     /* add ruler tick if required */
+     if (ink->sh & sh_tick) {
+	 int i;
+	 for (i = 0; i < l; i++) {
+	     XDrawRectangle(sw->display,
+			    sw->window,
+			    sw->sparegc,
+			    (int) COL_TO_PIXEL(sw,c+i) + COL_TO_PIXEL(sw,1)/2-1,
+			    (int) ROW_TO_BASELINE_PIXEL(sw,r)+1,
+			    1, 2);
+	 }
+     }
 }
 
 

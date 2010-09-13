@@ -20,7 +20,9 @@ typedef int SheetHilight;
 #define sh_bold		(1L<<6)
 #define sh_italic	(1L<<7)
 #define sh_select       (1L<<8)
-#define sh_mask         ((1L<<9) - 1)
+#define sh_box          (1L<<9)
+#define sh_box_alt      (1L<<10) /* alternative to allow neighbouring boxes */
+#define sh_mask         ((1L<<11) - 1)
 
 /* hilight operations */
 #define HOP_MASK 0xF
