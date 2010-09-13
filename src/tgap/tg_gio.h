@@ -92,6 +92,7 @@ tg_rec cache_item_create(GapIO *io, int type, void *from);
 int cache_item_init(GapIO *io, int type, void *from, tg_rec rec);
 int cache_item_remove(GapIO *io, int type, tg_rec rec);
 int cache_rec_deallocate(GapIO *io, int type, tg_rec rec);
+int cache_exists(GapIO *io, int type, int rec);
 
 /* ------------------------------------------------------------------------- */
 /* And now the object specific defintions */

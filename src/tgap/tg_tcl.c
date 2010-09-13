@@ -137,7 +137,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_contig",  "get_sequence", "get_database", "get_anno_ele",
 	"contig_order","num_contigs",  "seq_name2rec", "child",
 	"get_library", "db_version",   "name",         "read_only",
-	"new_contig",  "new_sequence", "new_anno_ele",
+	"new_contig",  "new_sequence", "new_anno_ele", "rec_exists",
 	(char *)NULL,
     };
 
@@ -146,7 +146,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_CONTIG,    IO_SEQUENCE,    IO_DATABASE,    IO_ANNO_ELE,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
 	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
-	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE
+	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,   IO_REC_EXISTS
     };
 
     if (objc < 2) {
@@ -272,6 +272,25 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetObjResult(interp, iobj);
 	break;
     }
+
+    case IO_REC_EXISTS: {
+	int obj_type;
+	Tcl_WideInt obj_rec;
+
+	if (objc != 4) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s obj_type obj_rec\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &obj_type);
+	Tcl_GetWideIntFromObj(interp, objv[3], &obj_rec);
+
+	vTcl_SetResult(interp, "%d", cache_exists(io, obj_type, obj_rec));
+	break;
+    }
+	
     }
 
     return TCL_OK;

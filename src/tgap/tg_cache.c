@@ -1222,6 +1222,24 @@ void *cache_search_no_load(GapIO *io, int type, tg_rec rec) {
 
 
 /*
+ * Returns whether (type,rec) is a legal combination and exists.
+ * 1 = yes, 0 = no.
+ */
+int cache_exists(GapIO *io, int type, int rec) {
+    switch (type) {
+    case GT_Seq:
+	return io->iface->exists(io->dbh, GT_SeqBlock, rec >> SEQ_BLOCK_BITS);
+
+    case GT_AnnoEle:
+	return io->iface->exists(io->dbh, GT_AnnoEleBlock,
+				 rec >> ANNO_ELE_BLOCK_BITS);
+
+    default:
+	return io->iface->exists(io->dbh, type, rec);
+    }
+}
+
+/*
  * Creates a new seq_t item.
  */
 static int cache_item_init_seq(GapIO *io, void *from, tg_rec rec) {

@@ -139,6 +139,7 @@ typedef struct {
     int (*lock)(void *dbh);
     int (*unlock)(void *dbh);
     int (*setopt)(void *dbh, io_opt opt, int val);
+    int (*exists)(void *dbh, int type, tg_rec rec);
 
     /* The objects themselves */
     io_array          array; /* generic array */
