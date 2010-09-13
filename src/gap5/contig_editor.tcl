@@ -2764,7 +2764,6 @@ bind EdNames <<select>> {
 
     global EdNames_select
     set EdNames_select [UpdateReadingListItem "\#$rec" -1]
-    puts r=$EdNames_select
 }
 
 bind EdNames <<select-drag>> {
