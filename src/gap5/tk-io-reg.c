@@ -352,7 +352,7 @@ int tk_reg_notify_highlight(ClientData clientData, Tcl_Interp *interp,
     }
     r_num = get_gel_num(args.io, args.reading, is_name);
     if (r_num <= 0) {
-	verror(ERR_WARN, "reg_notify_hightlight", "Unknown reading '%s'",
+	verror(ERR_WARN, "reg_notify_highlight", "Unknown reading '%s'",
 	       args.reading);
 	return TCL_OK;
     }
@@ -1072,7 +1072,7 @@ int str2reg_data(Tcl_Interp *interp, GapIO *io,
 
 	cp->abspos = abspos;
 	cp->job = cjob_str2int(interp, reg_get_arg("job"));
-	cp->seq = atoi(reg_get_arg("seq"));
+	cp->seq = atorec(reg_get_arg("seq"));
 	cp->pos = atoi(reg_get_arg("pos"));
 	cp->sent_by = atoi(reg_get_arg("sent_by"));
 
@@ -1137,8 +1137,13 @@ int str2reg_data(Tcl_Interp *interp, GapIO *io,
 	}
 	break;
 
+    case REG_HIGHLIGHT_READ:
+	rd->highlight.seq = atorec(reg_get_arg("seq"));
+	rd->highlight.val = atoi(reg_get_arg("highlight"));
+	break;
+
     default:
-	verror(ERR_WARN, "str_reg2data: unsupported event type '%s'", type);
+	verror(ERR_WARN, "str2reg_data: unsupported event type '%s'", type);
 	return -1;
     }
 

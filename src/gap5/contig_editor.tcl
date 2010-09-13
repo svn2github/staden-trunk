@@ -411,9 +411,6 @@ proc contig_register_callback {ed type id args} {
 	}
 
 	HIGHLIGHT_READ {
-	    global NGList_read_hash
-	    parray NGList_read_hash
-
 	    $ed redraw
 	}
 	
@@ -865,6 +862,8 @@ proc editor_exit {w {get_lock 0}} {
 	global $ed
 	set id [set ${ed}(reg)]
 	contig_deregister -io [set ${w}(io_base)] -id $id
+	set id [set ${ed}(reg_all)]
+	contig_deregister -io [set ${w}(io_base)] -id $id
 	lappend detach [$ed contig_rec]
     }
 
@@ -1007,12 +1006,17 @@ proc editor_pane {top w above ind arg_array} {
     # Initialise with an IO and link name/seq panel together
     global $ed $edname
     set ${ed}(parent) $w
-    set ${ed}(top) $top
+    set ${ed}(top) $top 
     set ${ed}(reg) [contig_register \
 			-io $opt(io_base) \
 			-contig $opt(contig$ind) \
 			-command "contig_register_callback $ed" \
 			-flags [list ALL GENERIC CHILD_EDIT]]
+    set ${ed}(reg_all) [contig_register \
+			-io $opt(io_base) \
+			-contig 0 \
+			-command "contig_register_callback $ed" \
+			-flags [list HIGHLIGHT_READ]]
     $ed init $opt(io$ind) $opt(contig$ind) $opt(-reading$ind) $opt(-pos$ind) $w.name.sheet
 
     if {$ind == 2} {

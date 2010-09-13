@@ -938,7 +938,14 @@ proc InitListTrace { } {
 
     #update displays when list is changed eg editted or deleted
     trace variable NGList(readings) w "UpdateReadingDisplays"
-    trace variable NGList_read_hash wu "UpdateReadingDisplaysHash"
+
+    # While fun, tracing each independent set and unset within the array
+    # has the potential to spam events if we load an entire new list from 
+    # a file or hit the Clear button.
+    # So for now we just disable this feature until we can find an
+    # efficient route, if any exists.
+
+    #trace variable NGList_read_hash wu "UpdateReadingDisplaysHash"
 }
 
 #takes a list of contigs numbers created from the contig selector and toggles 
@@ -1127,6 +1134,12 @@ proc UpdateReadingDisplays {args} {
     set NGList(readings) [array names NGList_read_hash]
 
     contig_notify -io $io -type BUFFER_END -cnum 0 -args {}
+
+    # Send a catch-all notification to indicate that the reading list
+    # has changed, but not precisely what changed. This avoids an endless
+    # stream of events for windows that only just care about whether they
+    # should redraw.
+    contig_notify -io $io -type HIGHLIGHT_READ -cnum 0 -args {}
 }
 
 proc UpdateReadingDisplaysHash {var subvar op} {
