@@ -13,7 +13,8 @@ struct _edview;
 typedef struct {
 #   include "tkSheet_struct.h"
 
-    XColor *qual_bg[10];
+    XColor *qual_bg[10];  /* unhighlighted reads */
+    XColor *qual_bg2[10]; /* highlighted reads => different tint */
     XColor *qual_below;
     XColor *diff1_bg;
     XColor *diff2_bg;

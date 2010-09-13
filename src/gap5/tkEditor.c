@@ -88,6 +88,36 @@ static Tk_ConfigSpec configSpecs[] = {
 	 "-qualcolour9","qualColour9",	"Background",	"#d9d9d9",
 	 offset(qual_bg[9]),		0, NULL},
     {TK_CONFIG_COLOR,
+	 "-qualcolour0","selQualColour0",	"Background",	"#2929ff",
+	 offset(qual_bg2[0]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour1","selQualColour1",	"Background",	"#3939ff",
+	 offset(qual_bg2[1]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour2","selQualColour2",	"Background",	"#4949ff",
+	 offset(qual_bg2[2]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour3","selQualColour3",	"Background",	"#5959ff",
+	 offset(qual_bg2[3]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour4","selQualColour4",	"Background",	"#6969ff",
+	 offset(qual_bg2[4]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour5","selQualColour5",	"Background",	"#7979ff",
+	 offset(qual_bg2[5]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour6","selQualColour6",	"Background",	"#8989ff",
+	 offset(qual_bg2[6]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour7","selQualColour7",	"Background",	"#9999ff",
+	 offset(qual_bg2[7]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour8","selQualColour8",	"Background",	"#a9a9ff",
+	 offset(qual_bg2[8]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-qualcolour9","selQualColour9",	"Background",	"#b9b9ff",
+	 offset(qual_bg2[9]),		0, NULL},
+    {TK_CONFIG_COLOR,
 	 "-qual_fg","qualForeground",	"Foreground","#ff5050",
 	 offset(qual_below),		0, NULL},
     {TK_CONFIG_COLOR,
@@ -356,8 +386,10 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
      */
     TKSHEET(ed)->extensionData = (ClientData)ed;
     TKSHEET(ed)->extension = EditorSheetExtension;
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 10; i++) {
 	ed->qual_bg[i] = NULL;
+	ed->qual_bg2[i] = NULL;
+    }
     for (i = 0; i < 4; i++)
 	ed->edit_bg[i] = NULL;
     for (i = 0; i < 6; i++)

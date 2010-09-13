@@ -849,6 +849,26 @@ static int io_generic_info(void *dbh, GView v, GViewInfo *vi) {
     return g_view_info_(io->gdb, io->client, v, vi);
 }
 
+/*
+ * Returns 1 if the record / type combination is valid.
+ *         0 if not.
+ */
+static int io_rec_exists(void *dbh, int type, tg_rec rec) {
+    g_io *io = (g_io *)dbh;
+    GView v;
+    unsigned char buf;
+
+    /* Load from disk */
+    if (-1 == (v = lock(io, rec, G_LOCK_RO)))
+	return 0;
+    
+    buf = 0;
+    if (0 != g_read(dbh, v, &buf, 1))
+	return 0;
+
+    return buf == type ? 1 : 0;
+}
+
 /* ------------------------------------------------------------------------
  * The B+Tree cache methods
  *
@@ -4535,6 +4555,7 @@ static iface iface_g = {
     io_database_lock,
     io_database_unlock,
     io_database_setopt,
+    io_rec_exists,
 
     {
 	/* Generic array */

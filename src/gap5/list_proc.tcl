@@ -934,10 +934,11 @@ proc InitLists {} {
 }
 
 proc InitListTrace { } {
-    global NGList
+    global NGList NGList_read_hash
 
     #update displays when list is changed eg editted or deleted
     trace variable NGList(readings) w "UpdateReadingDisplays"
+    trace variable NGList_read_hash wu "UpdateReadingDisplaysHash"
 }
 
 #takes a list of contigs numbers created from the contig selector and toggles 
@@ -1062,9 +1063,8 @@ proc GetContigList { } {
 }
 
 proc InitReadingList { } {
-    global r_list
-
-    set r_list {}
+    global NGList_read_hash
+    array set NGList_read_hash ""
 
 }
 
@@ -1082,8 +1082,11 @@ proc UpdateReadingDisplays_enable {} {
 
 set NGList_urd 1
 
+# Converts from NGList(readings) text contents to NGList_read_hash.
+# This automatically generates reg_notify_highlight events for changes
+# to the hash.
 proc UpdateReadingDisplays {args} {
-    global NGList r_list io NGList_urd
+    global NGList io NGList_urd NGList_read_hash
 
     # Optimisation for when this gets triggered LOTS of times, eg
     # when adding many many items to the readings list.
@@ -1093,35 +1096,47 @@ proc UpdateReadingDisplays {args} {
 
     PruneReadingList
 
-    if {![info exists r_list]} {
-	set r_list $NGList(readings)
-    }
-
-    set h_list ""
-    #look for new readings
+    array set tmp ""
     foreach r_name $NGList(readings) {
-	if {[lsearch -exact $r_list $r_name] == -1} {
-	    if {[db_info get_read_num $io $r_name] != -1} {
-		lappend h_list "$r_name 1"
+	set tmp($r_name) 1
+    }
+
+    contig_notify -io $io -type BUFFER_START -cnum 0 -args {}
+
+    #look for new readings
+    foreach r_name [array names tmp] {
+	if {![info exists NGList_read_hash($r_name)]} {
+	    if {[regexp {^\#(\d+)} $r_name _ rec]} {
+		if {[$io rec_exists 18 $rec] == 0} {
+		    verror ERR_WARN UpdateReadingDisplays \
+			"Sequence $r_name is invalid"
+		    continue
+		}
 	    }
+	    set NGList_read_hash($r_name) ""
 	}
     }
+
     #look for deleted readings
-    foreach r_name $r_list {
-	if {[lsearch -exact $NGList(readings) $r_name ] == -1} {
-	    if {[db_info get_read_num $io $r_name] != -1} {
-	        lappend h_list "$r_name 0"
-	    }
+    foreach r_name [array names NGList_read_hash] {
+	if {![info exists tmp($r_name)]} {
+	    unset NGList_read_hash($r_name)
 	}
     }
 
-    foreach r $h_list {
-	reg_notify_highlight -io $io -reading [lindex $r 0] \
-		-highlight [lindex $r 1]
-	
-    }
-    set r_list $NGList(readings)
+    set NGList(readings) [array names NGList_read_hash]
 
+    contig_notify -io $io -type BUFFER_END -cnum 0 -args {}
+}
+
+proc UpdateReadingDisplaysHash {var subvar op} {
+    global io
+
+    if {$op == "w"} {
+	reg_notify_highlight -io $io -reading $subvar -highlight 1
+    } elseif {$op == "u"} {
+	reg_notify_highlight -io $io -reading $subvar -highlight 0
+    }
 }
 
 # Requires a global io variable
@@ -1145,17 +1160,45 @@ proc GetReadingList { } {
 
 #given a reading name and a highlight status, add or delete from list
 #called from contig editor
+#Returns 1 if item is selected, 0 if unselected
 proc UpdateReadingListItem { r_name highlight} {
-    global r_list NGList NGListTag
+    global r_list NGList NGListTag NGList_read_hash
 
-    if {$highlight} {
-	lappend NGList(readings) $r_name
+    if {$highlight == -1} {
+	# Toggle
+	if {[info exists NGList_read_hash($r_name)]} {
+	    unset NGList_read_hash($r_name)
+	    set r 0
+	} else {
+	    set NGList_read_hash($r_name) ""
+	    set r 1
+	}
     } else {
-	set r_list $NGList(readings)
-	set pos [lsearch -exact $r_list $r_name]
-	set r_list [lreplace $r_list $pos $pos]
-	ListCreate2 readings $r_list $NGListTag(readings)
+	if {$highlight == 1} {
+	    if {![info exists NGList_read_hash($r_name)]} {
+		set NGList_read_hash($r_name) ""
+	    }
+	    set r 1
+	} else {
+	    if {[info exists NGList_read_hash($r_name)]} {
+		unset NGList_read_hash($r_name)
+	    }
+	    set r 0
+	}
     }
+
+    ListCreate2 readings [array names NGList_read_hash] $NGListTag(readings)
+
+#    if {$highlight} {
+#	lappend NGList(readings) $r_name
+#    } else {
+#	set r_list $NGList(readings)
+#	set pos [lsearch -exact $r_list $r_name]
+#	set r_list [lreplace $r_list $pos $pos]
+#	ListCreate2 readings $r_list $NGListTag(readings)
+#    }
+
+    return $r
 }
 
 proc SetReadingList { list } {

@@ -1082,8 +1082,18 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
     }
 }
 
+/* Returns 1 if rec is in the global "readings" list, 0 if not */
+static int seq_in_readings_list(edview *xx, tg_rec rec) {
+    char srec[20];
+    
+    sprintf(srec, "#%"PRIrec, rec);
+    return Tcl_GetVar2(xx->interp,
+		       "NGList_read_hash",
+		       srec, TCL_GLOBAL_ONLY) ? 1 : 0;
+}
+
 static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
-    int i, j, k;
+    int i, j, k, box_alt;
 
     /*
     sheet_clear(&xx->ed->sw);
@@ -1122,6 +1132,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	}
 
 	/* Iterate through all sequences on this line */
+	box_alt = 0; /* alternating 0/1 */
 	while (i < nr && xx->r[i].y - xx->displayYPos <= j - xx->y_seq_start) {
 	    seq_t *s, *sorig;
 
@@ -1265,7 +1276,10 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    if (xx->refresh_flags & (ED_DISP_NAMES | ED_DISP_NAME)) {
 		int nl = s->name_len - xx->names_xPos;
 		int ncol = xx->names->sw.columns;
-	    
+		XColor **qual_bg = xx->ed->qual_bg;
+
+		box_alt ^= 1;
+
 		if (xx->ed->stack_mode) {
 		    int p  = r[i].start - xx->displayPos;
 		    int p2 = r[i].end   - xx->displayPos;
@@ -1280,12 +1294,19 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		    while (nline[p] != ' ')
 			p++;
 
+		    if (seq_in_readings_list(xx, s->rec)) {
+			int ptmp;
+			for (ptmp = p; ptmp < p2; ptmp++)
+			    nink[ptmp].sh |= box_alt ? sh_box : sh_box_alt;
+			qual_bg = xx->ed->qual_bg2;
+			bg = xx->ed->qual_bg2[9]->pixel;
+		    }
+
 		    if (xx->ed->display_mapping_quality) {
-			int qbin;
-			qbin = s->mapping_qual / 10;
+			int qbin = s->mapping_qual / 10;
 			if (qbin < 0) qbin = 0;
 			if (qbin > 9) qbin = 9;
-			bg = xx->ed->qual_bg[qbin]->pixel;
+			bg = qual_bg[qbin]->pixel;
 		    }
 
 		    nline[p] = dir;
@@ -1303,6 +1324,8 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		    }
 
 		} else {
+		    XColor **qual_bg = xx->ed->qual_bg;
+
 		    nline[0] = dir;
 		    if (nl > 0)
 			memcpy(&nline[1], s->name + xx->names_xPos, nl);
@@ -1312,18 +1335,27 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		    } else {
 			nink[0].bg = xx->ed->qual_bg[0]->pixel;
 		    }
+		    for (k = 1; k < ncol && k < 1024; k++) {
+			nink[k].sh = sh_default;
+		    }
+
+		    if (seq_in_readings_list(xx, s->rec)) {
+			qual_bg = xx->ed->qual_bg2;
+			for (k = 1; k < ncol && k < MAX_NAME_WIDTH; k++) {
+			    nink[k].sh |= sh_bg |
+				(box_alt ? sh_box : sh_box_alt);
+			    nink[k].bg = qual_bg[9]->pixel;
+			}
+		    }
+
 		    if (xx->ed->display_mapping_quality) {
-			int qbin;
-			qbin = s->mapping_qual / 10;
+			int qbin = s->mapping_qual / 10;
 			if (qbin < 0) qbin = 0;
 			if (qbin > 9) qbin = 9;
+
 			for (k = 1; k < ncol && k < MAX_NAME_WIDTH; k++) {
-			    nink[k].sh = sh_bg;
-			    nink[k].bg = xx->ed->qual_bg[qbin]->pixel;
-			}
-		    } else {
-			for (k = 1; k < ncol && k < 1024; k++) {
-			    nink[k].sh = sh_default;
+			    nink[k].sh |= sh_bg;
+			    nink[k].bg = qual_bg[qbin]->pixel;
 			}
 		    }
 		}

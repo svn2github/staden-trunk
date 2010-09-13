@@ -409,6 +409,13 @@ proc contig_register_callback {ed type id args} {
 	DEREGISTER {
 	    # nothing to do
 	}
+
+	HIGHLIGHT_READ {
+	    global NGList_read_hash
+	    parray NGList_read_hash
+
+	    $ed redraw
+	}
 	
 	default {
 	    puts "Event '$type $id $args' not handled"
@@ -2746,7 +2753,30 @@ bind Editor <Shift-Control-Key-Page_Up>   {%W xview scroll  -1000000 units}
 bind Editor <<select-drag>> {%W select to @%x; editor_select_scroll %W %x}
 bind Editor <<select-to>>   {%W select to @%x}
 bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
-bind EdNames <<select-drag>> {editor_name_select %W [%W get_number @%x @%y]}
+bind EdNames <2> {editor_name_select %W [%W get_number @%x @%y]}
+
+bind EdNames <<select>> {
+    set where [%W get_number @%x @%y]
+    if {$where == ""} return
+
+    foreach {type rec pos} $where break
+    if {$type != 18} return
+
+    global EdNames_select
+    set EdNames_select [UpdateReadingListItem "\#$rec" -1]
+    puts r=$EdNames_select
+}
+
+bind EdNames <<select-drag>> {
+    set where [%W get_number @%x @%y]
+    if {$where == ""} return
+
+    foreach {type rec pos} $where break
+    if {$type != 18} return
+
+    global EdNames_select
+    UpdateReadingListItem "\#$rec" $EdNames_select
+}
 
 # Searching
 bind Editor <<search>>		{create_search_win %W.search "%W search" 1}

@@ -1,3 +1,20 @@
+*	BUG: EdNames selection seems to have a rounding
+        error. Sometimes a single > with no ... isn't spotted when
+        clicking on it. Sometimes if the next sequence on the same
+        line is close it's considered to be a click of that sequence
+        instead.
+	** Check rounding in display is the same as the rounding in
+        click handling. **
+
+*	tg_index.c explicitly sets io->db->seq_name_index = 0 if we
+        don't do -t. Ideally we should simply not create it in the
+        first place, or better create it but ignore it.
+
+	The current solution causes problems if we tg_index -t foo.bam
+	followed by tg_index -a bar.bam. The second invocation will
+	zero the index previously created for foo.bam, but it won't
+	even deallocate the already created btree nodes.
+
 *	Fix CurContig var and SetContigGlobals func in tcl. This is
         all tied up with db_info longest_contig too (unimplemented).
 
