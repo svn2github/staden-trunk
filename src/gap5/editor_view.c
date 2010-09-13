@@ -1295,9 +1295,10 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 			p++;
 
 		    if (seq_in_readings_list(xx, s->rec)) {
-			int ptmp;
-			for (ptmp = p; ptmp < p2; ptmp++)
-			    nink[ptmp].sh |= box_alt ? sh_box : sh_box_alt;
+			int ptmp = p;
+			do {
+			    nink[ptmp++].sh |= box_alt ? sh_box : sh_box_alt;
+			} while (ptmp < p2);
 			qual_bg = xx->ed->qual_bg2;
 			bg = xx->ed->qual_bg2[9]->pixel;
 		    }
@@ -2504,6 +2505,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
     int i;
     int type = -1;
     int best_delta = INT_MAX;
+    char nline[MAX_NAME_WIDTH];
     //    int exact = (name && xx->ed->stack_mode) || !name;
 
     if (rec) *rec = -1;
@@ -2546,6 +2548,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 
     /* Inefficient, but just a copy from tk_redisplaySeqSequences() */
     i = edview_binary_search_y(xx->r, xx->nr, xx->displayYPos);
+    memset(nline, ' ', MAX_NAME_WIDTH);
     for (; i < xx->nr; i++) {
 	if ((xx->ed->hide_annos || seq_only || name) &&
 	    ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO))
@@ -2570,10 +2573,22 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 		p1 = p1 * (nc / xx->displayWidth);
 		if (p2 < 0) p2 = 0;
 		p2 = p2 * (nc / xx->displayWidth);
-		if (col >= p1 && col < p2)
+
+		while (p1 < nc && nline[p1] != ' ')
+		    p1++;
+
+		if (col >= p1 && (col < p2 || col == p1))
 		    delta = 0;
 		else
 		    delta = INT_MAX;
+
+		if (p2 > nc)
+		    p2 = nc;
+
+		do {
+		    nline[p1++] = '.';
+		} while (p1 < p2);
+
 	    } else {
 		/* In sequence display, or only 1 seq per line */
 		if (col + xx->displayPos < xx->r[i].start)

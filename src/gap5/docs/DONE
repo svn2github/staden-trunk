@@ -1,3 +1,11 @@
+*	BUG: EdNames selection seems to have a rounding
+        error. Sometimes a single > with no ... isn't spotted when
+        clicking on it. Sometimes if the next sequence on the same
+        line is close it's considered to be a click of that sequence
+        instead.
+	** Check rounding in display is the same as the rounding in
+        click handling. **
+
 *	BUG: Adjusting clip points of two adjacent seqs in editor
         triggers assertion.
 	tg_cache.c:1484: 'ci->updated == 0 || ci->hi->ref_count > 0'
