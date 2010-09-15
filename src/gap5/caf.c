@@ -17,6 +17,7 @@
 #include "tg_index_common.h"
 #include "hache_table.h"
 #include "zfio.h"
+#include "string_alloc.h"
 #include "caf.h"
 
 
@@ -28,7 +29,7 @@
 
 
 // index entry for file positions
-typedef struct caf_entry {
+typedef struct {
     char *name;
     int length;
     long pos;
@@ -36,14 +37,14 @@ typedef struct caf_entry {
 } caf_entry;
 
 // index list
-typedef struct caf_index {
+typedef struct {
     caf_entry *entry;
     long size;
     long alloc;
 } caf_index;
 
 // store for dna and quality data
-typedef struct seq_qual {
+typedef struct {
     char *seq;  // dna
     long s_len; // dna length;
     char *qual; // qual as bytes
@@ -51,14 +52,35 @@ typedef struct seq_qual {
 
 
 // store for annotations
-typedef struct anno_type {
+typedef struct {
     int  type;
     int  start;
     int  end;
     char *text;
 } anno_type;
 
+// types for node storage
+typedef struct {
+    long seq;
+    long dna;
+    long qua;
+} index_data;
 
+typedef struct caf_node_s {
+    char *prefix;
+    struct caf_node_s *children;
+    struct caf_node_s *sibling;
+    index_data *data;
+} caf_node;
+
+typedef struct {
+    pool_alloc_t   *data_pool; 
+    pool_alloc_t   *node_pool;
+    string_alloc_t *str_pool;
+} pools;
+
+typedef enum {IS_CONTIG, IS_SEQUENCE, IS_DNA, IS_QUALITY} entry_type;
+    
 
 // Next few functions are for string and file reading
 
@@ -244,6 +266,275 @@ static long get_line(char **line, long *length, zfp *fp) {
 }
 
 
+// following fuctions are part of the Patricia Tree/Trie implementation
+
+/*
+    test function to see what is in the entire tree
+*/
+void tree_walk(caf_node *caf, int depth) {
+    
+    fprintf(stderr, "<%d> ", depth);
+    
+    if (caf->prefix) {
+    	fprintf(stderr, "%s ", caf->prefix);
+    }
+    
+    if (caf->children) {
+    	caf_node *sib = caf->children;
+	depth++;
+	
+	while (sib) {
+	    tree_walk(sib, depth);
+	    sib = sib->sibling;
+	}
+    }
+    
+    fprintf(stderr, "|\n");
+    
+    return;
+}
+
+
+/*
+    match the incoming name to the node prefix
+*/
+static int match_prefix(char *name, int name_pos, char *prefix) {
+    int pos = 0;
+
+    if (prefix) {
+    	while ((name[name_pos + pos] != '\0') && (prefix[pos] != '\0') && (name[name_pos + pos] == prefix[pos])) {
+	    pos++;
+	}
+    }
+    
+    return pos;
+}
+
+
+/*
+    add a new node to the tree and return a pointer to the new node
+*/
+static caf_node *add_child_node(pools *pool, caf_node *caf, char *name) {
+    caf_node *node = NULL;
+    caf_node *sib;
+    
+    // first create new node
+        
+    node = pool_alloc(pool->node_pool);
+    
+    if (NULL == node) return NULL;
+        
+    node->prefix   = string_dup(pool->str_pool, name);
+    node->children = NULL;
+    node->data     = NULL;
+    node->sibling  = NULL;
+   
+    if (caf->children) {
+    	sib = caf->children;
+	
+	while (sib->sibling) {
+	    sib = sib->sibling;
+	}
+	
+	sib->sibling = node;
+
+    } else {
+    	caf->children = node;
+    }
+    
+    return node;
+}
+
+
+/*
+    add a caf node to the right place in the tree.  The most
+    complex function in the patricia tree.
+*/
+static int add_caf_node(pools *pool, caf_node **caf, char *name, int name_pos) {
+    caf_node *node = *caf;
+    
+    if (!(*caf)->prefix && !(*caf)->children) {
+    	// this is a special case, we're at the base node
+	node = add_child_node(pool, *caf, name);
+    } else {
+    	// see how much of the prefix matches
+    	int pos = match_prefix(name, name_pos, (*caf)->prefix);
+	
+	if ((*caf)->prefix && ((*caf)->prefix[pos] != '\0')) {
+	    if (name[name_pos + pos] == '\0') {
+	    	/* name is shorter than prefix, so create a new node
+		   for rest of prefix and add name here */
+		   
+		caf_node *children = (*caf)->children;   
+		(*caf)->children = NULL; 
+		  
+		node = add_child_node(pool, *caf, &((*caf)->prefix[pos]));
+		
+		(*caf)->prefix = string_dup(pool->str_pool, name + name_pos);		
+		node->data = (*caf)->data;
+		(*caf)->data = NULL;
+		node->children = children;
+		
+		// make node the same as caf for return value
+		node = *caf;		
+	    } else {
+		caf_node *children = (*caf)->children;
+		index_data *data = (*caf)->data;
+
+		(*caf)->children = NULL;
+		(*caf)->data = NULL;
+
+		/* node needs to be split
+		   pos should give us the differing character, so create a left
+		   node holding data from the current node and a new right node */
+		add_child_node(pool, *caf, (*caf)->prefix + pos);
+		node = add_child_node(pool, *caf, name + name_pos + pos);
+
+		// shorten the prefix to the right length, maybe deallocate memory later
+		(*caf)->prefix[pos] = '\0';
+
+		// copy the data to the new node left most node
+		(*caf)->children->data = data;
+		(*caf)->children->children = children;
+	    }
+	} else {
+	    // just need to add a new child
+	    node = add_child_node(pool, *caf, name + name_pos + pos);
+	}
+    }
+    
+    *caf = node;
+    
+    return 1; // need to put in error checks
+}
+
+
+/*
+    find the the correct node, optionally create one if it
+    does not exist.
+*/
+static int find_caf_node(pools *pool, caf_node **caf, char *name, int add) {
+    int found = 0;
+    int searching = 1;
+    int name_len = strlen(name);
+    int name_pos = 0;
+    caf_node *this_node = *caf;
+    
+    while (searching) {
+    	// if no children we're at a leaf node
+	if (!this_node->children) {
+	    // see if the rest of the name matches
+	    if (this_node->prefix) {
+	    	if (strcmp(name + name_pos, this_node->prefix) == 0) {
+	    	    found = 1;
+		}
+	    }
+	    
+	    searching = 0;
+	} else {
+	    int check_children = 1;
+	
+	    // check prefix first
+	    if (this_node->prefix) {
+	    	if (strncmp(name + name_pos, this_node->prefix, strlen(this_node->prefix)) != 0) {
+		    // doesn't match as far as it goes
+		    searching = 0;
+		    check_children = 0;
+		} else if (strcmp(name + name_pos, this_node->prefix) == 0) {
+		    // an exact match, we've found our node
+		    searching = 0;
+		    check_children = 0;
+		    found = 1;
+		}
+	    }
+	    
+	    if (check_children) {
+		int pos;
+
+		pos = match_prefix(name, name_pos, this_node->prefix);
+		searching = 0;
+
+		if ((name_pos) < name_len) {
+	    	    // search the children
+		    caf_node *child;
+
+    	    	    child = this_node->children;
+		    
+		    while (child) {
+			if (name[name_pos + pos] == child->prefix[0]) {
+		    	    this_node = child;
+		    	    name_pos += pos; // found so move name along
+			    searching = 1;
+			    break;
+			}
+			
+			child = child->sibling;
+		    }
+		}
+	    }
+	}
+    }
+    
+    if (!found && add) {
+    	if (add_caf_node(pool, &this_node, name, name_pos)) {
+	    found = 1;
+	}
+    }
+    
+    *caf = this_node;
+    
+    return found;
+}
+
+
+/*
+    add position data to the appropriate node, create a node if
+    it does not exist.
+*/
+static int add_pos_data(pools *pool, caf_node *caf, char *name, long pos, entry_type type) {
+    int ok = 1;
+    caf_node *node = caf;
+
+    if (!find_caf_node(pool, &node, name, 1)) {
+    	ok = 0;
+    }
+
+    if (ok) {
+    	if (!node->data) {
+	    if ((node->data = pool_alloc(pool->data_pool))) {
+	    	node->data->seq = -1;
+		node->data->dna = -1;
+		node->data->qua = -1;
+	    } else {
+	    	fprintf(stderr, "Unable to alloc data memory in add_pos_data for %s\n", name);
+		ok = 0;
+	    }
+	}
+	
+	if (ok) {
+	    switch (type) {
+	    	case IS_SEQUENCE:
+		    node->data->seq = pos;
+		    break;
+		    
+		case IS_DNA:
+		   node->data->dna = pos;
+		   break;
+		   
+		case IS_QUALITY:
+		   node->data->qua = pos;
+		   break;
+		   
+		default:
+		    fprintf(stderr, "add_pos_data wrong type %d for %s\n", type, name);
+	    }
+	}
+    }
+    
+    return ok ? 0 : 1; 
+}
+
+
 // following functions are for index manipulation
 
 /*
@@ -374,8 +665,7 @@ static void clear_index(caf_index *index) {
 /*
     index a caf file on Sequence Reads, Sequence Contigs, DNA and BaseQuality
 */
-static int index_caf(zfp *fp, caf_index *read_entry, caf_index *bases, caf_index *read_qual,
-    	    	caf_index *contig_entry) {
+static int index_caf(zfp *fp, pools *pool, caf_node *caf, caf_index *contig_entry) {
 		
     char *line = NULL;
     long size = 0;
@@ -392,12 +682,9 @@ static int index_caf(zfp *fp, caf_index *read_entry, caf_index *bases, caf_index
     while (!err && get_line(&line, &size, fp) > 0) {
 	line_num++;
 	char *name = NULL;
-	int len;
 	
 	if ((line_size = strlen(line))) {
-	    if (strncmp(line, "Sequence :", 10) == 0) {
-		len = find_name(line, &name);
-		
+	    if ((name = get_value("Sequence :", line))) {
 		if (name) {
 		    if (get_line(&line, &size, fp) == -1) {
 		    	err = 1;
@@ -405,28 +692,20 @@ static int index_caf(zfp *fp, caf_index *read_entry, caf_index *bases, caf_index
 		    }
 		    
 		    if (strncmp(line, "Is_read", 7) == 0) {
-		    	err = add_entry(read_entry, name, len, pos);
+		    	err = add_pos_data(pool, caf, name, pos, IS_SEQUENCE);
 			read_no++;
 		    } else if (strncmp(line, "Is_contig", 9) == 0) {
-		    	err = add_entry(contig_entry, name, len, pos);
+		    	err = add_pos_data(pool, caf, name, pos, IS_SEQUENCE);
+		    	err = add_entry(contig_entry, name, strlen(name), pos);
 			contig_no++;
 		    }
 		}
-	    } else if (strncmp(line, "DNA :", 5) == 0) {
-	    	len = find_name(line, &name);
-		
-		if (name) {
-		    // we don't know if these are contig or read bases yet
-		    err = add_entry(bases, name, len, pos);
-		    dna_no++;
-		}
-	    } else if (strncmp(line, "BaseQuality :", 13) == 0) {
-	    	len = find_name(line, &name);
-		
-		if (name) {
-		    err = add_entry(read_qual, name, len, pos);
-		    qual_no++;
-		}
+	    } else if ((name = get_value("DNA :", line))) {
+    	        err = add_pos_data(pool, caf, name, pos, IS_DNA);
+		dna_no++;
+	    } else if ((name = get_value("BaseQuality :", line))) {
+    	        err = add_pos_data(pool, caf, name, pos, IS_QUALITY);
+		qual_no++;
 	    } else if (strncmp(line, "Unpadded", 8) == 0) {
 	    	fprintf(stderr, "Error, padded data only\n");
 		err = 1;
@@ -461,27 +740,6 @@ static int cmp_string(const void *p1, const void *p2) {
 
 static void sort_index(caf_index *index) {
     qsort(index->entry, index->size, sizeof(caf_entry), cmp_string);
-}
-
-
-static int split_bases(caf_index *bases, caf_index *contig_entry, caf_index *read_dna, caf_index *contig_dna) {
-    int i;
-    int err = 0;
-    
-    for (i = 0; i < bases->size; i++) {
-    	if (find_entry(contig_entry, bases->entry[i].name, 0) != -1) {
-	    err = add_entry(contig_dna, bases->entry[i].name, bases->entry[i].length, bases->entry[i].pos);
-	} else { 
-	    err = add_entry(read_dna, bases->entry[i].name, bases->entry[i].length, bases->entry[i].pos);
-	}
-    }
-    
-    sort_index(read_dna);
-    sort_index(contig_dna);
-    
-    clear_index(bases);
-    
-    return err;
 }
 
 
@@ -520,12 +778,15 @@ static int parse_annotation(anno_type **annotation, int *anno_count, int *anno_s
 
     // get the text (it's quoted with ")
     anno_entry = strtok(NULL, "\"");
-    txt_len = strlen(anno_entry);
+    
+    if (anno_entry) {
+       txt_len = strlen(anno_entry);
 
-    if (((*annotation)[*anno_count].text = calloc(txt_len + 1, sizeof(char)))) {
-	strncpy((*annotation)[*anno_count].text, anno_entry, txt_len);
-    } else {
-	return 1;
+       if (((*annotation)[*anno_count].text = calloc(txt_len + 1, sizeof(char)))) {
+	   strncpy((*annotation)[*anno_count].text, anno_entry, txt_len);
+       } else {
+	   return 1;
+       }
     }
 
     (*anno_count)++;
@@ -670,15 +931,12 @@ static long read_section_as_line(zfp *fp, long pos, char **line, int is_seq) {
 /*
     read in sequence bases as a single line
 */
-static long sequence_data(zfp *fp, seq_qual *seq, caf_index *reads, char *name) {
-    long pos = 0;
+static long sequence_data(zfp *fp, seq_qual *seq, long pos) {
     long length = 0;
     char *seq_line = NULL;
     
-    pos = find_entry(reads, name, 0);
-    
     if (pos != -1) {
-	if ((length = read_section_as_line(fp, reads->entry[pos].pos, &seq_line, 1)) > 0) {
+	if ((length = read_section_as_line(fp, pos, &seq_line, 1)) > 0) {
 	    seq->seq   = seq_line;
 	    seq->s_len = length;
 	} else {
@@ -693,15 +951,13 @@ static long sequence_data(zfp *fp, seq_qual *seq, caf_index *reads, char *name) 
 /*
     read in quality as a single line and convert to be held as a single char per value
 */
-static int quality_data(zfp *fp, seq_qual *qual, caf_index *reads, char *name, long pos) {
+static int quality_data(zfp *fp, seq_qual *qual, long pos) {
     char *qual_line = NULL;
     long length = 0;
     int err = 1;
 
-    pos = find_entry(reads, name, pos);
-    
     if (pos != -1) {
-    	if ((length = read_section_as_line(fp, reads->entry[pos].pos, &qual_line, 0)) > 0) {
+    	if ((length = read_section_as_line(fp, pos, &qual_line, 0)) > 0) {
 	    char *value = NULL;
 	    int i = 0;
 	    
@@ -733,21 +989,26 @@ static int quality_data(zfp *fp, seq_qual *qual, caf_index *reads, char *name, l
     the gap5 db
 */
 static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *pair,
-    	    	    	caf_index *reads, caf_index *read_dna, caf_index *read_quals, char *name, char *align) {
+    	    	    	pools *pool, caf_node *caf, char *name, char *align) {
 			
     long pos;
     seq_qual sq;
-			
+    caf_node *this_node = caf;
+    
+    if (!find_caf_node(pool, &this_node, name, 0)) {
+    	fprintf(stderr, "Can't find entry on %s\n", name);
+	return 1;
+    }
 			
     // get the sequence and quality data
-    if ((pos = sequence_data(fp, &sq, read_dna, name)) == -1 ||
-    	       quality_data(fp, &sq, read_quals, name, pos)) {
+    if ((pos = sequence_data(fp, &sq, this_node->data->dna)) == -1 ||
+    	       quality_data(fp, &sq, this_node->data->qua)) {
 	       
     	fprintf(stderr, "Failed to get sequnce and quality data\n");
 	return 1;
     }
     
-    pos = find_entry(reads, name, pos);
+    pos = this_node->data->seq;
     
     if (pos != -1) {
 	char *line_in = NULL;
@@ -765,6 +1026,7 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 	int anno_count  = 0;
 	int anno_size = 0;
 	int i;
+	int need_free = 0;
 	
 	memset(&seq, 0, sizeof(seq_t));
 	
@@ -818,7 +1080,7 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 	    memset(sq.qual, 0, sq.s_len);
 	}
 
-	zfseeko(fp, reads->entry[pos].pos, SEEK_SET);
+	zfseeko(fp, pos, SEEK_SET);
 	
     	get_line(&line_in, &size, fp); // skip over the header
 	
@@ -842,6 +1104,8 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 		if(!(template_name = calloc(tm_len + 1, sizeof(char)))) {
 		    return 1;
 		}
+		
+		need_free = 1;
 		
 		strncpy(template_name, value, tm_len);
 
@@ -868,6 +1132,10 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 	seq.name_len       = strlen(name);
 	seq.trace_name_len = tr_len;
 	seq.alignment_len  = 0;
+	
+	if (template_name == NULL) {
+	    template_name = name;
+	}
 	
 	// seq.data freed by save_range_sequence
 	seq.name = seq.data = (char *) calloc(seq.name_len + 1 +
@@ -912,7 +1180,7 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 	    free(trace_name);
 	}
 	
-	if (template_name) {
+	if (need_free) {    // if template_name is not using the same memory as name
 	    free(template_name);
 	}
 					
@@ -981,9 +1249,7 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 }
 	
 
-static int import_caf(zfp *fp, GapIO *io, tg_args *a, HacheTable *pair, caf_index *contig_entry, caf_index *contig_dna,
-    	    	caf_index *read_entry, caf_index *read_dna, caf_index *read_quals) {
-    
+static int import_caf(zfp *fp, GapIO *io, tg_args *a, HacheTable *pair, pools *pool, caf_node *caf, caf_index *contig_entry) {
     contig_t *c = NULL;
     long read_no       = 0;
     long contig_no     = 0;
@@ -995,7 +1261,7 @@ static int import_caf(zfp *fp, GapIO *io, tg_args *a, HacheTable *pair, caf_inde
 	int err;
 	
 	initialise_index(&contig_reads);
-	
+
 	create_new_contig(io, &c, contig_entry->entry[i].name, a->merge_contigs);
 	
 	if (read_contig_section(fp, io, &c, a, contig_entry->entry[i].pos, &contig_reads)) {
@@ -1005,8 +1271,7 @@ static int import_caf(zfp *fp, GapIO *io, tg_args *a, HacheTable *pair, caf_inde
 	contig_no++;
 	
 	for (j = 0; j < contig_reads.size; j++) {
-	    err = read_data(fp, io, a, &c, pair, read_entry, read_dna, read_quals,
-	    	    	    contig_reads.entry[j].name, contig_reads.entry[j].data);
+	    err = read_data(fp, io, a, &c, pair, pool, caf, contig_reads.entry[j].name, contig_reads.entry[j].data);
 
 	    if (err) {
 	    	fprintf(stderr, "Unable to import data for read %s on contig %s",
@@ -1035,9 +1300,9 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     struct stat sb;
     HacheTable *pair = NULL;
     int err = 0;
-    caf_index read_entry, read_dna, read_qual;
-    caf_index contig_entry, contig_dna;
-    caf_index bases;
+    caf_index contig_entry;
+    caf_node caf;
+    pools pool;
     
     // some variables for stats
     struct timeval tv1, tv2;
@@ -1059,12 +1324,17 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
 	pair->name = "pair";
     }
     
-    err += initialise_index(&read_entry);
-    err += initialise_index(&read_dna);
-    err += initialise_index(&read_qual);
+    // some initialisations 
+    pool.data_pool = pool_create(sizeof(index_data));
+    pool.node_pool = pool_create(sizeof(caf_node));
+    pool.str_pool  = string_pool_create(0);
+    
+    caf.prefix   = NULL;
+    caf.children = NULL;
+    caf.data     = NULL;
+    caf.sibling  = NULL;
+
     err += initialise_index(&contig_entry);
-    err += initialise_index(&contig_dna);
-    err += initialise_index(&bases);
 
     if (err) {
     	fprintf(stderr, "Unable to initialise index, out of memory\n");
@@ -1073,7 +1343,7 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
 
     gettimeofday(&tv1, NULL);
     
-    if (index_caf(fp, &read_entry, &bases, &read_qual, &contig_entry)) {
+    if (index_caf(fp, &pool, &caf, &contig_entry)) {
     	fprintf(stderr, "Unable to populate index, out of memory\n");
 	return -1;
     }
@@ -1085,10 +1355,7 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     
     gettimeofday(&tv1, NULL);
     
-    sort_index(&read_entry);
-    sort_index(&read_qual);
     sort_index(&contig_entry);
-    sort_index(&bases);
     
     gettimeofday(&tv2, NULL);
     dt = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
@@ -1096,22 +1363,10 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     fprintf(stderr, "Sorted in %f seconds\n", dt);
 
     gettimeofday(&tv1, NULL);
-
-    if (split_bases(&bases, &contig_entry, &read_dna, &contig_dna)) {
-    	fprintf(stderr, "Unable to populate index, out of memory\n");
-	return -1;
-    }
-    
-    gettimeofday(&tv2, NULL);
-    dt = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
-    
-    fprintf(stderr, "Split in %f seconds\n", dt);
-
-    gettimeofday(&tv1, NULL);
     
     fprintf(stderr, "Loading ...\n");
     
-    if (import_caf(fp, io, a, pair, &contig_entry, &contig_dna, &read_entry, &read_dna, &read_qual)) {
+    if (import_caf(fp, io, a, pair, &pool, &caf, &contig_entry)) {
     	fprintf(stderr, "Unable to populate gap5 db");
 	return -1;
     }
@@ -1130,11 +1385,11 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
 
     if (pair) HacheTableDestroy(pair, 1);
 
-    clear_index(&read_entry);
-    clear_index(&read_dna);
-    clear_index(&read_qual);
     clear_index(&contig_entry);
-    clear_index(&contig_dna);
+
+    pool_destroy(pool.data_pool);
+    pool_destroy(pool.node_pool);
+    string_pool_destroy(pool.str_pool);
 
     gettimeofday(&tv2, NULL);
     dt = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
