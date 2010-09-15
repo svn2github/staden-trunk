@@ -36,7 +36,8 @@ OBJS = \
 	locks.o \
 	array_arith.o \
 	parse_db.o\
-	dstring.o
+	dstring.o \
+	string_alloc.o
 
 #
 # Main dependency
