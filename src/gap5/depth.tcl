@@ -1293,6 +1293,8 @@ proc depth_item_init {w t} {
     bind $d <Any-Motion> "cross_hair $w $t %x %y"
     bind $d <Any-Leave>  "cross_hair_leave $w"
 
+    bind $d <<use>> "invoke_editor $w $t %x"
+
     set ${t}(Init) 1
 }
 
