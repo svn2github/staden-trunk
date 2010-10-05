@@ -27,7 +27,8 @@ DEPS =  $(GAP_LIB) \
 	$(MUT_LIB) \
 	$(TKUTILS_LIB) \
 	$(SEQUTILS_LIB) \
-	$(MISC_LIB)
+	$(MISC_LIB) \
+	$(IOLIB_LIB)
 
 staden_convert: $(OBJS)
 	$(CLD) -o $@ $(OBJS) $(LIBS) $(LIBSC) $(DEPS)

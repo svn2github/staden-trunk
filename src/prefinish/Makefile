@@ -50,7 +50,8 @@ ISLIBS=\
 	$(MUT_LIB) \
 	$(SEQUTILS_LIB) \
 	$(MISC_LIB) \
-	$(TCL_LIB)
+	$(TCL_LIB) \
+	$(IOLIB_LIB)
 
 ISOBJS= insert_size_dist.o
 
