@@ -31,7 +31,7 @@ Options:
     exit
 }
 
-if {[lindex $argv 0] == "-h" || [lindex $argv 1] == "-help" || [lindex $argv 1] == "--help"} {
+if {[lindex $argv 1] == "-h" || [lindex $argv 1] == "-help" || [lindex $argv 1] == "--help"} {
     gap5_usage
 }
 
