@@ -3,7 +3,7 @@
 
 /* Shouldn't need either of these, except for a X11/Xlib.h */
 #include <tk.h>
-#include <X11/Intrinsic.h>
+#include "intrinsic_type.h"
 
 typedef int SheetRow;
 typedef int SheetColumn;

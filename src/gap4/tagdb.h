@@ -1,7 +1,7 @@
 #ifndef _TAGDB_H_
 #define _TAGDB_H_
 
-#include <X11/Intrinsic.h>
+#include "intrinsic_type.h"
 
 typedef struct {
     /* Must be first item */

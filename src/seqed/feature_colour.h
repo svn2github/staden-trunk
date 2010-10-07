@@ -1,7 +1,7 @@
 #if !defined(FEAT_COLOUR_H)
 #define FEAT_COLOUR_H
 
-#include <X11/Intrinsic.h>
+#include "intrinsic_type.h"
 
 typedef struct {
     /* Must be first item */
