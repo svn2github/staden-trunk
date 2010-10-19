@@ -1,0 +1,111 @@
+-----------------------------------------------------------------------------
+On imac08739
+
+1. Use the commented out TK_LIB definition in system.mk.in. Ie:
+
+TK_LIB		  = @TK_LIB_SPEC@ @TK_LIBS@ $(TCL_LIB)
+
+Without this we get:
+
+ld: tkRaster.o illegal reference to symbol: _XCopyArea defined in
+indirectly referenced dynamic library /usr/X11R6/lib/libX11.6.dylib
+
+This is because when linking tk_utils it has -ltk which in turn was
+linked against -lX11, but we ourselves did not *explicitly* link
+agains -lX11. This sort of implicit linking is disallowed on MacOS X.
+
+
+2. Remove use of -rpath-link.
+
+gcc -L/Users/jkb/staden-2.0.0b6-src/lib
+-Wl,-rpath-link,/Users/jkb/staden-2.0.0b6-src/lib
+-Wl,-rpath-link,/Users/jkb/inst/lib -o getABISampleName  abiIO.o
+getABISampleName.o -L/Users/jkb/inst/lib -lstaden-read   -lcurl -lz
+-lmisc
+ld: unknown flag: -rpath-link
+
+ie:
+
+CLDFLAGS = -L$(L)
+
+3. convert/gapDB.c has stub copies of funcs (execute_database_notes,
+   etc), but also now links against libgap.so
+
+Remove these (all platforms?).
+
+4. Convert has read_list() function, as does gap4. Gap4's isn't used -
+   so remove it (list_proc.c).
+
+5. Add MISC_LIB to convert link:
+
+DEPS = $(GAP_LIB) $(G_LIB) $(MISC_LIB)
+
+6. Add more libs to tgap
+
+TGAP_LIBS = \
+        $(SEQUTILS_LIB) \
+        $(ZLIB_LIB) \
+        $(LZMA_LIB) \
+        $(TKUTILS_LIB) \
+        $(TK_LIB) \
+        $(IOLIB_LIB) \
+        $(MISC_LIB)
+
+
+
+
+-----------------------------------------------------------------------------
+On mac18480i
+
+1. Added to TK_INC to find tkInt.h file:
+/Developer/SDKs/MacOSX10.5.sdk/System/Library/Frameworks/Tk.framework/Versions/8.4/Headers/tk-private
+
+or
+
+/System/Library/Frameworks/Tk.framework/Versions/8.4/Headers/tk-private/
+DONE
+
+2. Missing tkCanvas.h.
+
+Solved by creating build_dir/macosx_compat and putting
+-I$(PWD)/macosx_compat on TK_INC line too. (Maybe solve problem 1 at
+the same time like this.)
+DONE (file not needed)
+
+3. Conflict between /usr/include/tkIntXlibDecls.h and
+   /usr/X11/include/X11/Xlib.h.
+
+Ones in tkIntXlibDecls.h all return void, while Xlib.h all return int.
+
+NO FIX YET - commented out offending code.
+See tkCanvGraph.c:1916.
+
+Ideal fix: line 1916 of tkCanvGraph.c is the only bit that needs
+tkCanvas.h, which in turn includes tkIntXlibDecls.h. What is this for?
+DONE (file not needed)
+
+4. Add $(X_LIB) -lX11 to TK_LIB line in system.mk
+DONE
+
+5. Replace UCHAR with (unsigned char) in tkCanvGraph.c
+
+Do we even *USE* tkCanvGraph now?
+DONE (no - is for spin2)
+
+7. Use of tclInt.h in tgap/tg_tcl.c
+   
+   Commented out. It's for Tcl_GetCommandFromObj which is in theory in
+   tcl.h.
+DONE
+
+8. Comment out iwidgets from gap5rc. Do we use it? I think not.
+DONE
+
+9. STADLIB in gap4 etc needs trailing /. I do not know why, but
+   suspect it has something to do with load on tk.
+DONE
+
+
+6. Remove use of -rpath-link.
+
+***FIXME***

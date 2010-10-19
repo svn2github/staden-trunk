@@ -1,0 +1,28 @@
+From the minimal VM taken from www.thoughtpolice.co.uk:
+
+yum install gcc
+yum install gcc-c++
+yum install zlib-devel
+yum install tk-devel
+yum install iwidgets
+yum install tklib
+yum install curl-devel
+yum install ncurses-devel
+yum install libpng-devel
+yum install libXt-devel (for X11/Intrinsic.h)
+
+# lzma? yum install xz?
+
+Build io_lib (1.? onwards)
+
+Build samtools
+    Need -fPIC to be able to link against it:
+    make "CFLAGS=-O -fPIC"
+
+Build staden
+    mkdir build
+    cd build
+    ../configure \
+        --with-io_lib=/home/jkb/io_lib.inst \
+	--with-samtools=/home/jkb/src/samtools-0.1.7a \
+	--prefix=$HOME/staden.inst
