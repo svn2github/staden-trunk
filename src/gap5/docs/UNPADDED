@@ -1,0 +1,392 @@
+		  Dealing with unpadded coordinates
+		  =================================
+
+Method 1
+--------
+
+Each (?) bin has an array of gaps, allowing us to convert from padded
+to unpadded. This can't be the whole bin as that would be huge at the
+top - perhaps just the start_used to end_used portion?
+
+Complex.
+
+
+Method 2
+--------
+
+Store padded and unpadded coordinate for bin start only.
+
+
+Method 3
+--------
+
+All read locations are unpadded. Cigar strings edit alignments, as
+implemented in SAM/BAM.
+
+The problem is we cannot get the total displayed alignment from a
+single query, as we need to introduce gaps caused by other sequences
+too. (Is that bad? Maybe even desireable.)
+
+What happens when we edit and change the consensus (aka reference)?
+Changing * to A =>
+a) Shift all reads to right (already done - aka contig insertion).
+b) Modify cigar of all sequences at that position.
+
+Benefit of this is it naturally fits with the copy-on-write method.
+
+
+
+
+Plan
+====
+
+Native coordinates should be unpadded, and if needed we map those back
+to padded. I doubt it's required as there's no real use for padded
+coordinate systems.
+
+This means measuring distances doesn't change with the depth of data
+(which inherently adds more and more pads), so template size
+estimations are more accurate, etc. It also means importing from SAM
+is easier, and therefore faster.
+
+What to store?
+--------------
+
+1) Unpadded seq (in seq object)
+2) Unpadded start/end coords (in bin)
+3) Alignment (in seq)
+
+
+
+
+
+-----------------------------------------------------------------------------
+
+Example
+Ref	AAT  T
+        ------
+M4      AAT--T
+M3I1M1  AATG-T
+M1D1M2  A-T--T
+M3I2M1  AATGGT
+
+D is easy, we add on the fly as loading the seqs
+I is hard as we need to modify the rest of the data.
+
+Implement a function that goes from unpadded to padded
+sequences. Maybe cache these in the seq_t struct too?
+
+
+-----------------------------------------------------------------------------
+
+Editing
+=======
+
+There is a clear distinction between the reference and the consensus
+when dealing with unpadded data. The two *may* be the same, but do not
+have to be. We may not also actually know the reference, but the
+notion of real vs indel base is key. (In that case the reference is
+essentially Ns.) This can be seen in samtools tview where there is
+both a reference line and a consensus line.
+
+We need explicit overwrite vs insert modes so we know whether ACGT
+keys are replacing a base or inserting new ones. (Alternatively we
+have to use two part editing where we need to first introduce a gap
+and then replace the gap with a base call.)
+
+In the examples below, the editor cursor is at the [bracketed] base.
+
+
+Overwriting
+-----------
+
+1) Ref: A G C T - - T A G
+   ----------------------
+   S1:  A *[A]T - - T A G		=> 1M 1D 5M
+   S2:  A G C T C C T A G		=> 4M 2I 3M
+
+Replacing this A with a C though does not modify the alignment at
+all. It simply modifies the DNA/quality associated with S1.
+
+
+2) Ref: A G C T - - T A G
+   ----------------------
+   S1:  A[*]A T - - T A G		=> 1M 1D 5M
+   S2:  A G C T C C T A G		=> 4M 2I 3M
+
+In replace mode, typing G will modify S1 to become 7M by removing the
+deletion. S1's sequence goes from AATTAG to AGATTAG.
+
+
+
+3) Ref: A G C T - - T A G
+   ----------------------
+   S1:  A * A T[-]- T A G		=> 1M 1D 5M
+   S2:  A G C T C A T A G		=> 4M 2I 3M
+
+And here, typing C makes it agree with S2, but modifies CIGAR to be 1M
+1D 2M 1I 3M; ie it adds an insertion.
+
+
+4) Ref: A G C T - - T A G
+   ----------------------
+   S1:  A * A T -[-]T A G		=> 1M 1D 5M
+   S2:  A G C T C A T A G		=> 4M 2I 3M
+
+Attempting to type A here doesn't do what we may think. It modifies
+the S1 sequence to be AATATAG and CIGAR to be 1M 1D 2M 1I 3M. This is
+the same CIGAR as the previous example, and will yield this display:
+
+   Ref: A G C T - - T A G
+   ----------------------
+   S1:  A * A T A - T A G		=> 1M 1D 2M 1I 3M
+   S2:  A G C T C A T A G		=> 4M 2I 3M
+
+However, the P cigar character can be used to forcibly modify
+alignments within an insertion. Bascially P is an insertion that
+doesn't consume a character from the sequence. Using this we can then
+get two distinct alignments:
+
+   Ref: A G C T - - T A G
+   ----------------------
+   S1:  A * A T C , T A G		=> 1M 1D 2M 1I 1P 3M
+   S2:  A G C T C A T A G		=> 4M 2I 3M
+
+   Ref: A G C T - - T A G
+   ----------------------
+   S1:  A * A T , A T A G		=> 1M 1D 2M 1P 1I 3M
+   S2:  A G C T C A T A G		=> 4M 2I 3M
+
+I believe that any time we make an edit within an insertion we should
+automatically upgrade it to use explicit P symbols. (The top example
+didn't need it as currently displayed, but once complemented would
+have then displayed wrongly.) 
+
+
+Deletion
+--------
+
+This can occur at any time and works regardless of insert vs overwrite
+mode.
+
+1) Ref: A G C T - - T A G
+   ----------------------
+   S1:  A * A T - - T A G		=> 1M 1D 5M
+   S2:  A G C T C[C]T A G		=> 4M 2I 3M
+
+In the simple case, deleting this base is just a process of removing
+one of the 2I to yield 4M 1I 3M, changing the display as follows:
+
+   Ref: A G C T - T A G
+   --------------------
+   S1:  A * A T - T A G		=> 1M 1D 5M
+   S2:  A G C T C T A G		=> 4M 1I 3M
+
+
+2) Ref: A G C T - - T A G
+   ----------------------
+   S1:  A * A T - - T A G		=> 1M 1D 5M
+   S2:  A[G]C T C C T A G		=> 4M 2I 3M
+
+Deleting G here, if we concluded S1 was correct and S2 had an
+overcall, changes the S2 alignment to 1M 1D 1M 2I 3M. We now have an
+entire column of pads in the consensus, but it hasn't remove the
+reference base. Ie:
+
+   Ref: A G C T - - T A G
+   ----------------------
+   S1:  A * A T - - T A G		=> 1M 1D 5M
+   S2:  A * C T C C T A G		=> 1M 1D 2M 2I 3M
+
+
+Insertions
+----------
+
+To distinguish from overwriting this requires an editing mode -
+overwrite vs insert.
+
+1) Ref: A G C T - - T A G
+   ----------------------
+   S1:  A[*]A T - - T A G		=> 1M 1D 5M
+   S2:  A G C T C C T A G		=> 4M 2I 3M
+
+Not to be confused with replace, inserting 'G' here would create an
+entire new column, eg:
+
+   Ref: A - G C T - - T A G
+   ------------------------
+   S1:  A G[*]A T - - T A G		=> 1M 1I 1D 5M
+   S2:  A - G C T C C T A G		=> 4M 2I 3M
+
+
+
+
+Reference editing
+-----------------
+
+Overwriting in the reference line could be used either to just change
+a base from one value to another (trivial), but it may also turn
+insertions into real bases. Eg:
+
+1) Ref: A G C T[-]- T A G
+   ----------------------
+   S1:  A * A T - - T A G		=> 1M 1D 5M
+   S2:  A G C T C C T A G		=> 4M 2I 3M
+
+Typing C C here would make the 2 base CC in S2 the reference and yield:
+
+   Ref: A G C T C C T A G
+   ----------------------
+   S1:  A * A T - - T A G		=> 1M 1D 2M 2D 3M
+   S2:  A G C T C C T A G		=> 9M
+
+
+Deletion from a reference can be used to remove bases. Eg:
+
+1) Ref: A[G]C T - - T A G
+   ----------------------
+   S1:  A * A T - - T A G		=> 1M 1D 5M
+   S2:  A G C T C C T A G		=> 4M 2I 3M
+
+Removal of this G yields:
+
+   Ref: A - C T - - T A G
+   ----------------------
+   S1:  A - A T - - T A G		=> 6M
+   S2:  A G C T C C T A G		=> 1M 1I 2M 2I 3M
+
+In this respect, we could claim pressing delete is the same as
+overwriting with "-" or "*". It makes no sense to try and delete a
+reference base that doesn't exist - ie when the cursor is already on a
+"-" column.
+
+
+Inserting to the reference introduces a deletion to all sequences
+underneath it:
+
+1) Ref: A G C[T]- - T A G
+   ----------------------
+   S1:  A * A T - - T A G		=> 1M 1I 1D 5M
+   S2:  A G C T C C T A G		=> 4M 2I 3M
+
+Typing G yields:
+
+   Ref: A G C G[T]- - T A G
+   ------------------------
+   S1:  A * A * T - - T A G		=> 1M 1D 1M 1D 4M
+   S2:  A G C * T C C T A G		=> 3M 1D 1M 2I 3M
+
+We shouldn't be able to insert entire columns of pads?
+
+
+Test cases
+----------
+
+1) Ref: A G C - - - T A G
+   ----------------------
+   S1:  A G C T[A]C T A G		=> 3M    3I    3M
+   S2:  A G C T , C T A G		=> 3M 1I 1P 1I 3M 
+
+Replacing [A] in S1 with a pad yields S2. We split 3I into 1I 1P 1I to
+indicate this.
+
+2) Ref: A G C - - - T A G
+   ----------------------
+   S1:  A[G]C T A C T A G		=>    3M    3I 3M
+   S2:  A * C T A C T A G		=> 1M 1D 1M 3I 3M
+
+Here the same operation as 1) is applied, but the replace of base to *
+occurs within an M match instead. The cigar edit is identical but we
+use D instead of P as this base is really in the reference.
+
+3) Ref: A G C T - - T A G
+   ----------------------
+   S1:  a[g]c T A C T A G		=> 3S       2M 2I 3M
+   S2:  a * c T A C T A G		=> 1S 1D 1S 2M 2I 3M
+
+Replaced a base in the clipped data. Does this work? Can we pad the
+clipped data? According to SAM spec - no.
+
+I think we need to just ignore such edits, or possibly simply replace
+the data with an actual * so the change is visible.
+
+This also means moving clip points is problematic. If we have 2M 2I 10M ...
+and we wish to clip the first 6 bases then we have to lose the 2I and
+change it to 6S 8M... However this also means moving the read!
+
+
+
+4) Correcting badly aligned data.
+
+   Ref: AGCAATGCAATGTA-CCAAA-AA
+   S1:  AGCAATG-----TA-CC		7M 5D 4M
+   S2:  AG----GCAATGTATCC		2M 4D 8M 1I 2M
+   S3:  AG----GCAATGTA-CC		2M 10M
+
+We may decide we want to shuffle S1 to align against S2 and S3 to
+improve the multiple alignment. Ie the goal is:
+
+   Ref: AGCAATGCAATGTA-CCAAA-AA
+   S1:  AG-----CAATGTA-CC		2M 5D 9M
+   S2:  AG----GCAATGTATCC		2M 4D 8M 1I 2M
+   S3:  AG----GCAATGTA-CC		2M 4D 10M
+
+So, how do we edit this? We need to somehow turn the M into D and vice
+versa.
+
+we could position the cursor at pos 3 (C) and press d 5 times to
+indicate 5 deletion events: 
+
+                    1
+          3         3
+   Ref: AGCAATGCAATGTA-CCAAA-AA
+   S1:  AG*****CAATG**-**TAC-C		2M 5D 5M 5D 4M
+   S2:  AG****GCAATGTATCC		2M 4D 8M 1I 2M
+   S3:  AG****GCAATGTA-CC		2M 4D 10M
+
+and then position ourselves at 13 and control-d 5 times to remove the
+5D there. After 4 it'd look like this, and after five see above:
+
+   Ref: AGCAATGCAATGTA-CCAAA-AA
+   S1:  AG*****CAATG*T-ACC		2M 5D 5M 1D 4M
+   S2:  AG****GCAATGTATCC		2M 4D 8M 1I 2M
+   S3:  AG****GCAATGTA-CC		2M 4D 10M
+
+What this means is maybe control-d or delete should remove I/D/M records
+at the current coordinate and i/d/m keys should add I/D/M records to
+the current coordinate?
+
+
+
+5) Another case, this time with overcalls
+
+   Ref: AG---GCCCGGAG
+   S1:  AGGCCG***GGAG			2M 3I 1M 3D 4M
+   S2:  AG---GCCCGGAG			10M
+   S3:  AG---GCCCGGAG			10M
+   
+we may want to accept the C vs G mismatch and get:
+
+   Ref: AGGCCCGGAG
+   S1:  AGGCCGGGAG			10M
+   S2:  AGGCCCGGAG			10M
+   S3:  AGGCCCGGAG			10M
+
+Basically we need to trade 3I for 3M and 3D for 3M. Start by typing
+m,m,m at pos 3:
+
+   Ref: AGGCCCGGAG
+   S1:  AGGCCG***GGAG			2M 3M 1M (aka 6M) 3D 4M
+   S2:  AGGCCCGGAG			10M
+   S3:  AGGCCCGGAG			10M
+   
+Here pressing 'm' has to replace the I with M as M would otherwise
+require more data in the sequence. Essentially m is an overwrite of
+cigar rather than indel.
+
+This is then followed by deleting the 3D part.
+
+
+6) Use drag and drop.
+Left mouse to highlight a region.
+Middle mouse to drag region.

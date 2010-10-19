@@ -1,0 +1,205 @@
+All times listed here are effectively "man hours" (albeit days, weeks,
+etc), meaning they are an indication of how long the task will take
+for someone to do rather than a fixed date in the future that I expect
+them to be done. Obviously I cannot do all simultaneously. :-)
+
+I'm sometimes wildly optimistic in how long things take as find
+interruptions slow things down alarmingly.
+
+
+Primary Gap5 Wish-list
+======================
+(functionality needed for use of Gap5 currently being supported only in Gap4)
+
+1. Ability to add new data (eg. Auto-fin reads, finishing reads,
+   capillary consensus and small data sets ie TIL reads)
+
+   This is the most complex part of the primary list. It's not
+   something I am willing or able to simply rip out of Gap4 either
+   unlike some of the other algorithms, as this was the oldest part of
+   Gap4 (with parts dating back some 25 years believe it or not!) and
+   so is very tricky to move over. It's not even written in the same
+   computer language as the newer code. (Fortran vs C)
+
+   So essentially it's a new creation and I'd expect several months
+   work. Maybe 2-3 months to get something solid.
+
+
+2. Ability to create and export tags - PARTIAL
+
+   They can now be created in my own test version, so once that's
+   installed you'll be able to create new tags. It's not quite as
+   featured as gap4 yet; it misses the ability to move or copy tags
+   and tag macros aren't in yet.
+
+   Export (and I assume the inverse, import) tags shouldn't be hard to
+   write. I'd expect a couple weeks there.
+
+3. Sequence search - DONE in editor (consensus only) and outside editor.
+
+   There are multiple places for searching. Do you mean the actual
+   Sequence Search function in Gap4's view menu, rather than the
+   search by sequence mode in the contig editor?
+
+   I've been working recently on one of the precursors to this and
+   other things - speeding up computing the consensus via storing
+   cached copies. This is now hopefully done, but needs a lot more
+   testing.
+
+   Searching it therefore should be relatively straight forward, and I
+   ought to be able to more or less lift the old code from Gap4 with a
+   bit of tidying up. So maybe 1 week. I'll see once I get going on
+   this whether the old Gap4 code is compatible I guess.
+
+   The editor search code is more work as it does a lot more and works
+   in a different fashion that will likely need a lot of changes to
+   make it compatible to Gap5. However the basics of searching in the
+   editor would likely be another 2-4 weeks.
+
+4. Ability to edit by read name - DONE
+
+   In theory this already exists, it's just very slow to enable.
+
+   The tg_index command has a -t option to index sequence names, which
+   should then allow you to edit a contig by a reading name instead of
+   a contig name. However I haven't tested it in ages so maybe there
+   are issues still. I also need to do something about the speed of
+   tg_index when using -t as right now it makes it grind to a halt on
+   larger projects.
+
+   To get a faster name indexing won't be easy to do, so either
+   consider this as working now (barring bugs) if you're patient or
+   using smaller projects, or 3-4 weeks for a faster more general
+   purpose way. (Assuming my vague plans on how to do this actually
+   work.)
+
+5. Primer Selection
+
+   Is this the semi-manual method within the contig editor?
+
+   I hope this isn't too hard as the code in Gap4 was revised
+   relatively recently (compared to most of Gap4). Assuming it ports
+   over to gap5 without too many changes needed I expect it to be 2-3
+   weeks work.
+
+6. Find Internal Joins and Find Repeats - DONE
+
+   Hopefully both of these are already there. Let me know if you need
+   more.
+
+7. Auto-prefin compatibility with Gap5
+
+   This is a complex one. Like the manual primer selection, I'm
+   expecting that the code in Gap4 can be edited enough to make it
+   work in Gap5 too without requiring a full rewrite. However there's
+   substantially more of it in the auto-prefin world, and it may need
+   changes from Lars' team to do with the surrounding pipeline code
+   too.
+
+   From Gap4's side of things I'd say 1-2 months on this, given the
+   number of things to test and knowing how long it took to get
+   working correctly in Gap4.
+
+
+Secondary Gap5 Wish-list (functions that would greatly improve Gap5)
+========================
+
+1. Disassemble Readings
+
+   Well, in an ugly "make them vanish" sort of way I think this is
+   quite easy. Doing it properly by actually freeing up the space used
+   in the gap5 database is more work, but to be honest I doubt anyone
+   would notice the difference unless they try to disassemble a huge
+   proportion. (Gap5 also doesn't have the requirement that all
+   reading numbers are values from 1 to Number_of_readings, so
+   skipping old read numbers is fine.)
+
+   I'd say something could be lashed up at least in 1-2 weeks,
+   probably double that to be more satisfied with the methods.
+
+2. Ability to see reads from one technology as a consensus that you
+   can drill down into to see all reads.
+
+   This is a long term thing that requires a lot of underlying
+   features to be added, like a partial redesign of the contig editor
+   window into a tree style view rather than just a list. It's
+   therefore quite tricky to say how long it'll take until I at least
+   get partially down the road.
+
+   It's likely it'd be 2+ months work.
+
+3. Exporting sub-section of consensus (possibly covered in Arcturus)
+
+   If it's only the consensus you want, then in theory this is doable
+   already.
+
+   If you want more than the consensus, eg exporting the entire
+   assembly as ACE format, then right now it's only doable by contig
+   rather than region within a contig. (To fix that would be a few weeks.)
+
+4. Improved template display
+
+   How long is a piece of string!? There's small improvements and
+   large improvements to be done here. To get something along the
+   lines that I was thinking - like Gap4's consistency plot with
+   sub-plots than can be added or removed, or Spin's overlayed plots,
+   I'd expect a good month of reworking.
+
+5. Preservation of contig ordering within gap and also from newbler scaffolds
+
+   I think gap5 should have everything it takes to do this already,
+   but perhaps a bug is preventing it from working.  It's possible
+   also that CAF is breaking this as I don't believe it preserves the
+   contig order, in which case it's not trivially solveable.
+
+   To say how long it would take isn't easy therefore until I know why
+   it's not currently working. It could be anything from 1 week to a
+   couple months.
+
+6. Navigation (using tags, problems, confidence etc)
+
+   Ah, so this is the editor search I was thinking about above. As
+   mentioned there, 2-4 weeks for the basics.
+
+7. Separation and Viewing of Homologues
+
+   Challenging! Gap4 already has it's haplotype code (SNP Candidates),
+   but it was never really good for anything other than short regions
+   due to the speed of it. Porting that as-is to Gap5 would be a few
+   weeks work.
+
+   Presenting it in a better fashion though probably also requires
+   point 2 above - a tree view style contig editor - along with many
+   further changes. That could take a few months to iron out and is
+   definitely a more long-term thing.
+
+8. Ability to view in/dels
+
+   I'm not sure what you mean by this. Do you mean the ability to find
+   them? They're explicitly "viewable" by the editor multiple sequence
+   alignment, but are you asking for a way to plot them on, say, the
+   template display?
+
+9. Improve scrolling in editor window
+
+   Can you please elaborate? Scrolling in X, in Y? I'm aware that the
+   editor Y coordinates jump around while scrolling in X. I think we
+   need a way to lock the sequence underneath the cursor to the same Y
+   coordinate so there's a fixed visual position. That would be a
+   couple weeks maybe.
+
+10. Split-tags eg tagging of all exons of one gene with single connected tag
+
+   Something else that's been on the todo list since Gap5 started, but
+   likely long-term too. I don't think it's too hard to get the data
+   structures sorted and for gap5 to store tags like this (it's almost
+   already there), but figuring out how the actual mechanics of the
+   tag editor would work are more challenging.
+
+   Maybe 1 month to do.
+
+
+External wishes
+===============
+dauria_giu@gva.es
+	Implement the Find Read Pairs plot from Gap4.
