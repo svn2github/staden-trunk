@@ -1,0 +1,111 @@
+#!/usr/bin/perl -w
+
+# Converts a fasta file into SAM format.
+# This is just a convenience script to enable easy assembly in gap5
+# of unaligned data.
+#
+# Use "-s" to request that each read ends up as its own contig
+# (aka reference) rather than generated unaligned SAM format.
+
+use strict;
+
+#-----------------------------------------------------------------------------
+# Globals
+
+# Singleton, if true, will generate a reference line per sequence. Otherwise
+# it's just output as an unaligned read.
+my $singleton = 0;
+
+# Optional SAM flags - allows us to override the defaults.
+my $flag = 0;
+
+#-----------------------------------------------------------------------------
+# Conversion function.
+# Take name plus sequence and generate SAM.
+sub dump_seq {
+    my ($name,$seq) = @_;
+    if (length($seq) == 0) {
+	print STDERR "Skipping sequence '$name' as it is zero length.\n";
+	return
+    }
+
+    my $qual = "#" x length($seq);
+
+    if ($singleton) {
+	my $cigar = length($seq) . "M";
+	print "$name\t$flag\t$name\t1\t0\t$cigar\t*\t0\t0\t$seq\t$qual\n";
+    } else {
+	my $f = $flag | 0x04;
+	print "$name\t$f\t*\t0\t0\t*\t*\t0\t0\t$seq\t$qual\n";
+    }
+}
+
+
+#-----------------------------------------------------------------------------
+# Main entry point
+
+# Parse args
+if ($#ARGV >= 0 && $ARGV[0] eq "-s") {
+    $singleton = 1;
+    shift(@ARGV);
+}
+
+
+my $name = "";
+my $seq = "";
+
+# Basic header
+print "\@HD\tVN:1.0\n";
+
+
+# Convert
+$_ = <>;
+if (/^>(\S+)/) {
+    $name = $1;
+    $seq = "";
+} else {
+    print STDERR "Malformed file - should start with >name\n";
+    exit 1
+}
+
+if (!$singleton) {
+    # Convert as we go
+    while (<>) {
+	if (/^>(\S+)/) {
+	    dump_seq($name,$seq);
+	    $seq = "";
+	    $name = $1;
+	} else {
+	    chomp();
+	    $seq .= $_;
+	}
+    }
+
+    dump_seq($name,$seq);
+
+} else {
+    # Delay seqs, collating data first
+    my %fasta;
+    
+    while (<>) {
+	if (/^>(\S+)/) {
+	    $fasta{$name}=$seq;
+	    $seq = "";
+	    $name = $1;
+	} else {
+	    chomp();
+	    $seq .= $_;
+	}
+    }
+    $fasta{$name}=$seq;
+
+    # Output header
+    foreach (sort keys(%fasta)) {
+	print "\@SQ\tSN:$_\tLN:",length($fasta{$_}),"\n";
+    }
+
+    # And now output the sequence lines themselves.
+    foreach (sort keys(%fasta)) {
+	dump_seq($_, $fasta{$_});
+    }
+}
