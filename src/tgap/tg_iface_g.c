@@ -2875,11 +2875,12 @@ static int io_bin_destroy(void *dbh, tg_rec r, GView v) {
 
     if (!(bflag & BIN_NO_RANGE)) {
 	GView rv;
+	uint64_t i64;
 
 	cp += u72int(cp, (uint32_t *)&g.start);
 	cp += u72int(cp, (uint32_t *)&g.end);
 	g.end += g.start;
-	cp += u72int(cp, (uint32_t *)&g.range);
+	cp += u72intw(cp, &i64); g.range = i64;
 
 	rv = lock(io, (int)g.range, G_LOCK_RW);
 	deallocate(io, (int)g.range, rv);
