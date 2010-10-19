@@ -1714,6 +1714,7 @@ static int io_contig_write(void *dbh, cached_item *ci) {
     contig_t *c = (contig_t *)&ci->data;
 
     assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
     return io_contig_write_view(io, c, ci->view);
 }
 
@@ -1808,6 +1809,7 @@ static int io_array_write(void *dbh, cached_item *ci) {
     int ret;
 
     assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
     ar = (Array)&ci->data;
     ret = io_generic_write_rec(io, ci->view, GT_RecArray,
 			       ArrayBase(tg_rec, ar),
@@ -1943,6 +1945,7 @@ static int io_anno_ele_write(void *dbh, cached_item *ci) {
     anno_ele_t *e = (anno_ele_t *)&ci->data;
 
     assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
     return io_anno_ele_write_view(io, e, ci->view);
 }
 
@@ -1977,6 +1980,7 @@ static cached_item *io_anno_read(void *dbh, tg_rec rec) {
 }
 
 static int io_anno_write(void *dbh, cached_item *ci) {
+    assert(ci->rec > 0);
     return io_generic_write(dbh, ci);
 }
 
@@ -2087,6 +2091,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
     GIOVec vec[2];
 
     assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
 
     fmt[0] = GT_Library;
     fmt[1] = (lib->name ? 1 : 0) | (io->comp_mode << 6);
@@ -2791,6 +2796,7 @@ static int io_bin_write(void *dbh, cached_item *ci) {
     bin_index_t *bin = (bin_index_t *)&ci->data;
 
     assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
     return io_bin_write_view(io, bin, ci->view);
 }
 
@@ -3027,6 +3033,7 @@ static int io_track_write(void *dbh, cached_item *ci) {
     track_t *track = (track_t *)&ci->data;
 
     assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
     return io_track_write_view(io, track, ci->view);
 }
 
@@ -3499,6 +3506,7 @@ static int io_seq_write(void *dbh, cached_item *ci) {
     seq_t *seq = (seq_t *)&ci->data;
 
     assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
     return io_seq_write_view(io, seq, ci->view, (GRec)ci->rec);
 }
 
@@ -3963,6 +3971,9 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     int first_seq = -1;
     int wide_recs = sizeof(tg_rec) > sizeof(uint32_t);
 
+    assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
+
     set_dna_lookup();
 
     /* Compute worst-case sizes, for memory allocation */
@@ -4426,6 +4437,9 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     int level[7];
     GIOVec vec[2];
     char fmt[2];
+
+    assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
 
     /* Compute worst-case sizes, for memory allocation */
     for (i = 0; i < 7; i++) {
