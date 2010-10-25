@@ -33,8 +33,7 @@ uint32_t HacheTcl(uint8_t *data, int len) {
  */
 
 #undef get16bits
-#if (defined(__GNUC__) && defined(__i386__)) || defined(__WATCOMC__) \
-  || defined(_MSC_VER) || defined (__BORLANDC__) || defined (__TURBOC__)
+#if defined(__i386__) || defined(__i686__) || defined(__x86_64__)
 #define get16bits(d) (*((const uint16_t *) (d)))
 #endif
 
@@ -43,7 +42,7 @@ uint32_t HacheTcl(uint8_t *data, int len) {
                       +((const uint8_t *)(d))[0])
 #endif
 
-uint32_t HacheHsieh(uint8_t *data, int len) {
+static uint32_t HacheHsieh(uint8_t *data, int len) {
     uint32_t hash = 0, tmp;
     int rem;
 
@@ -85,6 +84,64 @@ uint32_t HacheHsieh(uint8_t *data, int len) {
     hash += hash >> 15;
     hash ^= hash << 10;
 */
+    hash ^= hash << 3;
+    hash += hash >> 5;
+    hash ^= hash << 4;
+    hash += hash >> 17;
+    hash ^= hash << 25;
+    hash += hash >> 6;
+
+    return hash;
+}
+
+static uint32_t HacheHsieh16(uint8_t *data) {
+    uint32_t hash = 0, tmp;
+
+    hash  += get16bits (data);
+    tmp    = (get16bits (data+2) << 11) ^ hash;
+    hash   = (hash << 16) ^ tmp;
+    hash  += hash >> 11;
+
+    hash  += get16bits (data+4);
+    tmp    = (get16bits (data+6) << 11) ^ hash;
+    hash   = (hash << 16) ^ tmp;
+    hash  += hash >> 11;
+
+    hash  += get16bits (data+8);
+    tmp    = (get16bits (data+10) << 11) ^ hash;
+    hash   = (hash << 16) ^ tmp;
+    hash  += hash >> 11;
+
+    hash  += get16bits (data+12);
+    tmp    = (get16bits (data+14) << 11) ^ hash;
+    hash   = (hash << 16) ^ tmp;
+    hash  += hash >> 11;
+
+    /* Force "avalanching" of final 127 bits */
+    hash ^= hash << 3;
+    hash += hash >> 5;
+    hash ^= hash << 4;
+    hash += hash >> 17;
+    hash ^= hash << 25;
+    hash += hash >> 6;
+
+    return hash;
+}
+
+static uint32_t HacheHsieh8(uint8_t *data) {
+    uint32_t hash = 0, tmp;
+
+    hash  += get16bits (data);
+    tmp    = (get16bits (data+2) << 11) ^ hash;
+    hash   = (hash << 16) ^ tmp;
+    hash  += hash >> 11;
+
+    hash  += get16bits (data+4);
+    tmp    = (get16bits (data+6) << 11) ^ hash;
+    hash   = (hash << 16) ^ tmp;
+    hash  += hash >> 11;
+
+    /* Force "avalanching" of final 127 bits */
     hash ^= hash << 3;
     hash += hash >> 5;
     hash ^= hash << 4;
@@ -171,7 +228,7 @@ acceptable.  Do NOT use for cryptographic purposes.
 --------------------------------------------------------------------
 */
 
-uint32_t HacheJenkins(uint8_t *k, int length /*, uint32_t initval */)
+static uint32_t HacheJenkins(uint8_t *k, int length /*, uint32_t initval */)
 {
    register uint32_t a,b,c,len;
 
@@ -228,6 +285,45 @@ uint32_t hache(int func, uint8_t *key, int key_len) {
 	
     case HASH_FUNC_JENKINS:
 	return HacheJenkins(key, key_len);
+	
+    case HASH_FUNC_NULL:
+    	return *(int *)key;
+    }
+    
+    return 0;
+}
+
+/*
+ * Special case of above for 16-byte keys
+ */
+static uint32_t hache16(int func, uint8_t *key) {
+    switch (func) {
+    case HASH_FUNC_HSIEH:
+	return HacheHsieh16(key);
+
+    case HASH_FUNC_TCL:
+	return HacheTcl(key, 16);
+	
+    case HASH_FUNC_JENKINS:
+	return HacheJenkins(key, 16);
+	
+    case HASH_FUNC_NULL:
+    	return *(int *)key;
+    }
+    
+    return 0;
+}
+
+static uint32_t hache8(int func, uint8_t *key) {
+    switch (func) {
+    case HASH_FUNC_HSIEH:
+	return HacheHsieh8(key);
+
+    case HASH_FUNC_TCL:
+	return HacheTcl(key, 8);
+	
+    case HASH_FUNC_JENKINS:
+	return HacheJenkins(key, 8);
 	
     case HASH_FUNC_NULL:
     	return *(int *)key;
@@ -948,6 +1044,32 @@ HacheItem *HacheTableQuery(HacheTable *h, char *key, int key_len) {
 	key_len = strlen(key);
 
     /* Return if present */
+    if (key_len == 16) {
+	/* cache_search key size is most common */
+	hv = hache16(h->options & HASH_FUNC_MASK,
+		     (uint8_t *)key) & h->mask;
+	for (hi = h->bucket[hv]; hi; hi = hi->next) {
+	    if (hi->key_len == 16) {
+		uint32_t *a = (uint32_t *)key;
+		uint32_t *b = (uint32_t *)hi->key;
+		int m =
+		    (a[0] - b[0] == 0) &&
+		    (a[1] - b[1] == 0) &&
+		    (a[2] - b[2] == 0) &&
+		    (a[3] - b[3] == 0);
+
+		if (m) {
+		    h->hits++;
+		    HacheOrderAccess(h, hi);
+#ifdef DEBUG
+		    printf("\thit = %p\n", hi->data.p);
+#endif
+		    return hi;
+		}
+	    }
+	}
+    }
+
     hv = hache(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
     for (hi = h->bucket[hv]; hi; hi = hi->next) {
 	if (key_len == hi->key_len &&
