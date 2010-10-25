@@ -2635,6 +2635,9 @@ int edview_row_for_item(edview *xx, tg_rec rec, int *xmin, int *xmax) {
 	return 0;
     }
 
+    if (xx->nr <= 0 || !xx->r)
+	return -1;
+
     /* A sequence, so find out what's visible */
     edview_visible_items(xx, xx->displayPos,
 			 xx->displayPos + xx->displayWidth);
