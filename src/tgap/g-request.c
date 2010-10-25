@@ -1628,7 +1628,7 @@ int g_free_rec_(GDB *gdb, GClient c, GFileN file_N) {
     gfile = gdb->gfile;
 
     rec = gfile->header.free_record;
-    if (rec == G_NO_REC)
+    if (rec == G_NO_REC || rec == 0)
 	return G_NO_REC;
     
     if (check_record(gdb->gfile, rec))
