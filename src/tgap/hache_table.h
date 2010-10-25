@@ -80,9 +80,6 @@ typedef struct {
 
 /* Hacheing prototypes */
 uint32_t hache(int func, uint8_t *key, int key_len);
-uint32_t HacheJenkins(uint8_t *k, int length);
-uint32_t HacheTcl(uint8_t *data, int len);
-uint32_t HacheHsieh(uint8_t *k, int length);
 
 /* HacheTable management prototypes */
 HacheTable *HacheTableCreate(int size, int options);
