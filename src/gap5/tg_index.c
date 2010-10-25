@@ -92,6 +92,8 @@ void usage(void) {
     fprintf(stderr, "      -c method            Specifies the compression method. This shold be\n");
     fprintf(stderr, "                           one of 'none', 'zlib' or 'lzma'.\n");
     fprintf(stderr, "                           Zlib is the default.\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "      -[1-9]               Use a fixed compression level from 1 to 9\n");
 }
 
 //#include <malloc.h>
@@ -125,9 +127,9 @@ int main(int argc, char **argv) {
 
     /* Arg parsing */
 #ifdef HAVE_SAMTOOLS
-    while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPnz:fr:d:c:gux")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPnz:fr:d:c:gux123456789")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "aBCstThAmMo:pPnz:fr:d:c:gux")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCstThAmMo:pPnz:fr:d:c:gux123456789")) != -1) {
 #endif
 	switch(opt) {
 	case 'g':
@@ -213,6 +215,18 @@ int main(int argc, char **argv) {
 	    
 	case 'x':
 	    a.sam_aux = 1;
+	    break;
+
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+	    set_tg_compression_level(opt-'0');
 	    break;
 	    
 	default:

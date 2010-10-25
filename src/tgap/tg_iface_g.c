@@ -88,6 +88,13 @@ static char *nul_mem_inflate(char *cdata, size_t csize, size_t *size) {
     return out;
 }
 
+static int tg_zlevel = -1;
+int set_tg_compression_level(int level) {
+    int old = tg_zlevel;
+    tg_zlevel = level;
+    return old;
+}
+
 #ifdef HAVE_LIBLZMA
 /* ------------------------------------------------------------------------ */
 /*
@@ -115,7 +122,9 @@ static char *lzma_mem_deflate(char *data, size_t size, size_t *cdata_size) {
     out = malloc(out_size);
 
     /* Single call compression */
-    if (LZMA_OK != lzma_easy_buffer_encode(LZMA_LEVEL,
+    if (LZMA_OK != lzma_easy_buffer_encode(tg_zlevel == -1
+					   ? LZMA_LEVEL
+					   : tg_zlevel,
 					   LZMA_CHECK_CRC32, NULL,
 					   (uint8_t *)data, size,
 					   (uint8_t *)out, cdata_size,
@@ -219,8 +228,8 @@ static char *zlib_mem_deflate(char *data, size_t size, size_t *cdata_size) {
     s.total_out = 0;
     s.data_type = Z_BINARY;
 
-    err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
-		       9, Z_DEFAULT_STRATEGY);
+    err = deflateInit2(&s, tg_zlevel == -1 ? Z_DEFAULT_COMPRESSION : tg_zlevel,
+		       Z_DEFLATED, 15, 9, Z_DEFAULT_STRATEGY);
 
     /* Encode to 'cdata' array */
     for (;s.avail_in;) {
@@ -275,8 +284,8 @@ static char *zlib_mem_deflate_parts(char *data,
     s.total_out = 0;
     s.data_type = Z_BINARY;
 
-    err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
-		       9, Z_FILTERED);
+    err = deflateInit2(&s, tg_zlevel == -1 ? Z_DEFAULT_COMPRESSION : tg_zlevel,
+		       Z_DEFLATED, 15, 9, Z_FILTERED);
 
     /* Encode to 'cdata' array */
     for (i = 0; i < nparts; i++) {
@@ -334,8 +343,8 @@ static char *zlib_mem_deflate_lparts(char *data,
     s.total_out = 0;
     s.data_type = Z_BINARY;
 
-    err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
-		       9, Z_FILTERED);
+    err = deflateInit2(&s, tg_zlevel == -1 ? Z_DEFAULT_COMPRESSION : tg_zlevel,
+		       Z_DEFLATED, 15, 9, Z_FILTERED);
 
     /* Encode to 'cdata' array */
     for (i = 0; i < nparts; i++) {
@@ -347,7 +356,8 @@ static char *zlib_mem_deflate_lparts(char *data,
 		fprintf(stderr, "Deflate produced larger output than expected. Abort\n"); 
 		return NULL;
 	    }
-	    deflateParams(&s, level[i], Z_DEFAULT_STRATEGY);
+	    deflateParams(&s, tg_zlevel == -1 ? level[i] : tg_zlevel,
+			  Z_DEFAULT_STRATEGY);
 	    err = deflate(&s, Z_SYNC_FLUSH); // also try Z_FULL_FLUSH
 	    cdata_pos = cdata_alloc - s.avail_out;
 	    if (err != Z_OK) {
