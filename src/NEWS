@@ -1,3 +1,66 @@
+Staden 2.0.0b8,  Oct ?? 2010
+============================
+
+Gap5 changes
+------------
+
+*	A Disassemble Readings option has been added to the main Edit
+        menu. (This performs the same task as in Gap4.)
+
+*	Tg_index now supports the CAF format.
+
+*	Internal record numbers are now 64-bit instead of 32-bit,
+        removing the need for reserving sequence record IDs in
+        tg_index (-r option) and allowing for more than 2 billion
+        sequences in a gap5 db.
+
+*	Contig editor "tag macros" (from gap4) have been added. Use
+        Shift + function key to define a tag macro and then that
+        function key to apply it.
+
+*	A "readings" list now exists (as in Gap4) which is displayed
+        and can be populated using the contig editor "names"
+        panel. The copying (cut/paste) of read names binding has also
+        changed from left-click+drag to middle-click, now matching
+        Gap4.
+
+*	Quality value 100 now has a special meaning for the consensus
+        algorithm, as in Gap4. It forces the base to be considered as
+        true (as it's only possible via a manual edit).
+
+*	More contig editor key bindings: Page up/down (already existed
+        for scrolling in 1Kb) can be modified by Shift, Control or
+        Shift+Control to scroll in 10, 100 and 1000Kb steps; [,] keys
+        for setting base quality to 0 or 100; Shift Up/Down arrow and
+        Control Up/Down arrow for incrementing/decrementing base
+        qualities by 1 or 10.
+
+*	Editor Delete now only works on pad characters unless Control
+        Delete is used, in order to prevent accidental removal of real
+        data.
+
+*	Added contig editor "Save Settings" command.
+
+*	Internal changes to the template display and Tk canvas.
+
+*	Sped up contig editor when dealing with excessively deep
+        alignments.
+
+Bug fixes
+---------
+
+*	Various fixes to compilation: --with-samtools errors, parallel
+        makes, improved DESTDIR support.
+
+*	Bug fixes to the new editor sequence Y-layout algorithm when
+        faced with regions of no data.
+
+*	Big tidy up on the cache refence counting system, fixing
+        multiple sporadic crashes and rarely even data corruptions.
+
+*	Fixes to consensus caching sometimes storing corrupted data.
+
+
 Staden 2.0.0b7,  July 14th 2010
 ===============================
 
