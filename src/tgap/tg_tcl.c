@@ -745,7 +745,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 		r.flags |= GRANGE_FLAG_COMP1;
 	}
 
-	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL);
+	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL, 0);
 	if (s->bin != bin->rec) {
 	    int new_comp, old_comp;
 	    tg_rec old_bin = s->bin;

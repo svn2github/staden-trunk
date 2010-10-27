@@ -374,7 +374,7 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded) {
     e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
     e = cache_rw(io, e);
 	
-    bin = bin_add_range(io, &c, &r, NULL, NULL);
+    bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
     e->bin = bin->rec;
 
     return 0;

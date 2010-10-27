@@ -8,8 +8,24 @@
 #define RD_ELEMENTS 8192
 
 tg_rec bin_new(GapIO *io, int pos, int sz, tg_rec parent, int parent_type);
+
+/*
+ * Adds a range to the contig.
+ *
+ * Delay_nseq controls whether we update bin_incr_nseq() immediately or
+ * whether to delay until later.
+ * A value of 0 will update nseq on each call.
+ * A value of 1 will update nseq whenever we happen to write to a different
+ * bin than before.
+ * A value of -1 will update any pending nseqs and do no other action (so
+ * c, r, r_out, etc are all ignored and NULL is returned).
+ *
+ * Returns the bin we added the range to on success
+ *         NULL on failure
+ */
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
-			   range_t **r_out, int *complemented);
+			   range_t **r_out, int *complemented,
+			   int delay_nseq);
 
 /*
  * A bit like bin_get_track, but this is designed to auto-generate and

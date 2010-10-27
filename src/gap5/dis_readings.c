@@ -563,7 +563,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 	if (old_comp)
 	    r.flags ^= GRANGE_FLAG_COMP1;
 
-	bin = bin_add_range(io, &c_new, &r, &r_out, NULL);
+	bin = bin_add_range(io, &c_new, &r, &r_out, NULL, 0);
 
 	s = cache_search(io, GT_Seq, pos[i].rec);
 	s = cache_rw(io, s);
@@ -593,7 +593,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 	    r.pair_rec = pos[i].anno[j].pair_rec;
 	    r.flags    = pos[i].anno[j].flags;
 	    
-	    bin = bin_add_range(io, &c_new, &r, &r_out, NULL);
+	    bin = bin_add_range(io, &c_new, &r, &r_out, NULL, 0);
 	    a = cache_search(io, GT_AnnoEle, pos[i].anno[j].rec);
 	    a = cache_rw(io, a);
 	    a->bin = bin->rec;

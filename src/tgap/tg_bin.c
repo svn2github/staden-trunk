@@ -504,15 +504,36 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
 /*
  * Adds a range to the contig.
  *
+ * Delay_nseq controls whether we update bin_incr_nseq() immediately or
+ * whether to delay until later.
+ * A value of 0 will update nseq on each call.
+ * A value of 1 will update nseq whenever we happen to write to a different
+ * bin than before.
+ * A value of -1 will update any pending nseqs and do no other action (so
+ * c, r, r_out, etc are all ignored and NULL is returned).
+ *
  * Returns the bin we added the range to on success
  *         NULL on failure
  */
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
-			   range_t **r_out, int *complemented) {
+			   range_t **r_out, int *complemented,
+			   int delay_nseq) {
 
     bin_index_t *bin;
     range_t *r2;
     int nr, offset, comp;
+    static bin_index_t *last_bin = NULL;
+    static int incr_value = 0;
+
+    /* Tidy-up operation when adding ranges in bulk */
+    if (delay_nseq == -1) {
+	if (last_bin && incr_value)
+	    bin_incr_nseq(io, last_bin, incr_value);
+	last_bin = NULL;
+	incr_value = 0;
+
+	return NULL;
+    }
 
     if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	if (contig_get_start(c) == contig_get_end(c)) {
@@ -570,8 +591,21 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     if (r_out)
 	*r_out = r2;
 
-    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
-	bin_incr_nseq(io, bin, 1);
+    /* Update nseq in bins, delaying this to avoid needless writes */
+    if (delay_nseq == 1 && bin != last_bin && incr_value) {
+	bin_incr_nseq(io, last_bin, incr_value);
+	incr_value = 0;
+	last_bin = bin;
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	if (delay_nseq == 0) {
+	    bin_incr_nseq(io, bin, 1);
+	} else {
+	    incr_value++;
+	    last_bin = bin;
+	}
+    }
 
     return bin;
 }

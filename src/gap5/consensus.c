@@ -282,7 +282,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		    r2.flags    = GRANGE_FLAG_TYPE_SINGLE;
 		    r2.flags   |= GRANGE_FLAG_ISCONS;
 			
-		    bin = bin_add_range(io, &c, &r2, &r_out, &comp);
+		    bin = bin_add_range(io, &c, &r2, &r_out, &comp, 0);
 		    /*
 		     * Not a valid assertion if we uncomment the bstart/bend
 		     * settings above.

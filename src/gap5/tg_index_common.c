@@ -309,7 +309,7 @@ tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     r.flags = flags;
 
     /* Add the range to a bin, and see which bin it was */
-    bin = bin_add_range(io, &c, &r, &r_out, &comp);
+    bin = bin_add_range(io, &c, &r, &r_out, &comp, 1);
 
     /* Save sequence */
     if (a->data_type == DATA_BLANK) {

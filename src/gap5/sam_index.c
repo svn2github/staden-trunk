@@ -1521,7 +1521,7 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
 	e = cache_rw(bio->io, e);
 	
-	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL);
+	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
 	e->bin = bin->rec;
     }
 #endif
@@ -1737,7 +1737,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
 	e = cache_rw(bio->io, e);
 	
-	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL);
+	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
 	e->bin = bin->rec;
     }
 #endif
@@ -1784,7 +1784,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
 	e = cache_rw(bio->io, e);
 
-	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL);
+	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
 	e->bin = bin->rec;
     }
 

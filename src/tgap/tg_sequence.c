@@ -1212,7 +1212,7 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
 	R.mqual    = r[i].mqual;
 	R.pair_rec = r[i].pair_rec;
 	R.flags    = r[i].flags;
-	bin = bin_add_range(io, &c, &R, &R_out, NULL);
+	bin = bin_add_range(io, &c, &R, &R_out, NULL, 0);
 	cache_incr(io, bin);
 
 	/* With luck the bin & index into bin haven't changed */

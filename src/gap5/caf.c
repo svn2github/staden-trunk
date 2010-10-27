@@ -868,7 +868,7 @@ static int read_contig_section(zfp *fp, GapIO *io, contig_t **contig, tg_args *a
 	e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	e = cache_rw(io, e);
 
-	bin = bin_add_range(io, contig, &r, NULL, NULL);
+	bin = bin_add_range(io, contig, &r, NULL, NULL, 0);
 	e->bin = bin->rec;
 
 	if (annotation[i].text) free(annotation[i].text);
@@ -1225,7 +1225,7 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);
 	    
-	    bin = bin_add_range(io, c, &r, NULL, NULL);
+	    bin = bin_add_range(io, c, &r, NULL, NULL, 0);
 	    e->bin = bin->rec;
 	    
 	    if (annotation[i].text) free(annotation[i].text);

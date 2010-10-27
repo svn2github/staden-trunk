@@ -563,7 +563,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);
 	
-	    bin = bin_add_range(io, &c, &r, NULL, NULL);
+	    bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
 	    e->bin = bin->rec;
 
 	    ntags++;
