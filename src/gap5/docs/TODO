@@ -1,3 +1,8 @@
+*	Disassemble readings doesn't shut down affected editors. This
+        means we can still edit such reads in the old editor (although
+        they vanish), or we can crash it if we used disassemble
+        readings to remove them from the database.
+
 *	tg_index.c explicitly sets io->db->seq_name_index = 0 if we
         don't do -t. Ideally we should simply not create it in the
         first place, or better create it but ignore it.

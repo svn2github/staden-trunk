@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
     a.store_unmapped = 0;
     a.sam_aux        = 0;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.9\n");
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.10\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2010, Wellcome Trust Sanger Institute\n\n");
 

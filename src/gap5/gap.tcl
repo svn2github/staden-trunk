@@ -534,7 +534,7 @@ set exec_notes 0
 set rawdata_note 1
 set maxseq 10000000
 
-set GAP_VERSION "1.2.9"
+set GAP_VERSION "1.2.10"
 
 switch $licence(type) {
     f		{}
