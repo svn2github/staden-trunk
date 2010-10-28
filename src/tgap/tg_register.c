@@ -45,9 +45,11 @@
 
 /* Debugging aid */
 //#define LOG_FILE
+#ifdef LOG_FILE    
 static void log_file(FILE *fp, char *buf) {
     puts(buf);
 }
+#endif
 
 /*
  * Initialise the contig register lists
@@ -97,6 +99,7 @@ void contig_register_destroy(GapIO *io) {
 /*
  * Debugging output
  */
+#if 0
 static void contig_register_dump(GapIO *io) {
     HacheTable *h = io_contig_reg(io);
     HacheIter *iter;
@@ -118,6 +121,7 @@ static void contig_register_dump(GapIO *io) {
     }
     puts("");
 }
+#endif
 
 /*
  * Allocates new register id numbers as requires. No protection for wrap-

@@ -507,10 +507,9 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 int edJoinMismatch(edview *xx, int *len, int *mismatch) {
     int left0,right0;
     int left1,right1;
-    int offset, ret;
+    int offset;
     int overlapLength;
     int len0,len1;
-    int shift = 0;
     edview **xx2;
     char *c0, *c1;
     int i;

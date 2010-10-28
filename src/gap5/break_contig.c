@@ -533,7 +533,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	if (bin_dup->rng) {
 	    int n = ArrayMax(bin_dup->rng);
 	    for (i = j = 0; i < n; i++) {
-		range_t *r = arrp(range_t, bin_dup->rng, i), *r2;
+		range_t *r = arrp(range_t, bin_dup->rng, i);
 		if (r->flags & GRANGE_FLAG_UNUSED)
 		    continue;
 

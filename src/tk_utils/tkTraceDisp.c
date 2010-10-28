@@ -329,6 +329,7 @@ static void trace_draw_yticks(DNATrace *t, Display *d, Pixmap p, GC gc,
     } while (y >= 0);
 }
 
+#if 0
 static void trace_draw_pyro(DNATrace *t, Display *d, Pixmap p,
 			    int x0, int xn, int yoff,
 			    int height, double ys) {
@@ -377,6 +378,7 @@ static void trace_draw_pyro(DNATrace *t, Display *d, Pixmap p,
 	XFillRectangle(d, p, gc, x, y, 3, h-y);
     }
 }
+#endif
 
 #if 0
 #define MAX4(t,i) ((t)[0][i].y > (t)[1][i].y \

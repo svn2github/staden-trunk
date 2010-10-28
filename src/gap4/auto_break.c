@@ -471,10 +471,12 @@ static void init_tables(void) {
     memset(counts, 0, (1<<(2*WS)) * sizeof(*counts));
 }
 
+#ifdef NORMALISE_FOR_GC
 static void init_gc_table(double gc) {
     probs[1] = probs[2] = gc/2;
     probs[0] = probs[3] = (1-gc)/2;
 }
+#endif
 
 
 static char *word2str(int word) {
@@ -498,6 +500,7 @@ static char *word2str(int word) {
 #endif
 }
 
+#if 0
 static char *word2str2(int word) {
     static char str[WS+2];
     int i, j;
@@ -510,6 +513,7 @@ static char *word2str2(int word) {
 
     return str;
 }
+#endif
 
 double compute_prob(int word) {
     int i;
@@ -704,7 +708,7 @@ int word_count(GapIO *io, double *gcp, int *depthp) {
  * Returns the total number of words indexed.
  */
 int word_count_cons(GapIO *io, double *gcp) {
-    int cnum, i, j, tw = 0, gc = 0, at = 0;
+    int cnum, j, tw = 0, gc = 0, at = 0;
 
     init_tables();
 
@@ -803,12 +807,12 @@ int word_count_cons(GapIO *io, double *gcp) {
     /* normalise counts by GC content */
     init_gc_table((double)gc/(gc+at));
 
-    for (i = 0; i < (1<<(2*WS)); i++) {
-	int c = counts[i];
-	c /= (1<<(2*WS)) * compute_prob(i);
+    for (j = 0; j < (1<<(2*WS)); j++) {
+	int c = counts[j];
+	c /= (1<<(2*WS)) * compute_prob(j);
 	if (c > MAX_COUNTS)
 	    c = MAX_COUNTS;
-	counts[i] = c;
+	counts[j] = c;
     }
 #endif
 

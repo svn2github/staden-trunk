@@ -30,7 +30,7 @@ static FILE *errfp = NULL;;
 static int check_contig_bins_r(GapIO *io, tg_rec brec, int ptype, tg_rec prec){
     bin_index_t *b;
     tg_rec copy_c0, copy_c1;
-    int copy_nseq, i, ns, nseq;
+    int copy_nseq, i, ns;
 
     /* Check prec/ptype */
     b = cache_search(io, GT_Bin, brec);

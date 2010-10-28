@@ -6,6 +6,7 @@
 #include "tkRaster.h"
 #include "text_output.h"
 
+/*
 static int b_compare(const void *p1,
 		     const void *p2)
 {
@@ -15,6 +16,7 @@ static int b_compare(const void *p1,
     return ((*i1) - i2->pos);
 
 }
+*/
 
 static int b_search(int key,
 		    p_score *array,

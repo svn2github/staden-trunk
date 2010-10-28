@@ -1049,7 +1049,6 @@ find_oligo_file(GapIO *io,
 {
     char **ids;
     int nids;
-    char line[8192];
     int i;
     int r = 0; /* ret. code */
 

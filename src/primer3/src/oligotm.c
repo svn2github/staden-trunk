@@ -307,7 +307,7 @@ oligotm(s, DNA_nM, K_mM, Mg_mM, dNTP_mM)
     size_t len = strlen(s);
     int symmetric;
 
-    const char *orig=s;
+    /* const char *orig=s; */
 
 #ifndef SANTALUCIA_1998
     ds += 108;

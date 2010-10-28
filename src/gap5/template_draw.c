@@ -129,7 +129,6 @@ int add_colour(image_t *image, unsigned int red, unsigned int green, unsigned in
    To free memory, use image_destroy (see below).
 */
 image_t *initialise_image(Display *dis) {
-    int i;
     image_t *image = NULL;
     
     if (NULL == (image = malloc(sizeof(image_t)))) return NULL;

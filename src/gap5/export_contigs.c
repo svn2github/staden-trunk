@@ -293,6 +293,7 @@ static char *escape_hex_string(char *str, char *escape) {
     return new;
 }
 
+#if 0
 /*
  * Reversal of the escape_hex_string above.
  *
@@ -361,6 +362,7 @@ static char *unescape_hex_string(char *str) {
 
     return ret;
 }
+#endif
 
 
 /*
@@ -937,9 +939,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 						  GRANGE_FLAG_ISANY);
     rangec_t *r;
     contig_t *c;
-    int qalloc = 0;
     char *Q = NULL, *S = NULL;
-    int cg_alloc = 0;
     char *cigar = NULL;
     int offset, ustart, uend;
 #if 0
@@ -973,8 +973,6 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	: 0;
 
     while (r = contig_iter_next(io, ci)) {
-	int i;
-
 	/* Add new items to fifo */
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	    seq_t *s;
@@ -1232,7 +1230,7 @@ static int export_contig_baf(GapIO *io, FILE *fp,
 						  start, end,
 						  GRANGE_FLAG_ISANY);
     rangec_t *r;
-    char *q = NULL, *S = NULL, *cp;
+    char *q = NULL, *S = NULL;
     contig_t *c;
     fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
     fifo_t *fi;

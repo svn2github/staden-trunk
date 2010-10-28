@@ -821,7 +821,6 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 	/* If the node has a cached y coord already, use it if valid */
 	if (r[i].y) {
 	    struct xy_pair yline;
-	    int found = 0;
 
 	    yline.x = 0;
 	    yline.y = r[i].y;
@@ -1078,7 +1077,6 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
 		int st, en;
 
 		if (count >= *alloc) {
-		    int old_alloc = *alloc;
 		    rangec_t *new_range;
 		
 		    *alloc = *alloc ? *alloc * 2 : 16;
@@ -1937,7 +1935,6 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
     track_t *t;
     tvalues_t *tv = NULL;
     int alloc = 0, count = 0;
-    double last_pos;
     int bin_off;
     int *data, *data3;
     bin_index_t *start_bin;

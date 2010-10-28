@@ -808,6 +808,7 @@ static void guess_references(edview *xx, int seqtop, int seqbot, int pos,
 }
 #endif
 
+#if 0
 static void trace_columns(edview *xx, int cols) {
     Tcl_Interp *interp = EDINTERP(xx->ed);
     char buf[10];
@@ -833,7 +834,6 @@ static tman_dc *seq2edc(int seq) {
     return NULL;
 }
 
-#if 0
 /*
  * Called when the user has selected to automatically perform trace
  * differencing on their reference traces (both the wildtype/negative control

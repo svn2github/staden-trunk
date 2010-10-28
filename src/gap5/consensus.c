@@ -126,7 +126,6 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
     left = start;
     for (i = 0; i < nr; i++) {
 	bin_index_t *bin;
-	int right;
 	//int f_a, f_b;
 
 	/* Skip entirely overlapping bins */

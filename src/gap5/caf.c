@@ -186,7 +186,7 @@ static char *add_line(char *read, char *line, long line_size, long *read_size, l
     return read;
 }
 
-
+#if 0
 /*
     a more specialised version of get_value, could
     be replaced.
@@ -212,6 +212,7 @@ static int find_name(char *in_line, char **name) {
     
     return i;
 }
+#endif
 
 
 /* an alternative to the Gnu specific getline */

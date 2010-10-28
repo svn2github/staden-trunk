@@ -176,11 +176,12 @@ static int calc_contig_info_phred(tg_rec contig, int start, int end,
 						   void       *mydata,
 						   info_arg_t *theirdata),
 				  void *info_data);
-
+#if 0
 static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 			  int start, char *con1, float *qual1,
 			  char *con2, float *qual2,
 			  float cons_cutoff, int qual_cutoff);
+#endif
 
 /* ----- functions ----- */
 
@@ -1917,6 +1918,7 @@ static void process_frags_5(seq_frag *frag, int *num_frags, int from, int to,
  * identical except when pads exist. Therefore for now the 2nd highest
  * confidence code in this function is likely to be unused.
  */
+#if 0
 static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 			  int start, char *con1, float *qual1,
 			  char *con2, float *qual2,
@@ -2249,6 +2251,7 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
     fflush(stdout);
     *num_frags = nf;
 }
+#endif
 
 /*
  * Stirling's formula with a 1/12n correction applied to improve accuracy.

@@ -922,7 +922,6 @@ contig_selector_reg(Tcl_Interp *interp,
  * Removes the template and reading display (and unplots etc).
  */
 static void cs_shutdown(GapIO *io, obj_cs *cs) {
-    int i;
     reg_quit rq;
 
 /*

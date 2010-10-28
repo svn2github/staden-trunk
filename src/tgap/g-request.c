@@ -1618,7 +1618,6 @@ int g_header_info_(GDB *gdb, GClient c, GFileN file_N, GHeaderInfo *info)
 /* ARGSUSED */
 int g_free_rec_(GDB *gdb, GClient c, GFileN file_N) {
     GFile *gfile;
-    GRecInfo info;
     GCardinal rec;
     Index *ind;
     

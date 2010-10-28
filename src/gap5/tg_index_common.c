@@ -124,6 +124,7 @@ char *bttmp_file_get(bttmp_t *tmp, tg_rec *rec) {
     return NULL;
 }
 
+#if 0
 /* debugging functions */
 static void print_pair(pair_loc_t *p) {
     fprintf(stderr, "rec:%"PRIrec" bin:%"PRIrec" idx:%d crec:%"PRIrec
@@ -136,7 +137,7 @@ static void print_range(range_t *r) {
 	    " flags:%d\n",
 	    r->start, r->end, r->rec, r->mqual, r->pair_rec, r->flags);
 }
-
+#endif
 
 
 /* temp file handling */

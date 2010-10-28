@@ -59,7 +59,7 @@ int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
     int ierr;
     ALIGN_PARAMS *params;
     Hash *h;
-    int max_seq, word_len, max_matches;
+    int word_len, max_matches;
     int shortest_diagonal, longest_diagonal;
     int gap_open, gap_extend, band, edge_mode, job, min_match;
     int compare_method = 17;

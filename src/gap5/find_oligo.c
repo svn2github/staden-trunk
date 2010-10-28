@@ -473,6 +473,7 @@ RegFindOligo(GapIO *io,
  * and length 'length'
  *
  */
+#if 0
 static char *
 GetTagSequence(GapIO *io,                                             /* in */
 	       int c_num,                                             /* in */
@@ -499,6 +500,7 @@ static void DelTagSequence(char *sequence, int length) {
     if (length >= 1024)
 	xfree(sequence);
 }
+#endif
 
 int inexact_pad_match(char *seq,
 		      int seq_len,

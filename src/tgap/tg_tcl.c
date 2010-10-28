@@ -1423,7 +1423,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case GET_TYPE: {
 	char type[5];
-	type2str(te->anno->tag_type, type);
+	(void)type2str(te->anno->tag_type, type);
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), type ,4);
 	break;
     }

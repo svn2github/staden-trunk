@@ -48,7 +48,6 @@ typedef struct {
 static void decode_hex_insitu(char *str) {
     static int hex[256];
     static int hex_init = 0;
-    size_t l;
     char *out = str;
 
     if (!str)
@@ -108,8 +107,6 @@ static gff_entry *parse_gff_entry(char *line, gff_entry *gff) {
     char *cp, *tmp;
     enum state {SEQID, SOURCE, TYPE, START, END, SCORE, STRAND,
                 PHASE, KEY, VAL};
-
-    enum state s = SEQID;
 
     if (!line)
 	return NULL;
@@ -256,7 +253,6 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded) {
     bin_index_t *bin;
     anno_ele_t *e;
     contig_t *c;
-    char *con;
 
     r.flags = GRANGE_FLAG_ISANNO;
     r.start = gff->start;
