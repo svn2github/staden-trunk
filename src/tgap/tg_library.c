@@ -11,7 +11,14 @@
  * This *modifies* l rather than simply returning it. This is hacky, but
  * it avoids needing temporary variable storage.
  */
-#define l2(l) (l="\x0\x1\x1c\x2\x1d\xe\x18\x3\x1e\x16\x14\xf\x19\x11\x4\x8\x1f\x1b\xd\x17\x15\x13\x10\x7\x1a\xc\x12\x6\xb\x5\xa\x9"[((l|=l>>1,l|=l>>2,l|=l>>4,l|=l>>8,l|=l>>16,l/2+1)*0x77CB531U)>>27])
+#define l2(l) \
+    l|=l>>1;\
+    l|=l>>2;\
+    l|=l>>4;\
+    l|=l>>8;\
+    l|=l>>16;\
+    l=((l/2+1)*0x77CB531U)>>27;\
+    l="\x0\x1\x1c\x2\x1d\xe\x18\x3\x1e\x16\x14\xf\x19\x11\x4\x8\x1f\x1b\xd\x17\x15\x13\x10\x7\x1a\xc\x12\x6\xb\x5\xa\x9"[l]
 
 /*
  * Given a signed insert size this returns a bin number in the range from

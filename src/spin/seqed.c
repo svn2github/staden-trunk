@@ -1,3 +1,4 @@
+#include <string.h>
 #include "xalloc.h"
 #include "tkSeqed.h"
 #include "seq_results.h"

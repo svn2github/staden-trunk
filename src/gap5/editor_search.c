@@ -5,6 +5,7 @@
 
 #include <tg_gio.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "dna_utils.h"
 #include "search_utils.h"

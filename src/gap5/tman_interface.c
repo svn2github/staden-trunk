@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <tk.h>
+#include <string.h>
 
 #include "editor_view.h"
 #include "tman_interface.h"

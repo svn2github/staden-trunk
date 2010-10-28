@@ -1,3 +1,4 @@
+#include <string.h>
 #include "dna_utils.h"
 #include "tkSeqed.h"
 #include "renz_utils.h"

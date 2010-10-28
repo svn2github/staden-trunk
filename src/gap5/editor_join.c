@@ -4,6 +4,7 @@
  */
 #include <tg_gio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "editor_view.h"
 #include "align_lib.h"

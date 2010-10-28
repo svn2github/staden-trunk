@@ -1351,6 +1351,8 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	    return TCL_ERROR;
 	te->anno = t;
 	break;
+    default:
+	index=index; /* nop, but prevents gcc warnings */
     }
 
     /* Perform the command proper */

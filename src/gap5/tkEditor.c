@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <X11/Xatom.h> /* XA_STRING */
+#include <string.h>
 
 #include "tkEditor.h"
 #include "tkSheet_common.h"

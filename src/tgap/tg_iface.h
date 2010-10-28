@@ -156,4 +156,6 @@ typedef struct {
     io_anno_ele_block anno_ele_block;
 } iface;
 
+int set_tg_compression_level(int level);
+
 #endif /* _TG_IO_LOW_H_ */

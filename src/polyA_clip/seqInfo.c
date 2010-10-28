@@ -32,6 +32,7 @@
 #include <io_lib/scf_extras.h>
 
 #include "seqInfo.h"
+#include "xalloc.h"
 
 /*
  * Usage: verror(priority, name, format, args...);

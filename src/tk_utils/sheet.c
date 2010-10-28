@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <string.h>
 
 /* Function prototypes missing on windows implementation of Xlib.h, tk.h pulls them in */
 #ifdef _WIN32

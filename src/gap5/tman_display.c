@@ -1,4 +1,5 @@
 #include <tk.h>
+#include <string.h>
 
 #include "misc.h"
 #include "editor_view.h"

@@ -6,6 +6,7 @@
  */
 
 #include <tk.h>
+#include <string.h>
 #include "tk_defs.h"
 #include "tkSheet_common.h"
 #include "tkSeqedNames.h"

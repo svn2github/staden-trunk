@@ -2,6 +2,7 @@
  * The Sheet widget for tk. This is simply a tk interface to the sheet.c file.
  */
 
+#include <string.h>
 #include <tk.h>
 #include "tkSheet.h"
 #include "tk_defs.h"

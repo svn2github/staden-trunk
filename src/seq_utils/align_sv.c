@@ -324,12 +324,12 @@ static FastInt CHECK_SCORE(A,B,M,N,S,EG)
 #define MC 4
 
 static int tmp[6][6] = {
-    MC*ACC, MM*ACC, MM*ACC, MM*ACC, -1*ACC,  1*ACC,
-    MM*ACC, MC*ACC, MM*ACC, MM*ACC, -1*ACC,  1*ACC,
-    MM*ACC, MM*ACC, MC*ACC, MM*ACC, -1*ACC,  1*ACC,
-    MM*ACC, MM*ACC, MM*ACC, MC*ACC, -1*ACC,  1*ACC,
-    -1*ACC, -1*ACC, -1*ACC, -1*ACC, MC*ACC, -1*ACC,
-     1*ACC,  1*ACC,  1*ACC,  1*ACC, -1*ACC, MC*ACC};
+    {MC*ACC, MM*ACC, MM*ACC, MM*ACC, -1*ACC,  1*ACC},
+    {MM*ACC, MC*ACC, MM*ACC, MM*ACC, -1*ACC,  1*ACC},
+    {MM*ACC, MM*ACC, MC*ACC, MM*ACC, -1*ACC,  1*ACC},
+    {MM*ACC, MM*ACC, MM*ACC, MC*ACC, -1*ACC,  1*ACC},
+    {-1*ACC, -1*ACC, -1*ACC, -1*ACC, MC*ACC, -1*ACC},
+    { 1*ACC,  1*ACC,  1*ACC,  1*ACC, -1*ACC, MC*ACC}};
 
 /* static char *nuascii = "ACGT*-"; */
 

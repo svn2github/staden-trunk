@@ -96,7 +96,7 @@ int valid_consensus(EdStruct *xx, int from, int to) { return 0; }
  * defining the state of the contig editor
  */
 int edused[MAXEDSTATES] = {0};
-EdStruct edstate[MAXEDSTATES] = {0};
+EdStruct edstate[MAXEDSTATES] = {{0}};
 
 EdStruct *editor_id_to_edstruct(int id) {
     return &edstate[id];

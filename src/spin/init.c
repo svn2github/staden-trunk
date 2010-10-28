@@ -1,3 +1,4 @@
+#include <string.h>
 #include <tcl.h>
 #include <stdlib.h>
 

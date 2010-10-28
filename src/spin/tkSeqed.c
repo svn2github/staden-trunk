@@ -3,6 +3,7 @@
  */
 
 #include <tk.h>
+#include <string.h>
 #include "tkSeqed.h"
 #include "tk_defs.h"
 #include "xalloc.h"
