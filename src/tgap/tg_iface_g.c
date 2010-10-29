@@ -815,7 +815,8 @@ static int io_generic_write_i4(g_io *io, GView v, int type,
     }
 
     ret = g_write(io, v, cp_start, cp - cp_start);
-    g_flush(io, v); /* Should we auto-flush? */
+    if (ret == 0)
+	g_flush(io, v); /* Should we auto-flush? */
 
     free(cp_start);
     return ret ? -1 : cp - cp_start;
@@ -841,7 +842,8 @@ static int io_generic_write_rec(g_io *io, GView v, int type,
     }
 
     ret = g_write(io, v, cp_start, cp - cp_start);
-    g_flush(io, v); /* Should we auto-flush? */
+    if (ret == 0)
+	g_flush(io, v); /* Should we auto-flush? */
 
     free(cp_start);
     return ret ? -1 : cp - cp_start;
@@ -1009,7 +1011,8 @@ static int btree_write(g_io *io, btree_node_t *n) {
 	wrcounts[GT_BTree]++;
 	//ret = g_write(io, ci->view, b2, len);
 	ret = g_writev(io, ci->view, vec, 2);
-	g_flush(io, ci->view);
+	if (ret == 0)
+	    g_flush(io, ci->view);
     } else {
 	if (-1 == (v = lock(io, n->rec, G_LOCK_EX))) {
 	    fprintf(stderr, "Failed to lock btree node %"PRIbtr"\n", n->rec);
@@ -1942,7 +1945,8 @@ static int io_anno_ele_write_view(g_io *io, anno_ele_t *e, GView v) {
     wrstats[GT_AnnoEle] += cp-cpstart;
     wrcounts[GT_AnnoEle]++;
     err |= g_write(io, v, (void *)cpstart, cp-cpstart);
-    g_flush(io, v);
+    if (err == 0)
+	g_flush(io, v);
 
     if (cpstart != block)
 	free(cpstart);
@@ -2134,7 +2138,8 @@ static int io_library_write(void *dbh, cached_item *ci) {
     vec[1].buf = gzout; vec[1].len = ssz;
     err = g_writev(io, ci->view, vec, 2);
     free(gzout);
-    g_flush(io, ci->view);
+    if (err == 0)
+	g_flush(io, ci->view);
 
     return err;
 }
@@ -2795,7 +2800,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	wrcounts[GT_Bin]++;
 	err |= g_write(io, v, cpstart, cp - cpstart);
 	//err |= g_write(io, v, &g, sizeof(g));
-	g_flush(io, v);
+	if (err == 0)
+	    g_flush(io, v);
     }
 
     return err;
@@ -3032,7 +3038,8 @@ static int io_track_write_view(g_io *io, track_t *track, GView v) {
     wrstats[GT_Track] += cp-data;
     wrcounts[GT_Track]++;
     err |= g_write(io, v, data, cp-data);
-    g_flush(io, v);
+    if (err == 0)
+	g_flush(io, v);
     free(data);
 
     return err;
@@ -3503,7 +3510,8 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, tg_rec rec) {
     wrstats[GT_Seq] += cp-cpstart;
     wrcounts[GT_Seq]++;
     err |= g_write(io, v, (void *)cpstart, cp-cpstart);
-    g_flush(io, v);
+    if (err == 0)
+	g_flush(io, v);
 
     if (cpstart != block)
 	free(cpstart);
@@ -4278,7 +4286,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     wrstats[GT_SeqBlock] += cp-cp_start + 2;
     wrcounts[GT_SeqBlock]++;
     err = g_writev(io, ci->view, vec, 2);
-    g_flush(io, ci->view);
+    if (err == 0)
+	g_flush(io, ci->view);
    
     free(cp_start);
     free(out_malloc);
@@ -4548,7 +4557,8 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     wrstats[GT_AnnoEleBlock] += cp-cp_start + 2;
     wrcounts[GT_AnnoEleBlock]++;
     err = g_writev(io, ci->view, vec, 2);
-    g_flush(io, ci->view);
+    if (err == 0)
+	g_flush(io, ci->view);
     
     free(cp_start);
 
