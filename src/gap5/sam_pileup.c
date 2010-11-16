@@ -409,7 +409,7 @@ int pileup_loop(samfile_t *fp,
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
 static char *append_int(char *cp, int i) {
-    int j, k = 0;
+    int j;
 
     if (i < 0) {
 	*cp++ = '-';
@@ -419,44 +419,36 @@ static char *append_int(char *cp, int i) {
 	return cp;
     }
 
-    if (i < 1000)
-	goto b1;
-    if (i < 100000)
-	goto b2;
-    if (i < 100000000)
-	goto b3;
+    //if (i < 10)         goto b0;
+    if (i < 100)        goto b1;
+    //if (i < 1000)       goto b2;
+    if (i < 10000)      goto b3;
+    //if (i < 100000)     goto b4;
+    if (i < 1000000)    goto b5;
+    //if (i < 10000000)   goto b6;
+    if (i < 100000000)  goto b7;
 
-    j = i / 1000000000;
-    if (j || k) *cp++ = j + '0', k=1, i %= 1000000000;
+ b9: if ((j = i / 1000000000)) {*cp++ = j + '0'; i -= j*1000000000; goto x8;}
+ b8: if ((j = i / 100000000))  {*cp++ = j + '0'; i -= j*100000000;  goto x7;}
+ b7: if ((j = i / 10000000))   {*cp++ = j + '0'; i -= j*10000000;   goto x6;}
+ b6: if ((j = i / 1000000))    {*cp++ = j + '0', i -= j*1000000;    goto x5;}
+ b5: if ((j = i / 100000))     {*cp++ = j + '0', i -= j*100000;     goto x4;}
+ b4: if ((j = i / 10000))      {*cp++ = j + '0', i -= j*10000;      goto x3;}
+ b3: if ((j = i / 1000))       {*cp++ = j + '0', i -= j*1000;       goto x2;}
+ b2: if ((j = i / 100))        {*cp++ = j + '0', i -= j*100;        goto x1;}
+ b1: if ((j = i / 10))         {*cp++ = j + '0', i -= j*10;         goto x0;}
+ b0: if (i)                     *cp++ = i + '0';
+    return cp;
 
-    j = i / 100000000;
-    if (j || k) *cp++ = j + '0', k=1, i %= 100000000;
-    
- b3:
-    j = i / 10000000;
-    if (j || k) *cp++ = j + '0', k=1, i %= 10000000;
-    
-    j = i / 1000000;
-    if (j || k) *cp++ = j + '0', k=1, i %= 1000000;
-    
-    j = i / 100000;
-    if (j || k) *cp++ = j + '0', k=1, i %= 100000;
-    
- b2:
-    j = i / 10000;
-    if (j || k) *cp++ = j + '0', k=1, i %= 10000;
-
-    j = i / 1000;
-    if (j || k) *cp++ = j + '0', k=1, i %= 1000;
-
- b1:
-    j = i / 100;
-    if (j || k) *cp++ = j + '0', k=1, i %= 100;
-
-    j = i / 10;
-    if (j || k) *cp++ = j + '0', k=1, i %= 10;
-
-    if (i || k) *cp++ = i + '0';
+ x8: *cp++ = i / 100000000 + '0', i %= 100000000;
+ x7: *cp++ = i / 10000000  + '0', i %= 10000000;
+ x6: *cp++ = i / 1000000   + '0', i %= 1000000;
+ x5: *cp++ = i / 100000    + '0', i %= 100000;
+ x4: *cp++ = i / 10000     + '0', i %= 10000;
+ x3: *cp++ = i / 1000      + '0', i %= 1000;
+ x2: *cp++ = i / 100       + '0', i %= 100;
+ x1: *cp++ = i / 10        + '0', i %= 10;
+ x0: *cp++ = i             + '0';
 
     return cp;
 }
