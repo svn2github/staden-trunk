@@ -127,13 +127,17 @@ int get_padded_coord(pad_count_t *tree, int unpadded) {
 
     n.pos = unpadded+1;
     node = RB_NFIND(PAD_COUNT, tree, &n);
-    if (!node)
-	return unpadded;
-
-    /* Node is now >= unpadded, so get previous and count forward */
-    node = RB_PREV(PAD_COUNT, tree, node);
-    if (!node)
-	return unpadded;
+    if (!node) {
+	/* Beyond the last node */
+	node = RB_MAX(PAD_COUNT, tree);
+	if (!node)
+	    return unpadded;
+    } else {
+	/* Node is now >= unpadded, so get previous and count forward */
+	node = RB_PREV(PAD_COUNT, tree, node);
+	if (!node)
+	    return unpadded;
+    }
 
     return node->ppos + unpadded - node->pos;
 }
