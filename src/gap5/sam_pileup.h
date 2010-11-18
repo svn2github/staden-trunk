@@ -2,18 +2,15 @@
 #define _PILEUP_H_
 
 #include "bam.h"
-#include "sam.h"
-#include "sam_header.h"
-#include "faidx.h"
-#include "bam_maqcns.h"
 
 typedef struct pileup {
     struct pileup *next;  // A link list, for active seqs
     void *cd;		  // General purpose per-seq client-data
 
-    bam1_t b;		  // Bam entry associated with struct
-    unsigned char *b_qual;// cached bam1_qual
-    unsigned char *b_seq; // cached bam1_seq
+    bam_seq_t *b;	  // Bam entry associated with struct
+    unsigned char *b_qual;// cached bam_qual
+    unsigned char *b_seq; // cached bam_seq
+    uint32_t *b_cigar;    // cached bam_cigar
     int  b_strand;        // 0 => fwd, 1 => rev
 
     int  pos;             // Current unpadded position in seq
@@ -30,12 +27,12 @@ typedef struct pileup {
     char start;		  // True if this is a new sequence
 } pileup_t;
 
-int pileup_loop(samfile_t *fp,
+int pileup_loop(bam_file_t *fp,
 		int (*seq_init)(void *client_data,
-				samfile_t *fp,
+				bam_file_t *fp,
 				pileup_t *p),
 		int (*func)(void *client_data,
-			    samfile_t *fp,
+			    bam_file_t *fp,
 			    pileup_t *p,
 			    int depth,
 			    int pos,

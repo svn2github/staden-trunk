@@ -10,7 +10,7 @@ TGAP_INC=-I$(SRCROOT)/tgap
 TGAP_DEP=-ltgap
 
 INCLUDES_E += $(MISC_INC) $(TGAP_INC) $(TK_INC) \
-	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(SAMTOOLS_INC) \
+	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
 	      $(P3_INC) $(CURSES_INC)
 	      
 CFLAGS += $(SHLIB_CFLAGS)
@@ -61,6 +61,8 @@ TG_INDEX=\
 	maq.o \
 	maqmap.o \
 	sam_index.o \
+	sam_pileup.o \
+	bam.o \
 	ace.o \
 	caf.o \
 	depad_seq_tree.o
@@ -110,7 +112,6 @@ GAP5_LIBS=\
 	$(TK_LIB) \
 	$(TGAP_DEP) \
 	$(SEQUTILS_LIB) \
-	$(SAMTOOLS_LIB) \
 	$(P3_LIB) \
 	$(MISC_LIB)
 
@@ -138,7 +139,6 @@ TGILIBS = \
 	$(TKUTILS_LIB) \
 	$(SEQUTILS_LIB) \
 	$(TK_LIB) \
-	$(SAMTOOLS_LIB) \
 	$(MISC_LIB) \
 	$(IOLIB_LIB)
 

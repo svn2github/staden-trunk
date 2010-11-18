@@ -45,11 +45,8 @@
 #include "tg_index_common.h"
 #include "dis_readings.h"
 
-#ifdef HAVE_SAMTOOLS
 #include "sam_index.h"
-#include "sam.h"
-#endif
-
+#include "bam.h"
 
 #ifdef VALGRIND
 #    include <valgrind/memcheck.h>
@@ -1539,14 +1536,12 @@ tcl_import_reads(ClientData clientData,
 	    parse_baf(args.io, args.file, &args.a);
 	    break;
 
-#ifdef HAVE_SAMTOOLS
 	case 'b':
 	    parse_bam(args.io, args.file, &args.a);
 	    break;
 	case 's':	
 	    parse_sam(args.io, args.file, &args.a);
 	    break;
-#endif
 
 	default:
 	    fprintf(stderr, "Unknown file type for '%s' - skipping\n",

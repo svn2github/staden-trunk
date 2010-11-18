@@ -11,15 +11,10 @@
 #include "sam_index.h"
 
 #include <staden_config.h>
-#ifdef HAVE_SAMTOOLS
 
 #define _IOLIB 2
-#include "bam.h"
-#include "sam.h"
-#include "sam_header.h"
-#include "faidx.h"
-#include "bam_maqcns.h"
 #include "depad_seq_tree.h"
+#include "sam_pileup.h"
 
 /*
  * Uncomment this if you want sam auxillary tags to be added as tag in
@@ -27,8 +22,8 @@
  */
 //#define SAM_AUX_AS_TAG
 
-typedef struct {
-    bam1_t *b;
+typedef struct bio_seq {
+    struct bio_seq *next;
     char *seq;
     char *conf;
     int seq_len;
@@ -37,7 +32,7 @@ typedef struct {
     int pos;
     int left;
     tg_rec rec;
-} bam_seq_t;
+} bio_seq_t;
 
 typedef struct rec_list {
     tg_rec rec;
@@ -46,20 +41,21 @@ typedef struct rec_list {
 
 typedef struct {
     GapIO *io;
-    const char *fn;
-    bam_seq_t *seqs;
-    int nseq;
+    bam_file_t *fp;
+    char *fn;
+    bio_seq_t *seqs;
+    bio_seq_t *free_seq;
     int max_seq;
-    rec_list_t *rec_head;
-    rec_list_t *rec_tail;
     HacheTable *pair;
     HacheTable *libs;
     contig_t *c;
-    int n_inserts;
-    int npads;
+    int n_inserts; /* Insertions to seq? */
+    int npads;     /* Cons inserts due to new data */
+    int npads2;    /* Seq inserts due to old cons pads */
     int count;
+    int total_count;
     int skip;
-    bam_header_t *header;
+    //bam_header_t *header;
     tg_args *a;
     struct PAD_COUNT *tree; /* re-padding */
     int last_tid;
@@ -170,304 +166,115 @@ int stech_guess_by_name(char *str) {
 }
 
 
-int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf);
-
 /*
- * Allocates a new bam_seq_t entry in bam_io_t struct.
+ * Allocates a new bio_seq_t entry in bam_io_t struct.
  * We use a single indexed array counting from 0 to N-1 representing the
  * N active sequences in a bam_pileup1_t struct. This may mean we have
  * O(D^2) complexity for depth D, so if we find this becomes a bottleneck
- * then we can replace the bam_seq_t array with an ordered linked list
+ * then we can replace the bio_seq_t array with an ordered linked list
  * instead.
  *
- * Returns the sequence index on success
- *         -1 on failure
+ * Returns the bio_seq_t * on success
+ *         NULL on failure
  */
-int bio_new_seq(bam_io_t *bio, const bam_pileup1_t *p, int pos) {
+bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
     int i;
-    bam_seq_t *s;
-    rec_list_t *tmp;
+    bio_seq_t *s;
 
-    //printf("New seq %d at %d %s\n", bio->nseq, pos, bam1_qname(p->b));
+    static struct char2 {
+	char c1;
+	char c2;
+    } lc2[256];
+    static int lookup_done = 0;
 
-    if (bio->nseq == bio->max_seq) {
-	bio->max_seq = bio->max_seq ? bio->max_seq * 2 : 256;
-	bio->seqs = (bam_seq_t *)realloc(bio->seqs,
-					 bio->max_seq * sizeof(bam_seq_t));
-	if (!bio->seqs)
-	    return -1;
+    if (!lookup_done) {
+	int i;
+	for (i = 0; i < 256; i++) {
+	    lc2[i].c1 = "=ACMGRSVTWYHKDBN"[i >> 4];
+	    lc2[i].c2 = "=ACMGRSVTWYHKDBN"[i & 0x0f];
+	}
+
+	lookup_done = 1;
     }
+
+    if (bio->free_seq) {
+	s = bio->free_seq;
+	bio->free_seq = s->next;
+    } else {
+	if (!(s = malloc(sizeof(*s))))
+	    return NULL;
+	s->alloc_len = 0;
+	s->seq = NULL;
+	s->conf = NULL;
+    }
+
+    s->next = NULL;
+
+    /* Grow storage */
+    if (s->alloc_len < p->b->len+10)
+	s->alloc_len = p->b->len+10;
     
-    s = &bio->seqs[bio->nseq];
-    s->alloc_len = p->b->core.l_qseq+10;
-    s->seq = (char *)malloc((int)(s->alloc_len * 1.2));
-    s->conf = (char *)malloc((int)(s->alloc_len * 1.2));
-    for (i = 0; i < p->qpos; i++) {
-	s->seq[i] = bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), i)];
-	s->conf[i] = bam1_qual(p->b)[i];
+    s->seq = (char *)realloc(s->seq, (int)(s->alloc_len * 1.2));
+    s->conf = (char *)realloc(s->conf, (int)(s->alloc_len * 1.2));
+
+    //    printf("New seq %p / %p => %p,%p\n", p, s, s->seq, s->conf);
+    
+    /* left hand cutoff data */
+    if (p->seq_offset >= 0) {
+	unsigned char *seq  = bam_seq(p->b);
+	unsigned char *qual = bam_qual(p->b);
+	char *sp = s->seq;
+	char *qp = s->conf;
+
+	if (bio->a->data_type & DATA_SEQ) {
+	    for (i = 0; i < p->seq_offset; i+=2) {
+		unsigned char coded = *seq++;
+		*sp++ = lc2[coded].c1;
+		*sp++ = lc2[coded].c2;
+	    }
+	} else {
+	    for (i = 0; i < p->seq_offset; i++)
+		*sp++ = 'N';
+	}
+
+	if (bio->a->data_type & DATA_QUAL) {
+	    for (i = 0; i < p->seq_offset; i++)
+		*qp++ = *qual++;
+	} else {
+	    for (i = 0; i < p->seq_offset; i++)
+		*qp++ = 0;
+	}
+
+	i = p->seq_offset;
+	s->seq_len = i;
+
+	/* Equiv to:
+	 * for (i = 0; i < p->seq_offset; i++) {
+	 *    s->seq [i] = bam_nt16_rev_table[bam_seqi(seq, i)];
+	 *    s->conf[i] = qual[i];
+	 * }
+	 */
+    } else if (p->seq_offset == 0) {
+	i = 0;
+    } else {
+	fprintf(stderr, "Data is not sorted by position. Aborting.\n");
+	exit(1);
     }
+
     s->seq_len = i;
     s->pos = pos - i;
-    s->b = p->b;
     s->left = i;
 
-    s->rec = bio->rec_head->rec;
-    tmp = bio->rec_head;
-    bio->rec_head = bio->rec_head->next;
-    xfree(tmp);
-
-    return bio->nseq++;
-}
-
-typedef union {
-    char  *s;
-    int    i;
-    float  f;
-    double d;
-} bam_aux_t;
-
-/*
- * An iterator on bam aux fields. NB: This code is not reentrant or multi-
- * thread capable. The values returned are valid until the next call to
- * this function.
- * key:  points to an array of 2 characters (eg "RG", "NM")
- * type: points to an address of 1 character (eg 'Z', 'i')
- * val:  points to an address of a bam_aux_t union.
- *
- * Pass in *iter_handle as NULL to initialise the search and then
- * pass in the modified value on each subsequent call to continue the search.
- *
- * Returns 0 if the next value is valid, setting key, type and val.
- *        -1 when no more found.
- */
-int bam_aux_iter(bam1_t *b, char **iter_handle,
-		 char *key, char *type, bam_aux_t *val) {
-    char *s;
-
-    if (!iter_handle || !*iter_handle) {
-	s = (char *)bam1_aux(b);
+    if (bio->a->data_type == DATA_BLANK) {
+	static int fake_recno = 1;
+	s->rec = fake_recno++;
     } else {
-	s = *iter_handle;
+	s->rec = sequence_new_from(bio->io, NULL);
     }
 
-    if ((uint8_t *)s >= b->data + b->data_len)
-	return -1;
-
-    key[0] = s[0];
-    key[1] = s[1];
-    
-    switch (s[2]) {
-    case 'A':
-	if (type) *type = 'A';
-	if (val) val->i = *(s+3);
-	s+=4;
-	break;
-
-    case 'C':
-	if (type) *type = 'i';
-	if (val) val->i = *(uint8_t *)(s+3);
-	s+=4;
-	break;
-
-    case 'c':
-	if (type) *type = 'i';
-	if (val) val->i = *(int8_t *)(s+3);
-	s+=4;
-	break;
-
-    case 'S':
-	if (type) *type = 'i';
-	if (val) {
-	    char tmp[2]; /* word aligned data */
-	    tmp[0] = s[3]; tmp[1] = s[4];
-	    val->i = *(uint16_t *)tmp;
-	}
-	s+=5;
-	break;
-
-    case 's':
-	if (type) *type = 'i';
-	if (val) {
-	    char tmp[2]; /* word aligned data */
-	    tmp[0] = s[3]; tmp[1] = s[4];
-	    val->i = *(int16_t *)tmp;
-	}
-	s+=5;
-	break;
-
-    case 'I':
-	if (type) *type = 'i';
-	if (val) {
-	    char tmp[4]; /* word aligned data */
-	    tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-	    val->i = *(uint32_t *)tmp;
-	}
-	s+=7;
-	break;
-
-    case 'i':
-	if (type) *type = 'i';
-	if (val) {
-	    char tmp[4]; /* word aligned data */
-	    tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-	    val->i = *(int32_t *)tmp;
-	}
-	s+=7;
-	break;
-
-    case 'f':
-	if (type) *type = 'f';
-	if (val) memcpy(&val->f, s+3, 4);
-	s+=7;
-	break;
-
-    case 'd':
-	if (type) *type = 'd';
-	if (val) memcpy(&val->d, s+3, 8);
-	s+=11;
-	break;
-
-    case 'Z': case 'H':
-	if (type) *type = s[2];
-	s+=3;
-	if (val) val->s = s;
-	while (*s++);
-	break;
-
-    default:
-	fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
-	return -1;
-    }
-
-    if (iter_handle)
-	*iter_handle = s;
-
-    return 0;
+    return s;
 }
 
-/*
- * Searches for 'key' in the bam auxillary tags.
- *
- * If found, key type and value are filled out in the supplied
- * 'type' and 'val' pointers. These may be supplied as NULL if the
- * caller simply wishes to test for the presence of a key instead.
- *
- * Returns 0 if found
- *        -1 if not
- */
-int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
-    char *h = NULL;
-    char k[2];
-
-    while (0 == bam_aux_iter(b, &h, k, type, val)) {
-	if (k[0] == key[0] && k[1] == key[1])
-	    return 0;
-    }
-
-    return -1;
-}
-
-#endif /* HAVE_SAMTOOLS */
-
-char *sam_aux_stringify_old(char *s, int len) {
-    static char str[8192];
-    char *cp = str, *s_end = s+len;
-    int first = 1;
-
-    //write(2, s, (int)(b->data + b->data_len - (uint8_t *)s));
-
-    while (s < s_end) {
-	if (first)
-	    first = 0;
-	else
-	    *cp++ = '\t';
-
-	switch (s[2]) {
-	case 'A':
-	    cp += sprintf(cp, "%c%c:A:%c", s[0], s[1], *(s+3));
-	    s+=4;
-	    break;
-
-	case 'C':
-	    cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint8_t *)(s+3));
-	    s+=4;
-	    break;
-
-	case 'c':
-	    cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int8_t *)(s+3));
-	    s+=4;
-	    break;
-
-	case 'S':
-	    {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
-		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint16_t *)tmp);
-	    }
-	    s+=5;
-	    break;
-
-	case 's':
-	    {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
-		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int16_t *)tmp);
-	    }
-	    s+=5;
-	    break;
-
-	case 'I':
-	    {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint32_t *)tmp);
-	    }
-	    s+=7;
-	    break;
-
-	case 'i':
-	    {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int32_t *)tmp);
-	    }
-	    s+=7;
-	    break;
-
-	case 'f':
-	    {
-		float f;
-		memcpy(&f, s+3, 4);
-		cp += sprintf(cp, "%c%c:f:%f", s[0], s[1], f);
-	    }
-	    s+=7;
-	    break;
-
-	case 'd':
-	    {
-		double d;
-		memcpy(&d, s+3, 8);
-		cp += sprintf(cp, "%c%c:d:%f", s[0], s[1], d);
-	    }
-	    s+=11;
-	    break;
-
-	case 'Z': case 'H':
-	    cp += sprintf(cp, "%c%c:%c:%s", s[0], s[1], s[2], s+3);
-	    s+=3;
-	    while (*s++);
-	    break;
-
-	default:
-	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
-	    return NULL;
-	}
-    }
-
-    *cp = 0;
-
-    return str;
-}
 
 static char *append_int(char *cp, int i) {
     int j, k = 0;
@@ -868,7 +675,7 @@ char *sam_aux_stringify(char *s, int len) {
     char *cp = str, *s_end = s+len;
     int first = 1;
 
-    //write(2, s, (int)(b->data + b->data_len - (uint8_t *)s));
+    //write(2, s, (int)(((char *)&b->ref) + b->blk_size - (uint8_t *)s));
 
     while (s < s_end) {
 	if (first)
@@ -974,10 +781,9 @@ char *sam_aux_stringify(char *s, int len) {
     return str;
 }
 
-#ifdef HAVE_SAMTOOLS
-char *bam_aux_stringify_old(bam1_t *b, int no_RG) {
+char *bam_aux_stringify(bam_seq_t *b, int no_RG) {
     static char str[8192];
-    char *s = (char *)bam1_aux(b), *cp = str;
+    char *s = (char *)bam_aux(b), *cp = str;
     int first = 1;
     int keep;
 
@@ -985,118 +791,7 @@ char *bam_aux_stringify_old(bam1_t *b, int no_RG) {
 
     //write(2, s, (int)(b->data + b->data_len - (uint8_t *)s));
 
-    while ((uint8_t *)s < b->data + b->data_len) {
-
-	keep = (no_RG && s[0] == 'R' && s[1] == 'G') ? 0 : 1;
-	if (keep) {
-	    if (first)
-		first = 0;
-	    else
-		*cp++ = '\t';
-	}
-
-	switch (s[2]) {
-	case 'A':
-	    if (keep)
-		cp += sprintf(cp, "%c%c:A:%c", s[0], s[1], *(s+3));
-	    s+=4;
-	    break;
-
-	case 'C':
-	    if (keep)
-		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint8_t *)(s+3));
-	    s+=4;
-	    break;
-
-	case 'c':
-	    if (keep)
-		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int8_t *)(s+3));
-	    s+=4;
-	    break;
-
-	case 'S':
-	    if (keep) {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
-		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint16_t *)tmp);
-	    }
-	    s+=5;
-	    break;
-
-	case 's':
-	    if (keep) {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
-		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int16_t *)tmp);
-	    }
-	    s+=5;
-	    break;
-
-	case 'I':
-	    if (keep) {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint32_t *)tmp);
-	    }
-	    s+=7;
-	    break;
-
-	case 'i':
-	    if (keep) {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int32_t *)tmp);
-	    }
-	    s+=7;
-	    break;
-
-	case 'f':
-	    if (keep) {
-		float f;
-		memcpy(&f, s+3, 4);
-		cp += sprintf(cp, "%c%c:f:%f", s[0], s[1], f);
-	    }
-	    s+=7;
-	    break;
-
-	case 'd':
-	    if (keep) {
-		double d;
-		memcpy(&d, s+3, 8);
-		cp += sprintf(cp, "%c%c:d:%f", s[0], s[1], d);
-	    }
-	    s+=11;
-	    break;
-
-	case 'Z': case 'H':
-	    if (keep)
-		cp += sprintf(cp, "%c%c:%c:%s", s[0], s[1], s[2], s+3);
-	    s+=3;
-	    while (*s++);
-	    break;
-
-	default:
-	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
-	    return NULL;
-	}
-    }
-
-    *cp = 0;
-
-    return str;
-}
-
-char *bam_aux_stringify(bam1_t *b, int no_RG) {
-    static char str[8192];
-    char *s = (char *)bam1_aux(b), *cp = str;
-    int first = 1;
-    int keep;
-
-    no_RG = 1;
-
-    //write(2, s, (int)(b->data + b->data_len - (uint8_t *)s));
-
-    while ((uint8_t *)s < b->data + b->data_len) {
+    while ((uint8_t *)s < ((uint8_t *)&b->ref) + b->blk_size) {
 
 	keep = (no_RG && s[0] == 'R' && s[1] == 'G') ? 0 : 1;
 	if (keep) {
@@ -1222,12 +917,12 @@ char *bam_aux_stringify(bam1_t *b, int no_RG) {
  *
  * Value returned is statically allocated. Do not free.
  */
-char *bam_aux_filter(bam1_t *b, char **types, int ntypes, int *len) {
+char *bam_aux_filter(bam_seq_t *b, char **types, int ntypes, int *len) {
     static char str[8192];
-    char *s = (char *)bam1_aux(b), *cp = str;
+    char *s = (char *)bam_aux(b), *cp = str;
     int keep, i;
 
-    while ((uint8_t *)s < b->data + b->data_len) {
+    while ((uint8_t *)s < ((uint8_t *)&b->ref) + b->blk_size) {
 	keep = 1;
 	for (i = 0; i < ntypes; i++) {
 	    if (s[0] == types[i][0] &&
@@ -1310,14 +1005,14 @@ char *bam_aux_filter(bam1_t *b, char **types, int ntypes, int *len) {
  * Creates a new contig and updates the bam_io_t struct.
  */
 void bio_new_contig(bam_io_t *bio, int tid) {
-    char *cname = bio->header->target_name[tid];
+    char *cname = bio->fp->ref[tid].name;
 
-    /* header->target_name[b.core.tid] */
     printf("\n++Processing contig %d / %s\n", tid, cname);
 	
     create_new_contig(bio->io, &(bio->c), cname, bio->a->merge_contigs);
     bio->n_inserts = 0;
     bio->npads = 0;
+    bio->npads2 = 0;
     bio->skip = 0;
 
     if (bio->a->repad) {
@@ -1334,15 +1029,13 @@ void bio_new_contig(bam_io_t *bio, int tid) {
  * Although it shares much of the same code so is a candidate for merging
  * at some stage.
  */
-int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
-    char type;
-    const char *LB;
+int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
+    char *LB;
     HacheItem *hi;
     HacheData hd;
     seq_t s;
     char tname[1024];
     library_t *lib = NULL;
-    bam_aux_t val;
     int new = 0;
     char *name;
     int name_len;
@@ -1356,14 +1049,14 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     bio->count++;
 
     /* Check if it's a new contig, create if so */
-    if (b->core.tid != bio->last_tid) {
-	bio_new_contig(bio, b->core.tid);
+    if (b->ref != bio->last_tid) {
+	bio_new_contig(bio, b->ref);
     }
 
     /* Fetch read-group and pretend it's a library for now */
-    if (0 == bam_aux_find(b, "RG", &type, &val) && type == 'Z') {
-	LB = val.s;
-	stech = stech_str2int(sam_tbl_get(bio->rg2pl_hash, LB));
+    if ((LB = bam_aux_find(b, "RG"))) {
+	tag_list_t *rg_tag = bam_find_rg(bio->fp, LB);
+	stech = rg_tag ? stech_str2int(rg_tag->value) : STECH_UNKNOWN;
     } else {
 	LB = bio->fn;
 	stech = STECH_UNKNOWN;
@@ -1385,7 +1078,7 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     lib = hi->data.p;
 
     /* Construct a seq_t struct */
-    name = bam1_qname(b);
+    name = bam_name(b);
     name_len = strlen(name);
 
     /*
@@ -1407,10 +1100,10 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     //s.aux_len = (int)(b->data + b->data_len - (uint8_t *)aux);
 
     s.pos = bio->npads +
-	get_padded_coord(bio->tree, b->core.pos + 1 + bio->n_inserts
+	get_padded_coord(bio->tree, b->pos + 1 + bio->n_inserts
 			 - bio->npads);
-    //s.pos = b->core.pos+1;
-    s.len = b->core.l_qseq;
+    //s.pos = b->pos+1;
+    s.len = b->len;
     s.rec = 0;
     s.seq_tech = stech != STECH_UNKNOWN ? stech : stech_guess_by_name(name);
     s.flags = 0;
@@ -1436,21 +1129,21 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     s.alignment_len = 0;
     s.seq = s.alignment + s.alignment_len+1;
     s.conf = s.seq+s.len;
-    s.mapping_qual = b->core.qual;
+    s.mapping_qual = bam_map_qual(b);
     s.format = SEQ_FORMAT_MAQ; /* pack bytes */
     s.anno = NULL;
     s.sam_aux = s.conf + s.len;
 
-    for (i = 0; i < b->core.l_qseq; i++) {
+    for (i = 0; i < b->len; i++) {
 	s.seq[i] = bio->a->data_type & DATA_SEQ
-	    ? bam_nt16_rev_table[bam1_seqi(bam1_seq(b), i)]
+	    ? bam_nt16_rev_table[bam_seqi(bam_seq(b), i)]
 	    : 'N';
 	s.conf[i] = bio->a->data_type & DATA_QUAL
-	    ? bam1_qual(b)[i]
+	    ? bam_qual(b)[i]
 	    : 0;
     }
 
-    if (bam1_strand(b)) {
+    if (bam_strand(b)) {
 	complement_seq_t(&s);
 	s.flags |= SEQ_COMPLEMENTED;
     }
@@ -1458,13 +1151,13 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     memcpy(s.sam_aux, aux, s.aux_len);
 
     /* Create the range, save the sequence */
-    paired = (b->core.flag & BAM_FPAIRED) ? 1 : 0;
+    paired = (bam_flag(b) & BAM_FPAIRED) ? 1 : 0;
     flags = paired ? GRANGE_FLAG_TYPE_PAIRED : GRANGE_FLAG_TYPE_SINGLE;
 
-    if (b->core.flag & BAM_FREAD1)
+    if (bam_flag(b) & BAM_FREAD1)
 	s.flags |= SEQ_END_FWD;
 
-    if (b->core.flag & BAM_FREAD2)
+    if (bam_flag(b) & BAM_FREAD2)
 	s.flags |= SEQ_END_REV;
 
     strcpy(tname, name);
@@ -1478,7 +1171,7 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
 	    (name[name_len-1] == '2' &&
 	     (s.flags & SEQ_END_MASK) != SEQ_END_REV)) {
 	    fprintf(stderr, "Inconsistent read name vs flags: %s vs 0x%02x\n",
-		    name, b->core.flag);
+		    name, bam_flag(b));
 	}
     }
 
@@ -1488,11 +1181,11 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
 	    : GRANGE_FLAG_END_REV;
     else
 	/* Guess work here. For now all <--- are rev, all ---> are fwd */
-	flags |= bam1_strand(b)
+	flags |= bam_strand(b)
 	    ? GRANGE_FLAG_END_FWD
 	    : GRANGE_FLAG_END_REV;
 
-    if (bam1_strand(b)) {
+    if (bam_strand(b)) {
 	flags |= GRANGE_FLAG_COMP1;
     }
 
@@ -1537,9 +1230,9 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
  * Returns 0 on success
  *        -1 on failure
  */
-int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
-    bam_seq_t *bs;
-    bam1_t *b;
+int bio_del_seq(bam_io_t *bio, pileup_t *p) {
+    bio_seq_t *bs = (bio_seq_t *)p->cd;
+    bam_seq_t *b;
     seq_t s;
     HacheItem *hi;
     tg_rec recno;
@@ -1548,9 +1241,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     int flags;
     char tname[1024];
     library_t *lib = NULL;
-    bam_aux_t val;
     char type;
-    const char *LB;
+    char *LB;
     HacheData hd;
     int new = 0;
     char *name;
@@ -1559,19 +1251,16 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     char *filter[] = {"RG"};
     char *handle, aux_key[2];
     int stech;
-
-    if (snum < 0 || snum >= bio->nseq)
-	return -1;
+    bam_aux_t val;
 
     bio->count++;
 
-    bs = &bio->seqs[snum];
-    b = bs->b;
+    b = p->b;
 
     /* Fetch read-group and pretend it's a library for now */
-    if (0 == bam_aux_find(b, "RG", &type, &val) && type == 'Z') {
-	LB = val.s;
-	stech = stech_str2int(sam_tbl_get(bio->rg2pl_hash, LB));
+    if ((LB = bam_aux_find(b, "RG"))) {
+	tag_list_t *rg_tag = bam_find_rg(bio->fp, LB);
+	stech = rg_tag ? stech_str2int(rg_tag->value) : STECH_UNKNOWN;
     } else {
 	LB = bio->fn;
 	stech = STECH_UNKNOWN;
@@ -1600,13 +1289,25 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 
     /* Construct a seq_t struct */
     s.right = bs->seq_len;
-    for (i = p->qpos+1; i < b->core.l_qseq; i++) {
-	int base = bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), i)];
-	int qual = bam1_qual(p->b)[i];
-	bio_extend_seq(bio, snum, base, qual);
+    if (p->seq_offset+1 < b->len) {
+	unsigned char *b_seq  = bam_seq(p->b);
+	unsigned char *b_qual = bam_qual(p->b);
+
+	if (bs->seq_len+b->len - (p->seq_offset+1) >= bs->alloc_len) {
+	    bs->alloc_len = bs->seq_len+b->len - (p->seq_offset+1) + 1;
+	    if (NULL == (bs->seq  = (char *)realloc(bs->seq,  bs->alloc_len)))
+		return -1;
+	    if (NULL == (bs->conf = (char *)realloc(bs->conf, bs->alloc_len)))
+		return -1;
+	}
+	for (i = p->seq_offset+1; i < b->len; i++) {
+	    bs->seq [bs->seq_len] = bam_nt16_rev_table[bam_seqi(b_seq,i)];
+	    bs->conf[bs->seq_len] = b_qual[i];
+	    bs->seq_len++;
+	}
     }
     
-    name = bam1_qname(b);
+    name = bam_name(b);
     name_len = strlen(name);
 
     /*
@@ -1624,7 +1325,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     //aux = bam_aux_stringify(b, 1);
     //s.aux_len = strlen(aux);
 
-    //aux = bam1_aux(b);
+    //aux = bam_aux(b);
     //s.aux_len = (int)(b->data + b->data_len - (uint8_t *)aux);
     
     s.rec = bs->rec;
@@ -1653,7 +1354,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.alignment_len = 0;
     s.seq = s.alignment + s.alignment_len+1;
     s.conf = s.seq+s.len;
-    s.mapping_qual = b->core.qual;
+    s.mapping_qual = bam_map_qual(b);
     s.format = SEQ_FORMAT_MAQ; /* pack bytes */
     s.anno = NULL;
     s.sam_aux = s.conf + s.len;
@@ -1668,7 +1369,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     else
 	memset(s.conf, 0, s.len);
     
-    if (bam1_strand(b)) {
+    if (bam_strand(b)) {
 	complement_seq_t(&s);
 	s.flags |= SEQ_COMPLEMENTED;
     }
@@ -1676,13 +1377,13 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     memcpy(s.sam_aux, aux, s.aux_len);
 
     /* Create the range, save the sequence */
-    paired = (b->core.flag & BAM_FPAIRED) ? 1 : 0;
+    paired = (bam_flag(b) & BAM_FPAIRED) ? 1 : 0;
     flags = paired ? GRANGE_FLAG_TYPE_PAIRED : GRANGE_FLAG_TYPE_SINGLE;
 
-    if (b->core.flag & BAM_FREAD1)
+    if (bam_flag(b) & BAM_FREAD1)
 	s.flags |= SEQ_END_FWD;
 
-    if (b->core.flag & BAM_FREAD2)
+    if (bam_flag(b) & BAM_FREAD2)
 	s.flags |= SEQ_END_REV;
 
     strcpy(tname, name);
@@ -1696,7 +1397,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	    (name[name_len-1] == '2' &&
 	     (s.flags & SEQ_END_MASK) != SEQ_END_REV)) {
 	    fprintf(stderr, "Inconsistent read name vs flags: %s vs 0x%02x\n",
-		    name, b->core.flag);
+		    name, bam_flag(b));
 	}
     }
 
@@ -1706,11 +1407,11 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	    : GRANGE_FLAG_END_REV;
     else
 	/* Guess work here. For now all <--- are rev, all ---> are fwd */
-	flags |= bam1_strand(b)
+	flags |= bam_strand(b)
 	    ? GRANGE_FLAG_END_FWD
 	    : GRANGE_FLAG_END_REV;
 
-    if (bam1_strand(b)) {
+    if (bam_strand(b)) {
 	flags |= GRANGE_FLAG_COMP1;
     }
 
@@ -1788,219 +1489,182 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	e->bin = bin->rec;
     }
 
-    /* Tidy up */
-    if (bs->seq)  free(bs->seq);
-    if (bs->conf) free(bs->conf);
-    
-    return 0;
-}
+    //printf("Del seq %p / %p => %p,%p\n", p, bs, bs->seq, bs->conf);
 
-/*
- * Adds a base to a sequence in the bio_io_t struct.
- * Returns 0 on success
- *        -1 on failure
- */
-int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf) {
-    bam_seq_t *s;
-
-    if (snum < 0 || snum >= bio->nseq)
-	return -1;
-
-    s = &bio->seqs[snum];
-
-    /* Extend if appropriate */
-    if (s->seq_len >= s->alloc_len) {
-	s->alloc_len = (s->alloc_len + 100)*1.5;
-	if (NULL == (s->seq  = (char *)realloc(s->seq,  s->alloc_len)))
-	    return -1;
-	if (NULL == (s->conf = (char *)realloc(s->conf, s->alloc_len)))
-	    return -1;
-    }
-    
-    /* And append */
-    s->seq [s->seq_len] = base;
-    s->conf[s->seq_len] = conf;
-    s->seq_len++;
+    /* unlink */
+    bs->next = bio->free_seq;
+    bio->free_seq = bs;
 
     return 0;
 }
 
 /*
- * Called once for every position (pos) in every contig (tid), with an 
- * array of n sequences (pl).
+ * Called once per sequence as they're discovered
  *
- * We produce our own stack of reads that we append to, spotting new
- * sequences (p->is_head) and terminating sequences (p->is_tail) flushing
- * out our data to disk only on sequence removal. It's possible we could
- * hijack the pl->b bam1_t struct with our own pointer, putting it back to
- * the the bam1_t only on removal.
+ * Returns 0 to reject seq
+ *         1 to accept seq
+ *        -1 on error
  */
-int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
-		void *data) {
-    bam_io_t *bio = (bam_io_t *)data;
-    int i, j, k, insertions = 0;
-    int np;
-
-    //printf("\nCallback at pos=%d n=%d tid=%d\n", pos, n, tid);
-
-    /*
-     * tid is reference id - aka contig
-     * n is number of sequences at this point (pos).
-     * pl is the pileup info for these sequences.
-     */
-    /* Create new contig if appropriate */
-    if (tid != bio->last_tid) {
-	bio_new_contig(bio, tid);
-    }
+static int sam_check_unmapped(void *cd, bam_file_t *fp, pileup_t *p) {
+    bam_io_t *bio = (bam_io_t *)cd;
     
-    np = 0;
+
+    if ((++bio->total_count & 0xffff) == 0) {
+	putchar('.');
+	fflush(stdout);
+	cache_flush(bio->io);
+    }
+
+    if (bam_flag(p->b) & BAM_FUNMAP) {
+	if (!bio->a->store_unmapped)
+	    return 0;
+
+	bio_add_unmapped(bio, p->b);
+    }
+
+    return 1;
+}
+
+static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
+		       int depth, int pos, int nth) {
+    int tid, np = 0;
+    bam_io_t *bio = (bam_io_t *)cd;
+
+    if (!p)
+	return 0;
+
+    /* New contig? */
+    tid = p->b->ref;
+    if (tid != bio->last_tid)
+	bio_new_contig(bio, tid);
+
+
+    /* tg_index -g mode */
     if (bio->a->repad) {
-	if ((np=padtree_pad_at(bio->tree, pos+1+bio->n_inserts-bio->npads))) {
+	/* Pad these sequences based on existing pads in the padded contig */
+	if ((np=padtree_pad_at(bio->tree, pos+bio->n_inserts-bio->npads))) {
+	    int j;
+
+	    //printf("Pos %d pads %d\n", pos, np);
+
 	    /* Add pads to match existing consensus gaps */
-	    for (j = 0; j < np; j++) {
+	    for (j = nth; j < np; j++) {
+		pileup_t *pcopy;
+
 		if (bio->skip) {
-		    //printf("Skipping import of pads\n");
 		    bio->skip--;
 		    continue;
 		}
-
+		    
 		//printf("Import pads from existing consensus at %d\n",
-		//       pos+1+bio->n_inserts-bio->npads);
-		for (i = 0; i < n; i++) {
-		    bio_extend_seq(bio, i, '*', 0);
+		//       pos+bio->n_inserts-bio->npads);
+
+		pcopy = p;
+		for (; p; p = p->next) {
+		    bio_seq_t *s;
+
+		    if (p->start)
+			continue;
+
+		    s = (bio_seq_t *)p->cd;
+		    if (s->seq_len + np + 1 >= s->alloc_len) {
+			s->alloc_len = (s->alloc_len + 100 + np+1)*1.5;
+			s->seq  = (char *)realloc(s->seq,  s->alloc_len);
+			s->conf = (char *)realloc(s->conf, s->alloc_len);
+			if (!s->seq || !s->conf)
+			    return -1;
+		    }
+		    
+		    if (bio->a->data_type & DATA_SEQ) {
+			s->seq [s->seq_len] = '*';
+		    } else {
+			s->seq [s->seq_len] = 'N';
+		    }
+		    if (bio->a->data_type & DATA_QUAL) {
+			s->conf[s->seq_len] = 2;
+		    } else {
+			s->conf[s->seq_len] = 0;
+		    }
+		    s->seq_len++;
 		}
+		p = pcopy;
 	    }
 	}
-    }
 
-    for (j = 0; j <= insertions; j++) {
-	//printf("%d pos: %6d.%d ", tid, pos+1+bio->n_inserts, j);
+	/* And vice versa - pad existing contig based on new non-ref bases */
+	if (nth) {
+	    /* Check how many insertions were originally at this point */
+	    np = padtree_pad_at(bio->tree, pos+1);
+	    //printf("Pos %d nth %d, old pad count = %d\n", pos, nth, np);
+	    
+	    if (nth > np) {
+		int i;
 
-//	printf("%5d: ", pos+1+bio->n_inserts);
-//	for (i = 0; i < n; i++) {
-//	    const bam_pileup1_t *p = &pl[i];
-//	    printf("%d%d ", p->indel, j);
-//	}
-//	printf("\n");
-
-	if (j && bio->a->repad /*&& j > np*/) {
-	    /* FIXME: And not already in the originally padded version */
-	    np=padtree_pad_at(bio->tree, pos+2);
-
-	    //printf("Insert at %d: j=%d np=%d\n", pos+2+bio->n_inserts, j, np);
-	    //	    contig_insert_base(bio->io, &bio->c, pos+2+bio->n_inserts,
-	    //			       '*', 0);
-	    if (j > np) {
 		contig_insert_base(bio->io, &bio->c,
-				   get_padded_coord(bio->tree, pos+2)
-				   +bio->n_inserts,
+				   get_padded_coord(bio->tree, pos+1) +
+				   bio->n_inserts,
 				   '*', 0);
+
 		bio->npads++;
 	    } else {
 		bio->n_inserts--;
 		bio->skip++;
 	    }
 	}
-
-	for (i = 0; i < n; i++) {
-	    const bam_pileup1_t *p = &pl[i];
-	    
-	    if (j == 0 && p->is_head) {
-		int i2, ppos;
-		/* New sequence */
-		//printf("^%c", p->b->core.qual+33);
-		ppos = bio->npads
-		     + get_padded_coord(bio->tree,
-					pos + 1 + bio->n_inserts - bio->npads);
-		i2 = bio_new_seq(bio, p, ppos);
-
-		/*
-		 * The following fails if we have a previous sequence that
-		 * ended on a deletion. Eg CIGAR string 36M1D. This causes
-		 * samtools tview to break too.
-		 *
-		 * 2/7/2010: It also fails when dealing with split reads
-		 * using [0-9]+N CIGAR entries. We omit this assertion for
-		 * now until we can implement spliced alignments better.
-		 */
-		//assert(i == i2);
-	    }
-
-	    if (p->is_del) {
-		/* Undercall, aka deleted base compared to ref */
-		int q = (bam1_qual(p->b)[p->qpos] + 
-			 (p->qpos < p->b->core.l_qseq-1
-			  ? bam1_qual(p->b)[p->qpos+1]
-			  : bam1_qual(p->b)[p->qpos])) / 2;
-		//printf("Undercall in seq %d\n", i);
-		bio_extend_seq(bio, i, '*', q);
-	    } else {
-		if (p->indel >= 0) {
-		    int c, q;
-
-		    /* Overcall - edit all other seqs */
-		    if (insertions < p->indel)
-			insertions = p->indel;
-
-		    if (j <= p->indel) {
-			c = bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b),
-							 p->qpos + j)];
-			q = bam1_qual(p->b)[p->qpos+j];
-		    } else {
-			c = '*';
-			q = (bam1_qual(p->b)[p->qpos] + 
-			     (p->qpos < p->b->core.l_qseq-1
-			      ? bam1_qual(p->b)[p->qpos+1]
-			      : bam1_qual(p->b)[p->qpos])) / 2;
-			if (p->is_tail)
-			    continue;
-		    }
-		    bio_extend_seq(bio, i, c, q);
-		} else if (p->indel < 0 /*&& j == 0*/) {
-		    /*
-		     * This occurs when the next base is an undercall.
-		     * However THIS base should still exist, I think.
-		     * It's all a little bit confusing if truth be known.
-		     */
-		    int c = j == 0
-		      ? bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), p->qpos)]
-		      : '*';
-		    int q = bam1_qual(p->b)[p->qpos];
-		    //printf("%s extend seq %d base %c\n",
-		    //       bam1_qname(p->b), i, c);
-		    bio_extend_seq(bio, i, c, q);
-		}
-	    }
-	}
     }
 
-    for (i = j = k = 0; i < n; i++, j++, k++) {
-	const bam_pileup1_t *p = &pl[j];
-	
-	bio->seqs[i] = bio->seqs[j];
-	if (p->is_tail) {
-	    bio_del_seq(bio, p, i);
-	    i--;
-	    n--;
-	    bio->nseq--;
+
+    /* Finally add the new column of base calls */
+    for (; p; p = p->next) {
+	bio_seq_t *s;
+
+	/* New sequence */
+	if (p->start) {
+	    int ppos = bio->tree
+		? bio->npads +
+		  get_padded_coord(bio->tree,
+				   pos + bio->n_inserts - bio->npads)
+		: pos + bio->n_inserts;
+	    p->cd = s = bio_new_seq(bio, p, ppos);
+	}
+
+	s = (bio_seq_t *)p->cd;
+
+	/* Extend sequence */
+	if (s->seq_len >= s->alloc_len) {
+	    s->alloc_len = (s->alloc_len + 100)*1.5;
+	    if (NULL == (s->seq  = (char *)realloc(s->seq,  s->alloc_len)))
+		return -1;
+	    if (NULL == (s->conf = (char *)realloc(s->conf, s->alloc_len)))
+		return -1;
+	}
+	if (bio->a->data_type & DATA_SEQ) {
+	    s->seq [s->seq_len] = p->base;
+	} else {
+	    s->seq [s->seq_len] = 'N';
+	}
+	if (bio->a->data_type & DATA_QUAL) {
+	    s->conf[s->seq_len] = p->qual;
+	} else {
+	    s->conf[s->seq_len] = 0;
+	}
+	s->seq_len++;
+
+	/* Remove sequence */
+	if (p->eof) {
+	    //printf("End seq %s\n", bam_name(p->b));
+	    bio_del_seq(bio, p);
 	}
     }
-
-    bio->n_inserts += insertions;
-    //    if (insertions) {
-    //	printf("%d insertions (%d) at pos=%d\n", insertions, bio->n_inserts, pos);
-    //    }
+    if (nth)
+	bio->n_inserts++;
 
     return 0;
 }
 
-int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
+int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
     bam_io_t *bio = (bam_io_t*)calloc(1, sizeof(*bio));
-    bam1_t *b;
-    int count = 0;
-    bam_plbuf_t *plbuf;
-    samfile_t *fp;
-    rec_list_t *tmp;
+    bam_file_t *fp;
 
     /* for pair data */
     open_tmp_file();
@@ -2008,17 +1672,17 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     /* Setup bam_io_t object and create our pileup interface */
     bio->io = io;
     bio->seqs = NULL;
-    bio->nseq = 0;
+    bio->free_seq = NULL;
     bio->max_seq = 0;
     bio->a = a;
     bio->c = NULL;
     bio->count = 0;
+    bio->total_count = 0;
     bio->fn = fn;
     bio->libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
     bio->libs->name = "libs";
     bio->last_tid = -1;
     bio->tree = NULL;
-    bio->rec_head = bio->rec_tail = NULL;
 
     if (a->pair_reads) {
 	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
@@ -2027,97 +1691,25 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	bio->pair = NULL;
     }
 
-    fp = samopen(fn, mode, NULL);
-    assert(fp);
-    bio->header = fp->header;
-    if (!bio->header)
+    fp = bam_open(fn, mode);
+    if (!fp)
 	return -1;
+    bio->fp = fp;
 
-    if (!bio->header->dict) {
-	bio->header->dict = sam_header_parse2(bio->header->text);
-    }
-    bio->rg2pl_hash = sam_header2tbl(bio->header->dict, "RG", "ID", "PL");
-    plbuf = bam_plbuf_init(bio_callback, bio);
-    //bam_plbuf_set_mask(plbuf, BAM_DEF_MASK /* or BAM_FUNMAP? */);
-    bam_plbuf_set_mask(plbuf, 0 /* or BAM_DEF_MASK, or BAM_FUNMAP? */);
+//    if (!bio->header->dict) {
+//	bio->header->dict = sam_header_parse2(bio->header->text);
+//    }
+//    bio->rg2pl_hash = sam_header2tbl(bio->header->dict, "RG", "ID", "PL");
 
-    /*
-     * Loop through reads - the bulk of the work here is done in the
-     * bio_callback function.
-     */
-    b = (bam1_t*)calloc(1, sizeof(bam1_t));
-    while (samread(fp, b) >= 0) {
-	int k;
+    /* The main processing loop, calls sam_add_seq() */
+    pileup_loop(fp, sam_check_unmapped, sam_add_seq, bio);
+    //pileup_loop(fp, NULL, sam_add_seq, bio);
 
-	if (a->store_unmapped && b->core.flag & BAM_FUNMAP) {
-	    bio_add_unmapped(bio, b);
-	    if ((++count & 0xffff) == 0) {
-	        putchar('.');
-	        fflush(stdout);
-	        cache_flush(io);
-	    }
-	    continue;
-	} else if (b->core.flag & BAM_FUNMAP)
-	    continue;
-
-	//printf("push %s\n", bam1_qname(b));
-	/*
-	 * Allocate a record number now, so they're used in the same order
-	 * as the input data regardless of whether the read is mapped or
-	 * unmapped.
-	 *
-	 * Note, for spliced alignments we may need multiple record numbers.
-	 */
-	if (NULL == (tmp = xmalloc(sizeof(*tmp))))
-	    return -1;
-
-	tmp->next = NULL;
-	if (bio->rec_head) {
-	    bio->rec_tail->next = tmp;
-	    bio->rec_tail = tmp;
-	} else {
-	    bio->rec_head = bio->rec_tail = tmp;
-	}
-	if (bio->a->data_type == DATA_BLANK) {
-	    static int fake_recno = 1;
-	    tmp->rec = fake_recno++;
-	} else {
-	    tmp->rec = sequence_new_from(bio->io, NULL);
-	}
-
-	for (k = 0; k < b->core.n_cigar; k++) {
-	    int op = bam1_cigar(b)[k] & BAM_CIGAR_MASK;
-	    if (op == BAM_CREF_SKIP) {
-		if (NULL == (tmp = xmalloc(sizeof(*tmp))))
-		    return -1;
-		tmp->next = NULL;
-		bio->rec_tail->next = tmp;
-		bio->rec_tail = tmp;
-
-		if (bio->a->data_type == DATA_BLANK) {
-		    static int fake_recno = 1;
-		    tmp->rec = fake_recno++;
-		} else {
-		    tmp->rec = sequence_new_from(bio->io, NULL);
-		}
-	    }
-	}
-
-	bam_plbuf_push(b, plbuf);
-	if ((++count & 0xffff) == 0) {
-	    putchar('.');
-	    fflush(stdout);
-	    cache_flush(io);
-	}
-    }
-    putchar('\n');
-    bam_plbuf_push(0, plbuf);
-    bam_plbuf_destroy(plbuf);
-    if (bio->rg2pl_hash)
-	sam_tbl_destroy(bio->rg2pl_hash);
+    //    if (bio->rg2pl_hash)
+    //	sam_tbl_destroy(bio->rg2pl_hash);
 
     cache_flush(io);
-    vmessage("Loaded %d of %d sequences\n", bio->count, count);
+    vmessage("Loaded %d of %d sequences\n", bio->count, bio->total_count);
 
     if (bio->pair && !a->fast_mode) {    
 	sort_pair_file();
@@ -2128,16 +1720,12 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     }
  
     /* Tidy up */
-    if (b) {
-	if (b->data)
-	    free(b->data);
-	free(b);
-    }
-
     if (fp)
-	samclose(fp);
+	bam_close(fp);
 
     if (bio) {
+	bio_seq_t *s, *n;
+
 	if (bio->pair)
 	    HacheTableDestroy(bio->pair, 1);
 
@@ -2163,28 +1751,28 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	if (bio->tree)
 	    depad_seq_tree_free(bio->tree);
 
-	while (bio->rec_head) {
-	    tmp = bio->rec_head->next;
-	    free(bio->rec_head);
-	    bio->rec_head = tmp;
+	for (s = bio->free_seq; s; s = n) {
+	    n = s->next;
+	    if (s->seq)
+		free(s->seq);
+	    if (s->conf)
+		free(s->conf);
+	    free(s);
 	}
-
-	free(bio);
 
 	if (bio->c)
 	    cache_decr(io, bio->c);
+
+	free(bio);
     }
 
     return 0;
 }
 
-int parse_bam(GapIO *io, const char *fn, tg_args *a) {
+int parse_bam(GapIO *io, char *fn, tg_args *a) {
     return parse_sam_or_bam(io, fn, a, "rb");
 }
 
-int parse_sam(GapIO *io, const char *fn, tg_args *a) {
+int parse_sam(GapIO *io, char *fn, tg_args *a) {
     return parse_sam_or_bam(io, fn, a, "r");
 }
-
-#endif /* HAVE_SAMTOOLS */
-

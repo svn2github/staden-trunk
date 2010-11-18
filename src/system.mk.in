@@ -16,11 +16,6 @@ ZLIB_LIB          = @ZLIB_LDFLAGS@
 ZLIB_INC          = @ZLIB_CFLAGS@
 #ZLIB_VERSION     = @ZLIB_VERSION@
 
-#-- samtools 
-SAMTOOLS_LIB      = @SAMTOOLS_LDFLAGS@
-SAMTOOLS_INC      = @SAMTOOLS_CFLAGS@
-#SAMTOOLS_VERSION = @SAMTOOLS_VERSION@
-
 #-- liblzma 
 LZMA_LIB          = @LZMA_LDFLAGS@
 LZMA_INC          = @LZMA_CFLAGS@
@@ -67,6 +62,7 @@ TK_LIB		  = @TK_LIB_SPEC@ @TCL_LIB_SPEC@ @TK_LIBS@
 comma = ,
 
 CC		  = @CC@
+#CDEBUG		  = -Wall -Wno-sign-compare -Wno-pointer-sign -Wno-parentheses -Wno-unused -Wno-char-subscripts -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 CFLAGS		  = @CFLAGS@ $(DEFINES) $(INCLUDES)
 CXX		  = @CXX@
 CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES)

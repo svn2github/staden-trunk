@@ -1,6 +1,8 @@
 #include <staden_config.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "sam_pileup.h"
-
 
 /* --------------------------------------------------------------------------
  * The pileup code itself. 
@@ -14,7 +16,7 @@
 /*
  * Fast conversion from encoded SAM base nibble to a printable character
  */
-static char tab[2][256];
+static char tab[256][2];
 static void init_tab(void) {
     int i, j;
     unsigned char b2;
@@ -26,8 +28,8 @@ static void init_tab(void) {
     for (i = 0; i < 16; i++) {
 	for (j = 0; j < 16; j++) {
 	    b2 = (i<<4) | j;
-	    tab[0][b2] = "=ACMGRSVTWYHKDBN"[i];
-	    tab[1][b2] = "=ACMGRSVTWYHKDBN"[j];
+	    tab[b2][0] = "NACMGRSVTWYHKDBN"[i];
+	    tab[b2][1] = "NACMGRSVTWYHKDBN"[j];
 	}
     }
 
@@ -49,8 +51,8 @@ static void init_tab(void) {
  *         0 if not (eg ran off the end of sequence)
  */
 static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
-    int more = 1;
-    bam1_t *b = &p->b;
+    bam_seq_t *b = p->b;
+    enum cigar_op op = p->cigar_op;
 
     *is_insert = 0;
 
@@ -59,89 +61,76 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	p->nth = 0;
 
 	if (p->cigar_len == 0) {
-	    if (p->cigar_ind >= b->core.n_cigar) {
+	    if (p->cigar_ind >= bam_cigar_len(b)) {
 		p->eof = 1;
 		return 0;
 	    }
 
-	    p->cigar_op  = bam1_cigar(b)[p->cigar_ind] & BAM_CIGAR_MASK;
-	    p->cigar_len = bam1_cigar(b)[p->cigar_ind] >> BAM_CIGAR_SHIFT;
+	    op=p->cigar_op  = p->b_cigar[p->cigar_ind] & BAM_CIGAR_MASK;
+	    p->cigar_len = p->b_cigar[p->cigar_ind] >> BAM_CIGAR_SHIFT;
 	    p->cigar_ind++;
 	}
-
-	switch (p->cigar_op) {
-	case BAM_CMATCH:
-	    p->seq_offset++;
-	    p->pos++;
-	    p->cigar_len--;
-	    break;
-
-	case BAM_CDEL:
-	    p->pos++;
-	    p->cigar_len--;
-	    break;
-
-	case BAM_CINS:
+	
+	if (op == BAM_CMATCH && p->cigar_len <= pos - p->pos) {
 	    p->seq_offset += p->cigar_len;
+	    p->pos += p->cigar_len;
 	    p->cigar_len = 0;
-	    break;
+	} else {
+	    switch (op) {
+	    case BAM_CMATCH:
+	    case BAM_CBASE_MATCH:
+	    case BAM_CBASE_MISMATCH:
+		p->seq_offset++;
+		/* Fall through */
+	    case BAM_CDEL:
+		p->pos++;
+		p->cigar_len--;
+		break;
 
-	case BAM_CPAD:
-	    p->cigar_len = 0;
-	    break;
+	    case BAM_CINS:
+	    case BAM_CSOFT_CLIP:
+		p->seq_offset += p->cigar_len;
+		/* Fall through */
+	    case BAM_CPAD:
+	    case BAM_CHARD_CLIP:
+		p->cigar_len = 0;
+		break;
 
-	case BAM_CHARD_CLIP:
-	    p->cigar_len = 0;
-	    break;
-
-	case BAM_CSOFT_CLIP:
-	    p->seq_offset += p->cigar_len;
-	    p->cigar_len = 0;
-	    break;
-
-	case BAM_CREF_SKIP:
-	default:
-	    fprintf(stderr, "Unhandled cigar_op %d\n", p->cigar_op);
-	    return -1;
+	    case BAM_CREF_SKIP:
+	    default:
+		fprintf(stderr, "Unhandled cigar_op %d\n", op);
+		return -1;
+	    }
 	}
-    }
-
-    if (p->pos < pos) {
-	p->eof = 1;
-	return 0;
     }
 
     /* Now at pos, find nth base */
-    while (p->nth < nth && more) {
+    while (p->nth < nth) {
 	if (p->cigar_len == 0) {
-	    if (p->cigar_ind >= b->core.n_cigar) {
+	    if (p->cigar_ind >= bam_cigar_len(b)) {
 		p->eof = 1;
 		return 0; /* off end of seq */
 	    }
 
-	    p->cigar_op  = bam1_cigar(b)[p->cigar_ind] & BAM_CIGAR_MASK;
-	    p->cigar_len = bam1_cigar(b)[p->cigar_ind] >> BAM_CIGAR_SHIFT;
+	    op=p->cigar_op  = p->b_cigar[p->cigar_ind] & BAM_CIGAR_MASK;
+	    p->cigar_len = p->b_cigar[p->cigar_ind] >> BAM_CIGAR_SHIFT;
 	    p->cigar_ind++;
 	}
 
-	switch (p->cigar_op) {
+	switch (op) {
 	case BAM_CMATCH:
+	case BAM_CBASE_MATCH:
+	case BAM_CBASE_MISMATCH:
 	case BAM_CSOFT_CLIP:
 	case BAM_CDEL:
-	    more = 0;
-	    break;
+	    goto at_nth; /* sorry, but it's fast! */
 
 	case BAM_CINS:
-	    p->cigar_len--;
-	    p->nth++;
 	    p->seq_offset++;
-	    more = 1;
-	    break;
-
+	    /* Fall through */
 	case BAM_CPAD:
 	    p->cigar_len--;
 	    p->nth++;
-	    more = 1;
 	    break;
 
 	case BAM_CHARD_CLIP:
@@ -150,24 +139,25 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 
 	case BAM_CREF_SKIP:
 	default:
-	    fprintf(stderr, "Unhandled cigar_op %d\n", p->cigar_op);
+	    fprintf(stderr, "Unhandled cigar_op %d\n", op);
 	    return -1;
 	}
     }
+ at_nth:
 
     /* Fill out base & qual fields */
-    if (p->nth < nth && p->cigar_op != BAM_CINS) {
+    if (p->nth < nth && op != BAM_CINS) {
 	//p->base = '-';
 	p->base = '*';
 	p->qual = p->b_qual[p->seq_offset];
-	if (p->seq_offset < b->core.l_qseq)
+	if (p->seq_offset < b->len)
 	    p->qual = (p->qual + p->b_qual[p->seq_offset+1])/2;
     } else {
-	switch(p->cigar_op) {
+	switch(op) {
 	case BAM_CDEL:
 	    p->base = '*';
 	    p->qual = p->b_qual[p->seq_offset];
-	    if (p->seq_offset < b->core.l_qseq)
+	    if (p->seq_offset < b->len)
 		p->qual = (p->qual + p->b_qual[p->seq_offset+1])/2;
 	    break;
 
@@ -175,31 +165,29 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	    //p->base = '+';
 	    p->base = '*';
 	    p->qual = p->b_qual[p->seq_offset];
-	    if (p->seq_offset < b->core.l_qseq)
+	    if (p->seq_offset < b->len)
 		p->qual = (p->qual + p->b_qual[p->seq_offset+1])/2;
 	    break;
 
 	default:
-	    //p->base = bam_nt16_rev_table[bam1_seqi(p->b_seq, p->seq_offset)];
-	    p->base = tab[p->seq_offset&1][p->b_seq[p->seq_offset/2]];
 	    p->qual = p->b_qual[p->seq_offset];
+	    p->base = tab[p->b_seq[p->seq_offset/2]][p->seq_offset&1];
 	    break;
 	}
     }
 
     /* Check if next op is an insertion of some sort */
     if (p->cigar_len == 0) {
-	if (p->cigar_ind < b->core.n_cigar) {
-	    p->cigar_op  = bam1_cigar(b)[p->cigar_ind] & BAM_CIGAR_MASK;
-	    p->cigar_len = bam1_cigar(b)[p->cigar_ind] >> BAM_CIGAR_SHIFT;
+	if (p->cigar_ind < bam_cigar_len(b)) {
+	    op=p->cigar_op  = p->b_cigar[p->cigar_ind] & BAM_CIGAR_MASK;
+	    p->cigar_len = p->b_cigar[p->cigar_ind] >> BAM_CIGAR_SHIFT;
 	    p->cigar_ind++;
 	} else {
 	    p->eof = 1;
 	}
     }
 
-    /* Set appropriate flags */
-    switch (p->cigar_op) {
+    switch (op) {
     case BAM_CPAD:
     case BAM_CINS:
 	*is_insert = p->cigar_len;
@@ -207,6 +195,9 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 
     case BAM_CSOFT_CLIP:
 	p->eof = 1;
+	break;
+
+    default:
 	break;
     }
     
@@ -226,12 +217,12 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
  * Returns 0 on success
  *        -1 on failure
  */
-int pileup_loop(samfile_t *fp,
+int pileup_loop(bam_file_t *fp,
 		int (*seq_init)(void *client_data,
-				samfile_t *fp,
+				bam_file_t *fp,
 				pileup_t *p),
 		int (*func)(void *client_data,
-			    samfile_t *fp,
+			    bam_file_t *fp,
 			    pileup_t *p,
 			    int depth,
 			    int pos,
@@ -242,7 +233,7 @@ int pileup_loop(samfile_t *fp,
     pileup_t *pnew = NULL;
     int is_insert, nth = 0;
     int col = 0, r;
-    int last_tid = -1;
+    int last_ref = -1;
 
     /* FIXME: allow for start/stop boundaries rather than consuming all data */
 
@@ -251,19 +242,29 @@ int pileup_loop(samfile_t *fp,
 	return -1;
     
     do {
-	bam1_t *b = &pnew->b;
+	bam_seq_t *b;
 	int pos, last_in_contig;
 
+	r = (bam_next_seq(fp, &pnew->b) > 0) ? 1 : -1;
+	b = pnew->b;
 
-	r = samread(fp, &pnew->b);
+	/* Force realloc */
+	fp->bs = NULL;
+	fp->bs_size = 0;
+
+	//r = samread(fp, pnew->b);
 	if (r >= 0) {
-	    if (b->core.tid == last_tid) {
-		pos = b->core.pos+1;
-		//printf("New seq at pos %d @ %d\n", pos, b->core.tid);
+	    if (bam_flag(b) & BAM_FUNMAP)
+		continue;
+
+	    if (b->ref == last_ref) {
+		pos = b->pos+1;
+		//printf("New seq at pos %d @ %d %s\n", pos, b->ref,
+		//       bam_name(b));
 		last_in_contig = 0;
 	    } else {
-		//printf("New ctg at pos %d @ %d\n",b->core.pos+1,b->core.tid);
-		pos = (b->core.pos > col ? b->core.pos : col)+1;
+		//printf("New ctg at pos %d @ %d\n",b->pos+1,b->ref);
+		pos = (b->pos > col ? b->pos : col)+1;
 		last_in_contig = 1;
 	    }
 	} else {
@@ -272,7 +273,7 @@ int pileup_loop(samfile_t *fp,
 	}
 
 	/* Process data between the last column and our latest addition */
-	while (col < pos) {
+	while (col < pos && phead) {
 	    int v, ins, depth = 0;
 
 	    /* Pileup */
@@ -303,8 +304,8 @@ int pileup_loop(samfile_t *fp,
 
 		    p->next = pfree;
 		    pfree = p;
-
-		    //printf("Del seq at pos %d\n", col);
+		    
+		    //printf("Del seq %s at pos %d\n", bam_name(p->b), col);
 		} else {
 		    last = p;
 		}
@@ -329,10 +330,13 @@ int pileup_loop(samfile_t *fp,
 		pos++;
 	}
 
+	/* May happen if we have a hole in the contig */
+	col = pos;
+
 	/* New contig */
-	if (b->core.tid != last_tid) {
-	    last_tid = b->core.tid;
-	    pos = b->core.pos+1;
+	if (b && b->ref != last_ref) {
+	    last_ref = b->ref;
+	    pos = b->pos+1;
 	    nth = 0;
 	    col = pos;
 	}
@@ -349,9 +353,10 @@ int pileup_loop(samfile_t *fp,
 	    p->cigar_ind  = 0;
 	    p->cigar_op   = 'X';
 	    p->seq_offset = -1;
-	    p->b_strand   = bam1_strand(&p->b) ? 1 : 0;
-	    p->b_qual     = bam1_qual(&p->b);
-	    p->b_seq      = bam1_seq(&p->b);
+	    p->b_strand   = bam_strand(p->b) ? 1 : 0;
+	    p->b_qual     = bam_qual(p->b);
+	    p->b_seq      = bam_seq(p->b);
+	    p->b_cigar    = bam_cigar(p->b);
 
 	    if (seq_init) {
 		int v;
@@ -386,14 +391,14 @@ int pileup_loop(samfile_t *fp,
  error:
 
     if (pnew) {
-	free(pnew->b.data);
+	//free(pnew->b.data);
 	free(pnew);
     }
 
     /* Tidy up */
     for (p = pfree; p; p = next) {
 	next = p->next;
-	free(p->b.data);
+	//free(p->b.data);
 	free(p);
     }
 
@@ -464,7 +469,7 @@ void strand_init(void) {
 
 /* MAX_DEPTH only has a consequence on the example / test dump output */
 #define MAX_DEPTH 4096
-static int sam_pileup(void *cd, samfile_t *fp, pileup_t *p,
+static int sam_pileup(void *cd, bam_file_t *fp, pileup_t *p,
 		      int depth, int pos, int nth) {
     char seq[MAX_DEPTH*3], *sp = seq, qual[MAX_DEPTH], *qp = qual;
     char buf[MAX_DEPTH*2+100], *cp = buf;
@@ -473,14 +478,14 @@ static int sam_pileup(void *cd, samfile_t *fp, pileup_t *p,
     if (!p)
 	return 0;
 
-    ref = p->b.core.tid;
+    ref = p->b->ref;
     for (; p; p = p->next) {
 	if (p->start) {
 	    *sp++ = '^';
-	    *sp++ = MIN(p->b.core.qual,93) + '!';
+	    *sp++ = MIN(p->qual,93) + '!';
 	}
 	*sp++ = strand_char[p->b_strand][p->base];
-	//*sp++ = strand_char[bam1_strand(&p->b)][p->base];
+	//*sp++ = strand_char[bam_strand(p->b)][p->base];
 	if (p->eof)
 	    *sp++ = '$';
 	*qp++ = p->qual + '!';
@@ -488,7 +493,7 @@ static int sam_pileup(void *cd, samfile_t *fp, pileup_t *p,
 
     /* Equivalent to the printf below, but faster */
     cp = buf;
-    strcpy(cp, fp->header->target_name[ref]); cp += strlen(cp);
+    strcpy(cp, fp->ref[ref].name); cp += strlen(cp);
     *cp++ = '\t';
     cp = append_int(cp, pos);   *cp++ = '\t';
     *cp++ = 'N';
@@ -505,7 +510,7 @@ static int sam_pileup(void *cd, samfile_t *fp, pileup_t *p,
     return 0;
 }
 
-static int basic_pileup(void *cd, samfile_t *fp, pileup_t *p,
+static int basic_pileup(void *cd, bam_file_t *fp, pileup_t *p,
 			int depth, int pos, int nth) {
     char seq[MAX_DEPTH*3], *sp = seq, qual[MAX_DEPTH], *qp = qual;
     char buf[MAX_DEPTH*4+100], *cp = buf, *rp;
@@ -515,8 +520,8 @@ static int basic_pileup(void *cd, samfile_t *fp, pileup_t *p,
 	return 0;
 
     /* Ref, pos, depth */
-    ref = p->b.core.tid;
-    rp = fp->header->target_name[ref];
+    ref = p->b->ref;
+    rp = fp->ref[ref].name;
     while (*cp++ = *rp++)
 	;
     cp--;
@@ -535,19 +540,18 @@ static int basic_pileup(void *cd, samfile_t *fp, pileup_t *p,
     }
     *cp++ = '\t';
     *qp++ = '\0';
-
     puts(buf);
 
     return 0;
 }
 
-int null_pileup(void *cd, samfile_t *fp, pileup_t *p,
+int null_pileup(void *cd, bam_file_t *fp, pileup_t *p,
 		int depth, int pos, int nth) {
     return 0;
 }
 
 int main(int argc, char **argv) {
-    samfile_t *fp;
+    bam_file_t *fp;
 
     if (argc != 3) {
 	fprintf(stderr, "sam_pileup filename mode\n");
@@ -556,17 +560,17 @@ int main(int argc, char **argv) {
 
     strand_init();
 
-    fp = samopen(argv[1], argv[2], NULL);
+    fp = bam_open(argv[1], argv[2]);
     if (!fp) {
 	perror(argv[1]);
 	return 1;
     }
     
-    //pileup_loop(fp, NULL, basic_pileup, fp);
+    pileup_loop(fp, NULL, basic_pileup, fp);
     //pileup_loop(fp, NULL, sam_pileup, fp);
-    pileup_loop(fp, NULL, null_pileup, NULL);
+    //pileup_loop(fp, NULL, null_pileup, NULL);
 
-    samclose(fp);
+    bam_close(fp);
     return 0;
 }
 #endif

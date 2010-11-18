@@ -41,10 +41,8 @@
 #include "tg_index_common.h"
 #include "zfio.h"
 
-#ifdef HAVE_SAMTOOLS
 #include "sam_index.h"
-#include "sam.h"
-#endif
+#include "bam.h"
 
 
 void usage(void) {
@@ -56,10 +54,8 @@ void usage(void) {
     fprintf(stderr, "      -A                   Input is ACE format\n");
     fprintf(stderr, "      -B                   Input is BAF format\n");
     fprintf(stderr, "      -C                   Input is CAF format\n");
-#ifdef HAVE_SAMTOOLS
     fprintf(stderr, "      -b                   Input is BAM format\n");
     fprintf(stderr, "      -s                   Input is SAM format (with @SQ headers)\n");
-#endif
     fprintf(stderr, "\n");
     fprintf(stderr, "      -u                   Also store unmapped reads (from SAM/BAM only)\n");
     fprintf(stderr, "      -x                   Also store auxillary records (from SAM/BAM only)\n");
@@ -126,11 +122,7 @@ int main(int argc, char **argv) {
     //mallopt(M_MMAP_MAX, 0);
 
     /* Arg parsing */
-#ifdef HAVE_SAMTOOLS
     while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPnz:fr:d:c:gux123456789")) != -1) {
-#else
-    while ((opt = getopt(argc, argv, "aBCstThAmMo:pPnz:fr:d:c:gux123456789")) != -1) {
-#endif
 	switch(opt) {
 	case 'g':
 	    a.repad = 1;
@@ -296,16 +288,15 @@ int main(int argc, char **argv) {
 	    parse_caf(io, argv[optind++], &a);
 	    break;
 
-#ifdef HAVE_SAMTOOLS
 	case 'b':
 	    printf("Processing BAM file %s\n", argv[optind]);
 	    err = parse_bam(io, argv[optind++], &a) ? 1 : 0;
 	    break;
+
 	case 's':	
 	    printf("Processing SAM file %s\n", argv[optind]);
 	    err = parse_sam(io, argv[optind++], &a) ? 1 : 0;
 	    break;
-#endif
 
 	default:
 	    fprintf(stderr, "Unknown file type for '%s' - skipping\n",

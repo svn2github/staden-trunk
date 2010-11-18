@@ -45,9 +45,6 @@
 /* Define to 1 if you have the `popen' function. */
 #undef HAVE_POPEN
 
-/* Define if samtools is installed */
-#undef HAVE_SAMTOOLS
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 

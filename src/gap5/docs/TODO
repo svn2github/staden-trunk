@@ -1,3 +1,5 @@
+*	Join editor "differences" search buttons, and/or via search window.
+
 *	Disassemble readings doesn't shut down affected editors. This
         means we can still edit such reads in the old editor (although
         they vanish), or we can crash it if we used disassemble
@@ -20,9 +22,6 @@
 
 *	The tg_tcl.c anno_ele_cmd function doesn't yet implement all
         the get/set methods.
-
-*	Add check for X11/Intrinsic.h in configure. It's in libxt-dev
-        on debian/ubuntu, which isn't a standard package.
 
 *	BUG: cut and paste from a reading in a complemented contig
         gives the wrong sequence
