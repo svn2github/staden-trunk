@@ -229,7 +229,7 @@ int pileup_loop(bam_file_t *fp,
 			    int nth),
 		void *client_data) {
     int ret = -1;
-    pileup_t *phead = NULL, *p, *pfree = NULL, *last, *next;
+    pileup_t *phead = NULL, *p, *pfree = NULL, *last, *next, *ptail = NULL;
     pileup_t *pnew = NULL;
     int is_insert, nth = 0;
     int col = 0, r;
@@ -310,6 +310,8 @@ int pileup_loop(bam_file_t *fp,
 		    last = p;
 		}
 	    }
+	    if ((ptail = last) == NULL)
+		ptail = phead;
 
 	    if (v == 1)
 		break; /* early abort */
@@ -344,7 +346,7 @@ int pileup_loop(bam_file_t *fp,
 	/* Add this seq */
 	if (r >= 0) {
 	    p = pnew;
-	    p->next       = phead;
+	    p->next       = NULL;
 	    p->cd         = NULL;
 	    p->start      = 1;
 	    p->eof        = 0;
@@ -366,14 +368,23 @@ int pileup_loop(bam_file_t *fp,
 		
 		if (v == 1) {
 		    /* Keep this seq */
-		    phead = p;
+		    if (phead) {
+			ptail->next = p;
+		    } else {
+			phead = p;
+		    }
+		    ptail = p;
 		} else {
 		    /* Push back on free list */
 		    p->next = pfree;
 		    pfree = p;
 		}
 	    } else {
-		phead = p;
+		if (phead)
+		    ptail->next = p;
+		else
+		    phead = p;
+		ptail = p;
 	    }
 
 	    /* Allocate the next pileup rec */
