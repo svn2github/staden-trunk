@@ -254,3 +254,22 @@ borrowed: \
         id="BORO": \
         bg=SkyBlue: \
 
+# GFF colours taken from Artemis
+"GFF Generic feature, colour 0":        id=GF00: bg="#ffffff"
+"GFF Generic feature, colour 1":        id=GF01: bg="#646464"
+"GFF Generic feature, colour 2":        id=GF02: bg="#ff0000"
+"GFF Generic feature, colour 3":        id=GF03: bg="#00ff00"
+"GFF Generic feature, colour 4":        id=GF04: bg="#0000ff"
+"GFF Generic feature, colour 5":        id=GF05: bg="#00ffff"
+"GFF Generic feature, colour 6":        id=GF06: bg="#ff00ff"
+"GFF Generic feature, colour 7":        id=GF07: bg="#ffff00"
+"GFF Generic feature, colour 8":        id=GF08: bg="#98fb98"
+"GFF Generic feature, colour 9":        id=GF09: bg="#87cefa"
+"GFF Generic feature, colour 10":       id=GF10: bg="#ffa500"
+"GFF Generic feature, colour 11":       id=GF11: bg="#c89664"
+"GFF Generic feature, colour 12":       id=GF12: bg="#ffc8c8"
+"GFF Generic feature, colour 13":       id=GF13: bg="#aaaaaa"
+"GFF Generic feature, colour 14":       id=GF14: bg="#000000"
+"GFF Generic feature, colour 15":       id=GF15: bg="#ff3f3f"
+"GFF Generic feature, colour 16":       id=GF16: bg="#ff7f7f"
+"GFF Generic feature, colour 17":       id=GF17: bg="#ffbfbf"

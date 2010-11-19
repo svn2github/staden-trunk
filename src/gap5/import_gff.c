@@ -245,7 +245,8 @@ static int    cached_end   = 0;
  * Returns 0 on success
  *        -1 on failure
  */
-static int gff_add_tag(GapIO *io, gff_entry *gff, int padded) {
+static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
+		       int plus_as_space) {
     tg_rec rec;
     int rec_type;
     char *type, *txt;
@@ -253,19 +254,39 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded) {
     bin_index_t *bin;
     anno_ele_t *e;
     contig_t *c;
+    char type_a[5];
 
     r.flags = GRANGE_FLAG_ISANNO;
     r.start = gff->start;
     r.end   = gff->end;
 
     /* Get tag TYPE */
-    if (!(type = gff_find_attrib(gff, "type")))
-	type = "GFF?";
-    type[0] = '_'; /* debug */
+    if (!(type = gff_find_attrib(gff, "type"))) {
+	char *col = gff_find_attrib(gff, "colour");
+	if (!col) col = gff_find_attrib(gff, "color");
+
+	strcpy(type_a, "GF00");
+	type = type_a;
+	if (col) {
+	    int c = atoi(col);
+	    type[2] = (c / 10) + '0';
+	    type[3] = (c % 10) + '0';
+	}
+    }
     r.mqual = str2type(type);
 
     /* Get annotation */
     txt = gff_find_attrib(gff, "Note");
+    if (!txt)
+	txt = gff_find_attrib(gff, "note"); /* but be pragmatic */
+
+    if (txt && plus_as_space) {
+	char *cp;
+	for (cp = txt; *cp; cp++) {
+	    if (*cp == '+')
+		*cp = ' ';
+	}
+    }
 
     /* Find seqid rec */
     if ((rec = contig_index_query(io, gff->seqid)) >= 0) {
@@ -389,7 +410,7 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded) {
  * Returns 0 on success
  *        -1 on failure
  */
-int import_gff(GapIO *io, char *fn, int padded) {
+int import_gff(GapIO *io, char *fn, int padded, int plus_as_space) {
     FILE *fp;
     char line[MAX_GFF_LINE];
     gff_entry gff;
@@ -421,7 +442,7 @@ int import_gff(GapIO *io, char *fn, int padded) {
     }
 #endif
 
-        gff_add_tag(io, &gff, padded);
+        gff_add_tag(io, &gff, padded, plus_as_space);
 	nentry++;
     }
 
@@ -449,6 +470,7 @@ typedef struct {
     GapIO *io;
     char  *infile;
     int    padded;
+    int    plus_space;
 } ig_arg;
 
 int tcl_import_gff(ClientData clientData, Tcl_Interp *interp,
@@ -459,6 +481,7 @@ int tcl_import_gff(ClientData clientData, Tcl_Interp *interp,
 	{"-io",		ARG_IO,  1, NULL,     offsetof(ig_arg, io)},
 	{"-infile",	ARG_STR, 1, NULL,     offsetof(ig_arg, infile)},
 	{"-padded",	ARG_INT, 1, "0",      offsetof(ig_arg, padded)},
+	{"-plus_space", ARG_INT, 1, "1",      offsetof(ig_arg, plus_space)},
 	{NULL,	        0,	 0, NULL,     0}
     };
     int res;
@@ -466,7 +489,7 @@ int tcl_import_gff(ClientData clientData, Tcl_Interp *interp,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    res = import_gff(args.io, args.infile, args.padded);
+    res = import_gff(args.io, args.infile, args.padded, args.plus_space);
     cache_flush(args.io);
 
     return res == 0 ? TCL_OK : -1;
