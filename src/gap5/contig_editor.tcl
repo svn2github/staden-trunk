@@ -2760,13 +2760,15 @@ bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
 bind EdNames <2> {editor_name_select %W [%W get_number @%x @%y]}
 
 bind EdNames <<select>> {
+    global EdNames_select
+    set EdNames_select 1
+
     set where [%W get_number @%x @%y]
     if {$where == ""} return
 
     foreach {type rec pos} $where break
     if {$type != 18} return
 
-    global EdNames_select
     set EdNames_select [UpdateReadingListItem "\#$rec" -1]
 }
 
