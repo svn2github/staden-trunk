@@ -921,6 +921,7 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
     free(cvec);
     free(pvec);
     free(depth);
+    free(perfect);
 
     return 0;
 }
