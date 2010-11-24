@@ -89,6 +89,7 @@ GAP5=\
 	contig_selector.o\
 	cs-object.o\
 	find_repeats.o\
+	readpair.o\
 	consensus.o\
 	read_depth.o\
 	gap_range.o \

@@ -29,6 +29,7 @@
 #include "auto_assemble.h"
 #include "dis_readings.h"
 #include "find_repeats.h"
+#include "readpairs.h"
 #include "break_contig.h"
 #include "newgap_cmds.h"
 #include "readpair.h"

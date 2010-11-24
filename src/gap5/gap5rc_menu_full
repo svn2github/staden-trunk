@@ -116,7 +116,7 @@ add_separator	{View.S1}
 add_command	{View.Results manager}		 8 10 {ListResults \$io}
 add_separator	{View.S2}
 add_command	{View.Find internal joins}	 8 10 {FindInternalJoins \$io}
-#add_command	{View.Find read pairs}		 8 10 {FindReadPairs \$io}
+add_command	{View.Find read pairs}		 8 10 {FindReadPairs \$io}
 add_command	{View.Find repeats}		 8 10 {FindRepeats \$io}
 #add_command	{View.Check assembly}		 8 10 {CheckAssembly \$io}
 add_command	{View.Sequence search}		 8 10 {FindOligos \$io}

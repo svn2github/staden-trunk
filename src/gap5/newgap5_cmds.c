@@ -27,6 +27,7 @@
 #include "align.h"
 #include "list_proc.h"
 #include "find_repeats.h"
+#include "readpair.h"
 #include "tkEditor.h"
 #include "tkEdNames.h"
 #include "read_depth.h"
@@ -805,6 +806,68 @@ FindRepeats(ClientData clientData,
     return TCL_OK;
 
 } /* end FindRepeats */
+
+
+int
+FindReadPairs(ClientData clientData,
+	      Tcl_Interp *interp,
+	      int objc,
+	      Tcl_Obj *CONST objv[])
+{
+    contig_list_t *contig_array = NULL;
+    int num_contigs = 0;
+    enum readpair_mode mode;
+    Tcl_DString input_params;
+    readpair_arg args;
+    cli_args a[] = {
+	{"-io",	     ARG_IO,  1, NULL,      offsetof(readpair_arg, io)},
+	{"-contigs", ARG_STR, 1, NULL,      offsetof(readpair_arg, inlist)},
+	{"-mode",    ARG_STR, 1, "end_end", offsetof(readpair_arg, mode)},
+	{"-end_size",ARG_INT, 1, "2000",    offsetof(readpair_arg, end_size)},
+	{NULL,	     0,	     0, NULL, 0}
+    };
+
+    vfuncheader("find read pairs");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    /* create contig name array */
+    active_list_contigs(args.io, args.inlist, &num_contigs, &contig_array);
+    if (num_contigs == 0) {
+	xfree(contig_array);
+	return TCL_OK;
+    }
+
+    if (strcmp(args.mode, "end_end") == 0)
+	mode = end_end;
+    else if (strcmp(args.mode, "end_all") == 0)
+	mode = end_all;
+    else if (strcmp(args.mode, "all_all") == 0)
+	mode = all_all;
+    else {
+	vTcl_SetResult(interp, "Unknown -mode parameter '%s'", args.mode);
+	return TCL_ERROR;
+    }
+
+    /* create inputs parameters */
+    Tcl_DStringInit(&input_params);
+    vTcl_DStringAppend(&input_params, "Contigs: %s\n", args.inlist);
+
+    vfuncparams("%s", Tcl_DStringValue(&input_params));
+    Tcl_DStringFree(&input_params);
+
+    if (find_read_pairs(args.io, num_contigs, contig_array, mode,
+			args.end_size) < 0 ) {
+	verror(ERR_WARN, "Find read pairs", "Failure in Find Read Pairs");
+	return TCL_OK;
+    }
+
+    xfree(contig_array);
+    return TCL_OK;
+
+} /* end FindReadPairs */
+
 
 int tcl_list_confidence(ClientData clientData, Tcl_Interp *interp,
 			int objc, Tcl_Obj *CONST objv[])
@@ -1772,6 +1835,11 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "find_repeats", FindRepeats,
 			 (ClientData) NULL,
 			 NULL);
+
+    Tcl_CreateObjCommand(interp, "find_read_pairs", FindReadPairs,
+			 (ClientData) NULL,
+			 NULL);
+
     Tcl_CreateObjCommand(interp, "list_confidence",
 			 tcl_list_confidence, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "list_base_confidence",

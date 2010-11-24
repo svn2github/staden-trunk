@@ -103,6 +103,8 @@ typedef struct {
 typedef struct {
     GapIO *io;
     char *inlist;
+    char *mode;
+    int end_size;
 } readpair_arg;
 
 typedef struct {

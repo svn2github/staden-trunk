@@ -539,6 +539,8 @@ set_def MAP_READS.INDEX_SEQUENCE_NAMES	1
 set_def READPAIR.INFILE			$defs_c_in
 set_def READPAIR.INFILE.WHICH.BUTTONS	{list file {{all contigs}}}
 set_def READPAIR.LINEWIDTH		2
+set_def READPAIR.MODE			1
+set_def READPAIR.END_SIZE		1000
 
 #find repeats
 set_def FINDREP.INFILE			$defs_c_in
