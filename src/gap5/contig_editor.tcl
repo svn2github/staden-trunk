@@ -1740,13 +1740,16 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
 	    21 {
 		set msg [$w get_seq_status $type $rec $pos \
 			     [keylget gap5_defs TAG_BRIEF_FORMAT]]
-		regsub -all "\n" $msg { \n } msg
+		regsub -all "\n" $msg { // } msg
 	    }
 	    default {
 		set msg "Unknown data type $type"
 	    }
 	}
     }
+
+    # Squash white-spacing for ease of display
+    regsub -all {[\n\t ]+} $msg " " msg
 
     set w [set ${w}(top)]
     global $w
@@ -2529,13 +2532,13 @@ proc editor_oligo_add {ed w} {
     set d(type)    "OLIG"
     set d(strand)  0
 
-    set d(anno)    "Sequence	[set ${w}(sequence)]
-Template	[set ${w}(template)]
+    set d(anno)    "Template	[set ${w}(template)]
+Oligoname	??
 GC		[set ${w}(GC)]
 Temperature	[set ${w}(temperature)]
 Score		[set ${w}(quality)]
 Date_picked	[clock format [clock seconds]]
-Oligoname	??"
+Sequence	[set ${w}(sequence)]"
 
     U_tag_change $ed -1 [array get d]
 }
@@ -2770,6 +2773,7 @@ bind EdNames <<select>> {
     if {$type != 18} return
 
     set EdNames_select [UpdateReadingListItem "\#$rec" -1]
+    editor_name_select %W [%W get_number @%x @%y]
 }
 
 bind EdNames <<select-drag>> {
@@ -2781,6 +2785,7 @@ bind EdNames <<select-drag>> {
 
     global EdNames_select
     UpdateReadingListItem "\#$rec" $EdNames_select
+    editor_name_select %W [%W get_number @%x @%y]
 }
 
 # Searching
