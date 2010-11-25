@@ -662,7 +662,7 @@ int check_annotations(GapIO *io, int *tag_used, int *minor) {
 
 	/* how many times used */
 	if (tag_used[t] == 0 && tag_free[t] == 0) {
-	    vmessage("Annotation %d: Neither used or free.\n", t);
+	    vmessage("Annotation %d: Neither used nor free.\n", t);
 	    (*minor)++;
 	} else if (tag_used[t] > 1) {
 	    vmessage("Annotation %d: used %d times.\n", t, tag_used[t]);
