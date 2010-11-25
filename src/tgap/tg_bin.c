@@ -522,14 +522,16 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     bin_index_t *bin;
     range_t *r2;
     int nr, offset, comp;
-    static bin_index_t *last_bin = NULL;
+    static tg_rec last_bin = 0;
     static int incr_value = 0;
 
     /* Tidy-up operation when adding ranges in bulk */
     if (delay_nseq == -1) {
-	if (last_bin && incr_value)
-	    bin_incr_nseq(io, last_bin, incr_value);
-	last_bin = NULL;
+	if (last_bin && incr_value) {
+	    bin = cache_search(io, GT_Bin, last_bin);
+	    bin_incr_nseq(io, bin, incr_value);
+	}
+	last_bin = 0;
 	incr_value = 0;
 
 	return NULL;
@@ -592,10 +594,11 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 	*r_out = r2;
 
     /* Update nseq in bins, delaying this to avoid needless writes */
-    if (delay_nseq == 1 && bin != last_bin && incr_value) {
-	bin_incr_nseq(io, last_bin, incr_value);
+    if (delay_nseq == 1 && bin->rec != last_bin && incr_value) {
+	bin_index_t *b2 = cache_search(io, GT_Bin, last_bin);
+	bin_incr_nseq(io, b2, incr_value);
 	incr_value = 0;
-	last_bin = bin;
+	last_bin = bin->rec;
     }
 
     if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
@@ -603,7 +606,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 	    bin_incr_nseq(io, bin, 1);
 	} else {
 	    incr_value++;
-	    last_bin = bin;
+	    last_bin = bin->rec;
 	}
     }
 
