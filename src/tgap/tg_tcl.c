@@ -1632,9 +1632,9 @@ static int library_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case GET_INSERT_SD: {
 	Tcl_Obj *obj[3];
-	obj[0] = Tcl_NewDoubleObj(tl->library->sd[0]/100.0);
-	obj[1] = Tcl_NewDoubleObj(tl->library->sd[1]/100.0);
-	obj[2] = Tcl_NewDoubleObj(tl->library->sd[2]/100.0);
+	obj[0] = Tcl_NewDoubleObj(tl->library->sd[0]);
+	obj[1] = Tcl_NewDoubleObj(tl->library->sd[1]);
+	obj[2] = Tcl_NewDoubleObj(tl->library->sd[2]);
 	Tcl_SetObjResult(interp, Tcl_NewListObj(3, obj));
 	break;
     }
