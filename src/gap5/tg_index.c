@@ -71,8 +71,8 @@ void usage(void) {
     fprintf(stderr, "                           of the existing consensus. Add gaps back in to\n");
     fprintf(stderr, "                           reads and/or consensus as needed.\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "      -t                   Index sequence names\n");
-    fprintf(stderr, "      -T                   Do not index sequence names (default on)\n");
+    fprintf(stderr, "      -t                   Index sequence names (default)\n");
+    fprintf(stderr, "      -T                   Do not index sequence names\n");
 
     fprintf(stderr, "\n");
     fprintf(stderr, "      -z value             Specify minimum bin size (default is '4k')\n"); 
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 
     a.fmt            = 'a'; /* auto */
     a.out_fn         = "g_db";
-    a.no_tree        = 1;
+    a.no_tree        = 0;
     a.pair_reads     = 1;
     a.append         = 0;
     a.merge_contigs  = -1;
