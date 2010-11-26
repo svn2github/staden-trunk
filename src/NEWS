@@ -1,5 +1,7 @@
-Staden 2.0.0b8,  Oct ?? 2010
+Staden 2.0.0b8,  Nov 26 2010
 ============================
+
+Gap5/tg_index 1.2.10
 
 Gap5 changes
 ------------
@@ -7,7 +9,17 @@ Gap5 changes
 *	A Disassemble Readings option has been added to the main Edit
         menu. (This performs the same task as in Gap4.)
 
-*	Tg_index now supports the CAF format.
+*	Tg_index now supports the CAF format. Improved the CAF exporting
+        code too.
+
+*	Removed the dependency on the SAMtools package. We now have
+        our own basic implementation. This also includes bug fixes
+        for handling SAM deletions immediately adjacent to
+        insertions.
+
+*	First draft of a Find Read Pairs function (as in Gap4). At
+        present read-pair orientation needs some work still, but the
+        basic plot and searching is working.
 
 *	Internal record numbers are now 64-bit instead of 32-bit,
         removing the need for reserving sequence record IDs in
@@ -46,6 +58,9 @@ Gap5 changes
 *	Sped up contig editor when dealing with excessively deep
         alignments.
 
+*	Reading names in the contig editor are now be selected for
+        copy and pasting using the left mouse button.
+
 Bug fixes
 ---------
 
@@ -59,6 +74,14 @@ Bug fixes
         multiple sporadic crashes and rarely even data corruptions.
 
 *	Fixes to consensus caching sometimes storing corrupted data.
+
+*	More robust when we run out of disc space.
+
+*	Import GFF should be more robust. This now also supports
+        "colour=<0-17>" tags to match those used in Artemis.
+
+*	The insert size in the Libraries panel is now displayed
+        correctly (when filled out) instead of at 1/100th of the size.
 
 
 Staden 2.0.0b7,  July 14th 2010

@@ -1,4 +1,167 @@
+2010-11-26  jkbonfield
+
+	* gap5/editor_view.c: When displaying tags we now draw a box
+	  around bases that have multiple tags on them, so it's visually
+	  obvious there is more information available than the top-most
+	  one being displayed.
+
+	* gap5/caf.c, gap5/export_contigs.c, tgap/tg_library.c,
+	  tgap/tg_library.h: Improvements to the CAF import and export.
+	  
+	  - We now use the CAF Ligation_no line (or Insert_size if not
+	  present) to generate a library for each sequence record. These
+	  records get output again too when using export sequences.
+	  
+	  - The library handling code has been improved to automatically
+	  compute mean and standard deviations.
+	  
+	  - On export, "-" now gets converted to "N" correctly instead of
+	  being interpreted as a pad.
+	  
+	  - Now exports consensus tags too.
+
+2010-11-25  jkbonfield
+
+	* gap5/contig_editor.tcl: 3 minor changes to the contig editor.
+	  - We now create primer tags with the oligo name earlier in the
+	  tag and the sequence later. This helps the editor status line
+	  contain more useful information.
+	  
+	  - The editor status line now replaces multiple spaces and tabs
+	  with a single space, in order to reduce horizontal space. It
+	  also no longer lists newlines as "\n" but "//" instead, hoping
+	  that this is more indicative of a break in data that an escaped
+	  newline symbol.
+	  
+	  - Names are cut (for pasting) with the left mouse button now as
+	  well as the middle.
+
+	* gap5/tg_index.c: Made name indexing the default now; use -T to
+	  disable.
+
+	* tgap/tg_bin.c: Fixed a bug in the adding items to bins. The
+	  delayed increment of the number of sequences in a bin could
+	  corrupt memory and/or crash if the cached last_bin value pointed
+	  to a bin object which has been purged from the cache.
+	  
+	  Rather than increment the reference count to block this, we now
+	  just cache the record number and look up the bin as and when
+	  needed.
+
+	* tgap/tg_tcl.c: Fixed library insert size data - previously we
+	  were dividing by 100, but this was a misunderstanding between
+	  in-memory and on-disk formats.
+
+	* gap4/dbcheck.c: Grammar fix in error message
+
+2010-11-24  jkbonfield
+
+	* gap4/newgap_cmds.c, gap5/Makefile, gap5/gap5rc,
+	  gap5/gap5rc_menu_full, gap5/newgap5_cmds.c,
+	  gap5/newgap_structs.h, gap5/readpair.c, gap5/readpair.h,
+	  gap5/readpair.tcl: Added "Find Read Pairs" first draft.
+	  
+	  This supports plotting read-pairs using all vs all, all vs end
+	  and end vs end search modes.
+
+	* gap5/contig_editor.tcl: Fixed a bug with highlighting reading
+	  names when we start making the selection from outside a reading
+	  name.
+
+	* gap5/consensus.c: Removed small memory leak
+
+2010-11-19  jkbonfield
+
+	* gap5/sam_pileup.c: Append new sequences to the end of the pileup
+	  list instead of the start, effectively reversing the order of
+	  data within columns.
+	  
+	  This now means we add data in the same order as the old tg_index
+	  and the same order as viewed within samtools tview.
+
+	* gap4/GTAGDB, gap5/import_gff.c: Bug fix to gap5 import_gff
+	  function.
+	  
+	  Added generic GFF tags for lines with "colour=<0-17>" to match
+	  up with those used in Artemis.
+
+2010-11-18  jkbonfield
+
+	* configure.in, gap5/Makefile, gap5/docs/TODO,
+	  gap5/newgap5_cmds.c, gap5/sam_index.c, gap5/sam_index.h,
+	  gap5/sam_index2.c, gap5/sam_pileup.c, gap5/sam_pileup.h,
+	  gap5/tg_index.c, staden_config.h.in, system.mk.in: Major update
+	  of bam/sam reading code. We no longer have any dependency on the
+	  samtools package, instead rewriting the bam/sam reading code and
+	  the pileup code ourselves. This has several consequences.
+	  
+	  - BAM/SAM reading should be slightly faster in most cases, and
+	  considerably faster in highly padded regions.
+	  
+	  - Cases of deletions immediately following insertions in CIGAR
+	  strings will now produce the correct alignments.
+	  
+	  - No need for --with-samtools in configure scripts and the need
+	  to recompile samtools with -fPIC.
+	  
+	  - Support for gzipped SAM files.
+
+	* gap5/depad_seq_tree.c: Bug fix in get_padded_coord(). When
+	  asking for a coordinate beyond the last pad we were just
+	  returning the unpadded value rather than the using the unpadded
+	  distance since the last known pad.
+
+2010-11-16  jkbonfield
+
+	* gap5/sam_pileup.c: Minor reformatting of append_int()
+
+2010-10-29  jkbonfield
+
+	* tgap/tg_iface_g.c: Improved error checking to handle cases of
+	  running out of disk space.  We make sure we never flush any
+	  changes like this now, instead either reporting an error or just
+	  plain aborting. (Not ideal, but 100% better than corrupting the
+	  database.)
+
+2010-10-28  jkbonfield
+
+	* gap5/sam_index2.c, gap5/sam_pileup.c, gap5/sam_pileup.h: A work
+	  in progress and currently not linked in.  These implement an
+	  alternative pileup interface to using samtool's own pileup
+	  code. It's both faster and less buggy (it handles neighbouring
+	  insertions and deletions), but also less complete at current in
+	  that it doesn't deal with tg_index -g.
+
+	* gap4/auto_break.c, gap4/find_oligo.c, gap4/join.c,
+	  gap5/break_contig.c, gap5/caf.c, gap5/consensus.c,
+	  gap5/contig_selector.c, gap5/dis_readings.c, gap5/editor_join.c,
+	  gap5/export_contigs.c, gap5/find_oligo.c, gap5/import_gff.c,
+	  gap5/qual.c, gap5/template_draw.c, gap5/tg_index_common.c,
+	  gap5/tman_interface.c, primer3/src/oligotm.c,
+	  spin/seq_plot_funcs.c, tgap/g-request.c, tgap/tg_contig.c,
+	  tgap/tg_register.c, tgap/tg_tcl.c, tk_utils/tkTraceDisp.c: More
+	  code tidy ups: appropriately dealt with unused variables and
+	  functions.
+
+	* configure.in, gap5/docs/TODO, gap5/gap.tcl, gap5/tg_index.c,
+	  gap5/tg_view.c: Various updates preparing for new release -
+	  version number changes and
+	  the like.
+
+	* gap4/edUtils2.c, gap5/editor_join.c, gap5/editor_search.c,
+	  gap5/tkEditor.c, gap5/tman_display.c, gap5/tman_interface.c,
+	  polyA_clip/seqInfo.c, seq_utils/align_sv.c,
+	  seq_utils/dna_utils.c, seq_utils/genetic_code.c, spin/init.c,
+	  spin/seqed.c, spin/seqed_restriction_enzymes.c,
+	  spin/seqed_search.c, spin/seqed_translate.c, spin/seqed_write.c,
+	  spin/tkSeqed.c, spin/tkSeqedNames.c, spin/tkSeqedUtils.c,
+	  tgap/tg_iface.h, tgap/tg_library.c, tgap/tg_tcl.c,
+	  tk_utils/sheet.c, tk_utils/tkSheet.c: Remove various (harmless)
+	  compiler warnings.
+
 2010-10-27  jkbonfield
+
+	* ChangeLog, NEWS: Preparation for 2.0.0b8 (internal test version)
 
 	* gap5/baf.c, gap5/caf.c, gap5/consensus.c, gap5/dis_readings.c,
 	  gap5/import_gff.c, gap5/sam_index.c, gap5/tg_index.c,
