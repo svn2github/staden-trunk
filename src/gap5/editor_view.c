@@ -1017,6 +1017,9 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
     if (xx->nr == 0)
 	return;
 
+    /* Identify overlapping tags and mark using boxes */
+#define sh_tmp (1L<<30)
+
     if (s) {
 	/* A sequence */
 	tg_rec key = s->rec;
@@ -1037,6 +1040,9 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
 		    p2 + xx->displayPos <= xx->r[ai].end) {
 		    if (xx->ed->display_cutoffs ||
 			(p >= left-1 && p <= right-1)) {
+			if (ink[p2].sh & sh_tmp)
+			    ink[p2].sh |= sh_box;
+			ink[p2].sh |= sh_tmp;
 			if (tag_db[db].fg_colour!=NULL) {
 			    ink[p2].sh|=sh_fg;
 			    ink[p2].fg=tag_db[db].fg_pixel;
@@ -1069,6 +1075,11 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
 		    break;
 
 		p2 = j-xx->displayPos;
+
+		if (ink[p2].sh & sh_tmp)
+		    ink[p2].sh |= sh_box;
+		ink[p2].sh |= sh_tmp;
+
 		if (tag_db[db].fg_colour!=NULL) {
 		    ink[p2].sh|=sh_fg;
 		    ink[p2].fg=tag_db[db].fg_pixel;
