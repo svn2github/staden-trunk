@@ -989,13 +989,21 @@ static int quality_data(zfp *fp, seq_qual *qual, long pos) {
     read in sequence data, bases and quality plus any annotations and enter them into
     the gap5 db
 */
-static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *pair,
-    	    	    	pools *pool, caf_node *caf, char *name, char *align) {
+static int read_data(zfp *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
+		     HacheTable *pair, pools *pool, caf_node *caf,
+		     HacheTable *lig_hash, char *name, char *align) {
 			
     long pos;
     seq_qual sq;
     caf_node *this_node = caf;
-    
+    library_t *lib = NULL;
+    char lib_name[1024], lig_name[1024], *lig_str;
+    HacheItem *hi;
+    int min_size = 0, max_size = 0;
+
+    *lib_name = 0;
+    *lig_name = 0;
+
     if (!find_caf_node(pool, &this_node, name, 0)) {
     	fprintf(stderr, "Can't find entry on %s\n", name);
 	return 1;
@@ -1121,9 +1129,60 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 		     	return 1;
 		    }
 		}
+	    } else if (value = get_value("Ligation_no", line_in)) {
+		char *cp;
+		for (cp = value; *cp; cp++)
+		    if (*cp == ' ')
+			*cp = '-';
+		
+		strcpy(lig_name, value);
+	    } else if (value = get_value("Insert_size", line_in)) {
+		char *cp;
+		min_size = atoi(value);
+		for (cp = value; *cp; cp++) {
+		    if (*cp == ' ') {
+			max_size = atoi(cp+1);
+			*cp = '-';
+		    }
+		}
+		sprintf(lib_name, "ins_size=%s", value);
 	    }
 	}
-	
+
+	/* Pick an appropriate library name, resorting to filename if needed */
+	if (*lig_name)
+	    lig_str = lig_name;
+	else if (*lib_name)
+	    lig_str = lib_name;
+	else
+	    lig_str = fn;
+
+	if ((hi = HacheTableSearch(lig_hash, lig_str, 0))) {
+	    lib = hi->data.p;
+	} else {
+	    /* Create a new library */
+	    tg_rec lrec;
+	    HacheData hd;
+
+	    printf("New library %s\n", lig_str);
+	    lrec = library_new(io, lig_str);
+	    lib = get_lib(io, lrec);
+	    lib = cache_rw(io, lib);
+
+	    /* Assume min to max size in CAF is 3 s.d. */
+	    lib->insert_size[LIB_T_INWARD]  = (min_size + max_size)/2;
+	    lib->insert_size[LIB_T_OUTWARD] = (min_size + max_size)/2;
+	    lib->insert_size[LIB_T_SAME]    = (min_size + max_size)/2;
+	    lib->sd[LIB_T_INWARD]  = (max_size - min_size) / 6.0;
+	    lib->sd[LIB_T_OUTWARD] = (max_size - min_size) / 6.0;
+	    lib->sd[LIB_T_SAME]    = (max_size - min_size) / 6.0;
+
+	    cache_incr(io, lib);
+	    hd.p = lib;
+
+	    HacheTableAdd(lig_hash, lig_str, 0, hd, 0);
+	}
+
 	if (line_in) {
 	    free(line_in);
 	}
@@ -1175,7 +1234,7 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 	if (pair) is_pair = 1;
 	
 	recno = save_range_sequence(io, &seq, seq.mapping_qual, pair,
-					is_pair, template_name, *c, a, flags, NULL);
+				    is_pair, template_name, *c, a, flags, lib);
 					
 	if (trace_name) {
 	    free(trace_name);
@@ -1250,12 +1309,20 @@ static int read_data(zfp *fp, GapIO *io, tg_args *a, contig_t **c, HacheTable *p
 }
 	
 
-static int import_caf(zfp *fp, GapIO *io, tg_args *a, HacheTable *pair, pools *pool, caf_node *caf, caf_index *contig_entry) {
+static int import_caf(zfp *fp, char *fn, GapIO *io, tg_args *a,
+		      HacheTable *pair, pools *pool, caf_node *caf,
+		      caf_index *contig_entry) {
     contig_t *c = NULL;
     long read_no       = 0;
     long contig_no     = 0;
     long i;
     caf_index contig_reads;
+    HacheTable *lig_hash;
+    HacheIter *iter = HacheTableIterCreate();
+    HacheItem *hi;
+
+    if (!(lig_hash = HacheTableCreate(16, HASH_DYNAMIC_SIZE)))
+	return 1;
     
     for (i = 0; i < contig_entry->size; i++) {
     	long j;
@@ -1272,7 +1339,9 @@ static int import_caf(zfp *fp, GapIO *io, tg_args *a, HacheTable *pair, pools *p
 	contig_no++;
 	
 	for (j = 0; j < contig_reads.size; j++) {
-	    err = read_data(fp, io, a, &c, pair, pool, caf, contig_reads.entry[j].name, contig_reads.entry[j].data);
+	    err = read_data(fp, fn, io, a, &c, pair, pool, caf, lig_hash,
+			    contig_reads.entry[j].name,
+			    contig_reads.entry[j].data);
 
 	    if (err) {
 	    	fprintf(stderr, "Unable to import data for read %s on contig %s",
@@ -1288,6 +1357,22 @@ static int import_caf(zfp *fp, GapIO *io, tg_args *a, HacheTable *pair, pools *p
 	    cache_flush(io);
 	} 
     }
+
+    /*
+     * Tidy up our stored libraries. This involves computing new
+     * insert size means and standard deviations, as well as decrementing
+     * our reference counter.
+     */
+    while ((hi = HacheTableIterNext(lig_hash, iter))) {
+	library_t *lib = hi->data.p;
+	cache_decr(io, lib);
+
+	/* Update library mean/sd records */
+	update_library_stats(io, lib->rec, 100, NULL, NULL, NULL);
+    }
+
+    HacheTableDestroy(lig_hash, 0);
+    HacheTableIterDestroy(iter);
     
     fprintf(stderr, "Done %ld reads in %ld contigs.\n", read_no, contig_no);
     
@@ -1367,7 +1452,7 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     
     fprintf(stderr, "Loading ...\n");
     
-    if (import_caf(fp, io, a, pair, &pool, &caf, &contig_entry)) {
+    if (import_caf(fp, fn, io, a, pair, &pool, &caf, &contig_entry)) {
     	fprintf(stderr, "Unable to populate gap5 db");
 	return -1;
     }

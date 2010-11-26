@@ -1349,6 +1349,34 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	(cp = strchr(name, '/')))
 	fprintf(fp, "Template %.*s\n", (int)(cp-name), name);
 
+    /* Insert size and ligation information if available */
+    if (s->parent_type == GT_Library) {
+	double mean, sd;
+	int count;
+	int min = 0, max = 0;
+	library_t *lib;
+
+	lib = cache_search(io, GT_Library, s->parent_rec);
+	get_library_stats(io, lib->rec, &mean, &sd, NULL, &count);
+
+	/* Parse libraries generated solely from CAF Insert_size records */
+	if (strncmp(lib->name, "ins_size=", 9) == 0) {
+	    if (sscanf(lib->name, "ins_size=%d-%d", &min, &max) != 2) {
+		fprintf(stderr, "Unexpected library name format '%s'\n", 
+			lib->name);
+		min = max = 0;
+	    }
+	} else {
+	    fprintf(fp, "Ligation_no %s\n", lib->name);
+	}
+
+	if ((min == 0 && max == 0) || count < 100) {
+	    min = MAX(0, mean - 3*sd);
+	    max = MAX(0, mean + 3*sd);
+	}
+	fprintf(fp, "Insert_size %d %d\n", min, max);
+    }
+
     //fprintf(fp, "Seq_vec SVEC %d %d\n", fixme, fixme);
 
 
@@ -1404,7 +1432,11 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     for (i = 0; i < len; i += 60) {
 	int j,l = MIN(60, len-i);
 	for (j=0; j<l; j++) {
-	    fputc(s->seq[i+j] != '*' ? s->seq[i+j] : '-', fp);
+	    switch (s->seq[i+j]) {
+	    case '*': fputc('-', fp); break;
+	    case '-': fputc('N', fp); break;
+	    default:  fputc(s->seq[i+j], fp); break;
+	    }
 	}
 	fputc('\n', fp);
     }
@@ -1431,7 +1463,8 @@ static int export_contig_caf(GapIO *io, FILE *fp,
     rangec_t *r;
     char *q = NULL, *S = NULL;
     contig_t *c;
-    fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
+    fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create(),
+	*cq = fifo_queue_create();
     fifo_t *fi;
     int last_start = 0;
     dstring_t *ds = dstring_create(NULL);
@@ -1448,8 +1481,8 @@ static int export_contig_caf(GapIO *io, FILE *fp,
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    if (!(r->flags & GRANGE_FLAG_TAG_SEQ)) {
-		/* Contig tag */
-		/* FIXME: to do still */
+		/* Contig tag - delay until later */
+		fifo_queue_push(cq, r);
 	    } else {
 		/* Technically this should be a list and not a fifo */
 		fifo_queue_push(tq, r);
@@ -1485,8 +1518,32 @@ static int export_contig_caf(GapIO *io, FILE *fp,
     cache_incr(io, c);
     fprintf(fp, "Sequence : %s\nIs_contig\nPadded\n", c->name);
     fputs(dstring_str(ds), fp);
+
+    /* And the consensus tags */
+    while (fi = fifo_queue_head(cq)) {
+	fifo_queue_pop(cq);
+	anno_ele_t *a;
+	char type[5];
+
+	a = cache_search(io, GT_AnnoEle, fi->r.rec);
+	fprintf(fp, "Tag %s %d %d",
+		type2str(fi->r.mqual, type),
+		fi->r.start, fi->r.end);
+
+	if (a->comment && *a->comment) {
+	    char *escaped = escape_C_string(a->comment);
+	    fprintf(fp, " \"%s\"\n", escaped);
+	    free(escaped);
+	} else {
+	    fprintf(fp, "\n");
+	}
+	free(fi);
+    }
+    fifo_queue_destroy(cq);
     fprintf(fp, "\n");
 
+
+    /* Plus DNA and BaseQuality parts */
     consensus_valid_range(io, crec, &first_base, &last_base);
     len = last_base - first_base + 1;
     cons = (char *)xmalloc(len);

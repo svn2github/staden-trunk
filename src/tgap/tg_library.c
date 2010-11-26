@@ -144,21 +144,26 @@ void accumulate_library(GapIO *io, library_t *lib, int type, int size) {
 /*
  * Computes the mean and standard deviation of a library along with which
  * type. See LIB_T_* macros in tg_struct.h.
+ * 'min_count' specifies a minimum number of paired reads to have before
+ * writing back the data to the library struct. Specify this as zero
+ * to do it regardless.
  *
  * Returns 0 on success,
  *        -1 on failure
  */
-int library_stats(GapIO *io, tg_rec rec, double *mean, double *sd, int *type) {
+int update_library_stats(GapIO *io, tg_rec rec, int min_count,
+			 double *mean, double *sd, int *type) {
     library_t *lib = cache_search(io, GT_Library, rec);
     int i, j;
     double sum[3]    = {0, 0, 0};
     double sum_sq[3] = {0, 0, 0};
-    int N[3];
-    double m, s;
+    double N[3], m, s;
+    double isize[3], sd_[3];
 
     if (!lib)
 	return -1;
 
+    /*
     for (i = 0; i < LIB_BINS; i++) {
 	int bsize = ibin2isize(i+1);
 	for (j = 0; j < 3; j++) {
@@ -177,12 +182,107 @@ int library_stats(GapIO *io, tg_rec rec, double *mean, double *sd, int *type) {
 
     m = sum[j] / N[j];
     s = sqrt((sum_sq[j]/N[j] - m*m));
+    */
+
+    /*
+     * Try 2: compute mean and s.d. via the interquartile range instead.
+     * This seems more stable when given very non gaussian looking data or
+     * distributions with very long tails.
+     *
+     * Skip tiniest bins as these normally in error atm.
+     */
+#define SMALLEST_BIN 50
+    for (j = 0; j < 3; j++) {
+	double count = 0, c2 = 0;
+	double q1, q2, q3;
+
+	for (i = SMALLEST_BIN; i < LIB_BINS; i++) {
+	    int bsize = ibin2isize(i+1);
+	    count += (double)lib->size_hist[j][i];
+	}
+	N[j] = count;
+
+	q1 = q2 = q3 = 0;
+
+	for (i = SMALLEST_BIN; i < LIB_BINS; i++) {
+	    q1 = ibin2isize(i+1);
+	    c2 += (double)lib->size_hist[j][i];
+	    if (c2 >= .25 * count)
+		break;
+	}
+	for (; i < LIB_BINS; i++) {
+	    q2 = ibin2isize(i+1);
+	    c2 += (double)lib->size_hist[j][i];
+	    if (c2 >= .5 * count)
+		break;
+	}
+	for (; i < LIB_BINS; i++) {
+	    q3 = ibin2isize(i+1);
+	    c2 += (double)lib->size_hist[j][i];
+	    if (c2 >= .75 * count)
+		break;
+	}
+
+	isize[j] = q2;
+	sd_[j] = (q3-q1)/1.349;
+    }
+
+    if (N[0] > N[1]) {
+	j = N[0] > N[2] ? 0 : 2;
+    } else {
+	j = N[1] > N[2] ? 1 : 2;
+    }
 
     if (type) *type = j;
-    if (mean) *mean = m;
-    if (sd)   *sd   = s;
+    if (mean) *mean = isize[j];
+    if (sd)   *sd   = sd_[j];
 
-    /* FIXME: write these back into lib too? */
+    if (N[0] + N[1] + N[2] >= min_count) {
+	lib = cache_rw(io, lib);
+	if (!lib)
+	    return -1;
+
+	lib->lib_type = j;
+
+	for (j = 0; j < 3; j++) {
+	    lib->insert_size[j] = isize[j];
+	    lib->sd[j] = sd_[j];
+	}
+    }
+
+    return 0;
+}
+
+int get_library_stats(GapIO *io, tg_rec rec,
+		      double *mean, double *sd, int *type, int *count) {
+    library_t *lib = cache_search(io, GT_Library, rec);
+    int i, j;
+    double N[3];
+
+    if (!lib)
+	return -1;
+
+    for (j = 0; j < 3; j++) {
+	N[j] = 0;
+	for (i = 0; i < LIB_BINS; i++) {
+	    N[j] += lib->size_hist[j][i];
+	}
+    }
+    
+    if (N[0] > N[1]) {
+	j = N[0] > N[2] ? 0 : 2;
+    } else {
+	j = N[1] > N[2] ? 1 : 2;
+    }
+
+    if (mean)
+	*mean = lib->insert_size[j];
+    if (sd)
+	*sd = lib->sd[j];
+    if (type)
+	*type = j;
+    if (count)
+	*count = N[j];
 
     return 0;
 }

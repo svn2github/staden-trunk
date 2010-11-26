@@ -58,10 +58,20 @@ int ibin_width(int ibin);
 /*
  * Computes the mean and standard deviation of a library along with which
  * type. See LIB_T_* macros in tg_struct.h.
+ * 'min_count' specifies a minimum number of paired reads to have before
+ * writing back the data to the library struct. Specify this as zero
+ * to do it regardless.
  *
  * Returns 0 on success,
  *        -1 on failure
  */
-int library_stats(GapIO *io, tg_rec rec, double *mean, double *sd, int *type);
+int update_library_stats(GapIO *io, tg_rec rec, int min_count,
+			 double *mean, double *sd, int *type);
+
+/*
+ * As above, but simply returns the pre-computed values.
+ */
+int get_library_stats(GapIO *io, tg_rec rec,
+		      double *mean, double *sd, int *type, int *count);
 
 #endif /* _TG_LIBRARY_ */
