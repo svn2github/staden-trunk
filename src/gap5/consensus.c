@@ -107,9 +107,14 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
     rangec_t *r;
     contig_t *c;
     int left, right;
-    
-    printf("Calculate_consensus_simple(contig=%"PRIrec", range=%d..%d)\n",
-	   contig, start, end);
+
+    /* Don't bother caching for temporary io structs */
+    if (io->base) {
+	return calculate_consensus_simple2(io, contig, start, end, con, qual);
+    }
+
+    //printf("Calculate_consensus_simple(contig=%"PRIrec", range=%d..%d)\n",
+    //       contig, start, end);
 
     /*
      * We cache consensus in the first bin smaller than a specific size
