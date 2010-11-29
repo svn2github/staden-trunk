@@ -824,6 +824,7 @@ FindReadPairs(ClientData clientData,
 	{"-contigs", ARG_STR, 1, NULL,      offsetof(readpair_arg, inlist)},
 	{"-mode",    ARG_STR, 1, "end_end", offsetof(readpair_arg, mode)},
 	{"-end_size",ARG_INT, 1, "2000",    offsetof(readpair_arg, end_size)},
+	{"-min_map_qual", ARG_INT, 1, "10", offsetof(readpair_arg, min_map_qual)},
 	{NULL,	     0,	     0, NULL, 0}
     };
 
@@ -858,7 +859,7 @@ FindReadPairs(ClientData clientData,
     Tcl_DStringFree(&input_params);
 
     if (find_read_pairs(args.io, num_contigs, contig_array, mode,
-			args.end_size) < 0 ) {
+			args.end_size, args.min_map_qual) < 0 ) {
 	verror(ERR_WARN, "Find read pairs", "Failure in Find Read Pairs");
 	return TCL_OK;
     }

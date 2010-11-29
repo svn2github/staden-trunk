@@ -42,6 +42,7 @@ typedef struct {
     tg_rec rec[2];
     int start[2], end[2];
     int contig[2];
+    int mqual[2];
 } read_pair_t;
 
 /*
@@ -148,9 +149,10 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 	break;
 
     case OBJ_GET_BRIEF:
-	sprintf(buf, "Read pair: %c#%d@%d with %c#%d@%d, len %d",
-		obj->c1 > 0 ? '+' : '-', obj->read1, obj->pos1,
-		obj->c2 > 0 ? '+' : '-', obj->read2, obj->pos2,
+	sprintf(buf,
+		"Read pair: %c#%d@%d (mq %d) with %c#%d@%d (mq %d), len %d",
+		obj->c1 > 0 ? '+' : '-', obj->read1, obj->pos1, obj->mq1,
+		obj->c2 > 0 ? '+' : '-', obj->read2, obj->pos2, obj->mq2,
 		obj->length);
 	return buf;
     }
@@ -311,6 +313,8 @@ int PlotTempMatches(GapIO *io, read_pair_t *rp) {
 	matches[n_matches].read1 = rp->rec[0];
 	matches[n_matches].read2 = rp->rec[1];
 	matches[n_matches].flags = 0;
+	matches[n_matches].mq1 = rp->mqual[0];
+	matches[n_matches].mq2 = rp->mqual[1];
 	if (++n_matches >= max_matches) {
 	    obj_read_pair *tmp;
 	    
@@ -377,12 +381,15 @@ int PlotTempMatches(GapIO *io, read_pair_t *rp) {
 }
 
 /*
- * As above, but only ends vs ends.
+ * Identifies spanning read pairs within end_size of the end of each contig.
+ * Mode is 0 for all vs all.
+ *         1 for ends vs all.
+ *	   2 for ends vs ends.
  */
 read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 			    contig_list_t *contig_array,
 			    enum readpair_mode mode,
-			    int end_size) {
+			    int end_size, int min_mq) {
     int i;
     HashTable *h;
     HashIter *iter;
@@ -580,6 +587,10 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	    /* Spanning pair, but not with a match near an end */
 	    continue;
 
+	/* Mapped to a repeat? */
+	if (r1->mqual < min_mq || r2->mqual < min_mq)
+	    continue;
+
 	/* Accepted - add it to pairs[] array */
 	if (npairs >= nalloc) {
 	    nalloc = nalloc ? nalloc*2 : 1024;
@@ -596,6 +607,8 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	pairs[npairs].start[1] = r2->start;
 	pairs[npairs].end[0] = r1->end;
 	pairs[npairs].end[1] = r2->end;
+	pairs[npairs].mqual[0] = r1->mqual;
+	pairs[npairs].mqual[1] = r2->mqual;
 
 	r2->rec = 0;
 
@@ -626,12 +639,12 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
  * ---------------------------------------------
  */
 int find_read_pairs(GapIO *io, int num_contigs, contig_list_t *contig_array,
-		    enum readpair_mode mode, int end_size) {
+		    enum readpair_mode mode, int end_size, int min_mq) {
 
     read_pair_t *tarr;
 
     if (NULL == (tarr = spanning_pairs(io, num_contigs, contig_array,
-				       mode, end_size)))
+				       mode, end_size, min_mq)))
 	return -1;
 
     /* Find only those templates spanning multiple contigs and plot them. */

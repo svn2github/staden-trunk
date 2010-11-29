@@ -1,6 +1,7 @@
 #ifndef _CS_OBJECT_H
 #define _CS_OBJECT_H
 
+#include <inttypes.h>
 #include <tcl.h>
 
 #include "IO.h"
@@ -70,6 +71,7 @@ typedef struct obj_match_t {
      * read pair result.
      */
     int read;
+    uint32_t dummy1; /* This has to be the >= size of largest obj type */
 } obj_match, obj_checkass;
 
 /*
@@ -94,6 +96,7 @@ typedef struct obj_read_pair_t {
 
     /* Below here are local to this strucure only */
     int read1, read2;
+    uint16_t mq1, mq2;
 } obj_read_pair;
 
 /*

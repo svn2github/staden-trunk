@@ -12,7 +12,7 @@ find_read_pairs(GapIO *io,
 		int num_contigs, 
 		contig_list_t *contig_array,
 		enum readpair_mode mode,
-		int end_size);
+		int end_size, int min_mq);
 
 
 #endif /* _READPAIR_H_ */

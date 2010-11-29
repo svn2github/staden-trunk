@@ -105,6 +105,7 @@ typedef struct {
     char *inlist;
     char *mode;
     int end_size;
+    int min_map_qual;
 } readpair_arg;
 
 typedef struct {

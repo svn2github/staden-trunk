@@ -32,10 +32,18 @@ proc ReadPairDialog { io f} {
 	-label "Size of contig 'ends'" \
 	-default [keylget gap5_defs READPAIR.END_SIZE]
 
+    scalebox $f.min_mq \
+	-title "Minimum mapping quality" \
+	-from 0 -to 100 \
+	-default [keylget gap5_defs READPAIR.MIN_MAP_QUAL] \
+	-width 5 \
+	-type CheckInt \
+	-orient horiz
+
     ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-	    -ok_command "ReadPairs_OK_Pressed $io $f $f.infile $f.mode $f.end_size"\
+	    -ok_command "ReadPairs_OK_Pressed $io $f $f.infile $f.mode $f.end_size $f.min_mq"\
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap4 {Read Pairs}" \
 	    -bd 2 \
@@ -43,11 +51,11 @@ proc ReadPairDialog { io f} {
     ###########################################################################
     #final packing
 
-    pack $f.infile $f.mode $f.end_size $f.ok_cancel -fill x
+    pack $f.infile $f.mode $f.end_size $f.min_mq $f.ok_cancel -fill x
 
 }
 
-proc ReadPairs_OK_Pressed {io f infile mode end_size} {
+proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq} {
     global gap5_defs
 
     if {[lorf_in_get $infile] == 3} {
@@ -57,6 +65,7 @@ proc ReadPairs_OK_Pressed {io f infile mode end_size} {
     }
 
     set end_size [$end_size get]
+    set min_mq [scalebox_get $min_mq]
     set mode [lindex {end_end end_all all_all} [expr {[radiolist_get $mode]-1}]]
 
     destroy $f
@@ -64,6 +73,11 @@ proc ReadPairs_OK_Pressed {io f infile mode end_size} {
     ContigComparator $io
 
     SetBusy
-    find_read_pairs -io $io -contigs $list -mode $mode -end_size $end_size
+    find_read_pairs \
+	-io           $io \
+	-contigs      $list \
+	-mode         $mode \
+	-end_size     $end_size \
+	-min_map_qual $min_mq
     ClearBusy
 }
