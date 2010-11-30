@@ -318,6 +318,7 @@ int main(int argc, char **argv) {
     if (a.tmp) {
 	char *name;
 	tg_rec rec;
+	int cnt = 0;
 
 	puts("Sorting sequence name index");
 	bttmp_file_sort(a.tmp);
@@ -325,6 +326,10 @@ int main(int argc, char **argv) {
 	puts("Building index");
 	while (name = bttmp_file_get(a.tmp, &rec)) {
 	    sequence_index_update(io, name, strlen(name), rec);
+	    if (++cnt == 1000000) {
+		cnt = 0;
+		cache_flush(io);
+	    }
 	}
 	
 	bttmp_file_close(a.tmp);
