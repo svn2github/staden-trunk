@@ -73,6 +73,7 @@ void bttmp_file_close(bttmp_t *tmp) {
     }
 
     unlink(tmp->name);
+    free(tmp);
 }
 
 /*

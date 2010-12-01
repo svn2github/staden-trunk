@@ -402,14 +402,14 @@ int pileup_loop(bam_file_t *fp,
  error:
 
     if (pnew) {
-	//free(pnew->b.data);
+	free(pnew->b);
 	free(pnew);
     }
 
     /* Tidy up */
     for (p = pfree; p; p = next) {
 	next = p->next;
-	//free(p->b.data);
+	free(p->b);
 	free(p);
     }
 

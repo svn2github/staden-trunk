@@ -1743,6 +1743,7 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
 	    }
 
 	    HacheTableDestroy(bio->libs, 0);
+	    HacheTableIterDestroy(iter);
 	}
 
 	if (bio->seqs)
