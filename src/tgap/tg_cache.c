@@ -5,6 +5,10 @@
 #include <sys/time.h>
 #include <time.h>
 
+#ifdef CACHE_REF_DEBUG
+#   define WAS_CACHE_REF_DEBUG
+#   undef CACHE_REF_DEBUG
+#endif
 #include "tg_gio.h"
 #include "misc.h"
 
@@ -974,7 +978,7 @@ int cache_flush(GapIO *io) {
     memset(write_counts, 0, 100*sizeof(int));
 #endif
 
-#if 0
+#ifdef WAS_CACHE_REF_DEBUG
     /* Count updated & locked records, to check for cache ref-count leaks */
     {
 	int total[100];
@@ -1040,7 +1044,7 @@ int cache_flush(GapIO *io) {
 	    tsz += sz[i];
 	    tc  += total[i];
 	}
-	printf("After flush: %d items, %ld bytes in cache\n", tc, tsz);
+	printf("After flush: %ld items, %ld bytes in cache\n", tc, tsz);
 	for (i = 0; i < 100; i++) {
 	    char *s[] = {
 		"", "", "", "RecArray", "", "Bin", "Range", "BTree",
@@ -1058,6 +1062,8 @@ int cache_flush(GapIO *io) {
 	    if (updated[i])
 		printf("****updated   = %d\n", updated[i]);
 	}
+
+	cache_ref_debug_dump();
     }
 #endif
 
@@ -1482,6 +1488,55 @@ void cache_decr(GapIO *io, void *data) {
 
     assert(ci->hi->ref_count >= 0);
     assert(ci->updated == 0 || ci->hi->ref_count > 0);
+}
+
+static HacheTable *ref_debug = NULL;
+void cache_incr_debug(GapIO *io, void *data, char *where) {
+    char key[100];
+    cached_item *ci = cache_master(ci_ptr(data));
+    HacheData hd;
+
+    if (!ref_debug)
+	ref_debug = HacheTableCreate(1024, HASH_DYNAMIC_SIZE);
+
+    sprintf(key, "%p-%d", data, ci->hi->ref_count);
+    hd.p = strdup(where);
+    HacheTableAdd(ref_debug, key, 0, hd, NULL);
+
+    cache_incr(io, data);
+}
+
+void cache_decr_debug(GapIO *io, void *data) {
+    char key[100];
+    cached_item *ci = cache_master(ci_ptr(data));
+    sprintf(key, "%p-%d", data, ci->hi->ref_count-1);
+
+    HacheTableRemove(ref_debug, key, 0, 1);
+
+    cache_decr(io, data);
+}
+
+void cache_ref_debug_dump(void) {
+    HacheIter *iter = HacheTableIterCreate();
+    HacheItem *hi;
+    HacheTable *h = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
+
+    while (hi = HacheTableIterNext(ref_debug, iter)) {
+	HacheData hd;
+	HacheItem *hi2;
+	hd.i = 0;
+	hi2 = HacheTableAdd(h, hi->data.p, 0, hd, NULL);
+	hi2->data.i++;
+    }
+    HacheTableIterDestroy(iter);
+
+    iter = HacheTableIterCreate();
+    while (hi = HacheTableIterNext(h, iter)) {
+	printf("%d\t%s\n", hi->data.i, hi->key);
+    }
+    HacheTableIterDestroy(iter);
+
+    HacheTableDestroy(h, 0);
 }
 
 /*

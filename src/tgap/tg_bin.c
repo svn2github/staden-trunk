@@ -307,6 +307,8 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
     /* Now recurse down the bin hierachy searching for the smallest bin */
     offset = bin->pos;
  jump:
+    cache_incr(io, bin);
+
     for (;;) {
 	int i;
 	bin_index_t *ch;
@@ -320,7 +322,6 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	}
 
 	/* Find which child bin is most suitable */
-	cache_incr(io, bin);
 	for (i = 0; i < 2;) {
 	    if (bin->child[i] <= 0) {
 		i++;
@@ -360,6 +361,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 		*offset_r = offset;
 	    if (comp_r)
 		*comp_r = complement;
+	    cache_decr(io, bin);
 	    return bin;
 	}
 

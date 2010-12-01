@@ -84,8 +84,17 @@ void *cache_item_resize(void *item, size_t size);
 void *cache_rw(GapIO *io, void *data);
 
 /* New preferred cache incr/decr functions */
+#ifdef CACHE_REF_DEBUG
+void cache_incr_debug(GapIO *io, void *data, char *where);
+void cache_decr_debug(GapIO *io, void *data);
+#define WHERE_2(a) #a
+#define WHERE_1(a) WHERE_2(a)
+#define cache_incr(a,b) cache_incr_debug(a,b,__FILE__ ":" WHERE_1(__LINE__));
+#define cache_decr(a,b) cache_decr_debug(a,b);
+#else
 void cache_incr(GapIO *io, void *data);
 void cache_decr(GapIO *io, void *data);
+#endif
 
 /* Create and initialise a new item. */
 tg_rec cache_item_create(GapIO *io, int type, void *from);
