@@ -932,7 +932,7 @@ int tcl_write_reading_name(ClientData clientData, Tcl_Interp *interp,
 
 /*
  *-----------------------------------------------------------------------------
- * Tcl interfaces to the C {Text,Data}{Read,Write} functions
+ * Tcl interfaces to the C {Text,Data,Array}{Read,Write} functions
  *-----------------------------------------------------------------------------
  */
 int tcl_io_read_text(ClientData clientData, Tcl_Interp *interp,
@@ -1080,6 +1080,127 @@ int tcl_io_write_data(ClientData clientData, Tcl_Interp *interp,
 		    len, size);
     
     if (auto_flush) flush2t(io);
+
+    vTcl_SetResult(interp, "%d", err != 0);
+
+    return TCL_OK;
+}
+
+
+int tcl_io_read_array(ClientData clientData, Tcl_Interp *interp,
+		      int objc, Tcl_Obj *CONST objv[]) {
+    GapIO *io;
+    int handle, record, len;
+    Array arr;
+    Tcl_Obj *obj;
+    
+    if (objc != 4) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s io record numelements\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    Tcl_GetIntFromObj(interp, objv[1], &handle);
+    Tcl_GetIntFromObj(interp, objv[2], &record);
+    Tcl_GetIntFromObj(interp, objv[3], &len);
+    
+    if (NULL == (io = io_handle(&handle))) {
+	Tcl_SetResult(interp, "Invalid io handle\n", TCL_STATIC);
+	return TCL_ERROR;
+    }
+    
+    arr = ArrayRead(io, record, len);
+
+    if (!arr)
+	Tcl_ResetResult(interp);
+    else {
+	int i;
+	Tcl_Obj **o;
+
+	o = calloc(len, sizeof(*o));
+	for (i = 0; i < len; i++) {
+	    o[i] = Tcl_NewIntObj(arr(GCardinal, arr, i));
+	}
+	obj = Tcl_NewListObj(len, o);
+	Tcl_SetObjResult(interp, obj);
+    }
+
+    return TCL_OK;
+}
+
+
+int tcl_io_write_array(ClientData clientData, Tcl_Interp *interp,
+		       int objc, Tcl_Obj *CONST objv[]) {
+
+    GapIO *io;
+    int handle, record, len;
+    int err, i;
+    Array arr;
+    
+    if (objc != 4) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s io record list\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    Tcl_GetIntFromObj(interp, objv[1], &handle);
+    Tcl_GetIntFromObj(interp, objv[2], &record);
+
+    if (NULL == (io = io_handle(&handle))) {
+	Tcl_SetResult(interp, "Invalid io handle\n", TCL_STATIC);
+	return TCL_ERROR;
+    }
+
+    if (TCL_OK != Tcl_ListObjLength(interp, objv[3], &len))
+	return TCL_ERROR;
+
+    if (NULL == (arr = ArrayCreate(sizeof(GCardinal), len)))
+	return TCL_ERROR;
+
+    for (i = 0; i < len; i++) {
+	int ele;
+	Tcl_Obj *i_obj;
+	if (TCL_OK != Tcl_ListObjIndex(interp, objv[3], i, &i_obj))
+	    return TCL_ERROR;
+
+	if (TCL_OK != Tcl_GetIntFromObj(interp, i_obj, &ele))
+	    return TCL_ERROR;
+
+	arr(GCardinal, arr, i) = ele;
+    }
+    
+    err = ArrayWrite(io, record, len, arr);
+    if (auto_flush) flush2t(io);
+
+    /* Also copy over in-memory copy if the record matches standard ones */
+    if (record == io->db.contigs)
+	memcpy(ArrayBase(GCardinal, io->contigs),
+	       ArrayBase(GCardinal, arr), len * sizeof(GCardinal));
+    else if (record == io->db.readings)
+	memcpy(ArrayBase(GCardinal, io->readings),
+	       ArrayBase(GCardinal, arr), len * sizeof(GCardinal));
+    else if (record == io->db.annotations)
+	memcpy(ArrayBase(GCardinal, io->annotations),
+	       ArrayBase(GCardinal, arr), len * sizeof(GCardinal));
+    else if (record == io->db.templates)
+	memcpy(ArrayBase(GCardinal, io->templates),
+	       ArrayBase(GCardinal, arr), len * sizeof(GCardinal));
+    else if (record == io->db.clones)
+	memcpy(ArrayBase(GCardinal, io->clones),
+	       ArrayBase(GCardinal, arr), len * sizeof(GCardinal));
+    else if (record == io->db.vectors)
+	memcpy(ArrayBase(GCardinal, io->vectors),
+	       ArrayBase(GCardinal, arr), len * sizeof(GCardinal));
+    else if (record == io->db.notes_a)
+	memcpy(ArrayBase(GCardinal, io->notes),
+	       ArrayBase(GCardinal, arr), len * sizeof(GCardinal));
+    else if (record == io->db.contig_order)
+	memcpy(ArrayBase(GCardinal, io->contig_order),
+	       ArrayBase(GCardinal, arr), len * sizeof(GCardinal));
+
+    ArrayDestroy(arr);
 
     vTcl_SetResult(interp, "%d", err != 0);
 
@@ -1447,6 +1568,8 @@ int Db_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "io_write_text", tcl_io_write_text, NULL, NULL);
     Tcl_CreateObjCommand(interp, "io_read_data", tcl_io_read_data, NULL, NULL);
     Tcl_CreateObjCommand(interp, "io_write_data", tcl_io_write_data, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "io_read_array", tcl_io_read_array, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "io_write_array", tcl_io_write_array, NULL, NULL);
 
     Tcl_CreateCommand(interp, "io_flush", tcl_io_flush, NULL, NULL);
     Tcl_LinkVar(interp, "gap_auto_flush", (char *)&auto_flush,
