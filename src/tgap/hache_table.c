@@ -531,6 +531,72 @@ void HacheTableDestroy(HacheTable *h, int deallocate_data) {
     free(h);
 }
 
+
+/*
+    Deletes all entries from the HacheTable while still leaving the
+    HacheTable pointer.
+*/
+
+int HacheTableEmpty(HacheTable *h, int deallocate_data) {
+    int i;
+    
+    if (!h) return -1;
+    
+    // the destruction
+    
+    for (i = 0; i < h->nbuckets; i++) {
+    	HacheItem *hi = h->bucket[i], *next = NULL;
+	
+	for (hi = h->bucket[i]; hi; hi = next) {
+	    assert(hi->h == h);
+	    next = hi->next;
+	    HacheItemDestroy(h, hi, deallocate_data);
+	}
+    }
+    
+    if (h->bucket) free(h->bucket);
+    
+    if (h->ordering) free(h->ordering);
+    
+    // and a bit of creation
+
+    if (h->hi_pool) {
+    	pool_destroy(h->hi_pool);
+	h->hi_pool = pool_create(sizeof(HacheItem));
+	
+	if (NULL == h->hi_pool) return -1;
+    }
+    
+    // the creation proper
+    h->bucket = (HacheItem **)malloc(sizeof(*h->bucket) * h->nbuckets);
+    h->mask = h->nbuckets - 1;
+    h->nused = 0;
+    h->searches = 0;
+    h->hits = 0;
+    h->ordering = (HacheOrder *)malloc(h->cache_size * sizeof(*h->ordering));
+    h->head = h->tail = -1;
+    h->free = 0;
+
+    for (i = 0; i < h->cache_size; i++) {
+	h->ordering[i].hi = NULL;
+	h->ordering[i].next = i == h->cache_size-1 ? -1 : i+1;
+	h->ordering[i].prev = i-1;
+    }
+
+    h->clientdata = NULL;
+    h->load = NULL;
+    h->del = NULL;
+    h->in_use = NULL;
+
+    for (i = 0; i < h->nbuckets; i++) {
+	h->bucket[i] = NULL;
+    }
+    
+    return 0;
+}
+
+
+
 /*
  * Resizes a HacheTable to have 'newsize' buckets.
  * This is called automatically when adding or removing items so that the
@@ -821,7 +887,7 @@ HacheItem *HacheTableAdd(HacheTable *h, char *key, int key_len, HacheData data,
 	key_len = strlen(key);
 
     hv = hache(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
-
+    
     /* Already exists? */
     if (!(h->options & HASH_ALLOW_DUP_KEYS)) {
 	for (hi = h->bucket[hv]; hi; hi = hi->next) {

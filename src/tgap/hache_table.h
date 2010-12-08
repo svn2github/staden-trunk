@@ -84,6 +84,7 @@ uint32_t hache(int func, uint8_t *key, int key_len);
 /* HacheTable management prototypes */
 HacheTable *HacheTableCreate(int size, int options);
 void HacheTableDestroy(HacheTable *h, int deallocate_date);
+int HacheTableEmpty(HacheTable *h, int deallocate_data);
 int HacheTableResize(HacheTable *h, int newsize);
 HacheItem *HacheTableAdd(HacheTable *h, char *key, int key_len,
 			 HacheData data, int *new);
