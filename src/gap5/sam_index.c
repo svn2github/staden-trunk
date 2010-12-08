@@ -46,7 +46,7 @@ typedef struct {
     bio_seq_t *seqs;
     bio_seq_t *free_seq;
     int max_seq;
-    HacheTable *pair;
+    tg_pair_t *pair;
     HacheTable *libs;
     contig_t *c;
     int n_inserts; /* Insertions to seq? */
@@ -1666,9 +1666,6 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
     bam_io_t *bio = (bam_io_t*)calloc(1, sizeof(*bio));
     bam_file_t *fp;
 
-    /* for pair data */
-    open_tmp_file();
-
     /* Setup bam_io_t object and create our pileup interface */
     bio->io = io;
     bio->seqs = NULL;
@@ -1685,8 +1682,7 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
     bio->tree = NULL;
 
     if (a->pair_reads) {
-	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
-	bio->pair->name = "pair";
+	bio->pair = create_pair(a->pair_queue);
     } else {
 	bio->pair = NULL;
     }
@@ -1711,12 +1707,8 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
     cache_flush(io);
     vmessage("Loaded %d of %d sequences\n", bio->count, bio->total_count);
 
-    if (bio->pair && !a->fast_mode) {    
-	sort_pair_file();
-	
-	complete_pairs(io);
-	
-	close_tmp_file();
+    if (bio->pair && !a->fast_mode) { 	
+	finish_pairs(io, bio->pair);
     }
  
     /* Tidy up */
@@ -1726,8 +1718,7 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
     if (bio) {
 	bio_seq_t *s, *n;
 
-	if (bio->pair)
-	    HacheTableDestroy(bio->pair, 1);
+	if (bio->pair) delete_pair(bio->pair);
 
 	if (bio->libs) {
 	    /* call cache_decr on each lib too */
@@ -1741,7 +1732,8 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
 		library_t *lib = hi->data.p;
 		cache_decr(io, lib);
 	    }
-
+	    
+	    HacheTableIterDestroy(iter);
 	    HacheTableDestroy(bio->libs, 0);
 	    HacheTableIterDestroy(iter);
 	}

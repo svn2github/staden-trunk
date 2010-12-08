@@ -23,6 +23,7 @@ typedef struct {
     int repad;
     int store_unmapped;
     int sam_aux;
+    int pair_queue;
 } tg_args;
 
 #define DATA_SEQ	1

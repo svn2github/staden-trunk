@@ -397,7 +397,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     zfp *fp;
     off_t pos;
     contig_t *c = NULL;
-    HacheTable *pair = NULL;
+    tg_pair_t *pair = NULL;
     baf_block *b, *co = NULL;
     int last_obj_type = 0;
     int last_obj_pos = 0;
@@ -407,8 +407,6 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     int last_obj_orient = 0;
     
     
-    /* for pair data */
-    open_tmp_file();
 	
     printf("Loading %s...\n", fn);
     if (-1 == stat(fn, &sb) ||
@@ -418,8 +416,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     }
 
     if (a->pair_reads) {
-	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
-	pair->name = "pair";
+	pair = create_pair(a->pair_queue);
     }
 
     /* Loop:
@@ -628,12 +625,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 #endif
     }
     
-    if (pair && !a->fast_mode) {    
-	sort_pair_file();
-	
-	complete_pairs(io);
-	
-	close_tmp_file();
+    if (pair && !a->fast_mode) {  
+	finish_pairs(io, pair);
     }
     
     if (co)
@@ -646,8 +639,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     printf("       %12d sequences\n",   nseqs);
     printf("       %12d annotations\n", ntags);
 
-    if (pair)
-	HacheTableDestroy(pair, 1);
+    if (pair) delete_pair(pair);
 
     if (c)
 	cache_decr(io, c);

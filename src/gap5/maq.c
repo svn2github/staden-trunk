@@ -101,14 +101,11 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
     int k = 0, j = 0;
     int curr_contig = -1;
     contig_t *c = NULL;
-    HacheTable *pair = NULL;
+    tg_pair_t *pair = NULL;
     HacheTable *libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
     char tname[1024];
     int sz;
     int long_format = (a->fmt == 'M');
-
-    /* for pair data */
-    open_tmp_file();
 
     fprintf(stderr, "-- Loading %s...\n", dat_fn);
     if (NULL == (dat_fp = gzopen(dat_fn, "r")))
@@ -120,8 +117,7 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
 
     libs->name = "libs";
     if (a->pair_reads) {
-	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
-	pair->name = "pair";
+	pair = create_pair(a->pair_queue);
     }
 
     if (long_format) {
@@ -276,20 +272,15 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
 
     fprintf(stderr, "-- %d reads were added.\n", k);
     
-    if (!a->fast_mode) {    
-	sort_pair_file();
-	
-	complete_pairs(io);
-	
-	close_tmp_file();
+    if (!a->fast_mode) {
+    	finish_pairs(io, pair);
     }
     
     gzclose(dat_fp);
     maq_delete_maqmap(mm);
 
     if (pair) {
-	HacheTableStats(pair, stdout);
-	HacheTableDestroy(pair, 0);
+    	delete_pair(pair);
     }
 
     /* Decr reference count on libs */

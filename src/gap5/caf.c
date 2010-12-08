@@ -539,51 +539,9 @@ static int add_pos_data(pools *pool, caf_node *caf, char *name, long pos, entry_
 // following functions are for index manipulation
 
 /*
-    find an entry in the index and return its position
-*/
-static long find_entry(caf_index *index, char *name, long start) {
-    long found = -1;
-
-    if (start > index->size) start = 0;
-    
-    if (strcmp(name, index->entry[start].name) == 0) {
-    	found = start;
-    } else {
-    	long mid = index->size / 2;
-	long begin = 0;
-	long end = (index->size - 1);
-	
-	// a basic binary search, seems good enough
-	while (found == -1 && begin <= end) {
-	    int match = strcmp(name, index->entry[mid].name);
-	    
-	    if (match > 0) {
-	    	begin = mid + 1;
-		mid = begin + (end - begin) / 2;
-	    } else if (match < 0) {
-	    	end = mid - 1;
-		mid = begin + (end - begin) / 2;
-	    } else {
-	    	found = mid;
-	    }
-	}
-    }
-    
-    return found;
-}
-
-
-/*
     add an entry to the index, name must be unique
 */
 static int add_entry(caf_index *index, char *name, int length, long pos) {
-
-    // check for existing entry 
-    if (index->size) {
-    	long found = find_entry(index, name, index->size - 1);
-	
-	if (found != -1) return 0;
-    }    
 
     if (index->size == index->alloc) {
     	caf_entry *tmp;
@@ -728,19 +686,6 @@ static int index_caf(zfp *fp, pools *pool, caf_node *caf, caf_index *contig_entr
     }
     
     return err;
-}
-
-
-static int cmp_string(const void *p1, const void *p2) {
-    caf_entry *c1 = (caf_entry *)p1;
-    caf_entry *c2 = (caf_entry *)p2;
-    
-    return strcmp(c1->name, c2->name);
-} 
-
-
-static void sort_index(caf_index *index) {
-    qsort(index->entry, index->size, sizeof(caf_entry), cmp_string);
 }
 
 
@@ -990,7 +935,7 @@ static int quality_data(zfp *fp, seq_qual *qual, long pos) {
     the gap5 db
 */
 static int read_data(zfp *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
-		     HacheTable *pair, pools *pool, caf_node *caf,
+		     tg_pair_t *pair, pools *pool, caf_node *caf,
 		     HacheTable *lig_hash, char *name, char *align) {
 			
     long pos;
@@ -1310,7 +1255,7 @@ static int read_data(zfp *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	
 
 static int import_caf(zfp *fp, char *fn, GapIO *io, tg_args *a,
-		      HacheTable *pair, pools *pool, caf_node *caf,
+		      tg_pair_t *pair, pools *pool, caf_node *caf,
 		      caf_index *contig_entry) {
     contig_t *c = NULL;
     long read_no       = 0;
@@ -1349,13 +1294,13 @@ static int import_caf(zfp *fp, char *fn, GapIO *io, tg_args *a,
 	    } else {
 	    	read_no++;
 	    }
+
+	    if (((read_no + contig_no) & 0x3fff) == 0) {
+		cache_flush(io);
+	    } 
 	}
 	
 	clear_index(&contig_reads);
-	
-	if (((read_no + contig_no) & 0x3fff) == 0) {
-	    cache_flush(io);
-	} 
     }
 
     /*
@@ -1384,7 +1329,7 @@ static int import_caf(zfp *fp, char *fn, GapIO *io, tg_args *a,
 int parse_caf(GapIO *io, char *fn, tg_args *a) {
     zfp *fp;
     struct stat sb;
-    HacheTable *pair = NULL;
+    tg_pair_t *pair = NULL;
     int err = 0;
     caf_index contig_entry;
     caf_node caf;
@@ -1402,12 +1347,9 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
 	return -1;
     }
     
-    /* for pair data */
-    open_tmp_file();
 
     if (a->pair_reads) {
-	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
-	pair->name = "pair";
+	pair = create_pair(a->pair_queue);
     }
     
     // some initialisations 
@@ -1441,15 +1383,6 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     
     gettimeofday(&tv1, NULL);
     
-    sort_index(&contig_entry);
-    
-    gettimeofday(&tv2, NULL);
-    dt = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
-    
-    fprintf(stderr, "Sorted in %f seconds\n", dt);
-
-    gettimeofday(&tv1, NULL);
-    
     fprintf(stderr, "Loading ...\n");
     
     if (import_caf(fp, fn, io, a, pair, &pool, &caf, &contig_entry)) {
@@ -1459,17 +1392,13 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     
 
     if (pair && !a->fast_mode) {    
-	sort_pair_file();
-	
-	complete_pairs(io);
-	
-	close_tmp_file();
+	finish_pairs(io, pair);
     }
     
     cache_flush(io);
     zfclose(fp);
-
-    if (pair) HacheTableDestroy(pair, 1);
+ 
+    if (pair) delete_pair(pair);
 
     clear_index(&contig_entry);
 

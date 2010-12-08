@@ -63,6 +63,12 @@ void usage(void) {
     fprintf(stderr, "      -p                   Link read-pairs together (default on)\n");
     fprintf(stderr, "      -P                   Do not link read-pairs together\n");
     fprintf(stderr, "\n");
+    fprintf(stderr, "      -q value             Number of reads to queue in memory while waiting\n");                   
+    fprintf(stderr, "                           for pairing.  Use to reduce memory requirements\n");
+    fprintf(stderr, "                           for assemblies with lots of single reads at the\n");
+    fprintf(stderr, "                           expense of running time.  0 for all in memory,\n");
+    fprintf(stderr, "                           suggest 1000000 if used (default 0)\n");           
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -a                   Append to existing db\n");
     fprintf(stderr, "      -n                   New contigs always (relevant if appending)\n");
     fprintf(stderr, "\n");
@@ -113,6 +119,7 @@ int main(int argc, char **argv) {
     a.repad          = 0;
     a.store_unmapped = 0;
     a.sam_aux        = 0;
+    a.pair_queue     = 0;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.10\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
@@ -122,7 +129,7 @@ int main(int argc, char **argv) {
     //mallopt(M_MMAP_MAX, 0);
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPnz:fr:d:c:gux123456789")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPq:nz:fr:d:c:gux123456789")) != -1) {
 	switch(opt) {
 	case 'g':
 	    a.repad = 1;
@@ -162,6 +169,10 @@ int main(int argc, char **argv) {
 
 	case 'P':
 	    a.pair_reads = 0;
+	    break;
+	    
+	case 'q':
+	    a.pair_queue = strtol(optarg, &cp, 10);
 	    break;
 
 	case 'h':
