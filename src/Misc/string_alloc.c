@@ -14,8 +14,9 @@
 #define MIN_STR_SIZE 1024
 
 
-/* creates the string pool. max_length is the maximum size
-   a single string can be. */
+/* creates the string pool. max_length is the initial size
+   a single string can be.  Tha max_length can grow as
+   needed */
 
 string_alloc_t *string_pool_create(size_t max_length) {
     string_alloc_t *a_str;
@@ -71,9 +72,7 @@ void string_pool_destroy(string_alloc_t *a_str) {
 }
 
 
-/* allocate space for a string.  Attempts to allocate a
-   string of longer than max_length will be truncated to
-   max_length without warning. */
+/* allocate space for a string */
 
 char *string_alloc(string_alloc_t *a_str, size_t length) {
     string_t *str;
@@ -81,9 +80,6 @@ char *string_alloc(string_alloc_t *a_str, size_t length) {
     
     if (length <= 0) return NULL;
     
-    /* if we had a working free list this is where we
-       would look at it */
-       
     // add to last string pool if we have space
     if (a_str->nstrings) {
     	str = &a_str->strings[a_str->nstrings - 1];
@@ -94,6 +90,9 @@ char *string_alloc(string_alloc_t *a_str, size_t length) {
 	    return ret;
 	}
     }
+    
+    // increase the max length if needs be
+    if (length > a_str->max_length) a_str->max_length = length;
 	
     // need a new string pool 
     str = new_string_pool(a_str);
@@ -105,8 +104,7 @@ char *string_alloc(string_alloc_t *a_str, size_t length) {
 }
 
 
-/* equivalent to strdup. As with string_alloc, any string longer
-   than max_len will be truncated. */
+/* equivalent to strdup */
 
 char *string_dup(string_alloc_t *a_str, char *instr) {
     char *str;
