@@ -723,10 +723,10 @@ static void complete_pairs(GapIO *io, tg_pair_t *pair) {
 	if (bin != current_bin) {
 	    if (rec_count > 50000) {
 	    	total_count += rec_count;
+	    	cache_flush(io);
 		
 		fprintf(stderr, "%d pairs finished so far\n", total_count);
 	    
-	    	cache_flush(io);
 		rec_count = 0;
 	    }
 
@@ -758,10 +758,62 @@ static void complete_pairs(GapIO *io, tg_pair_t *pair) {
 }
 
 
+/* an alternative to the Gnu specific getline */
+long tg_get_line(char **line, long *length, FILE *fp) {
+    char *in_line;
+    long len;
+    long offset = 0;
+    long in_chars;
+    
+    if (line == NULL || fp == NULL || length == NULL) {
+    	return -1;
+    }
+    
+    if (*line == NULL || *length <= 0) {
+    	if ((*line = malloc(256 * sizeof(char))) == NULL) {
+	    return -1;
+	}
+	
+	*length = 256;
+    }
+    
+    in_line = *line;
+    len     = *length;
+    
+    while ((fgets((in_line + offset), (len - offset), fp))) {
+    	char *tmp = NULL;
+	
+    	in_chars = strlen(in_line);
+	
+    	offset = in_chars;
+	
+	// see if we have our full line
+	if (*(in_line + offset - 1) == '\n') {
+	    break;
+	}
+    	
+    	len += len;
+	tmp = realloc(in_line, len * sizeof(char));
+	    
+    	if (tmp) {
+	    in_line = tmp;
+	} else {
+	    fprintf(stderr, "Memory error in get_line\n");
+	    return -1;
+	}
+    }
+    
+    *line = in_line;
+    *length = len;
+    
+    return offset;
+}
+
+
 static int load_data(pair_queue_t *pq) {
     int i;
     char *line_in = NULL;
-    int line_size = 0;
+    long line_size = 0;
     
     if (pq->name_pool) {
     	string_pool_destroy(pq->name_pool);
@@ -772,9 +824,9 @@ static int load_data(pair_queue_t *pq) {
     for (i = 0; i < pq->pair_size; i++) {
     	char name[1024];
     	int found;
-    	int ret = getline(&line_in, &line_size, pq->fp);
+    	int ret = tg_get_line(&line_in, &line_size, pq->fp);
 	
-	if (ret == -1) break;
+	if (ret <= 0) break;
 	
 	found = sscanf(line_in, "%s %ld %ld %d %ld %d %d %d",
 	    name, &pq->pair[i].rec, &pq->pair[i].bin, &pq->pair[i].idx,

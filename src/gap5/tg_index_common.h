@@ -2,6 +2,7 @@
 #define _TG_FUNC_H_
 
 #include <tg_index.h>
+
 #include "string_alloc.h"
 
 typedef struct {
@@ -65,6 +66,7 @@ void unescape_line(char *txt);
 tg_pair_t *create_pair(int queue);
 void finish_pairs(GapIO *io, tg_pair_t *pair);
 void delete_pair(tg_pair_t *pair);
+long tg_get_line(char **line, long *length, FILE *fp);
 
 #endif
 
