@@ -152,7 +152,7 @@ static char *get_value(char *key, char *field) {
 
 /* 
     add a string of arbitrary length to another string.  
-    Changes alloc size to 0 on a failier.
+    Changes alloc size to 0 on a failure.
 */
 static char *add_line(char *read, char *line, long line_size, long *read_size, long *alloc_size) {
 	
@@ -1386,7 +1386,7 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     fprintf(stderr, "Loading ...\n");
     
     if (import_caf(fp, fn, io, a, pair, &pool, &caf, &contig_entry)) {
-    	fprintf(stderr, "Unable to populate gap5 db");
+    	fprintf(stderr, "Unable to populate gap5 db\n");
 	return -1;
     }
     
