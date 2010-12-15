@@ -18,7 +18,9 @@ HLIBS=\
 	$(SEQUTILS_LIB) \
 	$(TEXTUTILS_LIB) \
 	$(MISC_LIB) \
-	$(MATH_LIB)
+	$(MATH_LIB) \
+	$(IOLIB_LIB)
+	
 
 
 make_weights: $(OBJS) $(DEPS)
