@@ -15,7 +15,8 @@ OBJS	= find_renz.o
 LIBS=\
 	$(SEQUTILS_LIB) \
 	$(TEXTUTILS_LIB) \
-	$(MISC_LIB)
+	$(MISC_LIB) \
+	$(IOLIB_LIB)
 
 find_renz: $(OBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJS) $(LIBS) $(LIBSC) 
