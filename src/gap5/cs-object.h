@@ -123,6 +123,7 @@ typedef struct obj_fij_t {
     /* Below here are local to this strucure only */
     int score;
     int percent; /* *10000 */
+    uint32_t dummy1; /* This has to be the >= size of largest obj type */
 } obj_fij;
 
 /*
