@@ -58,3 +58,15 @@ int Gap_Init(Tcl_Interp *interp) {
 int Gap_SafeInit(Tcl_Interp *interp) {
     return Gap_Init(interp);
 }
+
+int Gap_Unload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_Unload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
+
+int Gap_SafeUnload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_SafeUnload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}

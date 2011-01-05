@@ -1155,3 +1155,15 @@ int Copy_reads_Init(Tcl_Interp *interp) {
 int Copy_reads_SafeInit(Tcl_Interp *interp) {
     return Copy_reads_Init(interp);
 }
+
+int Copy_reads_Unload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_Unload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
+
+int Copy_reads_SafeUnload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_SafeUnload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}

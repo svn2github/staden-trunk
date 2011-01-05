@@ -463,3 +463,15 @@ int Haplo_Init(Tcl_Interp *interp) {
 int Haplo_SafeInit(Tcl_Interp *interp) {
     return Haplo_Init(interp);
 }
+
+int Haplo_Unload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_Unload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
+
+int Haplo_SafeUnload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_SafeUnload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}

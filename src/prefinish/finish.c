@@ -335,6 +335,18 @@ int Prefinish_SafeInit(Tcl_Interp *interp) {
     return Prefinish_Init(interp);
 }
 
+int Prefinish_Unload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_Unload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
+
+int Prefinish_SafeUnload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_SafeUnload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
+
 /*
  * tcl_finish_cmd
  *

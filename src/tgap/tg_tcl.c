@@ -1963,6 +1963,17 @@ int G5_SafeInit(Tcl_Interp *interp) {
     return G5_Init(interp);
 }
 
+int G5_Unload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_Unload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
+
+int G5_SafeUnload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_SafeUnload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
 
 
 /*

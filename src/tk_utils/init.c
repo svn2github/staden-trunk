@@ -124,6 +124,18 @@ int Tk_utils_SafeInit(Tcl_Interp *interp) {
     return Tk_utils_Init(interp);
 }
 
+int Tk_utils_Unload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_Unload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
+
+int Tk_utils_SafeUnload(Tcl_Interp *interp, int flags) {
+    Tcl_SetResult(interp, "Pkg_SafeUnload() function not implemented",
+		  TCL_STATIC);
+    return TCL_ERROR;
+}
+
 static char *tk_utils_defs_trace(ClientData cd, Tcl_Interp *interp,
 				 char *n1, char *n2, int flags) {
     tk_utils_defs = Tcl_ObjGetVar2(interp, defs_name, NULL, TCL_GLOBAL_ONLY);
