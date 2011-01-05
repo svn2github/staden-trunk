@@ -24,17 +24,17 @@ if {"$tcl_platform(platform)" == "windows"} {
   set_def FONT.SHEET {-family Courier -size 10 -weight normal -slant roman -underline 0 -overstrike 0}
   set_def FONT.TRACE {-family Helvetica -size 8 -weight normal -slant roman -underline 0 -overstrike 0}
   set_def FONT.TRACE_CONF {-family Fixed -size 7}
-} elseif {$tcl_platform(os) == "Darwin" && 0} {
-  set_def FONT.MENU	{-family system}
-  set_def FONT.MENU_TITLE	{-family Helvetica -weight bold -slant italic -size -12}
+} elseif {$tcl_platform(os) == "Darwin"} {
+  set_def FONT.MENU	{-family Helvetica -size -12}
+  set_def FONT.MENU_TITLE	{-family Helvetica -slant italic -size -12}
   set_def FONT.TEXT	{-family Courier -size -12}
-  set_def FONT.BUTTON	{-family system}
-  set_def FONT.LISTBOX	{-family Helvetica -weight bold -size -12}
-  set_def FONT.TITLE	{-family Helvetica -size -16 -weight bold}
-  set_def FONT.SHEET	{-family Courier -size -16}
+  set_def FONT.BUTTON	{-family Helvetica -size -12}
+  set_def FONT.LISTBOX	{-family Helvetica -size -12}
+  set_def FONT.TITLE	{-family Helvetica -size -16}
+  set_def FONT.SHEET	{-family Fixed -size -15}
   set_def FONT.TRACE	{-family Helvetica -size -12}
   set_def FONT.ENZYME	{-family Helvetica -size -11}
-  set_def FONT.TRACE_CONF {-family Helvetica -size 7}
+  set_def FONT.TRACE_CONF {-family Helvetica -size -9}
 } else {
   set_def FONT.MENU	{-family Helvetica -weight bold -size -12}
   set_def FONT.MENU_TITLE	{-family Helvetica -weight bold -slant italic -size -12}
