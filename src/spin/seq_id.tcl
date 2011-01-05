@@ -217,31 +217,39 @@ proc seq_id {path args} {
 ###################################################################
     if {$range} {
 	if {$feature == "yes" && $single == "yes"} {	     
-		comborange $path.ent -labeltext "$title" \
+	    xcomborange $path.ent -labeltext "$title" \
 		-feature "$feature" \
 		-single "$single" \
+		-default "$default" \
 		-start_value $start \
 		-end_value $end
 	} elseif {$feature == "yes"} {
-		comborange $path.ent \
-			-labeltext "$title" \
-			-feature "$feature" \
-			-default "$default" \
-			-start_value $start \
-			-end_value $end
-	} elseif {$single == "yes"} {
-	    comborange $path.ent -labeltext "$title" -single "$single" \
-		   -start_value $start \
-		   -end_value $end 
-	} else {
-           comborange $path.ent -labeltext "$title" -default "$default" \
-		   -start_value $start \
-		   -end_value $end
-	}
-    } else {
-	comborange $path.ent -trange no -default "$default"\
+	    xcomborange $path.ent \
+		-labeltext "$title" \
+		-feature "$feature" \
+		-default "$default" \
 		-start_value $start \
 		-end_value $end
+	} elseif {$single == "yes"} {
+	    xcomborange $path.ent \
+		-labeltext "$title" \
+		-single "$single" \
+		-default "$default" \
+		-start_value $start \
+		-end_value $end 
+	} else {
+	    xcomborange $path.ent \
+		-labeltext "$title" \
+		-default "$default" \
+		-start_value $start \
+		-end_value $end
+	}
+    } else {
+	xcomborange $path.ent \
+	    -trange no \
+	    -default "$default"\
+	    -start_value $start \
+	    -end_value $end
     }
 
     eval seq_id_configure $path $arglist
@@ -300,8 +308,6 @@ proc seq_id_name {path {avoid {}}} {
 	}
 	raise [winfo toplevel $path]
 	    
-	focus $path.ent.frame.childsite.seqfile.lwchildsite.entry
-	$path.ent.frame.childsite.seqfile.lwchildsite.entry icursor end
 	tkwait variable re_enter
 	return $name
     }
@@ -312,10 +318,10 @@ proc seq_id_name {path {avoid {}}} {
 #Return the lreg value
 #
 proc seq_id_from {path} {
-
     set re_enter 0
     set start [$path.ent get_s]
     set end [$path.ent get_e]
+
     if { $start > $end  } {
 	bell
 	catch ClearBusy
@@ -324,11 +330,10 @@ proc seq_id_from {path} {
 		greater than the end position "
 
 	raise [winfo toplevel $path]
-	focus $path.ent.frame.childsite.trange.start.lwchildsite.entry
-        $path.ent.frame.childsite.trange.start.lwchildsite.entry icursor end
 
 	tkwait variable re_enter
     }
+
     return [$path.ent get_s]
 }
 
@@ -348,9 +353,6 @@ proc seq_id_to {path} {
 	        greater than the end position "
 
 	raise [winfo toplevel $path]
-
-	focus $path.ent.frame.childsite.trange.end.lwchildsite.entry
-        $path.ent.frame.childsite.trange.end.lwchildsite.entry icursor end
 
 	tkwait variable re_enter 
     }
@@ -445,14 +447,6 @@ proc UpdateSeqLimits {path update_cmd} {
 
     if {![info exists $path.old_id]} {
 	set $path.old_id $seq_id
-    }
-
-    #only update ranges if new seq_id entered
-    if {[set $path.old_id] != $seq_id} {
-#	scalebox_configure $path.range.from -default $start -to $length
-#	scalebox_configure $path.range.to -to $length -default $end
-	$path.ent.frame.childsite.trange configure -range "$start $end"
-	$path.ent.frame.childsite.single configure -range "$start $end"
     }
 
     if {$update_cmd != ""} {

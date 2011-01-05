@@ -70,17 +70,16 @@ void trna_search_shutdown(Tcl_Interp *interp,
 	xfree(results[i]);
     }
     xfree(results);
-    xfree(result->text_data);
     xfree(data->ap_array[0].p_array);
     xfree(data->ap_array);
     xfree(result->data);
 
     free(input->params);
     xfree(input->t);
-    xfree(result->input);
-    xfree(result->output);
     xfree(output->configure[0]);
     xfree(output->configure);
+    xfree(result->input);
+    xfree(result->output);
     xfree(result);
 
     if (raster_result) 

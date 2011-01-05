@@ -89,14 +89,14 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 DEPEND_OBJ = $(OBJS)
 
 distsrc: distsrc_dirs
-	cp $(S)/*.[ch] $(S)/*.tcl $(S)/*.itk $(S)/tclIndex $(DIRNAME)
+	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(DIRNAME)
 	cp $(S)/Makefile $(S)/spin $(S)/spin.bat $(DIRNAME)
 	cp $(S)/*.wts $(S)/niprc $(S)/siprc $(S)/spinrc $(DIRNAME)
 
 install:
 	cp $(S)/spin $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/spin
-	cp $(S)/*.tcl $(S)/*.itk $(S)/tclIndex $(INSTALLTCL)/spin
+	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/spin
 	cp $(PROGLIBS) $(INSTALLLIB)
 	cp $(S)/*.wts $(S)/niprc $(S)/siprc $(S)/spinrc $(INSTALLETC)
 

@@ -403,27 +403,27 @@ proc build_gui {w} {
 
     if {[keylget pregap4_defs WINDOW_STYLE] == "compact"} {
 	keylset pregap4_defs NB.WIN $w.nb
-	iwidgets::tabnotebook $w.nb \
-	    -tabpos n \
-	    -padx 10 \
-	    -equaltabs 0 \
+	ttk::notebook $w.nb \
 	    -height 450 \
 	    -width 735
         pack $w.nb -side top -fill both -expand 1
 
-	set f [$w.nb add -label "Files to Process"]
+	set f [frame $w.nb.files]
+	$w.nb add $f -text "Files to Process"
 	$f configure -bd 5
 	keylset pregap4_defs FILES.WIN $f
 	file_panel
 
 	keylset pregap4_defs MODULE.WIN $w.module
 
-        set f [$w.nb add -label "Configure Modules"]
+	set f [frame $w.nb.configure]
+        $w.nb add $f -text "Configure Modules"
 	$f configure -bd 5
         keylset pregap4_defs CONFIG.WIN $f
         config_panel
 
-        set f [$w.nb add -label "Textual Output"]
+	set f [frame $w.nb.output]
+        $w.nb add $f -text "Textual Output"
 	$f configure -bd 5
         keylset pregap4_defs OUTPUT.WIN $f
         text_panel

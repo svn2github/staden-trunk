@@ -44,7 +44,7 @@ proc CreateSimpleBrowser {} {
     if {[xtoplevel $f -resizable 0] == ""} return
     wm title $f "Load sequence"
 
-    seqentry $f.entry
+    xget_fname $f.entry -type load_multiple
 
     #########################################################################
     #ok cancel help buttons 
@@ -65,38 +65,16 @@ proc CreateSimpleBrowser {} {
 proc SimpleBrowser2 { f entry } {
     global seq_menu 
 
-    if {[set seq_list [$entry sequence entry]] == ""} {
+    if {[set sname_list [$entry get]] == ""} {
+	bell
 	return
     }
 
-    if {[set sname_list [$entry get]] == ""} {
-	set sname_list sequence
-    }
-
-    if {[llength $seq_list] != [llength $sname_list]} {
-	puts "PANIC!!! number of seqs not the same as number of names!"
-    }
-
-    set cnt 0
-    foreach seq $seq_list {
-	set fname($cnt) [tmpnam]
-	if {[catch {set fd($cnt) [open $fname($cnt) w]} err]} {
-	    bell
-	    continue
-	}
-	puts $fd($cnt) $seq
-	close $fd($cnt)
-	incr cnt
-    }
-
-    set cnt 0
     foreach sname $sname_list {
-	set seq_id [read_sequence -file $fname($cnt) -name $sname]
+	set seq_id [read_sequence -file $sname -name $sname]
 	if {$seq_id == -1} {
 	    bell
 	}
-	catch {file delete $fname($cnt)} err
-	incr cnt
     }
     
     sequence_list_update

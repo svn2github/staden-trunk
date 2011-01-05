@@ -12,63 +12,57 @@ proc  NipTranslate { } {
     if {[xtoplevel $c -resizable 0] == ""} return
     wm title $c "Translation"
 
-    iwidgets::tabnotebook $c.tnb -tabpos n \
-	    -height 220 \
-	    -width 350 
+    ttk::notebook $c.tnb -height 220 -width 350
     pack $c.tnb -padx 2 -pady 2 -fill both 
     
 # Page1
-    set page1 [$c.tnb add -label "Selected Range"]
-    frame $page1.f
-    pack $page1.f -fill both -expand yes
-    comborange $page1.f.seq -textvariable $c.seq_name
-    pack $page1.f.seq -fill both
-    
+    set page1 [frame $c.tnb.page1]
+    $c.tnb add $page1 -text "Selected Range"
+    xcomborange $page1.seq -textvariable $c.seq_name
+    pack $page1.seq -fill both -side top
+
     radiobutton .r
     set se [.r cget -selectcolor]
-    orientedradiobox $page1.f.dis -labeltext "Display as" \
+#    orientedradiobox $page1.dis -labeltext "Display as" \
 	    -orient horizontal \
 	    -selectcolor $se
-    pack $page1.f.dis -fill x -expand yes
-    $page1.f.dis add lt -text "3 letter"
-    $page1.f.dis add lo -text "1 letter"
-    $page1.f.dis select lo
+    xradiobox $page1.dis -labeltext "Display as" \
+	    -orient horizontal
+    pack $page1.dis -fill x -expand yes
+    $page1.dis add lt -text "3 letter"
+    $page1.dis add lo -text "1 letter"
+    $page1.dis select lo
     destroy .r
 
 # Page2
-    set page2 [$c.tnb add -label "Feature Table"] 
+    set page2 [frame $c.tnb.page2]
+    $c.tnb add $page2 -text "Feature Table"
 
-    frame $page2.f
-    pack $page2.f -fill both -expand yes
-    comborange $page2.f.iden -feature yes -trange no -textvariable $c.seq_name 
-    pack $page2.f.iden -fill both -side top
+    xcomborange $page2.iden -feature yes -trange no -textvariable $c.seq_name 
+    pack $page2.iden -fill both -side top
 
-    $c.tnb view "Selected Range"
+    $c.tnb select 0
 
-    #$page1.f configure -background [$page1.f.seq cget -background]
-    #$page2.f configure -background [$page2.f.iden cget -background]
-    #$c.tnb configure -background [$page2.f.iden cget -background]
-    #$c.tnb configure -backdrop [$page2.f.iden cget -background]
-    #$c.tnb configure -tabbackground [$page2.f.iden cget -background]
+    #$page1 configure -background [$page1.seq cget -background]
+    #$page2 configure -background [$page2.iden cget -background]
+    #$c.tnb configure -background [$page2.iden cget -background]
+    #$c.tnb configure -backdrop [$page2.iden cget -background]
+    #$c.tnb configure -tabbackground [$page2.iden cget -background]
 
 #############################################################    
-    dataentry $c.line \
-              -labeltext "Line length" \
-              -sticky e \
-	      -validate integer \
-	      -default 60 \
-	      -width 6 
+    xentry $c.line \
+	-label "Line length" \
+	-type int \
+	-default 60 \
+	-width 6
  
     pack $c.line -fill both -padx 6 -pady 6
+
 #############################################################
-    frame $c.separate -bd 2 -relief sunken -height 2 -width 10
-    pack $c.separate -fill x -expand yes
-#############################################################
-    iwidgets::buttonbox $c.ok 
-    $c.ok add OK -text OK \
-                 -command "NipTranslate2 $c $page1.f.seq $page1.f.dis $page2.f.iden " 
-    $c.ok add Cancel -text Cancel -command "destroy $c"
-    $c.ok add Help -text Help -command "show_help spin {SPIN-Translation-General}"
+    okcancelhelp $c.ok -bd 2 -relief groove \
+	-ok_command "NipTranslate2 $c $page1.seq $page1.dis $page2.iden " \
+	-cancel_command "destroy $c" \
+	-help_command "show_help spin {SPIN-Translation-General}"
     pack $c.ok -expand yes -fill both -padx 1 -pady 1
 }
 
@@ -103,7 +97,7 @@ proc  NipTranslate2 {c seq dis iden} {
 	set size 3
     } else {set size 1}
 
-    set feat [$c.tnb view]
+    set feat [$c.tnb select]
 
     if {$feat != 1 } {
 	set feat 2
@@ -129,6 +123,15 @@ proc  NipTranslate2 {c seq dis iden} {
 	}
     }
     SetBusy
+
+    puts [list nip_translate -seq_id $seq_id \
+	    -start [$seq get_s] \
+	    -end  [$seq get_e]\
+	    -line_length $length \
+	    -size $size \
+	    -feat $feat \
+	      -selcds $selcds]
+
     nip_translate -seq_id $seq_id \
 	    -start [$seq get_s] \
 	    -end  [$seq get_e]\
@@ -136,6 +139,7 @@ proc  NipTranslate2 {c seq dis iden} {
 	    -size $size \
 	    -feat $feat \
 	    -selcds $selcds
+    puts done
     ClearBusy
     destroy $c
 }

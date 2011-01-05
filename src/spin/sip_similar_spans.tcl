@@ -453,6 +453,7 @@ proc CompareSpans { } {
 	destroy $s
 	return 
     }
+
     pack $s.range_h -anchor w -fill x
     pack $s.range_v -anchor w -fill x
     pack $s.win_len -anchor w -fill x
@@ -515,6 +516,7 @@ proc winlen_minscore {range_h range_v win_len min_score seq_id_h seq_id_v} {
     bind $min_score.entry <Any-Leave> "update_score $min_score"
 
     WinLenUpdates $range_h $range_v $win_len $min_score
+
     return 0
 }
 

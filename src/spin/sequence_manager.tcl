@@ -212,9 +212,8 @@ proc set_range_d {args} {
 	    -start_value $seq_start -end_value $seq_end\
 	    -browse_cmd seq_browser
     } else {
-	iwidgets::Labeledframe $t.range -labeltext "Base range"
-	set cs [$t.range childsite]
-	twinnedrange $cs.t -range "$seq_start $seq_end"
+	set cs [labelframe $t.range -text "Base range"]
+	xtwinspin $cs.t -from $seq_start -to $seq_end
 	pack $cs.t -fill both
 	
 #	scale_range $t.range -title "Base range" \
@@ -241,8 +240,8 @@ proc set_range_d2 {range id} {
 	    -end [seq_id_to $range]
     } else {
 	set re_enter 0
-	set st_t [$range.childsite.t get_s]
-	set en_t [$range.childsite.t get_e]
+	set st_t [$range.t get_s]
+	set en_t [$range.t get_e]
 	if { $st_t > $en_t } {
 	    tk_messageBox -icon error -type ok -title "Sequence identifer"\
 		-message "You have chosen a start position \
@@ -250,8 +249,6 @@ proc set_range_d2 {range id} {
 
 	raise [winfo toplevel $range]
 
-	focus $range.childsite.t.start.lwchildsite.entry
-        $range.childsite.t.start.lwchildsite.entry icursor end
 	tkwait variable re_enter   
 	}
 	seq_set_range -seq_id $id -start $st_t \
@@ -305,9 +302,8 @@ proc file_save_d {args} {
 #	    -end_value $seq_end -min_value 1
 #############################################################################
 
-	iwidgets::Labeledframe $t.seq_id -labeltext "Range"
-	set cs [$t.seq_id childsite]
-	twinnedrange $cs.t -range "$seq_start $seq_end"
+	set cs [labelframe $t.seq_id -text "Range"]
+	xtwinspin $cs.t -from $seq_start -to $seq_end
 	pack $cs.t -fill both
     }
     wm title $t Save
@@ -345,10 +341,8 @@ proc file_save_d2 {t seq_id file format id} {
 	set from [seq_id_from $seq_id]
 	set to [seq_id_to $seq_id]
     } else {
-#	set from [scale_range_from $seq_id]
-#	set to [scale_range_t $seq_id]
-	set from [$seq_id.childsite.t get_s]
-	set to [$seq_id.childsite.t get_e]
+	set from [$seq_id.t get_s]
+	set to [$seq_id.t get_e]
     }
     set file [getFname_in_name $file]
     set format [radiolist_get $format]
@@ -708,11 +702,12 @@ proc rotate_d {args} {
 	set start [seq_info $active_id start]
 	set end [seq_info $active_id end]
 
-	spinrange $t.seq_id -range "$start $end" \
-		        -validate "" \
-			-labeltext "Origin"\
-			-sticky nse \
-		        -width 7 
+	#puts new-spinbox	
+	xspinbox $t.seq_id \
+	    -label "Origin" \
+	    -width 7 \
+	    -from $start \
+	    -to $end
 
 	$t.seq_id delete 0 end
 	$t.seq_id insert end "$start"
@@ -735,7 +730,7 @@ proc rotate_d {args} {
 	    -start_value $start \
 	    -end_value $end \
 	    -single yes \
-	    -labelsingle "Origin"
+	    -label_single "Origin"
     }
 #	seq_id $t.seq_id -range 0 -default [seq_info $active_id name]\
 #	    -update_cmd [list [list RotateUpdate $t.seq_id $t.origin]] \
@@ -823,9 +818,8 @@ proc copy_range_d {args} {
 	    -start_value $seq_start -end_value $seq_end\
 	    -browse_cmd seq_browser
     } else {
-	iwidgets::Labeledframe $t.range -labeltext "Base range"
-	set cs [$t.range childsite]
-	twinnedrange $cs.t -range "$seq_start $seq_end"
+	set cs [labelframe $t.range -text "Base range"]
+	xtwinspin $cs.t -from $seq_start -to $seq_end
 	pack $cs.t -fill both
 	
 #	scale_range $t.range -title "Base range" \
@@ -852,8 +846,8 @@ proc copy_range_d2 {range id} {
 	    -end [seq_id_to $range]
     } else {
 	set re_enter 0
-	set st_t [$range.childsite.t get_s]
-	set en_t [$range.childsite.t get_e]
+	set st_t [$range.t get_start]
+	set en_t [$range.t get_end]
 	if { $st_t > $en_t } {
 	    tk_messageBox -icon error -type ok -title "Sequence identifer"\
 		-message "You have chosen a start position \
@@ -861,8 +855,6 @@ proc copy_range_d2 {range id} {
 
 	raise [winfo toplevel $range]
 
-	focus $range.childsite.t.start.lwchildsite.entry
-        $range.childsite.t.start.lwchildsite.entry icursor end
 	tkwait variable re_enter   
 	}
 	seq_copy_range -seq_id $id -start $st_t -end $en_t
