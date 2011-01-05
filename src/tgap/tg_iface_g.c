@@ -478,9 +478,13 @@ static char *mem_inflate(int mode,
 	return nul_mem_inflate (cdata, csize, size);
     case COMP_MODE_ZLIB:
 	return zlib_mem_inflate(cdata, csize, size);
-#ifdef HAVE_LIBLZMA
     case COMP_MODE_LZMA:
+#ifdef HAVE_LIBLZMA
 	return lzma_mem_inflate(cdata, csize, size);
+#else
+	fprintf(stderr, "ERROR: attempted to use LZMA decompression mode when"
+		" this binary does not support LZMA compression. Please"
+		" recompile with lzma support.\n");
 #endif	
     }
     
