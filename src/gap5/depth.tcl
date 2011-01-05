@@ -1535,12 +1535,12 @@ proc cross_hair {w tl x y} {
     	    set height [winfo height $d]
 	    
 	    $d delete withtag xhair	    
-    	    $d create line $x 0 $x $height -tags xhair -fill green -dash {6 4 2 4 2 4}
+    	    $d create line $x 0 $x $height -tags xhair -fill green -dash -..
 	    
 	    set comp [string compare $t $tl]
 	    
 	    if {$comp == 0} {
-    	    	$d create line 0 $y $width $y -tags xhair -fill green -dash {6 4 2 4 2 4}
+    	    	$d create line 0 $y $width $y -tags xhair -fill green -dash -..
 		set x1 [$d itemcget $tr -px]
 		set y1 [$d itemcget $tr -py]
 		set ${w}(info) "X: $x1    Y: $y1"
