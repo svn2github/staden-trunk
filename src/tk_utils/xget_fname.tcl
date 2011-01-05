@@ -52,6 +52,11 @@ namespace eval ::Widget::Xget_fname {;
 			    "XInvokeFileBrowser $data(xentry) open"
 			$data(xentry) configure -type fileinput
 		    }
+		    load_multiple {
+			set data(Cmd1) \
+			    "XInvokeFileBrowser $data(xentry) open_multiple"
+			$data(xentry) configure -type "fileinput 0 1"
+		    }
 		    load_optional {
 			set data(Cmd1) \
 			    "XInvokeFileBrowser $data(xentry) open"

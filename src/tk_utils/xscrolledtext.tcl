@@ -38,7 +38,6 @@ namespace eval ::Widget::Xscrolledtext {
     variable $w
     upvar 0 $w data
 
-    puts args=$args
     foreach {key val} $args {
 	switch -- $key {
 	    -label {

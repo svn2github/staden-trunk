@@ -170,13 +170,23 @@ namespace eval ::Widget::Xentry {;
 }
 
 # -type fileinput ?optional?
-;proc check_fileinput {w path {optional 0}} {
-    set filename [expandpath $path]
-    if {$optional && $filename == ""} {
+;proc check_fileinput {w path {optional 0} {multiple 0}} {
+    if {$optional && $path == ""} {
 	return 1
     } else {
-	set response [XCheckOpenFile $filename]
-	return $response
+        if {$multiple} {
+	    set response 1
+	    foreach f $path {
+		if {[XCheckOpenFile [expandpath $f]] == 0} {
+		    set response 0
+		    break
+		}
+	    }
+	    return $response
+	} else {   
+	    set response [XCheckOpenFile [expandpath $path]]
+	    return $response
+	}
     }
 }
 

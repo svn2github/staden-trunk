@@ -15,9 +15,13 @@ proc xcombo {w args} {
     set ${w}(-textvariable) ${w}(value)
     set ${w}(-valuesvariable) ${w}(values)
     set ${w}(-values) ""
+    set ${w}(-command) ""
+    set ${w}(-validate) ""
+    set ${w}(-validatecommand) ""
     foreach {k v} $args {
 	set ${w}($k) $v
     }
+    
     uplevel \#0 [list set [set ${w}(-valuesvariable)] [set ${w}(-values)]]
 
     frame $w
@@ -35,6 +39,26 @@ proc xcombo {w args} {
     pack $w.dot $w.entry -side right
 
     return $w
+}
+
+;proc xcombo_set {w val} {
+    $w.entry delete 0 end
+    $w.entry insert 0 $val
+}
+
+;proc xcombo_configure {w args} {
+    global $w
+
+    set r [eval $w.entry configure $args]
+    set ${w}(-textvariable) [$w.entry cget -textvariable]
+
+    return $r
+}
+
+;proc xcombo_set_values {w args} {
+    global $w
+    set v [set ${w}(-valuesvariable)]
+    eval set ::[list $v] $args
 }
 
 ;proc xcombo_dots {w} {
@@ -92,6 +116,9 @@ proc xcombo {w args} {
 
     bind $l <<ListboxSelect>> "
         set \[set ${w}(-textvariable)\] \[%W get \[%W curselection\]\]
+        if {\[set ${w}(-command)\] != {}} {
+            eval \[set ${w}(-command)\] \[list $w \[%W get \[%W curselection\]\]\]
+        }
     "
     bind $l <ButtonRelease-1> "+after idle {destroy $w.list}"
     

@@ -233,6 +233,7 @@ proc tk_utils_init {} {
 	option add *Entry.background $bgl userDefault
 	option add *Text.background $bgl userDefault
 	option add *Listbox.background $bgl userDefault
+	option add *Spinbox.background $bgl userDefault
 	# option add *Xentry.background $bgl userDefault
 	option add *TixHList.background $bgl userDefault
 	option add *Tablelist.background $bgl userDefault
@@ -270,3 +271,49 @@ proc tk_utils_init {} {
     destroy .tmp
 }
 
+#-----------------------------------------------------------------------------
+# Map new 8.5 widgets to 8.4 coded alternatives if not available
+#-----------------------------------------------------------------------------
+if {[info command ttk::notebook] == {}} {
+    # Emulate ttk::notebook via Jeffrey Hobbs' widget package
+    namespace eval ttk {
+	proc notebook {args} {
+	    set nb [eval tabnotebook $args -linewidth 1]
+	    if {[info command ::_$nb] != {}} {
+		rename ::_$nb {}
+	    }
+	    rename ::$nb ::_$nb
+	    global ::$nb
+	    set ::${nb}(count) 0
+
+	    proc ::$nb {cmd args} {
+		set nb [lindex [info level [info level]] 0]
+		upvar \#0 ::$nb data
+		switch $cmd {
+		    "add" {
+			foreach {k v} [lrange $args 1 end] {
+			    set a($k) $v
+			}
+			set data(map_$data(count)) $a(-text)
+			incr data(count)
+			return [eval [list _$nb add $a(-text) \
+					  -window [lindex $args 0]]]
+		    }
+		    "select" {
+			if {[llength $args] == 0} {
+			    return [eval [list _$nb select]]
+			} else {
+			    return [eval [list _$nb activate \
+					      $data(map_[lindex $args 0])]]
+			}
+		    }
+		    default {
+			return [eval [list _$nb $cmd $args]]
+		    }
+		}
+	    }
+
+	    return $nb
+	}
+    }
+}

@@ -15,10 +15,19 @@ proc XInvokeFileBrowser {fn type args} {
 	catch {cd [lindex $args [expr $initdir+1]]}
     }
 
-    if {$type == "open"} {
-	set file [eval tk_getOpenFile -parent $fn $args]
-    } else {
-	set file [eval tk_getSaveFile -parent $fn $args]
+    switch $type {
+	"open" {
+	    set file [eval tk_getOpenFile -parent $fn $args]
+	}
+	"open_multiple" {
+	    set file [eval tk_getOpenFile -parent $fn $args -multiple 65000]
+	}
+	"save" {
+	    set file [eval tk_getSaveFile -parent $fn $args]
+	}
+	"default" {
+	    return -code error -errorinfo "Unknown action type $type"
+	}
     }
 
     if {$initdir != -1} {
