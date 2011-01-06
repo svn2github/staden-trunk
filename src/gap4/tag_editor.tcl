@@ -246,7 +246,7 @@ proc tag_editor_set_type {button w textwin data typeid} {
 	set tid $NGTag($typeid,tagid)
 	if {[info commands ::tag_gui::${tid}::create_dialogue] == {}} {
 	    set code [acd2tag::parse $NGTag($typeid,comment) ::tag_gui::$tid]
-	    catch {set fd [open /tmp/debug.out w]; puts $fd $code; close $fd}
+	    #catch {set fd [open /tmp/jkb.out w]; puts $fd $code; close $fd}
 	    eval $code
 	}
 	set d(namespace) ::$w.GUI
