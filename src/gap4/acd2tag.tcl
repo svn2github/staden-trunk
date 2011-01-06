@@ -8,7 +8,6 @@
 #-----------------------------------------------------------------------------
 # The lexical analyser
 
-package require Iwidgets
 namespace eval acd2tag {
 
 # A lex style rule set.
@@ -630,8 +629,7 @@ proc generate_acdtag {dname name args} {
     set data(tag_type._%C_count) 0
 
     append cstr "option add *e_$name*Xentry.entry.width 30\n"
-    append cstr "option add *e_$name*Entryfield.width 30\n"
-    append cstr "option add *e_$name*Combobox.width 27\n\n"
+    append cstr "option add *e_$name*Xcombobox.entry.width 27\n\n"
 
     append cstr "\n"
     append cstr "variable last_selection 0\n"
@@ -656,11 +654,12 @@ proc generate_acdtag {dname name args} {
     append cstr "    if {\$ns == {}} {\n"
     append cstr "	set ns \[list {}\]\n"
     append cstr "    } else {\n"
-    append cstr "	iwidgets::tabnotebook \$w.ns_book -tabpos n -padx 10 -equaltabs 0\n"
+    append cstr "	ttk::notebook \$w.ns_book\n"
     append cstr "	pack \$w.ns_book -side top -fill both -expand 1\n"
     append cstr "	set book(ns_book) \$w\n"
     append cstr "    }\n"
     append cstr "\n"
+    append cstr "    set tabnum 0\n"
     append cstr "    foreach namespace \$ns \{\n"
     append cstr "	if {\$namespace != {}} {\n"
     append cstr "	    lappend wlist \$w\n"
@@ -669,7 +668,10 @@ proc generate_acdtag {dname name args} {
     append cstr "	    } else {\n"
     append cstr "		set tabname \$namespace\n"
     append cstr "	    }\n"
-    append cstr "	    set page \[\$w.ns_book add -label \$tabname -command \"\[namespace current\]::page_raise \$w.ns_book\"\]\n"
+    append cstr "	    set page \$w.ns_book.p_\$tabnum\n"
+    append cstr "	    incr tabnum\n"
+    append cstr "	    frame \$page\n"
+    append cstr "	    \$w.ns_book add \$page -text \$tabname -command \"\[namespace current\]::page_raise \$w.ns_book\"\n"
     append cstr "	    lappend wlist \$w\n"
     append cstr "	    set w \$page\n"
     append cstr "	}\n"
@@ -692,19 +694,19 @@ proc generate_end {dname} {
     append cstr "	variable last_selection\n"
     append cstr "\n"
     append cstr "	if {\$last_selection >= 0} {\n"
-    append cstr "	    if {\[catch {\$w.ns_book view \$last_selection}\]} {\n"
-    append cstr "               \$w.ns_book view 0\n"
+    append cstr "	    if {\[catch {\$w.ns_book select \$last_selection}\]} {\n"
+    append cstr "               \$w.ns_book select 0\n"
     append cstr "           }\n"
     append cstr "	} else {\n"
-    append cstr "	    \$w.ns_book view 0\n"
+    append cstr "	    \$w.ns_book select 0\n"
     append cstr "	}\n"
-    append cstr "	acd2tag::resizebook \$w.ns_book\n"
-    append cstr "    } else {\n"
-    append cstr "	if {\[info exists book\]} {\n"
-    append cstr "	    foreach b \[array names book\] {\n"
-    append cstr "	        acd2tag::resizebook \$w.\$b\n"
-    append cstr "           }\n"
-    append cstr "        }\n"
+#    append cstr "	acd2tag::resizebook \$w.ns_book\n"
+#    append cstr "    } else {\n"
+#    append cstr "	if {\[info exists book\]} {\n"
+#    append cstr "	    foreach b \[array names book\] {\n"
+#    append cstr "	        acd2tag::resizebook \$w.\$b\n"
+#    append cstr "           }\n"
+#    append cstr "        }\n"
     append cstr "    }\n"
     append cstr "\}\n"
     return 1
@@ -718,14 +720,11 @@ proc generate_integer {dname name args} {
     append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
         set vars(\${namespace}::$name) [expand data $name default]
     }\n"
-    append cstr "    iwidgets::entryfield \$w.$name \\
-\t-validate integer \\
+    append cstr "    xentry \$w.$name \\
+\t-type int \\
 \t-textvariable \${varsp}(\${namespace}::$name) \\
-\t-labeltext [expand data $name information]\\
+\t-label [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-#    variable max_len
-#    append cstr "    \[\$w.$name component label\] configure -anchor w -width $max_len\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     if {[info exists data($name.minimum)]} {
 	append cstr "    set vars(\${namespace}::$name.minimum) [expand data $name minimum]\n"
@@ -757,14 +756,11 @@ proc generate_float {dname name args} {
     append cstr "    if {!\[info exists vars($name)\]} {
         set vars(\${namespace}::$name) [expand data $name default]
     }\n"
-    append cstr "    iwidgets::entryfield \$w.$name \\
-\t-validate real \\
+    append cstr "    xentry \$w.$name \\
+\t-type float \\
 \t-textvariable \${varsp}(\${namespace}::$name) \\
-\t-labeltext [expand data $name information]\\
+\t-label [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-#    global max_len
-#    append cstr "    \[\$w.$name component label\] configure -anchor w -width $max_len\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     if {[info exists data($name.minimum)]} {
 	append cstr "    set vars(\${namespace}::$name.minimum) [expand data $name minimum]\n"
@@ -791,11 +787,10 @@ proc generate_string {dname name args} {
     append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
         set vars(\${namespace}::$name) [expand data $name default]
     }\n"
-    append cstr "    iwidgets::entryfield \$w.$name \\
+    append cstr "    xentry \$w.$name \\
 \t-textvariable \${varsp}(\${namespace}::$name) \\
-\t-labeltext [expand data $name information]\\
+\t-label [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
     append cstr "    set vars(\${namespace}::$name.required) \
@@ -838,13 +833,18 @@ proc generate_text {dname name args} {
     append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
         set vars(\${namespace}::$name) [expand data $name default]
     }\n"
-    append cstr "    iwidgets::scrolledtext \$w.$name \\
-\t-labeltext [expand data $name information] \\
-\t-labelpos [expand data $name labelpos]\\
-\t-vscrollmode dynamic \\
-\t-hscrollmode dynamic \\
+    if {![regexp {^([0-9]+)x([0-9]+)} $data($name.geometry) _ W H]} {
+	set W 80
+	set H 24
+    } else {
+	puts W=$W
+	puts H=$H
+    }
+    append cstr "    xscrolledtext \$w.$name \\
+\t-label [expand data $name information] \\
 \t-wrap none \\
-\t-visibleitems [expand data $name geometry]\n"
+\t-width $W\\
+\t-height $H\n"
     append cstr "    pack \$w.$name -side top -fill both -expand 1\n"
     append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
     append cstr "    set vars(\${namespace}::$name.required) \
@@ -887,7 +887,26 @@ proc list_expand {dname name mname1 mname2} {
 	lappend list [list $label]
     }
     return $list
-    return 1
+}
+
+proc list_expand2 {dname name mname1 mname2} {
+    upvar $dname data
+    upvar $mname1 mapping1
+    upvar $mname2 mapping2
+
+    set list ""
+    foreach item [split $data($name.values) $data($name.delimiter)] {
+        set item [string trimleft $item]
+        set delim [string first $data($name.codedelimiter) $item]
+        set value [string range $item 0 [expr {$delim-1}]]
+        set value [string trimright $value]
+        set label [string range $item [expr {$delim+1}] end]
+        set label [string trimleft $label]
+        set mapping1($label) $value
+        set mapping2($value) $label
+        lappend list $label
+    }
+    return $list
 }
 
 # FIXME: defaults do not work correctly for this yet
@@ -898,14 +917,12 @@ proc generate_list_multi {dname name args} {
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
     append cstr "    set vars(\${namespace}::$name) [expand data $name default]\n"
-    append cstr "    iwidgets::scrolledlistbox \$w.$name \\
+    append cstr "    xscrolledlistbox \$w.$name \\
 \t-exportselection 0\\
-\t-labeltext [expand data $name header] \\
-\t-hscrollmode dynamic\\
-\t-vscrollmode dynamic\\
+\t-label [expand data $name header] \\
 \t-selectmode extended\\
-\t-selectioncommand \"::acd2tag::listbox_selected \$varsp $name\"\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
+    append cstr "    bind \$w.$name <<ListboxSelect>> \"::acd2tag::listbox_selected \$varsp $name\"\n"
     append cstr "    pack \$w.$name -side top -fill both -expand 1\n"
     set l [list_expand data $name mapping1 mapping2]
     append cstr "    set vars(\${namespace}::$name.mapping1) [list [array get mapping1]]\n"
@@ -937,17 +954,15 @@ proc generate_list {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::combobox \$w.$name\\
+    set l [list_expand2 data $name mapping1 mapping2]
+    append cstr "    xcombobox \$w.$name\\
 \t-textvariable \${varsp}(\${namespace}::$name.name)\\
-\t-labeltext [expand data $name information]\n"
-    set l [list_expand data $name mapping1 mapping2]
+\t-label [expand data $name information]\\
+\t-values [list $l]\n"
     append cstr "    trace variable vars($name.name) w \
 	   \"::acd2tag::list_changed \$varsp $name\"\n"
-    append cstr "    eval \$w.$name insert list end $l\n"
     append cstr "    set vars(\${namespace}::$name.mapping1) [list [array get mapping1]]\n"
     append cstr "    set vars(\${namespace}::$name.mapping2) [list [array get mapping2]]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-    append cstr "    \$w.$name delete entry 0 end\n"
     append cstr "    array set tmpmap \$vars(\${namespace}::$name.mapping2)\n"
 
     append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {\n"
@@ -957,7 +972,7 @@ proc generate_list {dname name args} {
     append cstr "    set def [expand data $name default]\n"
     append cstr "    catch {set def \$tmpmap(\$def)}\n"
     append cstr "    set vars(\${namespace}::$name) \$def\n"
-    append cstr "    \$w.$name insert entry end \$def\n"
+    append cstr "    \$w.$name set \$def\n"
     append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
@@ -987,14 +1002,12 @@ proc generate_selection_multi {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::scrolledlistbox \$w.$name \\
+    append cstr "    xscrolledlistbox \$w.$name \\
 \t-exportselection 0\\
-\t-labeltext [expand data $name header] \\
-\t-hscrollmode dynamic\\
-\t-vscrollmode dynamic\\
+\t-label [expand data $name header] \\
 \t-selectmode extended\\
-\t-selectioncommand \"::acd2tag::selection_selected \$varsp $name\"\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
+    append cstr "    bind \$w.$name <<ListboxSelect>> \"::acd2tag::selection_selected \$varsp $name\"\n"
     append cstr "    pack \$w.$name -side top -fill both -expand 1\n"
     set l [selection_expand data $name]
     append cstr "    eval \$w.$name insert end $l\n"
@@ -1042,12 +1055,11 @@ proc generate_selection {dname name args} {
         append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
         set vars(\${namespace}::$name) [expand data $name default]
     }\n"
-	append cstr "    iwidgets::combobox \$w.$name\\
-\t-textvariable \${varsp}(\${namespace}::$name)\\
-\t-labeltext [expand data $name information]\n"
         set l [selection_expand data $name]
-        append cstr "    eval \$w.$name insert list end $l\n"
-        append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
+	append cstr "    xcombobox \$w.$name\\
+\t-textvariable \${varsp}(\${namespace}::$name)\\
+\t-label [expand data $name information]\\
+\t-values [list $l]\n"
         append cstr "    set vars(\${namespace}::$name) \$vars(\${namespace}::$name)\n"
         append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
@@ -1156,33 +1168,30 @@ proc generate_section {dname name args} {
 	        set book book_$page_depth
 	    }
 	    if {![info exists data($book.created)]} {
-		append cstr "    iwidgets::tabnotebook \$w.$book -tabpos n -padx 10 -equaltabs 0\n"
+		append cstr "    ttk::notebook \$w.$book\n"
 		append cstr "    pack \$w.$book -side top -fill both\n"
 		append cstr "    set book($book) \$w\n"
 		set data($book.created) 1
 		lappend data(_tabnotebooks) $book
-		set first 1
 	    } else {
-		set first 0
+		incr data($book.created)
 	    }
-	    append cstr "    set page \[\$w.$book add \\
-\t-label [expand data $name information]\]\n"
-	    if {$first} {
-		append cstr "    $\w.$book view [expand data $name information]\n"
+	    append cstr "    set page \$w.$book.f_$data($book.created)\n"
+	    append cstr "    frame \$page\n"
+	    append cstr "    \$w.$book add \$page -text [expand data $name information]\n"
+	    if {$data($book.created) == 1} {
+		append cstr "    $\w.$book select 0\n"
 	    }
 	    append cstr "    lappend wlist \$w\n"
 	    append cstr "    set w \$page\n"
 	}
         frame {
             if {$data($name.border)} {
-	        set f [iwidgets::labeledframe .$name]
-	        regsub "^\.$name" [$f childsite] {} childsite
-	        destroy $f
-	        append cstr "    iwidgets::labeledframe \$w.$name\\
-\t-labeltext [expand data $name information]\n"
+	        append cstr "    labelframe \$w.$name\\
+\t-text [expand data $name information]\n"
 	        append cstr "    pack \$w.$name -side $data($name.side) -fill both -expand 1\n"
 	        append cstr "    lappend wlist \$w\n"
-	        append cstr "    append w .$name$childsite\n"
+	        append cstr "    append w .$name\n"
             } else {
 	        append cstr "    frame \$w.$name -bd 0\n"
 	        append cstr "    pack \$w.$name -side $data($name.side) -fill both\n"
@@ -1280,6 +1289,8 @@ proc generate_pass2 {aname {prefix {}} {level 0}} {
 # Assumes that all packing within the pages is -side top or -side bottom.
 # If this is not the case then enclose the children within a single frame.
 proc resizebook {book} {
+    return; #disabled for now to see if ttk::notebook has issues.
+
     update idletasks
     set bd [expr {2*[$book cget -borderwidth]}]
     set maxheight 0

@@ -2347,12 +2347,12 @@ proc editor_oligo_report {ed t} {
 	grid $d.self_end_l      $d.self_end_r      x \
 	     $d.end_stability_l $d.end_stability_r -sticky nsew
 
-	xcombo $d.name \
+	xcombobox $d.name \
 	    -text "Seq.name to tag" \
 	    -textvariable ${w}(read) \
 	    -valuesvariable ${w}(read_values)
 
-	xcombo $d.template \
+	xcombobox $d.template \
 	    -text "Template name" \
 	    -textvariable ${w}(template) \
 	    -valuesvariable ${w}(template_values)

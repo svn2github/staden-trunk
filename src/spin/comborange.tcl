@@ -10,7 +10,7 @@ proc xcomborange args {}
 
 widget create Xcomborange -type frame -base entry -components {
     {labelframe labelframe f {-text {Seq ID} -padx 5 -pady 5}}
-    {xcombo xcombo f.xcombo {\
+    {xcombobox xcombo f.xcombo {\
         -command [list ::Widget::Xcomborange::entry_changed $w] \
 	-text {Seq identifier} \
         -textvariable ${w}(tvar) \
@@ -71,7 +71,7 @@ namespace eval ::Widget::Xcomborange {
 	lappend name_list [lindex $i 1]
     }
 
-    xcombo_set_values $data(xcombo) $name_list
+    $data(xcombo) configure -values $name_list
 
     # Set the default starting point
     foreach i [sequence_names] {
@@ -81,7 +81,7 @@ namespace eval ::Widget::Xcomborange {
 	    set pos [lindex $i 2]
 	    foreach {_ start end} [regexp -inline {(\d+)..(\d+)} $pos] break
 
-	    xcombo_set $data(xcombo) $seq
+	    $data(xcombo) set $seq
 	    $data(xtwinspin) set $start $end
 	    $data(xtwinspin) configure -from 1 -to [lindex $i 3]
 	}
@@ -99,7 +99,7 @@ namespace eval ::Widget::Xcomborange {
 		$data(labelframe) configure -text $val
 	    }
 	    -textvariable {
-		xcombo_configure $data(xcombo) -textvariable $val
+		$data(xcombo) configure -textvariable $val
 		if {[info exists data(trace)]} {
 		    eval trace remove variable $data(trace)
 		}
@@ -139,7 +139,7 @@ namespace eval ::Widget::Xcomborange {
 		$data(xtwinspin) configure -label2 $val
 	    }
 	    -default {
-		xcombo_set $data(xcombo) $val
+		$data(xcombo) set $val
 	    }
 	}
     }

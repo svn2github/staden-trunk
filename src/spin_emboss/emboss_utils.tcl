@@ -10,6 +10,8 @@ namespace eval ::EMBOSS {
 # Assumes that all packing within the pages is -side top or -side bottom.
 # If this is not the case then enclose the children within a single frame.
 proc resizebook {book} {
+    return; #disabled for now to see if ttk::notebook has issues.
+
     update idletasks
     update
     set bd [expr {2*[$book cget -borderwidth]}]
@@ -585,7 +587,9 @@ proc run_dialogue {nspace w} {
 		    lappend args -no$arg
 		}
 	    }
-	    list -
+	    list {
+		lappend args -$arg [$vars($arg.path) get]
+	    }
 	    list_multi {
 		set val ""
 		array set a $vars($arg.mapping1)
@@ -600,7 +604,6 @@ proc run_dialogue {nspace w} {
 		foreach index [$vars($arg.path) curselection] {
 		    lappend val [$vars($arg.path) get $index]
 		}
-		#puts val=$val
 		lappend args -$arg $val
 	    }
 	    default {

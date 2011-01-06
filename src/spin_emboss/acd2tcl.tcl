@@ -25,7 +25,6 @@
 
 source $env(STADTABL)/shlib.conf
 #tkinit
-package require Iwidgets
 #wm withdraw .
 
 #-----------------------------------------------------------------------------
@@ -696,8 +695,7 @@ proc generate_application {dname name args} {
     }
 
     append cstr "option add *e_$name*Xentry.entry.width 30\n"
-    append cstr "option add *e_$name*Entryfield.width 30\n"
-    append cstr "option add *e_$name*Combobox.width 27\n\n"
+    append cstr "option add *e_$name*Xcombobox.entry.width 27\n\n"
 
     append cstr "proc create_dialogue \{\} \{\n"
     append cstr "    variable vars\n"
@@ -728,9 +726,9 @@ proc generate_end {dname} {
     if {[info exists data(_tabnotebooks)]} {
         append cstr "\n"
 #        append cstr "    wm withdraw \$w\n"
-        foreach book $data(_tabnotebooks) {
-	    append cstr "    ::EMBOSS::resizebook \$book($book).$book\n"
-        }
+#        foreach book $data(_tabnotebooks) {
+#	    append cstr "    ::EMBOSS::resizebook \$book($book).$book\n"
+#        }
 #        append cstr "    wm deiconify \$w\n"
     }
     append cstr "\}\n"
@@ -752,11 +750,6 @@ proc generate_sequence {dname name args} {
     append cstr "    set vars($name.name)  \[seq_info \$vars($name) name\]\n"
     append cstr "    sequence_changed \[namespace current\] $name\n"
     append cstr "    set vars($name.type) [expand data $name type]\n"
-#    append cstr "    iwidgets::labeledframe \$w.$name \\
-#\t-labeltext {Sequence identifier}\n"
-#    append cstr "    pack \$w.$name -side top -fill both\n"
-#    append cstr "    lappend wlist \$w\n"
-#    append cstr "    set w \[\$w.$name childsite\]\n"
     append cstr "    seq_id \$w.$name \\
 \t-textvariable \[namespace current\]::vars($name.name)\\
 \t-start_value \$vars($name.begin)\\
@@ -869,14 +862,11 @@ proc generate_integer {dname name args} {
     upvar $dname data
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::entryfield \$w.$name \\
-\t-validate integer \\
+    append cstr "    xentry \$w.$name \\
+\t-type int \\
 \t-textvariable \[namespace current\]::vars($name) \\
-\t-labeltext [expand data $name information]\\
+\t-label [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-#    global max_len
-#    append cstr "    \[\$w.$name component label\] configure -anchor w -width $max_len\n"
     append cstr "    set vars($name) [expand data $name default]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     if {[info exists data($name.minimum)]} {
@@ -906,14 +896,11 @@ proc generate_float {dname name args} {
     upvar $dname data
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::entryfield \$w.$name \\
-\t-validate real \\
+    append cstr "    xentry \$w.$name \\
+\t-type float \\
 \t-textvariable \[namespace current\]::vars($name) \\
-\t-labeltext [expand data $name information]\\
+\t-label [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-#    global max_len
-#    append cstr "    \[\$w.$name component label\] configure -anchor w -width $max_len\n"
     append cstr "    set vars($name) [expand data $name default]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     if {[info exists data($name.minimum)]} {
@@ -938,11 +925,10 @@ proc generate_string {dname name args} {
     upvar $dname data
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::entryfield \$w.$name \\
+    append cstr "    xentry \$w.$name \\
 \t-textvariable \[namespace current\]::vars($name) \\
-\t-labeltext [expand data $name information]\\
+\t-label [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
     append cstr "    set vars($name) [expand data $name default]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     append cstr "    set vars($name.path) \$w.$name\n"
@@ -1001,7 +987,26 @@ proc list_expand {dname name mname1 mname2} {
 	lappend list [list $label]
     }
     return $list
-    return 1
+}
+
+proc list_expand2 {dname name mname1 mname2} {
+    upvar $dname data
+    upvar $mname1 mapping1
+    upvar $mname2 mapping2
+
+    set list ""
+    foreach item [split $data($name.values) $data($name.delimiter)] {
+        set item [string trimleft $item]
+	set delim [string first $data($name.codedelimiter) $item]
+	set value [string range $item 0 [expr {$delim-1}]]
+        set value [string trimright $value]
+	set label [string range $item [expr {$delim+1}] end]
+        set label [string trimleft $label]
+        set mapping1($label) $value
+        set mapping2($value) $label
+	lappend list $label
+    }
+    return $list
 }
 
 proc generate_list_multi {dname name args} {
@@ -1010,14 +1015,12 @@ proc generate_list_multi {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::scrolledlistbox \$w.$name \\
+    append cstr "    xscrolledlistbox \$w.$name \\
 \t-exportselection 0\\
-\t-labeltext [expand data $name header] \\
-\t-hscrollmode dynamic\\
-\t-vscrollmode dynamic\\
+\t-label [expand data $name header] \\
 \t-selectmode extended\\
-\t-selectioncommand \"::EMBOSS::listbox_selected \[namespace current\] $name\"\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
+    append cstr "    bind \$w.$name <<ListboxSelect>> \"::EMBOSS::listbox_selected \[namespace current\] $name\"\n"
     append cstr "    pack \$w.$name -side top -fill both -expand 1\n"
     set l [list_expand data $name mapping1 mapping2]
     append cstr "    set vars($name.mapping1) [list [array get mapping1]]\n"
@@ -1048,22 +1051,20 @@ proc generate_list {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::combobox \$w.$name\\
+    set l [list_expand2 data $name mapping1 mapping2]
+    append cstr "    xcombobox \$w.$name\\
 \t-textvariable \[namespace current\]::vars($name.name)\\
-\t-labeltext [expand data $name information]\n"
-    set l [list_expand data $name mapping1 mapping2]
+\t-label [expand data $name information]\\
+\t-values [list $l]\n"
     append cstr "    trace variable vars($name.name) w \
 	   \"::EMBOSS::list_changed \[namespace current\] $name\"\n"
-    append cstr "    eval \$w.$name insert list end $l\n"
     append cstr "    set vars($name.mapping1) [list [array get mapping1]]\n"
     append cstr "    set vars($name.mapping2) [list [array get mapping2]]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-    append cstr "    \$w.$name delete entry 0 end\n"
     append cstr "    array set tmpmap \$vars($name.mapping2)\n"
     append cstr "    set def [expand data $name default]\n"
     append cstr "    catch {set def \$tmpmap(\$def)}\n"
     append cstr "    set vars($name) \$def\n"
-    append cstr "    \$w.$name insert entry end \$def\n"
+    append cstr "    \$w.$name set \$def\n"
     append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
@@ -1093,14 +1094,12 @@ proc generate_selection_multi {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::scrolledlistbox \$w.$name \\
+    append cstr "    xscrolledlistbox \$w.$name \\
 \t-exportselection 0\\
-\t-labeltext [expand data $name header] \\
-\t-hscrollmode dynamic\\
-\t-vscrollmode dynamic\\
+\t-label [expand data $name header] \\
 \t-selectmode extended\\
-\t-selectioncommand \"::EMBOSS::selection_selected \[namespace current\] $name\"\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
+    append cstr "    bind \$w.$name <<ListboxSelect>> \"::EMBOSS::selection_selected \[namespace current\] $name\"\n"
     append cstr "    pack \$w.$name -side top -fill both -expand 1\n"
     set l [selection_expand data $name]
     append cstr "    eval \$w.$name insert end $l\n"
@@ -1128,14 +1127,12 @@ proc generate_selection {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::combobox \$w.$name\\
-\t-textvariable \[namespace current\]::vars($name)\\
-\t-labeltext [expand data $name information]\n"
     set l [selection_expand data $name]
-    append cstr "    eval \$w.$name insert list end $l\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-    append cstr "    \$w.$name delete entry 0 end\n"
-    append cstr "    \$w.$name insert entry end [expand data $name default]\n"
+    append cstr "    xcombobox \$w.$name\\
+\t-textvariable \[namespace current\]::vars($name)\\
+\t-label [expand data $name information]\\
+\t-values [list $l]\n"
+    append cstr "    \$w.$name set [expand data $name default]\n"
     append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
@@ -1152,13 +1149,11 @@ proc generate_xygraph {dname name args} {
     upvar $dname data
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::combobox \$w.$name\\
+    append cstr "    xcombobox \$w.$name\\
 \t-textvariable \[namespace current\]::vars($name)\\
-\t-labeltext [expand data $name information]\n"
-    append cstr "    eval \$w.$name insert list end \[list_graph_types\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-    append cstr "    \$w.$name delete entry 0 end\n"
-    append cstr "    \$w.$name insert entry end [expand data $name default]\n"
+\t-label [expand data $name information]\\
+\t-values \[list_graph_types\]\n"
+    append cstr "    \$w.$name set [expand data $name default]\n"
     append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
@@ -1186,13 +1181,11 @@ proc generate_graph {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::combobox \$w.$name\\
+    append cstr "    xcombobox \$w.$name\\
 \t-textvariable \[namespace current\]::vars($name)\\
-\t-labeltext [expand data $name information]\n"
-    append cstr "    eval \$w.$name insert list end \[list_graph_types\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-    append cstr "    \$w.$name delete entry 0 end\n"
-    append cstr "    \$w.$name insert entry end [expand data $name default]\n"
+\t-label [expand data $name information]\\
+\t-values \[list_graph_types\]\n"
+    append cstr "    \$w.$name set [expand data $name default]\n"
     append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
@@ -1282,18 +1275,16 @@ proc generate_seqoutall {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::labeledframe \$w.$name \\
-\t-labeltext [expand data $name information]\n"
+    append cstr "    labelframe \$w.$name \\
+\t-text [expand data $name information]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     append cstr "    lappend wlist \$w\n"
-    append cstr "    set w \[\$w.$name childsite\]\n"
-    append cstr "    iwidgets::combobox \$w.format\\
+    append cstr "    set w \$w.$name\n"
+    append cstr "    xcombobox \$w.format\\
 \t-textvariable \[namespace current\]::vars($name.format)\\
-\t-labeltext {File format}\n"
-    append cstr "    eval \$w.format insert list end \[list_file_formats\]\n"
-    append cstr "    grid \[\$w.format component entry\] -sticky nse\n"
-    append cstr "    \$w.format delete entry 0 end\n"
-    append cstr "    \$w.format insert entry end fasta\n"
+\t-label {File format}\\
+\t-values \[list_file_formats\]\n"
+    append cstr "    \$w.format set fasta\n"
     append cstr "    \$w.format configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    set vars($name.format.path) \$w.format\n"
@@ -1406,13 +1397,11 @@ proc generate_matrix {dname name args} {
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
     append cstr "    set vars($name.protein) [expand data $name protein]\n"
-    append cstr "    iwidgets::combobox \$w.$name\\
+    append cstr "    xcombobox \$w.$name\\
 \t-textvariable \[namespace current\]::vars($name)\\
-\t-labeltext [expand data $name information]\n"
-    append cstr "    eval \$w.$name insert list end \[list_matrices p\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-    append cstr "    \$w.$name delete entry 0 end\n"
-    append cstr "    \$w.$name insert entry end [expand data $name default]\n"
+\t-label [expand data $name information]\\
+\t-values \[list_matrices p\]\n"
+    append cstr "    \$w.$name set [expand data $name default]\n"
     append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
@@ -1437,13 +1426,11 @@ proc generate_codon {dname name args} {
     upvar $dname data
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    iwidgets::combobox \$w.$name\\
+    append cstr "    xcombobox \$w.$name\\
 \t-textvariable \[namespace current\]::vars($name)\\
-\t-labeltext [expand data $name information]\n"
-    append cstr "    eval \$w.$name insert list end \[list_codon_tables\]\n"
-    append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-    append cstr "    \$w.$name delete entry 0 end\n"
-    append cstr "    \$w.$name insert entry end [expand data $name default]\n"
+\t-label [expand data $name information]\\
+\t-values \[list_codon_tables\]\n"
+    append cstr "    \$w.$name set [expand data $name default]\n"
     append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
@@ -1514,33 +1501,32 @@ proc generate_section {dname name args} {
 	        set book book_$page_depth
 	    }
 	    if {![info exists data($book.created)]} {
-		append cstr "    iwidgets::tabnotebook \$w.$book -tabpos n -padx 10 -equaltabs 0\n"
+		append cstr "    ttk::notebook \$w.$book\n"
 		append cstr "    pack \$w.$book -side top -fill both\n"
 		append cstr "    set book($book) \$w\n"
 		set data($book.created) 1
 		lappend data(_tabnotebooks) $book
-		set first 1
 	    } else {
-		set first 0
+		incr data($book.created)
 	    }
-	    append cstr "    set page \[\$w.$book add \\
-\t-label [expand data $name information]\]\n"
-	    if {$first} {
-		append cstr "    $\w.$book view [expand data $name information]\n"
+
+	    append cstr "    set page \$w.$book.f_$data($book.created)\n"
+	    append cstr "    frame \$page\n"
+	    append cstr "    \$w.$book add \$page -text [expand data $name information]\n"
+
+	    if {$data($book.created) == 1} {
+		append cstr "    $\w.$book select 0\n"
 	    }
 	    append cstr "    lappend wlist \$w\n"
 	    append cstr "    set w \$page\n"
 	}
         frame {
             if {$data($name.border)} {
-	        set f [iwidgets::labeledframe .$name]
-	        regsub "^\.$name" [$f childsite] {} childsite
-	        destroy $f
-	        append cstr "    iwidgets::labeledframe \$w.$name \\
-\t-labeltext [expand data $name information]\n"
+	        append cstr "    labelframe \$w.$name \\
+\t-text [expand data $name information]\n"
 	        append cstr "    pack \$w.$name -side $data($name.side) -fill both\n"
 	        append cstr "    lappend wlist \$w\n"
-	        append cstr "    append w .$name$childsite\n"
+	        append cstr "    append w .$name\n"
             } else {
 	        append cstr "    frame \$w.$name -bd 0\n"
 	        append cstr "    pack \$w.$name -side $data($name.side) -fill both\n"
@@ -1639,8 +1625,7 @@ parse_acd $toks data
 set menu_file stderr
 set name [lindex $data(ORDER:) 0]
 
-set startstr "package require Iwidgets"
-append startstr "\n"
+#set startstr "package require Iwidgets\n\n"
 append startstr "namespace eval ::EMBOSS::$name \{\n"
 append startstr "namespace import ::EMBOSS::*\n"
 append startstr "variable vars\n"

@@ -542,7 +542,7 @@ set auto_index(element_select_result) [list source [file join $dir element_canva
 set auto_index(element_set_result) [list source [file join $dir element_canvas.tcl]]
 set auto_index(element_move_result) [list source [file join $dir element_canvas.tcl]]
 set auto_index(element_drop_result) [list source [file join $dir element_canvas.tcl]]
-set auto_index(xcombo) [list source [file join $dir xcombo.tcl]]
+set auto_index(xcombobox) [list source [file join $dir xcombobox.tcl]]
 set auto_index(xspinbox) [list source [file join $dir xspinbox.tcl]]
 set auto_index(xtwinspin) [list source [file join $dir xtwinspin.tcl]]
 set auto_index(xradiobox) [list source [file join $dir xradiobox.tcl]]
