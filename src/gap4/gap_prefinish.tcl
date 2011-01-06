@@ -1,4 +1,12 @@
-package require Iwidgets
+if {[catch {package require Iwidgets}]} {
+    tk_dialog .no_iwidgets "Iwidgets error" \
+"No working copy of the Tcl Iwidgets package was found. This may be due to a version conflict with Tcl/Tk or the lack of IncrTcl, IncrTk and/or Iwidgets packages installed.
+
+Without these existing, this GUI dialogue will be absent." error 0 Ok
+
+    proc prefinish {args} {}
+} else {
+
 namespace import itcl::*
 
 # -----------------------------------------------------------------------------
@@ -349,3 +357,5 @@ proc prefinish_interrupt {fd done} {
     global $done
     set $done 1
 }
+
+}; #Iwidgets load
