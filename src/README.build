@@ -1,5 +1,5 @@
-		    Unix build - 5th March 2010
-		    ===========================
+		    Unix build - 7th January 2011
+		    =============================
 
 See NEWS and/or ChangeLog for version updates.
 
@@ -24,9 +24,9 @@ but are untested - please tell me if they work too).
 * libpng	>=1.2.x (optional[4])
 * curl		>=7.x
 * tklib		>=0.3? (for tablelist widget)
-* itcl		>=3.2 (advisable, but optional[3])
-* itk		>=3.2 (advisable, but optional[3])
-* iwidgets	>=4.0 (advisable, but optional[3])
+* itcl		>=3.2 (optional[3])
+* itk		>=3.2 (optional[3])
+* iwidgets	>=4.0 (optional[3])
 
 [1] Samtools is only needed by tg_index to build Gap5 databases from
 bam format files. Note that if used it must be built as a relocatable library
@@ -35,10 +35,11 @@ by adding -fPIC to the CFLAGS in the samtools Makefile.
 [2] XZ utils includes a liblzma library. If present it may be used for
 Gap5 to perform better compression, but it is not mandatory.
 
-[3] itcl/itk/iwidgets are needed by pregap4, spin and some parts of
-Gap4. However it is a run-time dependency and the package will build
-without these installed. Note that if you link against Tcl/Tk 8.5 then
-the minimum version of itcl/itk is 3.4 and not 3.2.
+[3] itcl/itk/iwidgets are now needed only by the GUI for the
+auto-finishing system used in Gap4 ("prefinish"). However it is a
+run-time dependency and the package will build without these
+installed. Note that if you link against Tcl/Tk 8.5 then the minimum
+version of itcl/itk is 3.4 and not 3.2.
 
 [4] Libpng development packages are only needed for some obscure
 outputs from Gap4: the editor Report Mutations function.
@@ -260,3 +261,35 @@ TODO
 *	Fix ./configure and make in top directory instead of
         subdir. gap5/gap5 script was removed. (Because it's target
         for library?)
+
+-----------------------------------------------------------------------------
+
+MacOS X
+-------
+
+Tested on an Intel Mac running 10.5.8 (Leopard).
+
+Note I used macports to obtain the X11 versions of Tcl/Tk. The package
+has not been ported to the Mac Aqua native look and feel so the system
+tcl/tk (if installed) will probably not work.
+
+Package versions used:
+
+tcllib 1.11
+tklib 0.5
+tcl/tk 8.5.8
+itcl 3.3
+itk 3.3
+iwidgets 4.0.1
+
+
+It's critical to get the correct matching versions of itcl/itk and
+tcl/tk. Using incompatible versions will most likely generate an error
+when attempting to launch programs. (Pregap4 is a good test for this.)
+
+Tcl version	Itcl/itk version
+--------------------------------
+8.4		3.3
+8.5		3.4
+8.6		4.0 (or 3.4?)
+

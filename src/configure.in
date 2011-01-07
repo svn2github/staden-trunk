@@ -109,9 +109,9 @@ AC_SUBST([TK_LIBS])
 
 # tklib - extra widgets for Tk
 AX_LIB_TKLIB(,[have_tklib=yes], [AC_MSG_ERROR([Abort: no tklib package found, use --with-tklib=DIR])])
-AX_LIB_IWIDGETS(4,[have_iwidgets=yes], [AC_MSG_ERROR([Abort: no iwidgets package found, use --with-iwidgets=DIR])])
-AX_LIB_ITCL(3.2,[have_itcl=yes], [AC_MSG_ERROR([Abort: no itcl package found, use --with-itcl=DIR])])
-AX_LIB_ITK(3.2,[have_itk=yes], [AC_MSG_ERROR([Abort: no itk package found, use --with-itk=DIR])])
+AX_LIB_IWIDGETS(4,[have_iwidgets=yes], [AC_MSG_WARN([Warning: no iwidgets package found. The GUI for the auto-finishing tool will be unavailable. Rerun using --with-iwidgets=DIR if you need to correct this.])])
+AX_LIB_ITCL(3.2,[have_itcl=yes], [AC_MSG_WARN([Warning: no ictl package found. The GUI for the auto-finishing tool will be unavailable. Rerun using --with-itcl=DIR if you need to correct this.])])
+AX_LIB_ITK(3.2,[have_itk=yes], [AC_MSG_WARN([Warning: no itk package found. The GUI for the auto-finishing tool will be unavailable. Rerun using --with-itk=DIR if you need to correct this.])])
 
 #-----------------------------------------------------------------------------
 AC_CONFIG_FILES([Makefile])
@@ -171,9 +171,22 @@ echo    "Tk:        via $TK_BIN_DIR/tkConfig.sh"
 
 echo    "tklib:     $TKLIB_PATH"
 
+if test "$have_iwidgets" = "yes"
 echo    "Iwidgets:  $IWIDGETS_PATH"
+else
+echo    'Iwidgets:  ***NOT FOUND***'
+fi
 
+if test "$have_itcl" = "yes"
 echo    "Itcl:      $ITCL_PATH"
+else
+echo    'Itcl:      ***NOT FOUND***'
+fi
 
+if test "$have_itk" = "yes"
 echo    "Itk:       $ITK_PATH"
+else
+echo    'Itk:       ***NOT FOUND***'
+fi
+
 echo ----------------------------------------------------------------------
