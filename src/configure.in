@@ -172,18 +172,21 @@ echo    "Tk:        via $TK_BIN_DIR/tkConfig.sh"
 echo    "tklib:     $TKLIB_PATH"
 
 if test "$have_iwidgets" = "yes"
+then
 echo    "Iwidgets:  $IWIDGETS_PATH"
 else
 echo    'Iwidgets:  ***NOT FOUND***'
 fi
 
 if test "$have_itcl" = "yes"
+then
 echo    "Itcl:      $ITCL_PATH"
 else
 echo    'Itcl:      ***NOT FOUND***'
 fi
 
 if test "$have_itk" = "yes"
+then
 echo    "Itk:       $ITK_PATH"
 else
 echo    'Itk:       ***NOT FOUND***'
