@@ -142,6 +142,9 @@ proc simple_load_package {name} {
 	SetDefaults $tdir ${name}rc ${name}_defs
     }
 
+    if {$bdir != ""} {
+        set bdir "$bdir/"
+    }
     set fname $bdir${lib_prefix}${name}${lib_suffix}
 
     #read local libraries
