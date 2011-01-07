@@ -12,7 +12,7 @@ widget create Xcomborange -type frame -base entry -components {
     {labelframe labelframe f {-text {Seq ID} -padx 5 -pady 5}}
     {xcombobox xcombo f.xcombo {\
         -command [list ::Widget::Xcomborange::entry_changed $w] \
-	-text {Seq identifier} \
+	-label {Seq identifier} \
         -textvariable ${w}(tvar) \
     }}
     {xtwinspin xtwinspin f.xtwinspin {}}
