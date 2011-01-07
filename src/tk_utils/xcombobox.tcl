@@ -214,6 +214,7 @@ widget create Xcombobox -type frame -base ttkcombobox -components {
     {-default		defaultText	DefaultText	0}
     {-values		values		Values		{}}
     {-valuesvariable	valuesVariable	ValuesVariable	{}}
+    {-command 		command		Command		{}}
 }
 
 namespace eval ::Widget::Xcombobox {;
@@ -226,6 +227,7 @@ namespace eval ::Widget::Xcombobox {;
     pack $data(xlabel) -side left -fill both
     pack $data(ttkcombobox) -side right -fill both
     bind $data(ttkcombobox) <Return> "$w get"
+    bind $data(ttkcombobox) <<ComboboxSelected>> "[namespace current]::selected $w"
 
     # Hack for windows
     if {$tcl_platform(platform) == "windows"} {
@@ -282,6 +284,14 @@ namespace eval ::Widget::Xcombobox {;
     after idle [list $data(ttkcombobox) configure -values [set $varname]]
 }
 
+;proc selected {w} {
+    variable $w
+    upvar 0 $w data
+
+    if {$data(-command) != {}} {
+	eval $data(-command) [list $w [$w get]]
+    }
+}
 }; # end namespace eval ::Widget::Xcombobox
 
 }; # end if ttk::combobox check
