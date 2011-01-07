@@ -124,14 +124,6 @@ proc  NipTranslate2 {c seq dis iden} {
     }
     SetBusy
 
-    puts [list nip_translate -seq_id $seq_id \
-	    -start [$seq get_s] \
-	    -end  [$seq get_e]\
-	    -line_length $length \
-	    -size $size \
-	    -feat $feat \
-	      -selcds $selcds]
-
     nip_translate -seq_id $seq_id \
 	    -start [$seq get_s] \
 	    -end  [$seq get_e]\
@@ -139,7 +131,6 @@ proc  NipTranslate2 {c seq dis iden} {
 	    -size $size \
 	    -feat $feat \
 	    -selcds $selcds
-    puts done
     ClearBusy
     destroy $c
 }
