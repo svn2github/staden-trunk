@@ -23,7 +23,7 @@
 #    done
 #    stash create_menu.tcl > menu
 
-source $env(STADTABL)/shlib.conf
+#source $env(STADTABL)/shlib.conf
 #tkinit
 #wm withdraw .
 
@@ -690,8 +690,10 @@ proc generate_application {dname name args} {
 	regsub -all {\.} $data($name.documentation) {} desc
 	regsub -all {: ?} $cat . cat
 	set desc "$desc ($name)"
-	puts $menu_file "lappend [list e_menu($cat)] [list $desc]"
-	puts $menu_file "set [list e_prog($desc)] [list $name]"
+	if {[info exists menu_file]} {
+	    puts $menu_file "lappend [list e_menu($cat)] [list $desc]"
+	    puts $menu_file "set [list e_prog($desc)] [list $name]"
+	}
     }
 
     append cstr "option add *e_$name*Xentry.entry.width 30\n"
@@ -1604,39 +1606,78 @@ proc generate_pass2 {aname {prefix {}} {level 0}} {
     }
 }
 
+# For on-the-fly usage: generate code for an EMBOSS program and return it
+proc acd2tcl {prog} {
+    variable rules
+    variable cstr
+    global menu_file
+
+    # Just incase something else sets it.
+    # generate_application uses this (when set).
+    catch {unset menu_file}
+
+    set fn [file join [::EMBOSS::acd_dir] $prog.acd]
+    set fd [open $fn]
+    set acd [read $fd]
+    close $fd
+
+    set toks [tokenise_string $acd $rules]
+    #print_tokens $toks
+
+    set cstr ""
+    parse_acd $toks data
+    #parray data
+
+    set name [lindex $data(ORDER:) 0]
+
+    append startstr "namespace eval ::EMBOSS::$name \{\n"
+    append startstr "namespace import ::EMBOSS::*\n"
+    append startstr "variable vars\n"
+    append startstr "variable arguments\n"
+    append startstr "\n"
+    generate_pass2 data
+    append endstr "\n"
+    append endstr "\}; # namespace eval\n"
+
+    return "$startstr $cstr $endstr"
+}
+
 #-----------------------------------------------------------------------------
 
-set f [open $argv]
-set acd [read $f]
-close $f
+# When being run on the command line as a program
+if {[info level] == 0} {
+    set f [open $argv]
+    set acd [read $f]
+    close $f
 
-set toks [tokenise_string $acd $rules]
-#print_tokens $toks
+    set toks [tokenise_string $acd $rules]
+    #print_tokens $toks
 
-parse_acd $toks data
-#parray data
+    parse_acd $toks data
+    #parray data
 
-#measure maximum size of label
-#set max_len [generate_pass1 data]
-#eval font create button_font -family Helvetica -weight bold -size -12
-#set max_len [expr {1+int(ceil($max_len/[font measure button_font 0]))}]
+    #measure maximum size of label
+    #set max_len [generate_pass1 data]
+    #eval font create button_font -family Helvetica -weight bold -size -12
+    #set max_len [expr {1+int(ceil($max_len/[font measure button_font 0]))}]
 
-#set menu_file [open menu_file a]
-set menu_file stderr
-set name [lindex $data(ORDER:) 0]
+    #set menu_file [open menu_file a]
+    set menu_file stderr
+    set name [lindex $data(ORDER:) 0]
 
-#set startstr "package require Iwidgets\n\n"
-append startstr "namespace eval ::EMBOSS::$name \{\n"
-append startstr "namespace import ::EMBOSS::*\n"
-append startstr "variable vars\n"
-append startstr "variable arguments\n"
-append startstr "\n"
-generate_pass2 data
-append endstr "\n"
-append endstr "\}; # namespace eval\n"
+    #set startstr "package require Iwidgets\n\n"
+    append startstr "namespace eval ::EMBOSS::$name \{\n"
+    append startstr "namespace import ::EMBOSS::*\n"
+    append startstr "variable vars\n"
+    append startstr "variable arguments\n"
+    append startstr "\n"
+    generate_pass2 data
+    append endstr "\n"
+    append endstr "\}; # namespace eval\n"
 
-set fp stdout
-puts $fp $startstr
-puts $fp $cstr
-puts $fp $endstr
-exit
+    set fp stdout
+    puts $fp $startstr
+    puts $fp $cstr
+    puts $fp $endstr
+    exit
+}

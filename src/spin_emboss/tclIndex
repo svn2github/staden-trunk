@@ -6,6 +6,8 @@
 # element name is the name of a command and the value is
 # a script that loads the command.
 
+set auto_index(acd2tcl) [list source [file join $dir acd2tcl.tcl]]
+
 set auto_index(plot_emboss) [list source [file join $dir emboss.tcl]]
 set auto_index(plot_emboss_dot) [list source [file join $dir emboss.tcl]]
 set auto_index(calc_zoom_origin) [list source [file join $dir emboss.tcl]]
