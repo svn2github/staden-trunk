@@ -38,8 +38,8 @@ static fkey_t construct_key(char *seq, fkey_t *mask, int *keylen, int *keyjmp)
 {
     fkey_t k = 0, m = 0;
     int seqlen = strlen(seq), i;
-    int jumplen;
-    char seq2[201];
+    int jumplen = seqlen;
+    char seq2[202];
 
     sprintf(seq2, "%.100s%.100s\n", seq, seq);
     for (i = 1; i <= seqlen; i++) {
