@@ -36,13 +36,13 @@ void TraceAlignDestroyResults( tracealign_t* ta )
    {
       Trace t1;
       t1.Wrap( ta->Alignment[MUTLIB_INPUT].Trace, true );
-      std::memset( &ta->Alignment[MUTLIB_INPUT], sizeof(mutlib_trace_t), 0 );
+      std::memset( &ta->Alignment[MUTLIB_INPUT], 0, sizeof(mutlib_trace_t) );
    }
    if( ta->Alignment[MUTLIB_INPUT_REFERENCE].Trace )
    {
       Trace t2;
       t2.Wrap( ta->Alignment[MUTLIB_INPUT_REFERENCE].Trace, true );
-      std::memset( &ta->Alignment[MUTLIB_INPUT_REFERENCE], sizeof(mutlib_trace_t), 0 );
+      std::memset( &ta->Alignment[MUTLIB_INPUT_REFERENCE], 0, sizeof(mutlib_trace_t) );
    }
 }
 
