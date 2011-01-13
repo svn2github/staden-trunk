@@ -74,7 +74,7 @@ static void get_db(char *prompt,
     printf("\n");
     do {
 	printf("Database type? ");
-	if ( gets(ctype) == NULL )
+	if ( fgets(ctype, sizeof(ctype), stdin) == NULL )
 	    itype = -1;
 	else
 	    itype = atoi(ctype);
@@ -83,10 +83,10 @@ static void get_db(char *prompt,
     strcpy(type,types[use_types[itype]]);
 
     printf("Database name? ");
-    gets(name);
+    fgets(name, sizeof(IOString), stdin);
 
     printf("Database version? ");
-    gets(version);
+    fgets(version, sizeof(IOString), stdin);
 
     printf("\n");
 }
