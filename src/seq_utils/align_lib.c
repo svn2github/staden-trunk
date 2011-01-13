@@ -1086,7 +1086,7 @@ void seq_expand(char	  *seq,
      */
     
     int		i, j;
-    int		s, s_start, s_end;
+    int		s, s_start = 0, s_end = 0;
     int	l;
 
 
@@ -1983,9 +1983,9 @@ int affine_align3(OVERLAP *overlap, ALIGN_PARAMS *params) {
 
   int t,big_neg,b_s,e,b_e;
   int *F1, *F2, *G1, *G2, *H1, *H2;
-  int *pF1, *pF2, *pG1, *pG2, *pH1, *pH2;
-  int *t_pF2, *t_pG2, *t_pH2;
-  int best_F1, best_G1, best_H1, V_diag, V_extx, V_exty, V_insx, V_insy;
+  int *pF1 = NULL, *pF2 = NULL, *pG1 = NULL, *pG2 = NULL, *pH1 = NULL, *pH2 = NULL;
+  int *t_pF2 = NULL, *t_pG2 = NULL, *t_pH2 = NULL;
+  int best_F1 = 0, best_G1 = 0, best_H1 = 0, V_diag, V_extx, V_exty, V_insx, V_insy;
   int E_gap, F_gap;
   int edge_mode, best_edge_score;
 
@@ -2663,15 +2663,15 @@ int affine_align_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
 
   int t,big_neg,b_s,e,b_e;
   int *F1, *F2, *G1, *G2, *H1, *H2;
-  int *pF1, *pF2, *pG1, *pG2, *pH1, *pH2;
-  int *t_pF2, *t_pG2, *t_pH2;
-  int best_F1, best_G1, best_H1, V_diag, V_extx, V_exty, V_insx, V_insy;
+  int *pF1 = NULL, *pF2 = NULL, *pG1 = NULL, *pG2 = NULL, *pH1 = NULL, *pH2 = NULL;
+  int *t_pF2 = NULL, *t_pG2 = NULL, *t_pH2 = NULL;
+  int best_F1 = 0, best_G1 = 0, best_H1 = 0, V_diag, V_extx, V_exty, V_insx, V_insy;
   int F_gap, start_edge_pens_x, start_edge_pens_y, G_gap, H_gap, g;
   int edge_mode, best_edge_score;
 
   int band, band_length, two_band, band_left, band_right, first_band_left=0;
   int off_set, guard_offset, *pF_guard, *pG_guard, *pH_guard;
-  int row, first_row, max_row, last_row, column, max_col, last_column;
+  int row, first_row, max_row, last_row, column, max_col = 0, last_column;
   unsigned char *bit_trace;
   int byte, nibble, e_row, e_col, size_mat;
   char OLD_PAD_SYM, NEW_PAD_SYM;
@@ -2750,6 +2750,7 @@ int affine_align_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
   OLD_PAD_SYM = params->old_pad_sym;
   NEW_PAD_SYM = params->new_pad_sym;
   band = params->band;
+  band_length = (2 * band) + 3;
   first_row = params->first_row;
   band_left = params->band_left;
   band_right = params->band_right;
@@ -2863,7 +2864,6 @@ int affine_align_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	 * need to add another 2 to the band length.
 	 */
 
-	band_length = (2 * band) + 3;
 	/*
 	 * Need to add one to first_row, first_column, band_left and
 	 * band_right because the alignment matrix has an extra row
@@ -3415,15 +3415,15 @@ int affine_align_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
 
   int t,big_neg,b_s,e,b_e;
   int *F1, *F2, *G1, *G2, *H1, *H2;
-  int *pF1, *pF2, *pG1, *pG2, *pH1, *pH2;
-  int *t_pF2, *t_pG2, *t_pH2;
-  int best_F1, best_G1, best_H1, V_diag, V_extx, V_exty, V_insx, V_insy;
-  int F_gap, start_edge_pens_x, start_edge_pens_y, G_gap, H_gap, g;
+  int *pF1 = NULL, *pF2 = NULL, *pG1 = NULL, *pG2 = NULL, *pH1 = NULL, *pH2 = NULL;
+  int *t_pF2 = NULL, *t_pG2 = NULL, *t_pH2 = NULL;
+  int best_F1 = 0, best_G1 = 0, best_H1 = 0, V_diag, V_extx, V_exty, V_insx, V_insy;
+  int F_gap, start_edge_pens_x, start_edge_pens_y, G_gap, H_gap, g = 0;
   int edge_mode, best_edge_score;
 
   int band, band_length, two_band, band_left, band_right, first_band_left=0;
   int off_set, guard_offset, *pF_guard, *pG_guard, *pH_guard;
-  int row, first_row, max_row, last_row, column, max_col, last_column;
+  int row, first_row, max_row, last_row, column, max_col = 0, last_column;
   unsigned char *bit_trace;
   int e_row, e_col, size_mat;
   char OLD_PAD_SYM, NEW_PAD_SYM;
@@ -4157,9 +4157,9 @@ int affine_align2_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
 
   int t,big_neg,b_s,e,b_e;
   int *F1, *F2, *G1, *G2, *H1, *H2;
-  int *pF1, *pF2, *pG1, *pG2;
-  int *t_pF2, *t_pG2;
-  int best_F1, best_G1, best_H1, FV_diag, GV_diag,FV_insx, GV_insx, FV_insy, GV_insy;
+  int *pF1 = NULL, *pF2 = NULL, *pG1 = NULL, *pG2 = NULL;
+  int *t_pF2 = NULL, *t_pG2 = NULL;
+  int best_F1 = 0, best_G1 = 0, best_H1 = 0, FV_diag, GV_diag,FV_insx, GV_insx, FV_insy, GV_insy;
   int E_gap, F_gap;
   int edge_mode, best_edge_score;
 
@@ -4246,6 +4246,7 @@ int affine_align2_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
   OLD_PAD_SYM = params->old_pad_sym;
   NEW_PAD_SYM = params->new_pad_sym;
   band = params->band;
+  band_length = (2 * band) + 3;
   first_row = params->first_row;
   band_left = params->band_left;
   band_right = params->band_right;
@@ -4313,7 +4314,6 @@ int affine_align2_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	 * need to add another 2 to the band length.
 	 */
 
-	band_length = (2 * band) + 3;
 	/*
 	 * Need to add one to first_row, first_column, band_left and
 	 * band_right because the alignment matrix has an extra row
@@ -4775,9 +4775,9 @@ int affine_align2_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
 
   int t,big_neg,b_s,e,b_e;
   int *F1, *F2, *G1, *G2, *H1, *H2;
-  int *pF1, *pF2, *pG1, *pG2;
-  int *t_pF2, *t_pG2;
-  int best_F1, best_G1, best_H1, FV_diag, GV_diag,FV_insx, GV_insx, FV_insy, GV_insy;
+  int *pF1 = NULL, *pF2 = NULL, *pG1 = NULL, *pG2 = NULL;
+  int *t_pF2 = NULL, *t_pG2 = NULL;
+  int best_F1 = 0, best_G1 = 0, best_H1 = 0, FV_diag, GV_diag,FV_insx, GV_insx, FV_insy, GV_insy;
   int E_gap, F_gap;
   int edge_mode, best_edge_score;
 
@@ -4864,6 +4864,7 @@ int affine_align2_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
   OLD_PAD_SYM = params->old_pad_sym;
   NEW_PAD_SYM = params->new_pad_sym;
   band = params->band;
+  band_length = (2 * band) + 3;
   first_row = params->first_row;
   band_left = params->band_left;
   band_right = params->band_right;
@@ -4930,8 +4931,8 @@ int affine_align2_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	 * the elements to the left and above the current one, and therefore
 	 * need to add another 2 to the band length.
 	 */
+        /* see band_length assignment above */
 
-	band_length = (2 * band) + 3;
 	/*
 	 * Need to add one to first_row, first_column, band_left and
 	 * band_right because the alignment matrix has an extra row
@@ -6025,8 +6026,8 @@ int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 
     int t,big_neg,b_s,e,b_e;
     int *F1, *F2;
-    int *pF1, *pF2;
-    int *t_pF2;
+    int *pF1 = NULL, *pF2 = NULL;
+    int *t_pF2 = NULL;
     int E_gap, edge_mode, best_edge_score;
 
     int band, band_length, two_band, band_left, band_right, first_band_left=0;
@@ -6059,6 +6060,7 @@ int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
     OLD_PAD_SYM = params->old_pad_sym;
     NEW_PAD_SYM = params->new_pad_sym;
     band = params->band;
+    band_length = (2 * band) + 3;
     first_row = params->first_row;
     band_left = params->band_left;
     band_right = params->band_right;
@@ -6111,7 +6113,6 @@ int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 	 * and above the current one, and therefore need to add another 2 to
 	 * the band length.
 	 */
-	band_length = (2 * band) + 3;
 
 	/*
 	 * Need to add one to first_row, first_column, band_left and

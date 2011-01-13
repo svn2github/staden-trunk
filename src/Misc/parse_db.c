@@ -194,7 +194,7 @@ static int parse_entry(FILE *fp, pf_spec *spec, char *store) {
     int eof = 0;
     int i;
     char *valp = NULL;
-    int type;
+    int type = 0;
     int side = 0; /* 0 == left, 1 == right */
     int done_rhs = 0;
 
