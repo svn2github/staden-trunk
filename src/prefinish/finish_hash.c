@@ -265,7 +265,7 @@ double hash_compare_primer(Hash *h, char *prim, int lprim,
 
 #if 1
     if (max_pscore >= max_match && *best_msg_buf)
-	printf(best_msg_buf);
+	printf("%s", best_msg_buf);
 #endif
 
     return max_pscore;

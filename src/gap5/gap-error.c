@@ -114,7 +114,6 @@ void GAP_ERROR_FATAL(char *reason, ...) {
     xperror(buf, xperror_out_func);
 
     if (gap_fatal_errors) {
-	char *msg = "Gap4 has found an unrecoverable error - These are usually bugs.\nPlease submit all errors at https://sourceforge.net/projects/staden/\n";
 #ifdef _WIN32
 	/* 11/1/99 johnt - WINNT will not have stdout/err defined unless running in console mode
 	 * so use a message box
@@ -124,7 +123,7 @@ void GAP_ERROR_FATAL(char *reason, ...) {
 	    return;
 	}
 #endif
-	fprintf(stderr,msg);
+	fputs("Gap4 has found an unrecoverable error - These are usually bugs.\nPlease submit all errors at https://sourceforge.net/projects/staden/\n", stderr);
 	signal(SIGSEGV, SIG_DFL);
 /* 11/1/99 johnt - No SIGBUS on WINNT */
 #if defined(SIGBUS)

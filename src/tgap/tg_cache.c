@@ -1532,7 +1532,7 @@ void cache_ref_debug_dump(void) {
 
     iter = HacheTableIterCreate();
     while (hi = HacheTableIterNext(h, iter)) {
-	printf("%d\t%s\n", hi->data.i, hi->key);
+	printf("%"PRId64"\t%s\n", hi->data.i, hi->key);
     }
     HacheTableIterDestroy(iter);
 

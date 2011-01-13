@@ -467,7 +467,7 @@ static void confidence_callback(GapIO *io, int contig, void *fdata,
 			    "2nd confidence graph",
 			    "Discrepancy graph",
 			    "Diploid graph"};
-	    sprintf(jdata->name.line, name[conf->mode]);
+	    strcpy(jdata->name.line, name[conf->mode]);
 	    return;
 	}
     case REG_COMPLEMENT:
