@@ -11,6 +11,7 @@
 #include "capture.h"
 #include "cli_arg.h"
 #include "renz_utils.h"
+#include "text_output.h"
 
 /* 7/1/99 johnt - added S_ISDIR and S_ISREG definitions to WINNT support */
 #ifndef S_ISDIR

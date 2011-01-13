@@ -91,23 +91,23 @@ extern void messout(char *fmt, ...);
  */
 #define ERR_WARN 0
 #define ERR_FATAL 1
-void verror(int priority, char *name, char *fmt, ...);
+void verror(int priority, const char *name, const char *fmt, ...);
 
 /*
  * Usage: vmessage(format, args...);
  * NB: don't pass more than 8K per call
  */
-void vmessage(char *fmt, ...);
+void vmessage(const char *fmt, ...);
 
 /*
  * Adds a new header to the text output window.
  */
-void vfuncheader(char *fmt, ...);
+void vfuncheader(const char *fmt, ...);
 
 /*
  * As vfuncheader, but only outputting when necessary.
  */
-void vfuncgroup(int group, char *fmt, ...);
+void vfuncgroup(int group, const char *fmt, ...);
 
 
 #ifdef NOSTRCASECMP

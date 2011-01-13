@@ -4610,7 +4610,7 @@ int affine_align2_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
 
 int malign_lookup[256];
 
-int set_malign_charset(MALIGN *malign, char *charset) {
+int set_malign_charset(MALIGN *malign, const char *charset) {
 
     if(NULL == (malign->charset = (char *) xmalloc(sizeof(charset)+1))) {
 	verror(ERR_WARN, "set_malign_charset", "xmalloc failed");

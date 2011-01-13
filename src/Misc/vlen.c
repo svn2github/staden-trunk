@@ -37,7 +37,7 @@
  * We also assume that the largest integer and larger pointer are 64
  * bits, which at least covers the machines we'll need it for.
  */
-int flen(char *fmt, ...)
+int flen(const char *fmt, ...)
 {
     va_list args;
 
@@ -45,10 +45,11 @@ int flen(char *fmt, ...)
     return vflen(fmt, args);
 }
 
-int vflen(char *fmt, va_list ap)
+int vflen(const char *fmt, va_list ap)
 {
     int len = 0;
-    char *cp, c;
+    const char *cp;
+    char c;
     long l;
     int i;
     double d; 

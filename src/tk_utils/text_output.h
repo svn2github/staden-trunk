@@ -34,35 +34,35 @@ int tcl_error_bell(ClientData clientData, Tcl_Interp *interp,
  */
 #define ERR_WARN 0
 #define ERR_FATAL 1
-void verror(int priority, char *name, char *fmt, ...);
+void verror(int priority, const char *name, const char *fmt, ...);
 
 /*
  * Usage: vmessage(format, args...);
  */
-void vmessage(char *fmt, ...);
+void vmessage(const char *fmt, ...);
 
 /*
  * Usage: vmessage_tagged(format, tag, args...);
  */
-void vmessage_tagged(char *tag, char *fmt, ...);
+void vmessage_tagged(const char *tag, const char *fmt, ...);
 
 /*
  * Adds a new header to the text output window.
  */
-void vfuncheader(char *fmt, ...);
+void vfuncheader(const char *fmt, ...);
 
 /*
  * As vfuncheader, but only outputting when necessary.
  */
-void vfuncgroup(int group, char *fmt, ...);
+void vfuncgroup(int group, const char *fmt, ...);
 
-void vfuncparams(char *fmt, ...);
+void vfuncparams(const char *fmt, ...);
 
 int TextOutput_Init(Tcl_Interp *interp);
 void UpdateTextOutput(void);
 
 void start_message(void);
-void end_message(char *parent);
+void end_message(const char *parent);
 
 /*
  * Outputs data to a persistent log file. The log file is always appended to,
@@ -73,7 +73,7 @@ void end_message(char *parent);
  *
  * Giving a filename of "" will close the log file.
  */
-void log_file(char *fn, char *message);
+void log_file(const char *fn, const char *message);
 
 /* 
  * Controls whether vmessage output should also be written to the log file 

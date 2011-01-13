@@ -79,7 +79,7 @@ void start_message(void)
  * a bail-out state (where we free the DString but decide not to bring up
  * a message box afterall.
  */
-void end_message(char *parent)
+void end_message(const char *parent)
 {
     int argc = 1;
     char *argv[1], *merged;
@@ -111,7 +111,7 @@ void end_message(char *parent)
  *
  * Giving a filename of "" will close the log file.
  */
-void log_file(char *fn, char *message) {
+void log_file(const char *fn, const char *message) {
     static FILE *fp = NULL;
     char tbuf[100];
     static char hname[256];
@@ -167,7 +167,8 @@ void log_vmessage(int log) {
     log_vmessage_st = log;
 }
 
-static void tout_update_stream(int fd, char *buf, int header, char *tag) {
+static void tout_update_stream(int fd, const char *buf, int header,
+			       const char *tag) {
     char * win;
     char tag_list[1024];
 
@@ -238,7 +239,7 @@ void funcparams(char *params) {
      }
  }
 
-static void funcheader(char *name) {
+static void funcheader(const char *name) {
     char tbuf[100], buf[100+8192];
     time_t t = time(NULL);
 
@@ -264,7 +265,7 @@ static void funcheader(char *name) {
 }
 
 
-static void funcgroup(int group, char *name) {
+static void funcgroup(int group, const char *name) {
     static int group_num = 0;
 
     if (header_outputted || group != group_num) {
@@ -801,7 +802,7 @@ void UpdateTextOutput() {
  * Usage: verror(priority, name, format, args...);
  * NB: don't pass more than 8K per call
  */
-void verror(int priority, char *name, char *fmt, ...) {
+void verror(int priority, const char *name, const char *fmt, ...) {
     char buf[8192], tbuf[100], *bufp = buf;
     va_list args;
     time_t t = time(NULL);
@@ -869,7 +870,7 @@ void verror(int priority, char *name, char *fmt, ...) {
 /*
  * Usage: vmessage(format, args...);
  */
-void vmessage(char *fmt, ...) {
+void vmessage(const char *fmt, ...) {
     char buf[8192], *bufp = buf;
     int len;
     va_list args;
@@ -898,7 +899,7 @@ void vmessage(char *fmt, ...) {
 /*
  * Usage: vmessage_tagged(format, tag, args...);
  */
-void vmessage_tagged(char *tag, char *fmt, ...) {
+void vmessage_tagged(const char *tag, const char *fmt, ...) {
     char buf[8192], *bufp = buf;
     int len;
     va_list args;
@@ -927,7 +928,7 @@ void vmessage_tagged(char *tag, char *fmt, ...) {
 /*
  * Adds a new header to the text output window.
  */
-void vfuncheader(char *fmt, ...) {
+void vfuncheader(const char *fmt, ...) {
     char name[8192], *namep = name;
     va_list args;
     int len;
@@ -960,7 +961,7 @@ void vfuncheader(char *fmt, ...) {
  * 1	2D plot matches
  * 2	Information from template display
  */
-void vfuncgroup(int group, char *fmt, ...) {
+void vfuncgroup(int group, const char *fmt, ...) {
     char name[8192], *namep = name;
     va_list args;
     int len;
@@ -986,7 +987,7 @@ void vfuncgroup(int group, char *fmt, ...) {
 /*
  * Usage: vparams(format, args...);
  */
- void vfuncparams(char *fmt, ...) {
+ void vfuncparams(const char *fmt, ...) {
     char params[8192], *paramsp = params;
     va_list args;
     int len;
