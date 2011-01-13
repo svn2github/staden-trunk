@@ -142,6 +142,7 @@ init.o: $(SRCROOT)/spin/seq_reg.h
 init.o: $(SRCROOT)/spin/sequtils_cmds.h
 init.o: $(SRCROOT)/spin/tkSeqed.h
 init.o: $(SRCROOT)/spin/tkSeqedNames.h
+init.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 init.o: $(SRCROOT)/tk_utils/sheet.h
 init.o: $(SRCROOT)/tk_utils/tkRaster.h
 init.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
@@ -208,6 +209,7 @@ nip_cmds.o: $(SRCROOT)/spin/tkSeqedUtils.h
 nip_cmds.o: $(SRCROOT)/spin/trna_search.h
 nip_cmds.o: $(SRCROOT)/tk_utils/canvas_box.h
 nip_cmds.o: $(SRCROOT)/tk_utils/cli_arg.h
+nip_cmds.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 nip_cmds.o: $(SRCROOT)/tk_utils/ruler_tick.h
 nip_cmds.o: $(SRCROOT)/tk_utils/sheet.h
 nip_cmds.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -451,6 +453,7 @@ seq_reg_cmds.o: $(SRCROOT)/spin/spin_globals.h
 seq_reg_cmds.o: $(SRCROOT)/spin/tkSeqed.h
 seq_reg_cmds.o: $(SRCROOT)/spin/tkSeqedNames.h
 seq_reg_cmds.o: $(SRCROOT)/tk_utils/cli_arg.h
+seq_reg_cmds.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 seq_reg_cmds.o: $(SRCROOT)/tk_utils/sheet.h
 seq_reg_cmds.o: $(SRCROOT)/tk_utils/tcl_utils.h
 seq_reg_cmds.o: $(SRCROOT)/tk_utils/text_output.h
@@ -490,6 +493,7 @@ seqed.o: $(SRCROOT)/spin/spin_globals.h
 seqed.o: $(SRCROOT)/spin/tkSeqed.h
 seqed.o: $(SRCROOT)/spin/tkSeqedNames.h
 seqed.o: $(SRCROOT)/spin/tkSeqedUtils.h
+seqed.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 seqed.o: $(SRCROOT)/tk_utils/sheet.h
 seqed.o: $(SRCROOT)/tk_utils/tcl_utils.h
 seqed.o: $(SRCROOT)/tk_utils/text_output.h
@@ -501,6 +505,7 @@ seqedInterface.o: $(SRCROOT)/spin/seqedInterface.h
 seqedInterface.o: $(SRCROOT)/spin/tkSeqed.h
 seqedInterface.o: $(SRCROOT)/spin/tkSeqedNames.h
 seqedInterface.o: $(SRCROOT)/spin/tkSeqedUtils.h
+seqedInterface.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 seqedInterface.o: $(SRCROOT)/tk_utils/sheet.h
 seqedInterface.o: $(SRCROOT)/tk_utils/tkRaster.h
 seqedInterface.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
@@ -515,6 +520,7 @@ seqed_restriction_enzymes.o: $(SRCROOT)/spin/seqed_restriction_enzymes.h
 seqed_restriction_enzymes.o: $(SRCROOT)/spin/tkSeqed.h
 seqed_restriction_enzymes.o: $(SRCROOT)/spin/tkSeqedNames.h
 seqed_restriction_enzymes.o: $(SRCROOT)/spin/tkSeqedUtils.h
+seqed_restriction_enzymes.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 seqed_restriction_enzymes.o: $(SRCROOT)/tk_utils/sheet.h
 seqed_restriction_enzymes.o: $(SRCROOT)/tk_utils/tkRaster.h
 seqed_restriction_enzymes.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
@@ -525,6 +531,7 @@ seqed_search.o: $(SRCROOT)/spin/seq_reg.h
 seqed_search.o: $(SRCROOT)/spin/tkSeqed.h
 seqed_search.o: $(SRCROOT)/spin/tkSeqedNames.h
 seqed_search.o: $(SRCROOT)/spin/tkSeqedUtils.h
+seqed_search.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 seqed_search.o: $(SRCROOT)/tk_utils/sheet.h
 seqed_search.o: $(SRCROOT)/tk_utils/tcl_utils.h
 seqed_search.o: $(SRCROOT)/tk_utils/text_output.h
@@ -537,6 +544,7 @@ seqed_translate.o: $(SRCROOT)/spin/seqed_translate.h
 seqed_translate.o: $(SRCROOT)/spin/tkSeqed.h
 seqed_translate.o: $(SRCROOT)/spin/tkSeqedNames.h
 seqed_translate.o: $(SRCROOT)/spin/tkSeqedUtils.h
+seqed_translate.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 seqed_translate.o: $(SRCROOT)/tk_utils/sheet.h
 seqed_translate.o: $(SRCROOT)/tk_utils/tkRaster.h
 seqed_translate.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
@@ -551,6 +559,7 @@ seqed_write.o: $(SRCROOT)/spin/seqed_write.h
 seqed_write.o: $(SRCROOT)/spin/tkSeqed.h
 seqed_write.o: $(SRCROOT)/spin/tkSeqedNames.h
 seqed_write.o: $(SRCROOT)/spin/tkSeqedUtils.h
+seqed_write.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 seqed_write.o: $(SRCROOT)/tk_utils/sheet.h
 seqed_write.o: $(SRCROOT)/tk_utils/tkRaster.h
 seqed_write.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
@@ -815,6 +824,7 @@ tkSeqed.o: $(SRCROOT)/spin/seqed_search.h
 tkSeqed.o: $(SRCROOT)/spin/tkSeqed.h
 tkSeqed.o: $(SRCROOT)/spin/tkSeqedNames.h
 tkSeqed.o: $(SRCROOT)/spin/tkSeqedUtils.h
+tkSeqed.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tkSeqed.o: $(SRCROOT)/tk_utils/sheet.h
 tkSeqed.o: $(SRCROOT)/tk_utils/tcl_utils.h
 tkSeqed.o: $(SRCROOT)/tk_utils/tkRaster.h
@@ -825,6 +835,7 @@ tkSeqed.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 tkSeqed.o: $(SRCROOT)/tk_utils/tk_defs.h
 tkSeqedNames.o: $(SRCROOT)/Misc/xalloc.h
 tkSeqedNames.o: $(SRCROOT)/spin/tkSeqedNames.h
+tkSeqedNames.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tkSeqedNames.o: $(SRCROOT)/tk_utils/sheet.h
 tkSeqedNames.o: $(SRCROOT)/tk_utils/tcl_utils.h
 tkSeqedNames.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -849,6 +860,7 @@ tkSeqedUtils.o: $(SRCROOT)/spin/seqed_write.h
 tkSeqedUtils.o: $(SRCROOT)/spin/tkSeqed.h
 tkSeqedUtils.o: $(SRCROOT)/spin/tkSeqedNames.h
 tkSeqedUtils.o: $(SRCROOT)/spin/tkSeqedUtils.h
+tkSeqedUtils.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tkSeqedUtils.o: $(SRCROOT)/tk_utils/sheet.h
 tkSeqedUtils.o: $(SRCROOT)/tk_utils/tkRaster.h
 tkSeqedUtils.o: $(SRCROOT)/tk_utils/tkSheet.h

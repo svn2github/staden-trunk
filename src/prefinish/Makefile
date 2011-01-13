@@ -153,6 +153,7 @@ finish.o: $(SRCROOT)/seq_utils/align_lib.h
 finish.o: $(SRCROOT)/seq_utils/dna_utils.h
 finish.o: $(SRCROOT)/seq_utils/sequence_formats.h
 finish.o: $(SRCROOT)/tk_utils/cli_arg.h
+finish.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 finish.o: $(SRCROOT)/tk_utils/postscript.h
 finish.o: $(SRCROOT)/tk_utils/sheet.h
 finish.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -280,6 +281,7 @@ finish_main.o: $(SRCROOT)/primer3/src/dpal.h
 finish_main.o: $(SRCROOT)/primer3/src/primer3.h
 finish_main.o: $(SRCROOT)/seq_utils/align_lib.h
 finish_main.o: $(SRCROOT)/tk_utils/cli_arg.h
+finish_main.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 finish_main.o: $(SRCROOT)/tk_utils/postscript.h
 finish_main.o: $(SRCROOT)/tk_utils/sheet.h
 finish_main.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -400,6 +402,7 @@ finish_utils.o: $(SRCROOT)/primer3/src/dpal.h
 finish_utils.o: $(SRCROOT)/primer3/src/primer3.h
 finish_utils.o: $(SRCROOT)/seq_utils/align_lib.h
 finish_utils.o: $(SRCROOT)/tk_utils/cli_arg.h
+finish_utils.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 finish_utils.o: $(SRCROOT)/tk_utils/postscript.h
 finish_utils.o: $(SRCROOT)/tk_utils/sheet.h
 finish_utils.o: $(SRCROOT)/tk_utils/tkSheet.h

@@ -104,6 +104,7 @@ copy_reads.o: $(SRCROOT)/seq_utils/align_lib.h
 copy_reads.o: $(SRCROOT)/seq_utils/align_lib_old.h
 copy_reads.o: $(SRCROOT)/seq_utils/dna_utils.h
 copy_reads.o: $(SRCROOT)/tk_utils/cli_arg.h
+copy_reads.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 copy_reads.o: $(SRCROOT)/tk_utils/postscript.h
 copy_reads.o: $(SRCROOT)/tk_utils/sheet.h
 copy_reads.o: $(SRCROOT)/tk_utils/tcl_utils.h

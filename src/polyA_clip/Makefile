@@ -44,5 +44,6 @@ polyA_clip.o: $(PWD)/staden_config.h
 polyA_clip.o: $(SRCROOT)/polyA_clip/seqInfo.h
 polyA_clip.o: $(SRCROOT)/seq_utils/dna_utils.h
 seqInfo.o: $(SRCROOT)/Misc/os.h
+seqInfo.o: $(SRCROOT)/Misc/xalloc.h
 seqInfo.o: $(PWD)/staden_config.h
 seqInfo.o: $(SRCROOT)/polyA_clip/seqInfo.h

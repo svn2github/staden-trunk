@@ -116,6 +116,7 @@ shell.o: $(SRCROOT)/Misc/misc.h
 shell.o: $(SRCROOT)/Misc/os.h
 shell.o: $(SRCROOT)/Misc/xalloc.h
 shell.o: $(PWD)/staden_config.h
+string_alloc.o: $(SRCROOT)/Misc/string_alloc.h
 strings.o: $(SRCROOT)/Misc/misc.h
 strings.o: $(SRCROOT)/Misc/os.h
 strings.o: $(SRCROOT)/Misc/xalloc.h

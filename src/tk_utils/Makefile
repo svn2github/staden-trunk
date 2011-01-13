@@ -171,6 +171,7 @@ misc.o: $(SRCROOT)/seq_utils/renz_utils.h
 misc.o: $(SRCROOT)/tk_utils/capture.h
 misc.o: $(SRCROOT)/tk_utils/cli_arg.h
 misc.o: $(SRCROOT)/tk_utils/tcl_utils.h
+misc.o: $(SRCROOT)/tk_utils/text_output.h
 postscript.o: $(SRCROOT)/Misc/misc.h
 postscript.o: $(SRCROOT)/Misc/os.h
 postscript.o: $(SRCROOT)/Misc/xalloc.h
@@ -197,6 +198,7 @@ sheet.o: $(SRCROOT)/Misc/misc.h
 sheet.o: $(SRCROOT)/Misc/os.h
 sheet.o: $(SRCROOT)/Misc/xalloc.h
 sheet.o: $(PWD)/staden_config.h
+sheet.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 sheet.o: $(SRCROOT)/tk_utils/sheet.h
 split.o: $(SRCROOT)/Misc/misc.h
 split.o: $(SRCROOT)/Misc/os.h
@@ -230,6 +232,7 @@ tkRaster.o: $(SRCROOT)/tk_utils/tkRasterBuiltIn.h
 tkRasterBuiltIn.o: $(SRCROOT)/tk_utils/tkRaster.h
 tkRasterBuiltIn.o: $(SRCROOT)/tk_utils/tkRasterBuiltIn.h
 tkSheet.o: $(SRCROOT)/Misc/xalloc.h
+tkSheet.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tkSheet.o: $(SRCROOT)/tk_utils/sheet.h
 tkSheet.o: $(SRCROOT)/tk_utils/tcl_utils.h
 tkSheet.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -238,6 +241,7 @@ tkSheet.o: $(SRCROOT)/tk_utils/tkSheet_config.h
 tkSheet.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 tkSheet.o: $(SRCROOT)/tk_utils/tk_defs.h
 tkSheet_common.o: $(SRCROOT)/Misc/xalloc.h
+tkSheet_common.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tkSheet_common.o: $(SRCROOT)/tk_utils/sheet.h
 tkSheet_common.o: $(SRCROOT)/tk_utils/tkSheet.h
 tkSheet_common.o: $(SRCROOT)/tk_utils/tkSheet_common.h

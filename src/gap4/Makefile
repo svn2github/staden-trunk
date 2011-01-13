@@ -321,6 +321,7 @@ IO.o: $(SRCROOT)/gap4/undo.h
 IO.o: $(SRCROOT)/primer3/src/dpal.h
 IO.o: $(SRCROOT)/primer3/src/primer3.h
 IO.o: $(SRCROOT)/tk_utils/cli_arg.h
+IO.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 IO.o: $(SRCROOT)/tk_utils/postscript.h
 IO.o: $(SRCROOT)/tk_utils/sheet.h
 IO.o: $(SRCROOT)/tk_utils/text_output.h
@@ -375,6 +376,7 @@ IO2.o: $(SRCROOT)/primer3/src/primer3.h
 IO2.o: $(SRCROOT)/seq_utils/dna_utils.h
 IO2.o: $(SRCROOT)/tk_utils/canvas_box.h
 IO2.o: $(SRCROOT)/tk_utils/cli_arg.h
+IO2.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 IO2.o: $(SRCROOT)/tk_utils/postscript.h
 IO2.o: $(SRCROOT)/tk_utils/sheet.h
 IO2.o: $(SRCROOT)/tk_utils/text_output.h
@@ -421,6 +423,7 @@ IO3.o: $(SRCROOT)/gap4/undo.h
 IO3.o: $(SRCROOT)/primer3/src/dpal.h
 IO3.o: $(SRCROOT)/primer3/src/primer3.h
 IO3.o: $(SRCROOT)/tk_utils/cli_arg.h
+IO3.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 IO3.o: $(SRCROOT)/tk_utils/postscript.h
 IO3.o: $(SRCROOT)/tk_utils/sheet.h
 IO3.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -488,6 +491,7 @@ active_tags.o: $(SRCROOT)/gap4/undo.h
 active_tags.o: $(SRCROOT)/primer3/src/dpal.h
 active_tags.o: $(SRCROOT)/primer3/src/primer3.h
 active_tags.o: $(SRCROOT)/tk_utils/cli_arg.h
+active_tags.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 active_tags.o: $(SRCROOT)/tk_utils/postscript.h
 active_tags.o: $(SRCROOT)/tk_utils/sheet.h
 active_tags.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -534,6 +538,7 @@ alter_rel.o: $(SRCROOT)/gap4/undo.h
 alter_rel.o: $(SRCROOT)/primer3/src/dpal.h
 alter_rel.o: $(SRCROOT)/primer3/src/primer3.h
 alter_rel.o: $(SRCROOT)/tk_utils/cli_arg.h
+alter_rel.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 alter_rel.o: $(SRCROOT)/tk_utils/postscript.h
 alter_rel.o: $(SRCROOT)/tk_utils/sheet.h
 alter_rel.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -589,6 +594,7 @@ assemble_direct.o: $(SRCROOT)/seq_utils/align.h
 assemble_direct.o: $(SRCROOT)/seq_utils/align_lib_old.h
 assemble_direct.o: $(SRCROOT)/seq_utils/dna_utils.h
 assemble_direct.o: $(SRCROOT)/tk_utils/cli_arg.h
+assemble_direct.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 assemble_direct.o: $(SRCROOT)/tk_utils/postscript.h
 assemble_direct.o: $(SRCROOT)/tk_utils/sheet.h
 assemble_direct.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -717,6 +723,7 @@ check_assembly.o: $(SRCROOT)/seq_utils/align_lib_old.h
 check_assembly.o: $(SRCROOT)/seq_utils/dna_utils.h
 check_assembly.o: $(SRCROOT)/tk_utils/canvas_box.h
 check_assembly.o: $(SRCROOT)/tk_utils/cli_arg.h
+check_assembly.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 check_assembly.o: $(SRCROOT)/tk_utils/postscript.h
 check_assembly.o: $(SRCROOT)/tk_utils/sheet.h
 check_assembly.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -767,6 +774,7 @@ clip.o: $(SRCROOT)/primer3/src/dpal.h
 clip.o: $(SRCROOT)/primer3/src/primer3.h
 clip.o: $(SRCROOT)/seq_utils/dna_utils.h
 clip.o: $(SRCROOT)/tk_utils/cli_arg.h
+clip.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 clip.o: $(SRCROOT)/tk_utils/postscript.h
 clip.o: $(SRCROOT)/tk_utils/sheet.h
 clip.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -814,6 +822,7 @@ clones.o: $(SRCROOT)/gap4/undo.h
 clones.o: $(SRCROOT)/primer3/src/dpal.h
 clones.o: $(SRCROOT)/primer3/src/primer3.h
 clones.o: $(SRCROOT)/tk_utils/cli_arg.h
+clones.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 clones.o: $(SRCROOT)/tk_utils/postscript.h
 clones.o: $(SRCROOT)/tk_utils/sheet.h
 clones.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -861,6 +870,7 @@ complement.o: $(SRCROOT)/primer3/src/dpal.h
 complement.o: $(SRCROOT)/primer3/src/primer3.h
 complement.o: $(SRCROOT)/seq_utils/dna_utils.h
 complement.o: $(SRCROOT)/tk_utils/cli_arg.h
+complement.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 complement.o: $(SRCROOT)/tk_utils/postscript.h
 complement.o: $(SRCROOT)/tk_utils/sheet.h
 complement.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -944,6 +954,7 @@ consen.o: $(SRCROOT)/primer3/src/primer3.h
 consen.o: $(SRCROOT)/seq_utils/align_lib.h
 consen.o: $(SRCROOT)/seq_utils/dna_utils.h
 consen.o: $(SRCROOT)/tk_utils/cli_arg.h
+consen.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 consen.o: $(SRCROOT)/tk_utils/postscript.h
 consen.o: $(SRCROOT)/tk_utils/sheet.h
 consen.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -1046,6 +1057,7 @@ contigEditor.o: $(SRCROOT)/gap4/undo.h
 contigEditor.o: $(SRCROOT)/primer3/src/dpal.h
 contigEditor.o: $(SRCROOT)/primer3/src/primer3.h
 contigEditor.o: $(SRCROOT)/tk_utils/cli_arg.h
+contigEditor.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 contigEditor.o: $(SRCROOT)/tk_utils/postscript.h
 contigEditor.o: $(SRCROOT)/tk_utils/sheet.h
 contigEditor.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -1126,6 +1138,7 @@ contig_selector.o: $(SRCROOT)/primer3/src/dpal.h
 contig_selector.o: $(SRCROOT)/primer3/src/primer3.h
 contig_selector.o: $(SRCROOT)/tk_utils/canvas_box.h
 contig_selector.o: $(SRCROOT)/tk_utils/cli_arg.h
+contig_selector.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 contig_selector.o: $(SRCROOT)/tk_utils/postscript.h
 contig_selector.o: $(SRCROOT)/tk_utils/sheet.h
 contig_selector.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -1270,6 +1283,7 @@ dis_readings.o: $(SRCROOT)/gap4/undo.h
 dis_readings.o: $(SRCROOT)/primer3/src/dpal.h
 dis_readings.o: $(SRCROOT)/primer3/src/primer3.h
 dis_readings.o: $(SRCROOT)/tk_utils/cli_arg.h
+dis_readings.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 dis_readings.o: $(SRCROOT)/tk_utils/postscript.h
 dis_readings.o: $(SRCROOT)/tk_utils/sheet.h
 dis_readings.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -1343,6 +1357,7 @@ dstrand.o: $(SRCROOT)/primer3/src/primer3.h
 dstrand.o: $(SRCROOT)/seq_utils/align.h
 dstrand.o: $(SRCROOT)/seq_utils/align_lib_old.h
 dstrand.o: $(SRCROOT)/tk_utils/cli_arg.h
+dstrand.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 dstrand.o: $(SRCROOT)/tk_utils/postscript.h
 dstrand.o: $(SRCROOT)/tk_utils/sheet.h
 dstrand.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -1393,6 +1408,7 @@ edCommands.o: $(SRCROOT)/primer3/src/primer3.h
 edCommands.o: $(SRCROOT)/seq_utils/align.h
 edCommands.o: $(SRCROOT)/seq_utils/align_lib_old.h
 edCommands.o: $(SRCROOT)/tk_utils/cli_arg.h
+edCommands.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 edCommands.o: $(SRCROOT)/tk_utils/postscript.h
 edCommands.o: $(SRCROOT)/tk_utils/sheet.h
 edCommands.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -1439,6 +1455,7 @@ edExtend.o: $(SRCROOT)/gap4/undo.h
 edExtend.o: $(SRCROOT)/primer3/src/dpal.h
 edExtend.o: $(SRCROOT)/primer3/src/primer3.h
 edExtend.o: $(SRCROOT)/tk_utils/cli_arg.h
+edExtend.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 edExtend.o: $(SRCROOT)/tk_utils/postscript.h
 edExtend.o: $(SRCROOT)/tk_utils/sheet.h
 edExtend.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -1494,6 +1511,7 @@ edInterface.o: $(SRCROOT)/primer3/src/dpal.h
 edInterface.o: $(SRCROOT)/primer3/src/primer3.h
 edInterface.o: $(SRCROOT)/tk_utils/canvas_box.h
 edInterface.o: $(SRCROOT)/tk_utils/cli_arg.h
+edInterface.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 edInterface.o: $(SRCROOT)/tk_utils/postscript.h
 edInterface.o: $(SRCROOT)/tk_utils/sheet.h
 edInterface.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -1542,6 +1560,7 @@ edMutations.o: $(SRCROOT)/primer3/src/primer3.h
 edMutations.o: $(SRCROOT)/seq_utils/dna_utils.h
 edMutations.o: $(SRCROOT)/seq_utils/genetic_code.h
 edMutations.o: $(SRCROOT)/tk_utils/cli_arg.h
+edMutations.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 edMutations.o: $(SRCROOT)/tk_utils/postscript.h
 edMutations.o: $(SRCROOT)/tk_utils/sheet.h
 edMutations.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -1595,6 +1614,7 @@ edUtils2.o: $(SRCROOT)/gap4/undo.h
 edUtils2.o: $(SRCROOT)/primer3/src/dpal.h
 edUtils2.o: $(SRCROOT)/primer3/src/primer3.h
 edUtils2.o: $(SRCROOT)/tk_utils/cli_arg.h
+edUtils2.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 edUtils2.o: $(SRCROOT)/tk_utils/postscript.h
 edUtils2.o: $(SRCROOT)/tk_utils/sheet.h
 edUtils2.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -1642,6 +1662,7 @@ extract.o: $(SRCROOT)/gap4/undo.h
 extract.o: $(SRCROOT)/primer3/src/dpal.h
 extract.o: $(SRCROOT)/primer3/src/primer3.h
 extract.o: $(SRCROOT)/tk_utils/cli_arg.h
+extract.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 extract.o: $(SRCROOT)/tk_utils/postscript.h
 extract.o: $(SRCROOT)/tk_utils/sheet.h
 extract.o: $(SRCROOT)/tk_utils/text_output.h
@@ -1702,6 +1723,7 @@ fij.o: $(SRCROOT)/primer3/src/primer3.h
 fij.o: $(SRCROOT)/seq_utils/align_lib.h
 fij.o: $(SRCROOT)/tk_utils/canvas_box.h
 fij.o: $(SRCROOT)/tk_utils/cli_arg.h
+fij.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 fij.o: $(SRCROOT)/tk_utils/postscript.h
 fij.o: $(SRCROOT)/tk_utils/sheet.h
 fij.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -1781,6 +1803,7 @@ find_oligo.o: $(SRCROOT)/seq_utils/search_utils.h
 find_oligo.o: $(SRCROOT)/seq_utils/sequence_formats.h
 find_oligo.o: $(SRCROOT)/tk_utils/canvas_box.h
 find_oligo.o: $(SRCROOT)/tk_utils/cli_arg.h
+find_oligo.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 find_oligo.o: $(SRCROOT)/tk_utils/postscript.h
 find_oligo.o: $(SRCROOT)/tk_utils/sheet.h
 find_oligo.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -1836,6 +1859,7 @@ find_repeats.o: $(SRCROOT)/primer3/src/dpal.h
 find_repeats.o: $(SRCROOT)/primer3/src/primer3.h
 find_repeats.o: $(SRCROOT)/tk_utils/canvas_box.h
 find_repeats.o: $(SRCROOT)/tk_utils/cli_arg.h
+find_repeats.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 find_repeats.o: $(SRCROOT)/tk_utils/postscript.h
 find_repeats.o: $(SRCROOT)/tk_utils/sheet.h
 find_repeats.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -1991,6 +2015,7 @@ gap-tcl.o: $(SRCROOT)/gap4/undo.h
 gap-tcl.o: $(SRCROOT)/primer3/src/dpal.h
 gap-tcl.o: $(SRCROOT)/primer3/src/primer3.h
 gap-tcl.o: $(SRCROOT)/tk_utils/cli_arg.h
+gap-tcl.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 gap-tcl.o: $(SRCROOT)/tk_utils/postscript.h
 gap-tcl.o: $(SRCROOT)/tk_utils/sheet.h
 gap-tcl.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -2002,6 +2027,7 @@ gap-tcl.o: $(SRCROOT)/tk_utils/tkTrace.h
 gap_array.o: $(SRCROOT)/gap4/active_tags.h
 gap_array.o: $(SRCROOT)/gap4/gap_array.h
 gap_array.o: $(SRCROOT)/gap4/tagdb.h
+gap_array.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 gap_array.o: $(SRCROOT)/tk_utils/tcl_utils.h
 gap_canvas_box.o: $(SRCROOT)/Misc/array.h
 gap_canvas_box.o: $(SRCROOT)/Misc/bitmap.h
@@ -2072,6 +2098,7 @@ gap_globals.o: $(SRCROOT)/seq_utils/align_lib_old.h
 gap_globals.o: $(SRCROOT)/seq_utils/dna_utils.h
 gap_globals.o: $(SRCROOT)/seq_utils/genetic_code.h
 gap_globals.o: $(SRCROOT)/seq_utils/read_matrix.h
+gap_globals.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 gap_globals.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 gap_globals.o: $(SRCROOT)/tk_utils/tcl_utils.h
 gap_hash.o: $(SRCROOT)/Misc/array.h
@@ -2149,6 +2176,7 @@ init.o: $(SRCROOT)/gap4/undo.h
 init.o: $(SRCROOT)/primer3/src/dpal.h
 init.o: $(SRCROOT)/primer3/src/primer3.h
 init.o: $(SRCROOT)/tk_utils/cli_arg.h
+init.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 init.o: $(SRCROOT)/tk_utils/postscript.h
 init.o: $(SRCROOT)/tk_utils/sheet.h
 init.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -2214,6 +2242,7 @@ io_handle.o: $(SRCROOT)/gap4/undo.h
 io_handle.o: $(SRCROOT)/primer3/src/dpal.h
 io_handle.o: $(SRCROOT)/primer3/src/primer3.h
 io_handle.o: $(SRCROOT)/tk_utils/cli_arg.h
+io_handle.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 io_handle.o: $(SRCROOT)/tk_utils/postscript.h
 io_handle.o: $(SRCROOT)/tk_utils/sheet.h
 io_handle.o: $(SRCROOT)/tk_utils/text_output.h
@@ -2286,6 +2315,7 @@ join.o: $(SRCROOT)/seq_utils/align_lib.h
 join.o: $(SRCROOT)/seq_utils/align_lib_old.h
 join.o: $(SRCROOT)/seq_utils/dna_utils.h
 join.o: $(SRCROOT)/tk_utils/cli_arg.h
+join.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 join.o: $(SRCROOT)/tk_utils/postscript.h
 join.o: $(SRCROOT)/tk_utils/sheet.h
 join.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -2420,6 +2450,7 @@ newgap_cmds.o: $(SRCROOT)/seq_utils/renz_utils.h
 newgap_cmds.o: $(SRCROOT)/seq_utils/sequence_formats.h
 newgap_cmds.o: $(SRCROOT)/tk_utils/canvas_box.h
 newgap_cmds.o: $(SRCROOT)/tk_utils/cli_arg.h
+newgap_cmds.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 newgap_cmds.o: $(SRCROOT)/tk_utils/postscript.h
 newgap_cmds.o: $(SRCROOT)/tk_utils/sheet.h
 newgap_cmds.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -2435,6 +2466,7 @@ notedb.o: $(SRCROOT)/Misc/parse_db.h
 notedb.o: $(SRCROOT)/Misc/xalloc.h
 notedb.o: $(PWD)/staden_config.h
 notedb.o: $(SRCROOT)/gap4/notedb.h
+notedb.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 notes.o: $(SRCROOT)/Misc/array.h
 notes.o: $(SRCROOT)/Misc/bitmap.h
 notes.o: $(SRCROOT)/Misc/dstring.h
@@ -2474,6 +2506,7 @@ notes.o: $(SRCROOT)/gap4/undo.h
 notes.o: $(SRCROOT)/primer3/src/dpal.h
 notes.o: $(SRCROOT)/primer3/src/primer3.h
 notes.o: $(SRCROOT)/tk_utils/cli_arg.h
+notes.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 notes.o: $(SRCROOT)/tk_utils/postscript.h
 notes.o: $(SRCROOT)/tk_utils/sheet.h
 notes.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -2522,6 +2555,7 @@ oligo.o: $(SRCROOT)/primer3/src/dpal.h
 oligo.o: $(SRCROOT)/primer3/src/primer3.h
 oligo.o: $(SRCROOT)/seq_utils/dna_utils.h
 oligo.o: $(SRCROOT)/tk_utils/cli_arg.h
+oligo.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 oligo.o: $(SRCROOT)/tk_utils/postscript.h
 oligo.o: $(SRCROOT)/tk_utils/sheet.h
 oligo.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -2570,6 +2604,7 @@ oligo_sel.o: $(SRCROOT)/gap4/undo.h
 oligo_sel.o: $(SRCROOT)/primer3/src/dpal.h
 oligo_sel.o: $(SRCROOT)/primer3/src/primer3.h
 oligo_sel.o: $(SRCROOT)/tk_utils/cli_arg.h
+oligo_sel.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 oligo_sel.o: $(SRCROOT)/tk_utils/postscript.h
 oligo_sel.o: $(SRCROOT)/tk_utils/sheet.h
 oligo_sel.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -2621,6 +2656,7 @@ preass.o: $(SRCROOT)/gap4/undo.h
 preass.o: $(SRCROOT)/primer3/src/dpal.h
 preass.o: $(SRCROOT)/primer3/src/primer3.h
 preass.o: $(SRCROOT)/tk_utils/cli_arg.h
+preass.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 preass.o: $(SRCROOT)/tk_utils/postscript.h
 preass.o: $(SRCROOT)/tk_utils/sheet.h
 preass.o: $(SRCROOT)/tk_utils/text_output.h
@@ -2743,6 +2779,7 @@ quality_plot.o: $(SRCROOT)/primer3/src/dpal.h
 quality_plot.o: $(SRCROOT)/primer3/src/primer3.h
 quality_plot.o: $(SRCROOT)/tk_utils/canvas_box.h
 quality_plot.o: $(SRCROOT)/tk_utils/cli_arg.h
+quality_plot.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 quality_plot.o: $(SRCROOT)/tk_utils/postscript.h
 quality_plot.o: $(SRCROOT)/tk_utils/sheet.h
 quality_plot.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -2791,6 +2828,7 @@ reactions.o: $(SRCROOT)/gap4/undo.h
 reactions.o: $(SRCROOT)/primer3/src/dpal.h
 reactions.o: $(SRCROOT)/primer3/src/primer3.h
 reactions.o: $(SRCROOT)/tk_utils/cli_arg.h
+reactions.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 reactions.o: $(SRCROOT)/tk_utils/postscript.h
 reactions.o: $(SRCROOT)/tk_utils/sheet.h
 reactions.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -2878,6 +2916,7 @@ readpair.o: $(SRCROOT)/primer3/src/dpal.h
 readpair.o: $(SRCROOT)/primer3/src/primer3.h
 readpair.o: $(SRCROOT)/tk_utils/canvas_box.h
 readpair.o: $(SRCROOT)/tk_utils/cli_arg.h
+readpair.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 readpair.o: $(SRCROOT)/tk_utils/postscript.h
 readpair.o: $(SRCROOT)/tk_utils/sheet.h
 readpair.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -2972,6 +3011,7 @@ restriction_enzymes.o: $(SRCROOT)/seq_utils/dna_utils.h
 restriction_enzymes.o: $(SRCROOT)/seq_utils/renz_utils.h
 restriction_enzymes.o: $(SRCROOT)/tk_utils/canvas_box.h
 restriction_enzymes.o: $(SRCROOT)/tk_utils/cli_arg.h
+restriction_enzymes.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 restriction_enzymes.o: $(SRCROOT)/tk_utils/postscript.h
 restriction_enzymes.o: $(SRCROOT)/tk_utils/restriction_enzyme_map.h
 restriction_enzymes.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3056,6 +3096,7 @@ searchUtils.o: $(SRCROOT)/primer3/src/primer3.h
 searchUtils.o: $(SRCROOT)/seq_utils/dna_utils.h
 searchUtils.o: $(SRCROOT)/seq_utils/search_utils.h
 searchUtils.o: $(SRCROOT)/tk_utils/cli_arg.h
+searchUtils.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 searchUtils.o: $(SRCROOT)/tk_utils/postscript.h
 searchUtils.o: $(SRCROOT)/tk_utils/sheet.h
 searchUtils.o: $(SRCROOT)/tk_utils/text_output.h
@@ -3104,6 +3145,7 @@ seqInfo.o: $(SRCROOT)/gap4/undo.h
 seqInfo.o: $(SRCROOT)/primer3/src/dpal.h
 seqInfo.o: $(SRCROOT)/primer3/src/primer3.h
 seqInfo.o: $(SRCROOT)/tk_utils/cli_arg.h
+seqInfo.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 seqInfo.o: $(SRCROOT)/tk_utils/postscript.h
 seqInfo.o: $(SRCROOT)/tk_utils/sheet.h
 seqInfo.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -3174,6 +3216,7 @@ shuffle_pads.o: $(SRCROOT)/seq_utils/align_lib.h
 shuffle_pads.o: $(SRCROOT)/seq_utils/align_lib_old.h
 shuffle_pads.o: $(SRCROOT)/seq_utils/dna_utils.h
 shuffle_pads.o: $(SRCROOT)/tk_utils/cli_arg.h
+shuffle_pads.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 shuffle_pads.o: $(SRCROOT)/tk_utils/postscript.h
 shuffle_pads.o: $(SRCROOT)/tk_utils/sheet.h
 shuffle_pads.o: $(SRCROOT)/tk_utils/text_output.h
@@ -3238,6 +3281,7 @@ stop_codon.o: $(SRCROOT)/seq_utils/dna_utils.h
 stop_codon.o: $(SRCROOT)/seq_utils/renz_utils.h
 stop_codon.o: $(SRCROOT)/tk_utils/canvas_box.h
 stop_codon.o: $(SRCROOT)/tk_utils/cli_arg.h
+stop_codon.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 stop_codon.o: $(SRCROOT)/tk_utils/postscript.h
 stop_codon.o: $(SRCROOT)/tk_utils/restriction_enzyme_map.h
 stop_codon.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3321,6 +3365,7 @@ tagEditor.o: $(SRCROOT)/gap4/undo.h
 tagEditor.o: $(SRCROOT)/primer3/src/dpal.h
 tagEditor.o: $(SRCROOT)/primer3/src/primer3.h
 tagEditor.o: $(SRCROOT)/tk_utils/cli_arg.h
+tagEditor.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tagEditor.o: $(SRCROOT)/tk_utils/postscript.h
 tagEditor.o: $(SRCROOT)/tk_utils/sheet.h
 tagEditor.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -3371,6 +3416,7 @@ tagU1.o: $(SRCROOT)/primer3/src/dpal.h
 tagU1.o: $(SRCROOT)/primer3/src/primer3.h
 tagU1.o: $(SRCROOT)/seq_utils/dna_utils.h
 tagU1.o: $(SRCROOT)/tk_utils/cli_arg.h
+tagU1.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tagU1.o: $(SRCROOT)/tk_utils/postscript.h
 tagU1.o: $(SRCROOT)/tk_utils/sheet.h
 tagU1.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -3421,6 +3467,7 @@ tagU2.o: $(SRCROOT)/gap4/undo.h
 tagU2.o: $(SRCROOT)/primer3/src/dpal.h
 tagU2.o: $(SRCROOT)/primer3/src/primer3.h
 tagU2.o: $(SRCROOT)/tk_utils/cli_arg.h
+tagU2.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tagU2.o: $(SRCROOT)/tk_utils/postscript.h
 tagU2.o: $(SRCROOT)/tk_utils/sheet.h
 tagU2.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -3435,6 +3482,7 @@ tagdb.o: $(SRCROOT)/Misc/parse_db.h
 tagdb.o: $(SRCROOT)/Misc/xalloc.h
 tagdb.o: $(PWD)/staden_config.h
 tagdb.o: $(SRCROOT)/gap4/tagdb.h
+tagdb.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 template.o: $(SRCROOT)/Misc/array.h
 template.o: $(SRCROOT)/Misc/bitmap.h
 template.o: $(SRCROOT)/Misc/dstring.h
@@ -3473,6 +3521,7 @@ template.o: $(SRCROOT)/gap4/undo.h
 template.o: $(SRCROOT)/primer3/src/dpal.h
 template.o: $(SRCROOT)/primer3/src/primer3.h
 template.o: $(SRCROOT)/tk_utils/cli_arg.h
+template.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 template.o: $(SRCROOT)/tk_utils/postscript.h
 template.o: $(SRCROOT)/tk_utils/sheet.h
 template.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -3529,6 +3578,7 @@ template_display.o: $(SRCROOT)/primer3/src/dpal.h
 template_display.o: $(SRCROOT)/primer3/src/primer3.h
 template_display.o: $(SRCROOT)/tk_utils/canvas_box.h
 template_display.o: $(SRCROOT)/tk_utils/cli_arg.h
+template_display.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 template_display.o: $(SRCROOT)/tk_utils/postscript.h
 template_display.o: $(SRCROOT)/tk_utils/ruler_tick.h
 template_display.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3628,6 +3678,7 @@ tkEdNames.o: $(SRCROOT)/gap4/undo.h
 tkEdNames.o: $(SRCROOT)/primer3/src/dpal.h
 tkEdNames.o: $(SRCROOT)/primer3/src/primer3.h
 tkEdNames.o: $(SRCROOT)/tk_utils/cli_arg.h
+tkEdNames.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tkEdNames.o: $(SRCROOT)/tk_utils/postscript.h
 tkEdNames.o: $(SRCROOT)/tk_utils/sheet.h
 tkEdNames.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -3679,6 +3730,7 @@ tkEdUtils.o: $(SRCROOT)/primer3/src/primer3.h
 tkEdUtils.o: $(SRCROOT)/seq_utils/dna_utils.h
 tkEdUtils.o: $(SRCROOT)/seq_utils/genetic_code.h
 tkEdUtils.o: $(SRCROOT)/tk_utils/cli_arg.h
+tkEdUtils.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tkEdUtils.o: $(SRCROOT)/tk_utils/postscript.h
 tkEdUtils.o: $(SRCROOT)/tk_utils/sheet.h
 tkEdUtils.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -3727,6 +3779,7 @@ tkEditor.o: $(SRCROOT)/gap4/undo.h
 tkEditor.o: $(SRCROOT)/primer3/src/dpal.h
 tkEditor.o: $(SRCROOT)/primer3/src/primer3.h
 tkEditor.o: $(SRCROOT)/tk_utils/cli_arg.h
+tkEditor.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tkEditor.o: $(SRCROOT)/tk_utils/postscript.h
 tkEditor.o: $(SRCROOT)/tk_utils/sheet.h
 tkEditor.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -3775,6 +3828,7 @@ tman_cons.o: $(SRCROOT)/gap4/undo.h
 tman_cons.o: $(SRCROOT)/primer3/src/dpal.h
 tman_cons.o: $(SRCROOT)/primer3/src/primer3.h
 tman_cons.o: $(SRCROOT)/tk_utils/cli_arg.h
+tman_cons.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tman_cons.o: $(SRCROOT)/tk_utils/postscript.h
 tman_cons.o: $(SRCROOT)/tk_utils/sheet.h
 tman_cons.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -3826,6 +3880,7 @@ tman_diff.o: $(SRCROOT)/primer3/src/dpal.h
 tman_diff.o: $(SRCROOT)/primer3/src/primer3.h
 tman_diff.o: $(SRCROOT)/seq_utils/dna_utils.h
 tman_diff.o: $(SRCROOT)/tk_utils/cli_arg.h
+tman_diff.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tman_diff.o: $(SRCROOT)/tk_utils/postscript.h
 tman_diff.o: $(SRCROOT)/tk_utils/sheet.h
 tman_diff.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -3874,6 +3929,7 @@ tman_display.o: $(SRCROOT)/gap4/undo.h
 tman_display.o: $(SRCROOT)/primer3/src/dpal.h
 tman_display.o: $(SRCROOT)/primer3/src/primer3.h
 tman_display.o: $(SRCROOT)/tk_utils/cli_arg.h
+tman_display.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tman_display.o: $(SRCROOT)/tk_utils/postscript.h
 tman_display.o: $(SRCROOT)/tk_utils/sheet.h
 tman_display.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -3921,6 +3977,7 @@ tman_interface.o: $(SRCROOT)/gap4/undo.h
 tman_interface.o: $(SRCROOT)/primer3/src/dpal.h
 tman_interface.o: $(SRCROOT)/primer3/src/primer3.h
 tman_interface.o: $(SRCROOT)/tk_utils/cli_arg.h
+tman_interface.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tman_interface.o: $(SRCROOT)/tk_utils/postscript.h
 tman_interface.o: $(SRCROOT)/tk_utils/sheet.h
 tman_interface.o: $(SRCROOT)/tk_utils/tkSheet.h
@@ -3965,6 +4022,7 @@ undo.o: $(SRCROOT)/gap4/undo.h
 undo.o: $(SRCROOT)/primer3/src/dpal.h
 undo.o: $(SRCROOT)/primer3/src/primer3.h
 undo.o: $(SRCROOT)/tk_utils/cli_arg.h
+undo.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 undo.o: $(SRCROOT)/tk_utils/postscript.h
 undo.o: $(SRCROOT)/tk_utils/sheet.h
 undo.o: $(SRCROOT)/tk_utils/text_output.h
