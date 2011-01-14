@@ -165,7 +165,7 @@ int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str) {
     /* Also update range_t cached copy of type */
     if (ae->bin) {
 	bin_index_t *bin = (bin_index_t *)cache_search(io, GT_Bin, ae->bin);
-	range_t *r;
+	range_t *r = NULL;
 	int i, nranges;
 
 	if (!bin)
@@ -213,7 +213,7 @@ range_t *anno_get_range(GapIO *io, tg_rec anno_ele, tg_rec *contig, int rel) {
     bin_index_t *bin;
     tg_rec bnum;
     int offset1, offset2, comp = 0, i;
-    range_t *r;
+    range_t *r = NULL;
     static range_t r2;
 
     if (!e)

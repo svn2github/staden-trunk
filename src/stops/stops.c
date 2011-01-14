@@ -44,8 +44,10 @@ typedef struct {
 static int find_highest_peak(params *p, int *peaks, int len, int *avg_height) {
     int i, total, best_total, best_pos;
 
-    if (p->window_len >= len)
+    if (p->window_len >= len) {
+	*avg_height = 0;
 	return len/2;
+    }
 
     for (total = i = 0; i < p->window_len; i++) {
 	total += peaks[i];

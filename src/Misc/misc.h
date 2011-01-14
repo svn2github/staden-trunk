@@ -13,6 +13,18 @@
 extern int getopt( int argc, char* const argv[], const char* optstring );
 #endif
 
+/*
+ * This informs gcc that crash() doesn't return, so it doesn't need to
+ * concern itself that code paths going via crash could mean some variables
+ * being undefined and then issuing uninitialised variable warnings.
+ * This particularly affected convert.
+ */
+#ifdef __GNUC__
+#    define __NORETURN__ __attribute__ ((__noreturn__))
+#else
+#    define __NORETURN__
+#endif
+
 extern int is_directory(char * fn);
 extern int is_file(char * fn);
 extern int file_exists(char * fn);
@@ -25,7 +37,7 @@ extern void f2cstr(char *f, int max_f, char *c, int max_c);
 extern void c2fstr(char *c, int max_c, char *f, int max_f);
 extern char *mystrtok(char *s, char *ct);
 extern char *myfind(char *file, char* searchpath, int (*found) (char *) );
-extern void crash (char* format,...);
+extern void crash (char* format,...) __NORETURN__ ;
 extern void str_tolower (char *s);
 extern void str_toupper (char *s);
 extern char *fn_tail (char *s);

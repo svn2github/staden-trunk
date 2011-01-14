@@ -659,6 +659,7 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
     } else {
 	fprintf(stderr, "Unsupported record type %d in bin_get_item_position\n",
 		type);
+	return -1;
     }
     
     if (brec)

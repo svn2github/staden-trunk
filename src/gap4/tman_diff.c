@@ -228,7 +228,7 @@ DisplayContext *diff_edc_traces(EdStruct *xx, tman_dc *ed1, tman_dc *ed2) {
     static int diff_counter = 0;
     int exists;
     char buf[1024], name[1024];
-    int start, start1;
+    int start = 0, start1;
 
     /* Get the two read structures */
     Tcl_GetCommandInfo(interp, ed1->dc->path, &info);

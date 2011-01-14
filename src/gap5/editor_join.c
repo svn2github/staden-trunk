@@ -640,7 +640,7 @@ tg_rec find_join_bin(GapIO *io, tg_rec lbin, tg_rec rbin, int offset,
 
     do {
 	int child = -1;
-	int off_new;
+	int off_new = offset;
 	bnum = lbin;
 
 	binl = (bin_index_t *)cache_search(io, GT_Bin, lbin);
@@ -684,7 +684,7 @@ tg_rec find_join_bin(GapIO *io, tg_rec lbin, tg_rec rbin, int offset,
 	    lbin = 0;
 	}
     } while (lbin);
-
+    
     printf("Optimal bin to insert is above %"PRIrec"\n", bnum);
 
     return bnum;

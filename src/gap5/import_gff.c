@@ -425,7 +425,10 @@ int import_gff(GapIO *io, char *fn, int padded, int plus_as_space) {
 	if (line[0] == '#')
 	    continue;
 
-	parse_gff_entry(line, &gff);
+	if (!parse_gff_entry(line, &gff)) {
+	    verror(ERR_WARN, "parse_gff", "Malformed gff_line");
+	    continue;
+	}
 	
 #if 0
     {

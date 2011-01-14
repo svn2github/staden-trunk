@@ -649,7 +649,7 @@ int locate(A,B,nseq) char A[],B[]; long nseq;
   register  long  d;			/* best score ending with deletion */
   register  long  p;			/* best score at (i-1, j-1) */
   register  long  ci, cj;		/* end-point associated with c */ 
-  register  long  di, dj;		/* end-point associated with d */
+  register  long  di=0, dj=0;		/* end-point associated with d */
   register  long  fi, fj;		/* end-point associated with f */
   register  long  pi, pj;		/* end-point associated with p */
   short  cflag, rflag;			/* for recomputation */

@@ -340,13 +340,13 @@ _dpal_generic(X, Y, xlen, ylen, in, out)
     register int gap = in->gap, gapl = in->gapl, max_gap = in->max_gap;
 
 #ifndef DPAL_FORGET_PATH
-    int i0,j0;
+    int i0=0,j0=0;
     int saved_k;
 #endif 
 
-    int I,J;		/* Coordinates of the maximum score. */
+    int I=0,J=0;	/* Coordinates of the maximum score. */
     int smax;           /* The optimum score. */
-    int score;          /* Current score. */
+    int score=0;        /* Current score. */
 
     int a,b,max;
 
@@ -569,7 +569,7 @@ _dpal_long_nopath_generic(X, Y, xlen, ylen, in, out)
     register int gap = in->gap, gapl = in->gapl, max_gap = in->max_gap;
 
 
-    int I,J;		/* Coordinates of the maximum score. */
+    int I=0,J=0;	/* Coordinates of the maximum score. */
     int smax;           /* The optimum score. */
     int score;          /* Current score. */
 

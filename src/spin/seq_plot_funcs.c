@@ -465,7 +465,7 @@ void stick_pair_plot_func(void *obj, seq_reg_plot *plot)
     int x;
     double score, scaled_score;
     RasterResult *raster_result;
-    double m, c;
+    double m = 0, c = 0;
 
     if (output->hidden) {
 	return;
@@ -577,7 +577,7 @@ void stick_plot_func(void *obj, seq_reg_plot *plot)
     int x;
     double score, scaled_score;
     RasterResult *raster_result;
-    double m, c;
+    double m = 0, c = 0;
 
     if (output->hidden) {
 	return;

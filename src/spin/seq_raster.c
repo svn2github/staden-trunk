@@ -1559,7 +1559,7 @@ void delete_seq_from_raster(int seq_id,
 			    void (*func)(int seq_num, void *fdata, 
 					 seq_reg_data *jdata))
 {
-    int i, index;
+    int i, index = 0;
     
     seq_deregister(seq_num, func, (RasterResult *)result);
     for (i = 0; i < result->num_seq_id; i++) {
@@ -1995,7 +1995,7 @@ void SeqUpdateResultWindow(Tcl_Interp *interp,
     char *parent_old, *parent_new;
     RasterResult *new_result;
     RasterResult *old_result;
-    int i, j, index;
+    int i, j, index = 0;
     char cmd[1024];
     double orig_y1;
     int line_width;
@@ -2324,7 +2324,7 @@ void SeqUpdateRasterWindow(Tcl_Interp *interp,
 {
     int num_elements;
     seq_result **data;
-    seq_result *result;
+    seq_result *result = NULL;
     int num_funcs;
     int i;
     out_raster *output;
@@ -2481,7 +2481,7 @@ void SeqUpdateRasterWindow(Tcl_Interp *interp,
 
     } else {
 	/* superimpose */
-	int index;
+	int index = -1;
 	int j;
 
 	/* add old cursor to new raster */
@@ -2567,7 +2567,7 @@ int SeqAddRasterToWindow(Tcl_Interp *interp,
     int i;
     int win_list_argc;
     Tcl_CmdInfo info;
-    Tk_Raster *rasterorig;
+    Tk_Raster *rasterorig = NULL;
     Tk_Raster *rasternew;
     double n_wx0, n_wy0, n_wx1, n_wy1;
     double o_wx0, o_wy0, o_wx1, o_wy1;
@@ -2578,7 +2578,7 @@ int SeqAddRasterToWindow(Tcl_Interp *interp,
     int raster_id_new, raster_id_orig = -1;
     char *parent;
     int n_rasters = 0;
-    char *raster_orig;
+    char *raster_orig = NULL;
     int orig_zoom = -1, new_zoom;
     int retval = TCL_ERROR;
     char **win_list_argv = NULL;
@@ -3344,8 +3344,8 @@ int get_raster_frame_dot(Tcl_Interp *interp,
 {
     int i, j;
     int num_elements;
-    RasterResult **data;
-    RasterResult *raster_result;
+    RasterResult **data = NULL;
+    RasterResult *raster_result = NULL;
     int num_funcs;
     int h_found = 0;
     int v_found = 0;

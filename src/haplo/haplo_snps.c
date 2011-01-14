@@ -302,7 +302,7 @@ static void add_snp_bases(GapIO *io, int contig, template_c **tarr,
 	int nseqs;
 	snp[i].seqs  = seqs_at_region(io, contig, tarr, snp[i].pos, &nseqs,
 				      min_qual);
-	snp[i].nseqs = nseqs;
+	snp[i].nseqs = snp[i].seqs ? nseqs : 0;
     }
 }
 

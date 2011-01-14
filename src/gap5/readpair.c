@@ -433,6 +433,7 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	 * face up to it.
 	 */
 	switch (mode) {
+	default: /* To keep gcc happy */
 	case all_all:
 	    large_contig = 0;
 	    break;

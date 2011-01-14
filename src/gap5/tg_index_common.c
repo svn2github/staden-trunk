@@ -520,6 +520,20 @@ int tg_index_file_type (char *fn) {
 	if (0 == strcmp(suffix, "caf") ||
 	    0 == strcmp(suffix, "CAF"))
 	    return 'C';
+
+	if (0 == strcmp(suffix, "fna") ||
+	    0 == strcmp(suffix, "FNA") || 
+	    0 == strcmp(suffix, "fasta") || 
+	    0 == strcmp(suffix, "FASTA")) {
+	    return 'F';
+	}
+
+	if (0 == strcmp(suffix, "fnq") ||
+	    0 == strcmp(suffix, "FNQ") || 
+	    0 == strcmp(suffix, "fastq") || 
+	    0 == strcmp(suffix, "FASTQ")) {
+	    return 'Q';
+	}
     }
 
     /* By contents */
@@ -544,13 +558,25 @@ int tg_index_file_type (char *fn) {
     if (0 == strncmp(data, "CO=", 3))
 	return 'B'; /* baf */
 
-    if (0 == strncmp(data, "@HD", 3) ||
-	0 == strncmp(data, "@SQ", 3))
+    if (0 == strncmp(data, "@HD\t", 3) ||
+	0 == strncmp(data, "@SQ\t", 3) ||
+	0 == strncmp(data, "@RG\t", 3) ||
+	0 == strncmp(data, "@PG\t", 3))
 	return 's'; /* sam */
+
+
+    /* These are now pretty tenuous */
+    if (*data == '>') {
+	return 'F'; /* fasta */
+    }
+
+    if (*data == '@') {
+	return 'Q'; /* fastq */
+    }
 
     /*
      * And if still not found, well it maybe maq, but is just as likely
-     * a differently formatting sam or baf. Give up at this point.
+     * a differently formatted sam or baf. Give up at this point.
      */
 
     return '?';
@@ -828,7 +854,7 @@ static int load_data(pair_queue_t *pq) {
 	
 	if (ret <= 0) break;
 	
-	found = sscanf(line_in, "%s %ld %ld %d %ld %d %d %d",
+	found = sscanf(line_in, "%s %"PRId64" %"PRId64" %d %"PRId64" %d %d %d",
 	    name, &pq->pair[i].rec, &pq->pair[i].bin, &pq->pair[i].idx,
 	    &pq->pair[i].crec, &pq->pair[i].pos, &pq->pair[i].orient,
 	    &pq->pair[i].flags);

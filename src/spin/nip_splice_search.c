@@ -589,7 +589,7 @@ int init_splice_search_plot(Tcl_Interp *interp,
     Tk_Raster *raster;
     RasterResult *raster_result;
     cursor_t *cursor;
-    seq_result *nip_result;
+    seq_result *nip_result = NULL;
     seq_cursor_notify cn;
     stick *data;
     int i, cnt;

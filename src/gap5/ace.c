@@ -430,7 +430,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     ace_item_t *ai;
     zfp *fp;
     af_line *af = NULL;
-    int af_count, seq_count, nseqs = 0, nseqs_tot = 0, ncontigs = 0;
+    int af_count = 0, seq_count = 0, nseqs = 0, nseqs_tot = 0, ncontigs = 0;
     contig_t *c = NULL;
     tg_pair_t *pair = NULL;
     

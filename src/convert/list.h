@@ -16,7 +16,7 @@
 #define isNil(N)  ((N)==nil)
 #define car(N) ( isNil(N)||isAtom(N)?nil:(N)->val.list.head )
 #define cdr(N) ( isNil(N)||isAtom(N)?nil:(N)->val.list.tail )
-#define atomVal(N) ( isAtom(N)?(N)->val.atom.ptr:NULL )
+#define atomVal(N) ( isAtom(N)?(N)->val.atom.ptr:"" )
 
 typedef struct _node{
     int type;

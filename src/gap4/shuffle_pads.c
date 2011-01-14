@@ -360,6 +360,8 @@ MALIGN *realign_seqs(int contig, MALIGN *malign, int band) {
 	old_end   = contigl->mseg->offset + contigl->mseg->length-1;
 	if (r == 0 && o->S1)
 	    npads = edit_mseqs(malign, contigl, o, cons_pos);
+	else
+	    npads = 0;
 	new_start = contigl->mseg->offset;
 	new_end   = contigl->mseg->offset + contigl->mseg->length-1;
 

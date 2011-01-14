@@ -694,12 +694,11 @@ int ParseEnzyme(char *strptr,                                          /* in */
 	cut_site[seq_num] = 0;        /* if no cut site found, cut_site = 0 */
 	FindSequence(word, res_seq[seq_num], &cut_site[seq_num]);
 	textptr = NULL;   /* need to be NULL for subsequent calls to strtok */
-	if (seq_num > MAXRSEQ) {
+	if (++seq_num >= MAXRSEQ) {
 	    /* too many recognition sequences */
 	    verror(ERR_WARN, "parse enzyme recognition sequences", "Too many recognition sequence");
 	    break;
 	}
-	seq_num++;
     }
 
     num_seq = seq_num;

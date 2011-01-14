@@ -789,7 +789,7 @@ StringMatch(GapIO *io,                                                 /* in */
 	     */
 	    for (r = (rangec_t *)1; r; r = contig_iter_next(io, ci)) {
 		char *seq;
-		seq_t *s;
+		seq_t *s = NULL;
 
 		if (ci == 0) {
 		    /* First time through is consensus */

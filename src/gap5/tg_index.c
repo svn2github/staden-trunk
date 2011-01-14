@@ -309,6 +309,14 @@ int main(int argc, char **argv) {
 	    err = parse_sam(io, argv[optind++], &a) ? 1 : 0;
 	    break;
 
+	case 'F':
+	    printf("Skipping unsupported FASTA file %s\n", argv[optind]);
+	    break;
+
+	case 'Q':
+	    printf("Skipping unsupported FASTQ file %s\n", argv[optind]);
+	    break;
+
 	default:
 	    fprintf(stderr, "Unknown file type for '%s' - skipping\n",
 		    argv[optind++]);

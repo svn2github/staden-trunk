@@ -94,7 +94,7 @@ int seqed_write(tkSeqed *se,
     int num_renz_lines;
     int width;
     int max_renz_lines = 10;
-    int overlap;
+    int overlap = 0;
 
     if (line_length <= 0) 
       return -1;

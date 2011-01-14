@@ -1788,7 +1788,9 @@ choose_pair(pa, sa, int_num, p, state)
 					     state)!=0){
 		    sa->pair_expl.internal++;
 		    continue;
-                }
+                } else {
+		    n_int = 0;
+		}
 		sa->pair_expl.ok++;
 		if (k < pa->num_return) {
 		    if ( pa->primer_task == pick_pcr_primers_and_hyb_probe) 

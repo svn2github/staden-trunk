@@ -704,40 +704,48 @@ char *sam_aux_stringify(char *s, int len) {
 
 	case 'S':
 	    {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
+		uint16_t tmp;
+		((char *)&tmp)[0] = s[3];
+		((char *)&tmp)[1] = s[4];
 		APPEND_FMT('i');
-		cp = append_int(cp, *(uint16_t *)tmp);
+		cp = append_int(cp, tmp);
 	    }
 	    s+=5;
 	    break;
 
 	case 's':
 	    {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
+		int16_t tmp;
+		((char *)&tmp)[0] = s[3];
+		((char *)&tmp)[1] = s[4];
 		APPEND_FMT('i');
-		cp = append_int(cp, *(int16_t *)tmp);
+		cp = append_int(cp, tmp);
 	    }
 	    s+=5;
 	    break;
 
 	case 'I':
 	    {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		uint32_t tmp;
+		((char *)&tmp)[0] = s[3];
+		((char *)&tmp)[1] = s[4];
+		((char *)&tmp)[2] = s[5];
+		((char *)&tmp)[3] = s[6];
 		APPEND_FMT('i');
-		cp = append_int(cp, *(uint32_t *)tmp);
+		cp = append_int(cp, tmp);
 	    }
 	    s+=7;
 	    break;
 
 	case 'i':
 	    {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		int32_t tmp;
+		((char *)&tmp)[0] = s[3];
+		((char *)&tmp)[1] = s[4];
+		((char *)&tmp)[2] = s[5];
+		((char *)&tmp)[3] = s[6];
 		APPEND_FMT('i');
-		cp = append_int(cp, *(int32_t *)tmp);
+		cp = append_int(cp, tmp);
 	    }
 	    s+=7;
 	    break;
@@ -828,40 +836,48 @@ char *bam_aux_stringify(bam_seq_t *b, int no_RG) {
 
 	case 'S':
 	    if (keep) {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
+		uint16_t tmp;
+		((char *)&tmp)[0] = s[3];
+		((char *)&tmp)[1] = s[4];
 		APPEND_FMT('i');
-		cp = append_int(cp, *(uint16_t *)tmp);
+		cp = append_int(cp, tmp);
 	    }
 	    s+=5;
 	    break;
 
 	case 's':
 	    if (keep) {
-		char tmp[2]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4];
+		int16_t tmp;
+		((char *)&tmp)[0] = s[3];
+		((char *)&tmp)[1] = s[4];
 		APPEND_FMT('i');
-		cp = append_int(cp, *(int16_t *)tmp);
+		cp = append_int(cp, tmp);
 	    }
 	    s+=5;
 	    break;
 
 	case 'I':
 	    if (keep) {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		uint32_t tmp;
+		((char *)&tmp)[0] = s[3];
+		((char *)&tmp)[1] = s[4];
+		((char *)&tmp)[2] = s[5];
+		((char *)&tmp)[3] = s[6];
 		APPEND_FMT('i');
-		cp = append_int(cp, *(uint32_t *)tmp);
+		cp = append_int(cp, tmp);
 	    }
 	    s+=7;
 	    break;
 
 	case 'i':
 	    if (keep) {
-		char tmp[4]; /* word aligned data */
-		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		int32_t tmp;
+		((char *)&tmp)[0] = s[3];
+		((char *)&tmp)[1] = s[4];
+		((char *)&tmp)[2] = s[5];
+		((char *)&tmp)[3] = s[6];
 		APPEND_FMT('i');
-		cp = append_int(cp, *(int32_t *)tmp);
+		cp = append_int(cp, tmp);
 	    }
 	    s+=7;
 	    break;

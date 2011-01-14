@@ -139,6 +139,8 @@ static int do_it(mFILE *infp, mFILE *outfp, int in_f, int out_f, char *fn,
 	if (phred_scale) {
 	    rescale_scores(rf, 1);
 	}
+    } else {
+	rf = NULL; /* Keep gcc happy */
     }
     if (non_filtered) {
 	calc_conf_values(r, phred_scale, 0, offset);

@@ -116,35 +116,43 @@ static inline int pool(uint32_t l) {
 }
 
 static int get_block(dheap_t *h, int64_t offset, block_t *b) {
-    unsigned char data[24];
+    union {
+	unsigned char c[24];
+	int32_t i32[6];
+	int64_t i64[3];
+    } data;
 
     /* Attempt to read the footer from the previous block too */
     if (offset >= 4) {
 	if (-1 == lseek(h->fd, offset-4, SEEK_SET))
 	    return -1;
-	if (24 != read(h->fd, data, 24))
+	if (24 != read(h->fd, data.c, 24))
 	    return -1;
     } else {
 	if (-1 == lseek(h->fd, offset, SEEK_SET))
 	    return -1;
-	if (20 != read(h->fd, &data[4], 20))
+	if (20 != read(h->fd, &data.c[4], 20))
 	    return -1;
-	data[0] = data[1] = data[2] = data[3] = 0;
+	data.c[0] = data.c[1] = data.c[2] = data.c[3] = 0;
     }
 
     b->pos = offset;
     
-    b->blen = be_int4(*(int32_t *)&data[0]);
+    //b->blen = be_int4(*(int32_t *)&data[0]);
+    b->blen = be_int4(data.i32[0]);
     b->bfree = b->blen & 1;
     b->blen &= ~1;
 
-    b->len = be_int4(*(int32_t *)&data[4]);
+    //b->len = be_int4(*(int32_t *)&data[4]);
+    b->len = be_int4(data.i32[1]);
     b->free = b->len & 1;
     b->len &= ~1;
 
     if (b->free) {
-	b->prev = be_int8(*(int64_t *)&data[8]);
-	b->next = be_int8(*(int64_t *)&data[16]);
+	//b->prev = be_int8(*(int64_t *)&data[8]);
+	//b->next = be_int8(*(int64_t *)&data[16]);
+	b->prev = be_int8(data.i64[1]);
+	b->next = be_int8(data.i64[2]);
     } else {
 	b->prev = b->next = 0;
     }
@@ -168,15 +176,42 @@ static int get_block(dheap_t *h, int64_t offset, block_t *b) {
 static int put_block(dheap_t *h, block_t *b, int header_only, int zero) {
     unsigned char header[PB_SIZE];
     uint32_t len;
+    int32_t i32;
+    int64_t i64;
 
     if (-1 == lseek(h->fd, b->pos, SEEK_SET))
 	return -1;
 
     len = b->len | b->free;
 
-    *(uint32_t *)&header[0] = be_int4(len);
-    *(uint64_t *)&header[4] = be_int8(b->prev);
-    *(uint64_t *)&header[12] = be_int8(b->next);
+    //*(uint32_t *)&header[0] = be_int4(len);
+    i32 = be_int4(len);
+    header[0] = ((unsigned char *)&i32)[0];
+    header[1] = ((unsigned char *)&i32)[1];
+    header[2] = ((unsigned char *)&i32)[2];
+    header[3] = ((unsigned char *)&i32)[3];
+
+    //*(uint64_t *)&header[4] = be_int8(b->prev);
+    i64 = be_int8(b->prev);
+    header[ 4] = ((unsigned char *)&i64)[0];
+    header[ 5] = ((unsigned char *)&i64)[1];
+    header[ 6] = ((unsigned char *)&i64)[2];
+    header[ 7] = ((unsigned char *)&i64)[3];
+    header[ 8] = ((unsigned char *)&i64)[4];
+    header[ 9] = ((unsigned char *)&i64)[5];
+    header[10] = ((unsigned char *)&i64)[6];
+    header[11] = ((unsigned char *)&i64)[7];
+    
+    //*(uint64_t *)&header[12] = be_int8(b->next);
+    i64 = be_int8(b->next);
+    header[12] = ((unsigned char *)&i64)[0];
+    header[13] = ((unsigned char *)&i64)[1];
+    header[14] = ((unsigned char *)&i64)[2];
+    header[15] = ((unsigned char *)&i64)[3];
+    header[16] = ((unsigned char *)&i64)[4];
+    header[17] = ((unsigned char *)&i64)[5];
+    header[18] = ((unsigned char *)&i64)[6];
+    header[19] = ((unsigned char *)&i64)[7];
 
     if (header_only) {
 	/* Header only is used when updating the next/prev pointers */

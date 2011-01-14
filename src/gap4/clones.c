@@ -166,7 +166,7 @@ int add_template(GapIO *io, char *TN, char *SV, char *ST, char *SI, int clone)
     t.clone = clone;
 
     /* set insert length */
-    t.insert_length_max = t.insert_length_max = 0;
+    t.insert_length_min = t.insert_length_max = 0;
     sscanf(SI,"%d..%d",&t.insert_length_min,&t.insert_length_max);
     if (t.insert_length_max < t.insert_length_min)
 	t.insert_length_max = t.insert_length_min;

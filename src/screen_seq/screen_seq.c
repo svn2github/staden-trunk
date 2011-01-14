@@ -898,7 +898,7 @@ int main(int argc, char **argv) {
     int min_match, max_vector, min_match_d, percent_cut;
     int mode_v, mode_i,i,tmode,mr_s,mr_fofn, mv_s,mv_fofn;
     int window_size;
-    char *fofn_p, *fofn_f, *fofn_i, *fofn_s, *vector_seq;
+    char *fofn_p, *fofn_f, *fofn_i, *fofn_s = NULL, *vector_seq;
     FILE *fp_p, *fp_f, *fp_i, *fp_s = NULL;
 
     fofn_p = fofn_f = fofn_i = NULL;

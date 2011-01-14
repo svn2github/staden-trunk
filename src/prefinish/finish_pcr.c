@@ -135,7 +135,7 @@ static g4_primer_pair *pick_pcr_primers2(finish_t *fin, primlib_state *pstate,
 		cons_joined[i] = 'N';
     }
     puts(cons_joined);
-    printf("target = %"PRId64",%d\n", strlen(cons1)+1, 20);
+    printf("target = %"PRId64",%d\n", (uint64_t)strlen(cons1)+1, 20);
 
     /* Tweak arguments */
     pstate->p3args.primer_task = pick_pcr_primers;

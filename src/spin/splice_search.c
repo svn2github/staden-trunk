@@ -142,7 +142,7 @@ WtmatrixRes *init_WtmatrixRes (int number_of_res,
 {
 
     WtmatrixRes *r;
-    Wtmatch **match;
+    Wtmatch **match = NULL;
 
     if ( ( NULL == ( r = (WtmatrixRes* ) xmalloc ( sizeof (WtmatrixRes) )))) 
 	return NULL;
@@ -241,7 +241,7 @@ int get_wtm_cons_chars ( int counts[], MatchMask *m ) {
     /* from counts find the 100% conserved positions */
 
     double *sum_column;
-    int i,j,k,total,col_max,col_index,mask_index;
+    int i,j,k,total,col_max,col_index=0,mask_index;
 
     if ( ( NULL == ( sum_column = (double* ) xmalloc ( sizeof (double) * m->num_elements )))) return -1;
     for ( i=0,mask_index=0; i<m->num_elements; i++ ) {

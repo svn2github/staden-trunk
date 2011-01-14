@@ -678,8 +678,8 @@ int hash_consensus( Tcl_Interp *interp,
     int seq2_len;
     int max_seq;
     int max_matches;
-    char *depad_seq1,    *depad_seq2;
-    int  *depad_to_pad1, *depad_to_pad2;
+    char *depad_seq1 = NULL,    *depad_seq2 = NULL;
+    int  *depad_to_pad1 = NULL, *depad_to_pad2 = NULL;
     int edge_mode, job, seq1_start, seq2_start;
     int compare_method;
     int seq1_len = seq1_len_orig;

@@ -136,7 +136,7 @@ typedef struct vector_specs_ {
 
 Vector_specs* get_vector_info(FILE *fp_vf ) {
 
-  char line[MAX_LINE], *file_name, *vector_name, *f_primer_seq,*r_primer_seq;
+  char line[MAX_LINE], *file_name, *vector_name = NULL, *f_primer_seq = NULL,*r_primer_seq = NULL;
   char *c, *s;
   Vector_spec *v;
   static Vector_specs vs;
@@ -966,12 +966,12 @@ int do_it_sv ( char *vector_seq, int max_vector,
 
 /* for this algorithm */
 
-    int vector_length, x, y, ret, eret, retm;
+    int vector_length = 0, x, y, ret, eret, retm;
     double score_3, score_5;
     char vector_file_name[FILENAME_MAX+1];
     char prev_vector_file_name[FILENAME_MAX+1];
     FILE *vf;
-    int sp, sc; /* primer position and cloning site */
+    int sp=0, sc=0; /* primer position and cloning site */
     int prev_sp, prev_sc; /* previous values */
     int new_vector;
     int sl, sr;
@@ -1286,7 +1286,7 @@ int do_it_sv_pvf ( char *vector_seq, int max_vector,
     int pad1, pad2;
     double percent_match;
     int left1,left2,right1,right2;
-    int primer_num,best_match,best_match_d, best_match_pos;
+    int primer_num,best_match=0,best_match_d=0, best_match_pos=0;
     int best_match_5,best_match_d5, pr_type;
     double best_percent_match;
     int length_v, length_s;
@@ -1620,7 +1620,7 @@ int do_it_tr ( char *vector_seq, int max_vector,
     int x, y, ret, eret, retm;
     double score_3, score_5;
     char *seq_ptr;
-    int sp; /* primer position */
+    int sp=0; /* primer position */
     int sl, sr;
     int primer_length_s;
     int primer_length_v;
@@ -1628,12 +1628,12 @@ int do_it_tr ( char *vector_seq, int max_vector,
     int pad1, pad2;
     double percent_match;
     int left1,left2,right1,right2;
-    int primer_num,best_match,best_match_d, best_match_pos;
+    int primer_num,best_match,best_match_d, best_match_pos=0;
     double best_percent_match;
     int length_v, length_s;
 
     int *hash_values1, *hash_values2, *last_word, *word_count, *diag;
-    int vector_length;
+    int vector_length = 0;
     char vector_file_name[FILENAME_MAX+1], *vfn;
     char prev_vector_file_name[FILENAME_MAX+1];
     FILE *vf;
@@ -1641,7 +1641,7 @@ int do_it_tr ( char *vector_seq, int max_vector,
     int new_vector;
     double score_3f, score_3r, score_vf, score_vr;
     int score_f, score_r;
-    int lg, rg, xf, xr, yf, yr; 
+    int lg, rg, xf=0, xr=0, yf=0, yr=0; 
     int match_found, score;
     int size_hash = 65536;
     int word_length = 8;
@@ -2126,14 +2126,14 @@ int do_it_cv ( char *vector_seq, int max_vector,
 
     int *hash_values1, *hash_values2, *last_word, *word_count, *diag, *line;
     int size_hash;
-    int vector_length, x, y, ret, eret;
+    int vector_length = 0, x, y, ret, eret;
     DI *hist;
     char vector_file_name[FILENAME_MAX+1], *vfn;
     char prev_vector_file_name[FILENAME_MAX+1];
     FILE *vf;
     int sl, sr; /* sequencing vector left and right */
     double score_3f, score_f, score_3r, score_r;
-    int lg, rg, xf, xr, cl, cr;
+    int lg, rg, xf=0, xr=0, cl=0, cr=0;
     int match_found;
     double *expected_scores;
 
@@ -2703,13 +2703,13 @@ int do_it_vr ( char *vector_seq, int max_vector,
 
     int *hash_values1, *hash_values2, *last_word, *word_count;
     int *diag;
-    int vector_length, x, y, ret, eret;
+    int vector_length = 0, x, y, ret, eret;
     char vector_file_name[FILENAME_MAX+1], *vfn;
     char prev_vector_file_name[FILENAME_MAX+1];
     FILE *vf;
     int sl, sr; /* sequencing vector left and right */
     int score, score_f, score_r;
-    int lg, rg, xf, xr, yf, yr;
+    int lg, rg, xf=0, xr=0, yf=0, yr=0;
     int match_found;
     int size_hash;
 
@@ -3143,7 +3143,7 @@ int do_hash (   int seq1_len, int seq2_len,
     int size_hist;
     register int i,j,nrw, ncw, word, pw1, pw2, diag_pos, match_length;
     double points, max_diagonal;
-    int score_pos, top_score_pos;
+    int score_pos, top_score_pos=0;
     double top_score;
 
     int max_line, line_pos, kk, half_window;
@@ -3417,7 +3417,7 @@ int main(int argc, char **argv) {
     char *fofn_p, *fofn_f, *fofn_i, *vf, *vector_seq;
     char expanded_fn[FILENAME_MAX+1];
     FILE *fp_p, *fp_f, *fp_i, *fp_vf;
-    Vector_specs *v;
+    Vector_specs *v = NULL;
 
     fofn_p = fofn_f = fofn_i = vf = NULL;
     fp_p = fp_f = fp_i = fp_vf = NULL;

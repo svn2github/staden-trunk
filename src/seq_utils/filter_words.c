@@ -73,7 +73,7 @@ int filter_words(char *seq, char *filt, size_t len, char *rep,
 		 int minsize, int maxdrop, char filter_char) {
     size_t i, j;
     fkey_t word = 0;
-    int score = -1, maxscore;
+    int score = -1, maxscore = 0;
     size_t start = 0, end = 0;
     fkey_t key, keymask;
     int keyjump, keylen;

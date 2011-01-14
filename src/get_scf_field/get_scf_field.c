@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <os.h>
+#include <misc.h>
 #include <io_lib/mFILE.h>
 #include <io_lib/scf.h>
 #include <io_lib/xalloc.h>
@@ -41,7 +42,7 @@ extern DLL_IMPORT int optind;
 static int silent = 0, query = 0, suppress = 0;
 static int do_it(char *file, int argc, char **argv);
 
-static void usage(void) {
+__NORETURN__ static void usage(void) {
     fprintf(stderr, "Usage: get_scf_field [-sqc] scf_file\n");
     fprintf(stderr, "or     get_scf_field [-sqc] scf_file Field-ID ...\n");
 

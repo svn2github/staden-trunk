@@ -223,7 +223,7 @@ static int SeqedWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
     } else if ('y' == *argv[1] && strcmp(argv[1], "yview") == 0) {
-	int type, from, to, offset, count;
+	int type, from, to, offset = 0, count;
 	double fraction, oldoffset;
 
 	if (argc == 2) {

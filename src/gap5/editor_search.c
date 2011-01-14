@@ -105,14 +105,15 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 	    ind = NULL;
 
 	if (ind != NULL) {
-	    found = 1;
 	    if (dir) {
 		if (fpos <= start + ind-cons) {
+		    found = 1;
 		    fpos = start + ind-cons;
 		    fseq = xx->contig->rec;
 		}
 	    } else {
 		if (fpos >= start + ind-cons) {
+		    found = 1;
 		    fpos = start + ind-cons;
 		    fseq = xx->contig->rec;
 		}

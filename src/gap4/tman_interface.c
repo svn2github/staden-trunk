@@ -1064,7 +1064,7 @@ void edScrollTraces(EdStruct *xx, char *path, char *command) {
     double f1;
     int count;
     int seq;
-    int scroll_mode;
+    int scroll_mode = TK_SCROLL_UNITS;
 
     /* Find trace number */
     dc = trace_path_to_dc(path);
@@ -1094,6 +1094,7 @@ void edScrollTraces(EdStruct *xx, char *path, char *command) {
 	scroll_mode = Tk_GetScrollInfo(EDINTERP(xx->ed), com_argc,
 				       com_argv_tmp, &f1, &count);
 	switch (scroll_mode) {
+	default:
 	case TK_SCROLL_ERROR:
 	    pos = -1;
 	    break;
@@ -1138,6 +1139,8 @@ void edScrollTraces(EdStruct *xx, char *path, char *command) {
 	    scroll_dir = 1;
 	else
 	    scroll_dir = -1;
+    } else {
+	scroll_dir = 0; /* avoid gcc whinge */
     }
 
     pos += t->disp_width/2;

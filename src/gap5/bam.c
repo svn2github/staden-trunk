@@ -1170,9 +1170,10 @@ int bam_aux_iter(bam_seq_t *b, char **iter_handle,
     case 'S':
 	if (type) *type = 'i';
 	if (val) {
-	    char tmp[2]; /* word aligned data */
-	    tmp[0] = s[3]; tmp[1] = s[4];
-	    val->i = *(uint16_t *)tmp;
+	    uint16_t tmp;
+	    ((char *)&tmp)[0] = s[3];
+	    ((char *)&tmp)[1] = s[4];
+	    val->i = tmp;
 	}
 	s+=5;
 	break;
@@ -1180,9 +1181,10 @@ int bam_aux_iter(bam_seq_t *b, char **iter_handle,
     case 's':
 	if (type) *type = 'i';
 	if (val) {
-	    char tmp[2]; /* word aligned data */
-	    tmp[0] = s[3]; tmp[1] = s[4];
-	    val->i = *(int16_t *)tmp;
+	    int16_t tmp;
+	    ((char *)&tmp)[0] = s[3];
+	    ((char *)&tmp)[1] = s[4];
+	    val->i = tmp;
 	}
 	s+=5;
 	break;
@@ -1190,9 +1192,12 @@ int bam_aux_iter(bam_seq_t *b, char **iter_handle,
     case 'I':
 	if (type) *type = 'i';
 	if (val) {
-	    char tmp[4]; /* word aligned data */
-	    tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-	    val->i = *(uint32_t *)tmp;
+	    uint32_t tmp;
+	    ((char *)&tmp)[0] = s[3];
+	    ((char *)&tmp)[1] = s[4];
+	    ((char *)&tmp)[2] = s[5];
+	    ((char *)&tmp)[3] = s[6];
+	    val->i = tmp;
 	}
 	s+=7;
 	break;
@@ -1200,9 +1205,12 @@ int bam_aux_iter(bam_seq_t *b, char **iter_handle,
     case 'i':
 	if (type) *type = 'i';
 	if (val) {
-	    char tmp[4]; /* word aligned data */
-	    tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-	    val->i = *(int32_t *)tmp;
+	    int32_t tmp;
+	    ((char *)&tmp)[0] = s[3];
+	    ((char *)&tmp)[1] = s[4];
+	    ((char *)&tmp)[2] = s[5];
+	    ((char *)&tmp)[3] = s[6];
+	    val->i = tmp;
 	}
 	s+=7;
 	break;

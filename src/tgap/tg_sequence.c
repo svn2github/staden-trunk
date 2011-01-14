@@ -664,7 +664,7 @@ int sequence_invalidate_consensus(GapIO *io, seq_t *s) {
  * number for the contig containing it.
  */
 tg_rec sequence_get_contig(GapIO *io, tg_rec snum) {
-    bin_index_t *bin;
+    bin_index_t *bin = NULL;
     tg_rec bnum;
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
 
@@ -675,7 +675,7 @@ tg_rec sequence_get_contig(GapIO *io, tg_rec snum) {
 	    break;
     }
 
-    assert(bin->parent_type == GT_Contig);
+    assert(bin && bin->parent_type == GT_Contig);
     return bin->parent;
 }
 
@@ -684,7 +684,7 @@ tg_rec sequence_get_contig(GapIO *io, tg_rec snum) {
  * this sequence vs the contig.
  */
 int sequence_get_orient(GapIO *io, tg_rec snum) {
-    bin_index_t *bin;
+    bin_index_t *bin = NULL;
     tg_rec bnum;
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
     int comp = s->len < 0;
@@ -698,7 +698,7 @@ int sequence_get_orient(GapIO *io, tg_rec snum) {
 	    break;
     }
 
-    assert(bin->parent_type == GT_Contig);
+    assert(bin && bin->parent_type == GT_Contig);
     return comp;
 }
 

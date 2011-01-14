@@ -1763,6 +1763,9 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    break;
 	}
 
+	default:
+	    sub_new = NULL;
+	    break;
 	}
 
 	ci_new = sub_new;

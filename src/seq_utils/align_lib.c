@@ -2070,6 +2070,7 @@ int affine_align3(OVERLAP *overlap, ALIGN_PARAMS *params) {
   OLD_PAD_SYM = params->old_pad_sym;
   NEW_PAD_SYM = params->new_pad_sym;
   band = params->band;
+  band_length = (2 * band) + 3;
   first_row = params->first_row;
   band_left = params->band_left;
   band_right = params->band_right;
@@ -2149,7 +2150,6 @@ int affine_align3(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	 * need to add another 2 to the band length.
 	 */
 
-	band_length = (2 * band) + 3;
 	/*
 	 * Need to add one to first_row, first_column, band_left and
 	 * band_right because the alignment matrix has an extra row

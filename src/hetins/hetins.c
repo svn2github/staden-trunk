@@ -98,78 +98,74 @@ double max_area2(TRACE *tx, TRACE *ty, TRACE *tz, TRACE *tw, int stp, int endp)
     w = get_area(tw,stp,endp);
 
     if ((w >= x) && (w >= y) && (w >= z)) {
-      if ((x >= y) && (x >= z)) {
-	u = w + x;
-	v = y + z;
-      }
-      else {
-	if ((y >= x) && (y >= z)) {
-	  u = w + y;
-	  v = x + z;
+	if ((x >= y) && (x >= z)) {
+	    u = w + x;
+	    v = y + z;
 	}
 	else {
-	  if ((z >= x) && (z >= y)) {
-	    u = w + z;
-	    v = x + y;
-	  }
+	    if ((y >= x) && (y >= z)) {
+		u = w + y;
+		v = x + z;
+	    }
+	    else {
+		/* z is 2nd biggest */
+		u = w + z;
+		v = x + y;
+	    }
 	}
-      }
-      return (v/u);
+	return (v/u);
     }
     if ((x >= w) && (x >= y) && (x >= z)) {
-      if ((w >= y) && (w >= z)) {
-	u = x + w;
-	v = y + z;
-      }
-      else {
-	if ((y >= w) && (y >= z)) {
-	  u = x + y;
-	  v = w + z;
+	if ((w >= y) && (w >= z)) {
+	    u = x + w;
+	    v = y + z;
 	}
 	else {
-	  if ((z >= w) && (z >= y)) {
-	    u = x + z;
-	    v = y + w;
-	  }
+	    if ((y >= w) && (y >= z)) {
+		u = x + y;
+		v = w + z;
+	    }
+	    else {
+		/* z is 2nd biggest */
+		u = x + z;
+		v = y + w;
+	    }
 	}
-      }
-      return (v/u);
+	return (v/u);
     }
     if ((y >= w) && (y >= x) && (y >= z)) {
-      if ((x >= w) && (x >= z)) {
-	u = y + x;
-	v = w + z;
-      }
-      else {
-	if ((w >= x) && (w >= z)) {
-	  u = y + w;
-	  v = x + z;
+	if ((x >= w) && (x >= z)) {
+	    u = y + x;
+	    v = w + z;
 	}
 	else {
-	  if ((z >= x) && (z >= w)) {
-	    u = y + z;
-	    v = x + w;
-	  }
+	    if ((w >= x) && (w >= z)) {
+		u = y + w;
+		v = x + z;
+	    }
+	    else {
+		/* z is 2nd biggest */
+		u = y + z;
+		v = x + w;
+	    }
 	}
-      }
-      return (v/u);
+	return (v/u);
     }
     /* must be z */
     if ((x >= y) && (x >= w)) {
-      u = z + x;
-      v = y + w;
+	u = z + x;
+	v = y + w;
     }
     else {
-      if ((y >= x) && (y >= w)) {
-	u = z + y;
-	v = w + x;
-      }
-      else {
-	if ((w >= x) && (w >= y)) {
-	  u = z + w;
-	  v = x + y;
+	if ((y >= x) && (y >= w)) {
+	    u = z + y;
+	    v = w + x;
 	}
-      }
+	else {
+	    /* w is 2nd biggest */
+	    u = z + w;
+	    v = x + y;
+	}
     }
     return (v/u);
 }

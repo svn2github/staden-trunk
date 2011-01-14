@@ -1153,7 +1153,7 @@ void update_range_y(GapIO *io, rangec_t *r, int count) {
     tg_rec last_bin = -1;
 
     for (i = 0; i < count; i++) {
-	bin_index_t *bin;
+	bin_index_t *bin = NULL;
 	range_t *rng;
 
 	if (last_bin != r[i].orig_rec) {

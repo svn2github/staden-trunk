@@ -133,7 +133,7 @@ void gap_write_gel_data(List *l) {
     GReadings r;
     GTemplates t;
     int length = 0, start = 0, end = 0, ostart = 1;
-    int left, right, pos, comp, i, gel_num;
+    int left = 0, right = 0, pos = 0, comp = 0, i, gel_num;
     char seq[WINKLE], *cp;
     int1 conf[WINKLE];
     int2 opos[WINKLE];
@@ -144,9 +144,6 @@ void gap_write_gel_data(List *l) {
 
     if (cp = assoc(l, gel_r_nbr))
 	right = atoi(cp);
-
-    if (cp = assoc(l, gel_l_nbr))
-	left = atoi(cp);
 
     if (cp = assoc(l, gel_pos))
 	pos = atoi(cp);

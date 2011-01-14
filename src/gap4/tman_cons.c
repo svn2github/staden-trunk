@@ -58,7 +58,7 @@ static int cons_matches(EdStruct *xx, char *con, int start, int seq,
 static int *get_trace_pos(Read *r, EdStruct *xx, int seq, int pos,
 			  int from, int to, char *s, int do_comp) {
     int2 *op, *opos = NULL;
-    int i, last_val, last_pos, next_pos, next_val;
+    int i, last_val = 0, last_pos = 0, next_pos, next_val;
     double avg_space = (r->basePos[r->NBases-1] - r->basePos[0]) /
 	(double)(r->NBases - 1);
     int next_p;

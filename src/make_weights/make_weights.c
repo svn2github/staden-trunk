@@ -128,7 +128,7 @@ void free_WtmatrixSpec ( WtmatrixSpec *w ) {
 
 Motif_specs* get_motif_info(FILE *fp_vf, int char_set ) {
 
-  char line[MAX_LINE], *comment, *name, *seq;
+  char line[MAX_LINE], *comment, *name = NULL, *seq = NULL;
   char *c, *s;
   Motif_spec *v;
   static Motif_specs vs;

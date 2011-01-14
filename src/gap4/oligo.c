@@ -280,7 +280,7 @@ static int check_template_name(EdStruct *xx, char *template_name,
     /*
      * Check template_name exists
      */
-    found = 0;
+    found = found_index = 0;
     template_len = strlen(template_name);
 
     for (i=1; i<=DBI_gelCount(xx) ; i++) {

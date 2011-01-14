@@ -634,7 +634,7 @@ int do_trna_search ( char seq[], int seq_length, int user_start, int user_end,
     int aa_left, aa_right, max_aa_start, aa_left_start, min_aa_end, max_aa_end;
     int aa_right_end, aa_score;
     int tu_number, tu_right, tu_left, tu_score, tu_left_match[10], tu_match_score[10];
-    int tu_right_match, tu_match_number;
+    int tu_right_match=0, tu_match_number;
     int i,j,start,end,intron_length;
     int ac_min_start, ac_max_start, ac_left, d_left, d_right,d_score;
     int ac_right_start, ac_right, lac, rac, ac_score, ac_right_end;

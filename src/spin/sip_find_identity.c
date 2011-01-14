@@ -339,7 +339,7 @@ void identities_recalc_func(void *obj, seq_reg_plot *plot)
     int seq1_type, seq2_type;
     Tk_Raster *printData;
     int max_matches = get_max_matches();
-    int max_hash, word_length;
+    int max_hash = 7, word_length;
     int *seq1_match, *seq2_match; 
     int *len_match;
     int n_matches;
@@ -544,7 +544,7 @@ int init_sip_matching_words_create(Tcl_Interp *interp,
     int *seq1_match = NULL;
     int *seq2_match = NULL; 
     int *len_match = NULL;
-    int max_hash, word_length;
+    int max_hash = 7, word_length;
     in_find_identities *input = NULL;
     int same_seq;
     int too_many_matches = 0;

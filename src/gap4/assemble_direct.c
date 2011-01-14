@@ -1246,6 +1246,7 @@ char *assemble_direct(GapIO *io, int display, double max_mism,
 	    continue;
 	}
 
+	dir = pos = contig = tol = 0;
 	if (0 != AP_parse(io, rname, exp_get_entry(si->e, EFLT_AP),
 			  &name, &dir, &pos, &contig, &tol)) {
 	    verror(ERR_WARN, "directed_assembly", "invalid AP line in '%s'.",
