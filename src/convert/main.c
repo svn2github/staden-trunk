@@ -64,6 +64,7 @@ static void get_db(char *prompt,
     int i;
     IOString ctype;
     int itype;
+    char *cp;
 
     printf("%s\n",prompt);
     printf("Available types are:\n");
@@ -84,9 +85,13 @@ static void get_db(char *prompt,
 
     printf("Database name? ");
     fgets(name, sizeof(IOString), stdin);
+    if ((cp = strchr(name, '\n')))
+	*cp = 0;
 
     printf("Database version? ");
     fgets(version, sizeof(IOString), stdin);
+    if ((cp = strchr(version, '\n')))
+	*cp = 0;
 
     printf("\n");
 }
