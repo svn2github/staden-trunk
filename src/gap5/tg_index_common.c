@@ -675,8 +675,9 @@ tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
 
     if (a->tmp && (a->data_type & DATA_NAME))
 	bttmp_file_store(a->tmp, seq->name_len, seq->name, recno);
-
-    free(seq->data);
+    
+    if (seq->data)
+	free(seq->data);
 
     /* Link bin back to sequence too before it gets flushed */
     r_out->rec = recno;

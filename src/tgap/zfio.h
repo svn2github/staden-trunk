@@ -17,5 +17,7 @@ int zfseeko(zfp *zf, off_t offset, int whence);
 char *zfgets(char *line, int size, zfp *zf);
 zfp *zfopen(const char *path, const char *mode);
 int zfclose(zfp *zf);
+int zfpeek(zfp *zf);
+int zfeof(zfp *zf);
 
 #endif /* _ZFIO_H_ */

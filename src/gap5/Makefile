@@ -65,6 +65,7 @@ TG_INDEX=\
 	bam.o \
 	ace.o \
 	caf.o \
+	fasta.o \
 	depad_seq_tree.o
 
 GAP5=\

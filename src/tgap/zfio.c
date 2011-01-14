@@ -38,6 +38,31 @@ char *zfgets(char *line, int size, zfp *zf) {
 	return gzgets(zf->gz, line, size);
 }
 
+/*
+ * Peeks at and returns the next character without consuming it from the
+ * input. (Ie a combination of getc and ungetc).
+ */
+int zfpeek(zfp *zf) {
+    int c;
+
+    if (zf->fp) {
+	c = getc(zf->fp);
+	if (c != EOF)
+	    ungetc(c, zf->fp);
+    } else {
+	c = gzgetc(zf->gz);
+	if (c != EOF)
+	    gzungetc(c, zf->gz);
+    }
+
+    return c;
+}
+
+/* A replacement for either feof of gzeof */
+int zfeof(zfp *zf) {
+    return zf->fp ? feof(zf->fp) : gzeof(zf->gz);
+}
+
 /* A replacement for either fopen or gzopen */
 zfp *zfopen(const char *path, const char *mode) {
     char path2[1024];

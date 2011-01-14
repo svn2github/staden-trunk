@@ -310,11 +310,13 @@ int main(int argc, char **argv) {
 	    break;
 
 	case 'F':
-	    printf("Skipping unsupported FASTA file %s\n", argv[optind]);
+	    printf("Processing FASTA file %s\n", argv[optind]);
+	    err = parse_fasta_or_fastq(io, argv[optind++], &a, 'a') ? 1 : 0;
 	    break;
 
 	case 'Q':
-	    printf("Skipping unsupported FASTQ file %s\n", argv[optind]);
+	    printf("Processing FASTQ file %s\n", argv[optind]);
+	    err = parse_fasta_or_fastq(io, argv[optind++], &a, 'q') ? 1 : 0;
 	    break;
 
 	default:
