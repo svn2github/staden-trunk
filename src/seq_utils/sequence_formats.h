@@ -17,7 +17,7 @@ typedef struct base_pos {
 
 typedef struct {
   BasePos *loca;
-  char type_loca[2];
+  char type_loca[3];
   int id;
   char *cdsexpr;
   char *qualifier[number_quas];
