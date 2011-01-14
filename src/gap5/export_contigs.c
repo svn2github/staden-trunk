@@ -868,7 +868,10 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
     if (s->aux_len) {
 	aux_ptr = sam_aux_stringify(s->sam_aux, s->aux_len);
-	dstring_append(ds, aux_ptr);
+	if (aux_ptr && *aux_ptr) {
+	    dstring_append(ds, "\t");
+	    dstring_append(ds, aux_ptr);
+	}
     }
 
     /*--- Attach tags for this sequence too */
