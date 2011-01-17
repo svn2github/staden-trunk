@@ -1291,6 +1291,9 @@ set_def CONTIG_NAVIGATOR.SHOW_TRACES 1
 # Prefinish
 set_def PREFINISH.CONFIG_FILE $env(STADTABL)/config.prefinish
 
+# fasta/fastq assembly
+set_def ASSEMBLE_SINGLE.FORMAT 1
+
 # Set this to a Tcl list of the interpreter names of programs which Gap4 can
 # communicate with using the Send To command. If they're not already running,
 # it'll start one itself with the second half of the name. NB, interpreter

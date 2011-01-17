@@ -177,6 +177,8 @@ if { $tcl_platform(platform) != "windows" } {
 #add_command {Lists.Search template names} 12 6 {SearchTemplateDialog \$io} 
 #add_command {Lists.Search annotation contents} 12 6 {SearchAnnoDialog \$io} 
 
+add_command	{Assembly.Import Fasta/Fastq as single-read contigs} \
+						12 22 {AssemblySingle \$io}
 add_cascade	{Assembly.Map Reads}		12 22
 add_command	{Assembly.Map Reads.Bwa aln}    12 22 {MapReads_bwa_aln \$io}
 add_command	{Assembly.Map Reads.Bwa dbwtsw} 12 22 {MapReads_bwa_dbwtsw \$io}

@@ -10,6 +10,8 @@ set auto_index(AlterRelationships) [list source [file join $dir alter_rel.tcl]]
 
 set auto_index(DirectAssembly) [list source [file join $dir assemble_direct.tcl]]
 
+set auto_index(AssemblySingle) [list source [file join $dir assemble_single.tcl]]
+
 set auto_index(NormalShotgun) [list source [file join $dir auto_assemble.tcl]]
 set auto_index(Screen) [list source [file join $dir auto_assemble.tcl]]
 set auto_index(OneContig) [list source [file join $dir auto_assemble.tcl]]

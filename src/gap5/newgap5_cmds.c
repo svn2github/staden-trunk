@@ -1607,6 +1607,14 @@ tcl_import_reads(ClientData clientData,
 	    parse_sam(args.io, args.file, &args.a);
 	    break;
 
+        case 'F':
+	    parse_fasta_or_fastq(args.io, args.file, &args.a, 'a');
+	    break;
+	    
+        case 'Q':
+	    parse_fasta_or_fastq(args.io, args.file, &args.a, 'q');
+	    break;
+
 	default:
 	    fprintf(stderr, "Unknown file type for '%s' - skipping\n",
 		    args.file);
