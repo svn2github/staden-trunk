@@ -259,7 +259,7 @@ fastq_entry_t *fastq_next(zfp *fp) {
 
 	    cp2 = line;
 	    while (l-- > 0) {
-		if (!isspace(*cp))
+		if (!isspace(*cp2))
 		    *cp++ = *cp2;
 		cp2++;
 	    }
@@ -312,7 +312,7 @@ fastq_entry_t *fastq_next(zfp *fp) {
 
 	    cp2 = line;
 	    while (l-- > 0) {
-		if (!isspace(*cp)) {
+		if (!isspace(*cp2)) {
 		    *cp++ = *cp2;
 		    nqual--;
 		}
