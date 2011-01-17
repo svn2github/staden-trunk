@@ -132,7 +132,7 @@ fastq_entry_t *fasta_next(zfp *fp) {
 
 	    cp2 = line;
 	    while (l-- > 0) {
-		if (!isspace(*cp))
+		if (!isspace(*cp2))
 		    *cp++ = *cp2;
 		cp2++;
 	    }
@@ -366,6 +366,7 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 	/* Create 1 read contig */
 	create_new_contig(io, &c, ent->name, 0);
 	
+	seq.rec         = 0;
 	seq.parent_rec  = 0;
 	seq.parent_type = 0;
 
