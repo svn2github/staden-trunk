@@ -457,14 +457,14 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
     range_t *r;
     contig_t *c;
 
-    /* Remove from relevant seq_block array */
-    cache_item_remove(io, GT_Seq, pos->rec);
-
     /* Remove from sequence name btree index */
     if (!(s = cache_search(io, GT_Seq, pos->rec)))
 	return -1;
     cache_incr(io, s);
     
+    /* Remove from relevant seq_block array */
+    cache_item_remove(io, GT_Seq, pos->rec);
+
     io->iface->seq.index_del(io->dbh, s->name);
 
     /* Deallocate seq struct itself */
@@ -474,11 +474,14 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
     }
 
     /* Remove from range array */
-    b = cache_rw(io, b);
-    b->flags |= BIN_RANGE_UPDATED;
     r = arrp(range_t, b->rng, s->bin_index);
-    assert(r->rec == s->rec);
-    r->flags |= GRANGE_FLAG_UNUSED;
+    if (!(r->flags & GRANGE_FLAG_UNUSED)) {
+	assert(r->rec == s->rec);
+
+	b = cache_rw(io, b);
+	b->flags |= BIN_RANGE_UPDATED;
+	r->flags |= GRANGE_FLAG_UNUSED;
+    }
 
     cache_decr(io, s);
 
