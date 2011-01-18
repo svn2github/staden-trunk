@@ -14,9 +14,9 @@
 #include <ctype.h>
 
 #include "bam.h"
+#include "os.h"
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
-#define le_int4(i) (i)
 
 
 static int bam_more_input(bam_file_t *b);
@@ -754,6 +754,10 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
 		n = n*10 + *cpf++ - '0';
 	    } else {
 		unsigned char op;
+		union {
+		    unsigned char c[4];
+		    uint32_t i;
+		} c4i;
 
 		switch (*cpf++) {
 		case 'M': op=0; break;
@@ -770,11 +774,11 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
 		    return -1;
 		}
 
-		n = (n << 4) | op;
-		*cpt++ =  n        & 0xff;
-		*cpt++ = (n >>  8) & 0xff;
-		*cpt++ = (n >> 16) & 0xff;
-		*cpt++ = (n >> 24) & 0xff;
+		c4i.i = (n << 4) | op;
+		*cpt++ = c4i.c[0];
+		*cpt++ = c4i.c[1];
+		*cpt++ = c4i.c[2];
+		*cpt++ = c4i.c[3];
 
 		n = 0;
 		cigar_len++;
@@ -996,12 +1000,20 @@ int bam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     bs->blk_size  = blk_size;
     bs->ref       = le_int4(bs->ref);
     bs->pos       = le_int4(bs->pos);
-    //bs->bin_mq_nl = le_int4(bs->bin_mq_nl);
-    //bs->flag_nc   = le_int4(bs->flag_nc);
+    bs->bin_mq_nl = le_int4(bs->bin_mq_nl);
+    bs->flag_nc   = le_int4(bs->flag_nc);
     bs->len       = le_int4(bs->len);
     bs->mate_ref  = le_int4(bs->mate_ref);
     bs->mate_pos  = le_int4(bs->mate_pos);
     bs->ins_size  = le_int4(bs->ins_size);
+
+    if (10 == be_int4(10)) {
+	int i, cigar_len = bam_cigar_len(bs);
+	uint32_t *cigar = bam_cigar(bs);
+	for (i = 0; i < cigar_len; i++) {
+	    cigar[i] = le_int4(cigar[i]);
+	}
+    }
 
     return 1;
 }
@@ -1041,8 +1053,8 @@ int bam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     //bs->blk_size  = blk_size;
     bs->ref       = le_int4(bs->ref);
     bs->pos       = le_int4(bs->pos);
-    //bs->bin_mq_nl = le_int4(bs->bin_mq_nl);
-    //bs->flag_nc   = le_int4(bs->flag_nc);
+    bs->bin_mq_nl = le_int4(bs->bin_mq_nl);
+    bs->flag_nc   = le_int4(bs->flag_nc);
     bs->len       = le_int4(bs->len);
     bs->mate_ref  = le_int4(bs->mate_ref);
     bs->mate_pos  = le_int4(bs->mate_pos);
@@ -1059,6 +1071,14 @@ int bam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     /* The remainder, word aligned */
     if (bam_read(b, &bs->data + bam_name_len(bs), blk_ret) != blk_ret)
 	return -1;
+
+    if (10 == be_int4(10)) {
+	int i, cigar_len = bam_cigar_len(bs);
+	uint32_t *cigar = bam_cigar(bs);
+	for (i = 0; i < cigar_len; i++) {
+	    bs[i] = le_int4(bs[i]);
+	}
+    }
 
     return 1;
 }
