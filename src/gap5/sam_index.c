@@ -221,8 +221,8 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
     
     /* left hand cutoff data */
     if (p->seq_offset >= 0) {
-	unsigned char *seq  = bam_seq(p->b);
-	unsigned char *qual = bam_qual(p->b);
+	unsigned char *seq  = (unsigned char *)bam_seq(p->b);
+	unsigned char *qual = (unsigned char *)bam_qual(p->b);
 	char *sp = s->seq;
 	char *qp = s->conf;
 
@@ -1306,8 +1306,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     /* Construct a seq_t struct */
     s.right = bs->seq_len;
     if (p->seq_offset+1 < b->len) {
-	unsigned char *b_seq  = bam_seq(p->b);
-	unsigned char *b_qual = bam_qual(p->b);
+	unsigned char *b_seq  = (unsigned char *)bam_seq(p->b);
+	unsigned char *b_qual = (unsigned char *)bam_qual(p->b);
 
 	if (bs->seq_len+b->len - (p->seq_offset+1) >= bs->alloc_len) {
 	    bs->alloc_len = bs->seq_len+b->len - (p->seq_offset+1) + 1;

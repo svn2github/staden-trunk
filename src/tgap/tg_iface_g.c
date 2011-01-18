@@ -2284,7 +2284,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 				unsigned char *packed,
 				int packed_sz, int *nr) {
     uint32_t i, off[6];
-    int32_t i32;
+    uint32_t i32;
     unsigned char *cp[6], *zpacked = NULL;
     GRange last, *r, *ls = &last, *lt = &last;
     size_t ssz;

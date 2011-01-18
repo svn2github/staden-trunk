@@ -90,16 +90,16 @@ static int bam_read(bam_file_t *b, void *data, size_t len) {
  * Returns actual line length used (note note the same as *len) on success
  *        -1 on failure
  */
-int bam_get_line(bam_file_t *b, char **str, size_t *len) {
-    char *buf = *str;
+int bam_get_line(bam_file_t *b, unsigned char **str, size_t *len) {
+    unsigned char *buf = *str;
     int used_l = 0;
     size_t alloc_l = *len;
     int next_condition;
 
     while (b->out_sz || bam_more_output(b) > 0) {
 	int tmp;
-	char *from = b->out_p;
-	char *to   = &buf[used_l];
+	unsigned char *from = b->out_p;
+	unsigned char *to   = &buf[used_l];
 
 	/*
 	 * Next condition is the number of loop iterations before something
@@ -177,7 +177,7 @@ int load_bam_header(bam_file_t *b) {
 }
 
 int load_sam_header(bam_file_t *b) {
-    char *str = NULL;
+    unsigned char *str = NULL;
     size_t alloc = 0, len;
     int header_pos = 0;
 
@@ -206,7 +206,7 @@ int load_sam_header(bam_file_t *b) {
 	if (str[1] == 'S' && str[2] == 'Q') {
 	    int rlen = -1;
 	    char *rname = NULL;
-	    char *cp = str+3;
+	    unsigned char *cp = str+3;
 	    HashData hd;
 
 	    //printf("line=%ld/%ld/'%s'\n", (long)len, (long)strlen(str), str);
@@ -219,7 +219,7 @@ int load_sam_header(bam_file_t *b) {
 
 	    /* Tokenise line into key/value pairs */
 	    while (*cp) {
-		char *key = cp;
+		char *key = (char *)cp;
 		char *val;
 
 		if (!key[0] || !key[1] || key[2] != ':') {
@@ -228,7 +228,7 @@ int load_sam_header(bam_file_t *b) {
 		}
 		key[2] = '\0';
 
-		cp = val = key+3;
+		cp = (unsigned char *)(val = key+3);
 		while (*cp && *cp != '\t')
 		    cp++;
 
@@ -649,7 +649,7 @@ static int bam_more_output(bam_file_t *b) {
  * Decodes the next line of SAM into a bam_seq_t struct.
  */
 int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
-    static char *str = NULL;
+    static unsigned char *str = NULL;
     static size_t alloc_l = 0;
     int used_l, n, sign;
     unsigned char *cpf, *cpt, *cp;
@@ -718,7 +718,7 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     //while (*cpf && *cpf != '\t')
     while (*cpf > '\t')
 	cpf++;
-    hi = HashTableSearch(b->ref_hash, cp, cpf-cp);
+    hi = HashTableSearch(b->ref_hash, (char *)cp, cpf-cp);
     if (!hi) {
 	fprintf(stderr, "Reference seq %.*s unknown\n", (int)(cpf-cp), cp);
 	return -1;
@@ -865,7 +865,7 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
 	    break;
 
 	case 'i':
-	    n = atoi(value);
+	    n = atoi((char *)value);
 	    if (n >= 0) {
 		if (n < 256) {
 		    *cpt++ = 'C';
@@ -904,7 +904,7 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
 		float f;
 		int i;
 	    } u;
-	    u.f = atof(value);
+	    u.f = atof((char *)value);
 	    *cpt++ = 'f';
 	    *cpt++ = (u.i) & 0xff;
 	    *cpt++ = (u.i >> 8) & 0xff;
