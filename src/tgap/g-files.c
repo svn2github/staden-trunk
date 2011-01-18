@@ -425,12 +425,16 @@ Index *g_read_index(GFile *gfile, GCardinal rec) {
     r2 = rec & ~(AUX_BLOCK_SZ-1);
 
     /* LOW LEVEL IO HERE */
-    if (-1==gfile->low_level_vector[GOP_SEEK_AUX_INDEX](gfile->fdaux,NULL,r2))
-	return gerr_set(GERR_SEEK_ERROR), NULL;
+    if (-1==gfile->low_level_vector[GOP_SEEK_AUX_INDEX](gfile->fdaux,NULL,r2)){
+	gerr_set(GERR_SEEK_ERROR);
+	return NULL;
+    }
     
     nrecs = g_read_aux_index(gfile, &aidx[0], AUX_BLOCK_SZ);
-    if (nrecs <= 0)
-	return gerr_set(GERR_READ_ERROR), NULL;
+    if (nrecs <= 0) {
+	gerr_set(GERR_READ_ERROR);
+	return NULL;
+    }
 
     for (i = 0; i < AUX_BLOCK_SZ; i++, r2++) {
 	toggle = i < nrecs
