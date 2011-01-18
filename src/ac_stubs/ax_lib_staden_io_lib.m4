@@ -86,6 +86,16 @@ AC_DEFUN([AX_LIB_IO_LIB],
       io_lib_version_ok=yes;
     fi
 
+    # Check the header file also exists, as presence of the io_lib-config
+    # script is not always sufficient to indicate a -dev install.
+    _cppflags=$CPPFLAGS
+    CPPFLAGS="$CPPFLAGS `$_io_lib_config --cflags`"
+    AC_CHECK_HEADER(io_lib/Read.h,
+		    [io_lib_version_ok=yes],
+		    [io_lib_version_ok=no])
+    CPPFLAGS=$_cppflags
+    unset _cppflags
+
     if test $io_lib_version_ok = "yes" 
     then    
       # Configure IO_LIB_CFLAGS and IO_LIB_LDFLAGS
