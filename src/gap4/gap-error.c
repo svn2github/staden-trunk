@@ -93,6 +93,7 @@ static void xperror_out_func(char *name, char *str) {
 }
 
 /* NOT FATAL */
+__PRINTF_FORMAT__(1,2)
 void GAP_ERROR(char *reason, ...) {
     char buf[8192];
     va_list args;
@@ -104,6 +105,7 @@ void GAP_ERROR(char *reason, ...) {
 }
 
 /* FATAL */
+__PRINTF_FORMAT__(1,2)
 void GAP_ERROR_FATAL(char *reason, ...) {
     char buf[8192];
     va_list args;

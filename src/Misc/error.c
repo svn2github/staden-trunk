@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "error.h"
+
 /*
  * Usage:
  *
  * errout(format, args...);
  */
+__PRINTF_FORMAT__(1,2)
 void errout(char *fmt, ...) {
     va_list args;
 
@@ -20,6 +23,7 @@ void errout(char *fmt, ...) {
  *
  * messout(format, args...);
  */
+__PRINTF_FORMAT__(1,2)
 void messout(char *fmt, ...) {
     va_list args;
 

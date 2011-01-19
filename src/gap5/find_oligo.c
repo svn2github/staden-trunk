@@ -54,10 +54,10 @@ void *find_oligo_obj_func1(int job,
 
 	    start_message();
 	    vmessage("Sequence search:\n");
-	    vmessage("    From contig %s(#%d) at %d\n",
+	    vmessage("    From contig %s(#%"PRIrec") at %d\n",
 		     get_contig_name(find_oligo->io, ABS(obj->c1)),
 		     io_clnbr(find_oligo->io, ABS(obj->c1)), obj->pos1);
-	    vmessage("    With contig %s(#%d) at %d\n",
+	    vmessage("    With contig %s(#%"PRIrec") at %d\n",
 		     get_contig_name(find_oligo->io, ABS(obj->c2)),
 		     io_clnbr(find_oligo->io, ABS(obj->c2)), obj->pos2);
 	    vmessage("    Length %d, match %2.2f%%\n\n",
@@ -195,7 +195,7 @@ void *find_oligo_obj_func2(int job,
 
 	    start_message();
 	    vmessage("Sequence search\n");
-	    vmessage("    Contig %s(#%d) at %d\n",
+	    vmessage("    Contig %s(#%"PRIrec") at %d\n",
 		     get_contig_name(find_oligo->io, ABS(obj->c1)),
 		     io_clnbr(find_oligo->io, ABS(obj->c1)), obj->pos1);
 	    vmessage("    Length %d, match %2.2f%%\n\n",

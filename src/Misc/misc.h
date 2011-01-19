@@ -25,6 +25,17 @@ extern int getopt( int argc, char* const argv[], const char* optstring );
 #    define __NORETURN__
 #endif
 
+/*
+ * Used for printf style argument checking. We can request a function such
+ * as vTcl_SetResult does argument checking, avoiding bugs with using
+ * %d and passing in a 64-bit record.
+ */
+#ifdef __GNUC__
+#    define __PRINTF_FORMAT__(a,b) __attribute__ ((format (printf, a, b)))
+#else
+#    define __PRINTF_FORMAT__(a,b)
+#endif
+
 extern int is_directory(char * fn);
 extern int is_file(char * fn);
 extern int file_exists(char * fn);
@@ -37,7 +48,7 @@ extern void f2cstr(char *f, int max_f, char *c, int max_c);
 extern void c2fstr(char *c, int max_c, char *f, int max_f);
 extern char *mystrtok(char *s, char *ct);
 extern char *myfind(char *file, char* searchpath, int (*found) (char *) );
-extern void crash (char* format,...) __NORETURN__ ;
+extern void crash (char* format,...) __NORETURN__ __PRINTF_FORMAT__(1,2);
 extern void str_tolower (char *s);
 extern void str_toupper (char *s);
 extern char *fn_tail (char *s);
@@ -57,8 +68,8 @@ extern void *memmove(void *s1, const void *s2, size_t n);
 #endif
 extern int myusleep(unsigned int useconds);
 
-extern void errout(char *fmt, ...);
-extern void messout(char *fmt, ...);
+extern void errout(char *fmt, ...) __PRINTF_FORMAT__(1,2);
+extern void messout(char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 /*
  * Useful macros
@@ -103,23 +114,23 @@ extern void messout(char *fmt, ...);
  */
 #define ERR_WARN 0
 #define ERR_FATAL 1
-void verror(int priority, const char *name, const char *fmt, ...);
+void verror(int priority, const char *name, const char *fmt, ...) __PRINTF_FORMAT__(3,4);
 
 /*
  * Usage: vmessage(format, args...);
  * NB: don't pass more than 8K per call
  */
-void vmessage(const char *fmt, ...);
+void vmessage(const char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 /*
  * Adds a new header to the text output window.
  */
-void vfuncheader(const char *fmt, ...);
+void vfuncheader(const char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 /*
  * As vfuncheader, but only outputting when necessary.
  */
-void vfuncgroup(int group, const char *fmt, ...);
+void vfuncgroup(int group, const char *fmt, ...) __PRINTF_FORMAT__(2,3);
 
 
 #ifdef NOSTRCASECMP

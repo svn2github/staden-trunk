@@ -27,19 +27,20 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+#include "seqInfo.h"
+
 #include <os.h>
 #include <io_lib/expFileIO.h>
 #include <io_lib/scf_extras.h>
 #include <io_lib/misc.h>
-
-#include "seqInfo.h"
 
 /*
  * Usage: verror(priority, name, format, args...);
  * NB: don't pass more than 8K per call
  */
 /* ARGSUSED */
-void verror(int priority, char *name, char *fmt, ...) { 
+__PRINTF_FORMAT__(3,4)
+void verror(int priority, const char *name, const char *fmt, ...) { 
     va_list args;
 
     fprintf(stderr, "%s: ", name);

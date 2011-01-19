@@ -16,18 +16,15 @@
 #ifndef _SEQINFO_H_
 #define _SEQINFO_H_
 
+#include "misc.h"
+
 #include <io_lib/array.h>
 #include <io_lib/expFileIO.h>
 
 #define DB_NAMELEN 32
 
-void vmessage(char *fmt, ...);
-
 #define ERR_WARN 0
 #define ERR_FATAL 1
-
-/* ARGSUSED */
-void verror(int priority, char *name, char *fmt, ...);
 
 /*
  * The following structure contains all the useful information

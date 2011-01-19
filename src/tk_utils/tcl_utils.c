@@ -23,6 +23,7 @@
  * the Tcl_ResetResult function. The simplest answer is to avoid it
  * completely.
  */
+__PRINTF_FORMAT__(2,3)
 void vTcl_SetResult(Tcl_Interp *interp, char *fmt, ...) {
     static char string[8192];
     char *stringp = string;
@@ -49,6 +50,7 @@ void vTcl_SetResult(Tcl_Interp *interp, char *fmt, ...) {
 }
 
 
+__PRINTF_FORMAT__(2,3)
 char *vTcl_DStringAppend(Tcl_DString *dsPtr, char *fmt, ...) {
     char string[8192], *stringp = string;
     va_list args;
@@ -75,6 +77,7 @@ char *vTcl_DStringAppend(Tcl_DString *dsPtr, char *fmt, ...) {
     return ret;
 }
 
+__PRINTF_FORMAT__(2,3)
 char *vTcl_DStringAppendElement(Tcl_DString *dsPtr, char *fmt, ...) {
     char string[8192], *stringp = string;
     va_list args;
@@ -116,6 +119,7 @@ char *w(char *str) {
     return buf;
 }
 
+__PRINTF_FORMAT__(1,2)
 char *vw(char *fmt, ...) {
     static char buf[8192];
     va_list args;

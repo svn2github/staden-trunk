@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "misc.h"
+
 /*
  * Implements a simple dynamic string object.
  * Like C, offsets start from 0.
@@ -84,13 +86,13 @@ int dstring_vinsertf(dstring_t *ds,
 		     size_t offset,
 		     const char *fmt,
 		     va_list args);
-int dstring_insertf(dstring_t *ds, size_t offset, const char *fmt, ...);
+int dstring_insertf(dstring_t *ds, size_t offset, const char *fmt, ...) __PRINTF_FORMAT__(3,4);
 int dstring_prepend(dstring_t *ds, const char *str);
 int dstring_nprepend(dstring_t *ds, const char *str, size_t len);
-int dstring_prependf(dstring_t *ds, const char *fmt, ...);
+int dstring_prependf(dstring_t *ds, const char *fmt, ...) __PRINTF_FORMAT__(2,3);
 int dstring_append(dstring_t *ds, const char *str);
 int dstring_nappend(dstring_t *ds, const char *str, size_t len);
-int dstring_appendf(dstring_t *ds, const char *fmt, ...);
+int dstring_appendf(dstring_t *ds, const char *fmt, ...) __PRINTF_FORMAT__(2,3);
 int dstring_append_char(dstring_t *ds, char c);
 int dstring_append_int(dstring_t *ds, int i);
 void dstring_empty(dstring_t *ds);

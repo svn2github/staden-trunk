@@ -64,14 +64,13 @@ typedef struct obj_match_t {
     int flags;
 
     /* Below here are local to this strucure only */
-    int score;
-
     /* To pad out to equivalent length to obj_read_pair - not needed normally
      * except when trying to use our 'generic' PlotRepeats function with a
      * read pair result.
      */
-    int read;
-    uint32_t dummy1; /* This has to be the >= size of largest obj type */
+    tg_rec dummy1; /* This has to be the >= size of largest obj type */
+    tg_rec read;
+    int score;
 } obj_match, obj_checkass;
 
 /*
@@ -95,7 +94,7 @@ typedef struct obj_read_pair_t {
     int flags;
 
     /* Below here are local to this strucure only */
-    int read1, read2;
+    tg_rec read1, read2;
     uint16_t mq1, mq2;
 } obj_read_pair;
 
@@ -123,6 +122,7 @@ typedef struct obj_fij_t {
     /* Below here are local to this strucure only */
     int score;
     int percent; /* *10000 */
+    uint64_t dummy2; /* This has to be the >= size of largest obj type */
     uint32_t dummy1; /* This has to be the >= size of largest obj type */
 } obj_fij;
 

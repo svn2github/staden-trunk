@@ -20,15 +20,12 @@
 #include <io_lib/array.h>
 #include <io_lib/expFileIO.h>
 
-#define DB_NAMELEN 32
+#include "misc.h"
 
-void vmessage(char *fmt, ...);
+#define DB_NAMELEN 32
 
 #define ERR_WARN 0
 #define ERR_FATAL 1
-
-/* ARGSUSED */
-void verror(int priority, char *name, char *fmt, ...);
 
 /*
  * The following structure contains all the useful information

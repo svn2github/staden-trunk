@@ -46,10 +46,10 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	    start_message();
 	    vmessage("Repeat match (%s)\n",
 		     ((obj->c1 > 0) == (obj->c2 > 0)) ? "direct" : "inverted");
-	    vmessage("    From contig %s(#%d) at %d\n",
+	    vmessage("    From contig %s(#%"PRIrec") at %d\n",
 		     get_contig_name(repeat->io, ABS(obj->c1)),
 		     io_clnbr(repeat->io, ABS(obj->c1)), obj->pos1);
-	    vmessage("    With contig %s(#%d) at %d\n",
+	    vmessage("    With contig %s(#%"PRIrec") at %d\n",
 		     get_contig_name(repeat->io, ABS(obj->c2)),
 		     io_clnbr(repeat->io, ABS(obj->c2)), obj->pos2);
 	    vmessage("    Length %d\n\n", obj->length);

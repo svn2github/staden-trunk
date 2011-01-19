@@ -106,7 +106,7 @@ int cmpseq_ (
 	
 	default:
 	
-	verror(ERR_WARN, "cmpseq", "unknown job %d", job);
+	verror(ERR_WARN, "cmpseq", "unknown job %d", *job);
 	return -2;
 	break;
 	

@@ -802,6 +802,7 @@ void UpdateTextOutput() {
  * Usage: verror(priority, name, format, args...);
  * NB: don't pass more than 8K per call
  */
+__PRINTF_FORMAT__(3,4)
 void verror(int priority, const char *name, const char *fmt, ...) {
     char buf[8192], tbuf[100], *bufp = buf;
     va_list args;
@@ -870,6 +871,7 @@ void verror(int priority, const char *name, const char *fmt, ...) {
 /*
  * Usage: vmessage(format, args...);
  */
+__PRINTF_FORMAT__(1,2)
 void vmessage(const char *fmt, ...) {
     char buf[8192], *bufp = buf;
     int len;
@@ -899,6 +901,7 @@ void vmessage(const char *fmt, ...) {
 /*
  * Usage: vmessage_tagged(format, tag, args...);
  */
+__PRINTF_FORMAT__(2,3)
 void vmessage_tagged(const char *tag, const char *fmt, ...) {
     char buf[8192], *bufp = buf;
     int len;
@@ -928,6 +931,7 @@ void vmessage_tagged(const char *tag, const char *fmt, ...) {
 /*
  * Adds a new header to the text output window.
  */
+__PRINTF_FORMAT__(1,2)
 void vfuncheader(const char *fmt, ...) {
     char name[8192], *namep = name;
     va_list args;
@@ -961,6 +965,7 @@ void vfuncheader(const char *fmt, ...) {
  * 1	2D plot matches
  * 2	Information from template display
  */
+__PRINTF_FORMAT__(2,3)
 void vfuncgroup(int group, const char *fmt, ...) {
     char name[8192], *namep = name;
     va_list args;
@@ -987,7 +992,8 @@ void vfuncgroup(int group, const char *fmt, ...) {
 /*
  * Usage: vparams(format, args...);
  */
- void vfuncparams(const char *fmt, ...) {
+__PRINTF_FORMAT__(1,2)
+void vfuncparams(const char *fmt, ...) {
     char params[8192], *paramsp = params;
     va_list args;
     int len;

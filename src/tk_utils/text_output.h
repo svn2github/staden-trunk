@@ -2,6 +2,7 @@
 #define _TEXT_OUTPUT_H_
 
 #include <tcl.h>
+#include "misc.h"
 
 int tout_open(void);
 void tout_update(void);
@@ -34,29 +35,29 @@ int tcl_error_bell(ClientData clientData, Tcl_Interp *interp,
  */
 #define ERR_WARN 0
 #define ERR_FATAL 1
-void verror(int priority, const char *name, const char *fmt, ...);
+void verror(int priority, const char *name, const char *fmt, ...) __PRINTF_FORMAT__(3,4);
 
 /*
  * Usage: vmessage(format, args...);
  */
-void vmessage(const char *fmt, ...);
+void vmessage(const char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 /*
- * Usage: vmessage_tagged(format, tag, args...);
+ * Usage: vmessage_tagged(tag, format, args...);
  */
-void vmessage_tagged(const char *tag, const char *fmt, ...);
+void vmessage_tagged(const char *tag, const char *fmt, ...) __PRINTF_FORMAT__(2,3);
 
 /*
  * Adds a new header to the text output window.
  */
-void vfuncheader(const char *fmt, ...);
+void vfuncheader(const char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 /*
  * As vfuncheader, but only outputting when necessary.
  */
-void vfuncgroup(int group, const char *fmt, ...);
+void vfuncgroup(int group, const char *fmt, ...) __PRINTF_FORMAT__(2,3);
 
-void vfuncparams(const char *fmt, ...);
+void vfuncparams(const char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 int TextOutput_Init(Tcl_Interp *interp);
 void UpdateTextOutput(void);

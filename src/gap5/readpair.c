@@ -79,11 +79,11 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 	    start_message();
 
 	    vmessage("Read pair:\n");
-	    vmessage("    From contig %s(#%d) at %d reading %s(#%d)\n",
+	    vmessage("    From contig %s(#%"PRIrec") at %d reading %s(#%"PRIrec")\n",
 		     get_contig_name(template->io, ABS(obj->c1)),
 		     io_clnbr(template->io, ABS(obj->c1)), obj->pos1,
 		     get_read_name(template->io, obj->read1), obj->read1);
-	    vmessage("    With contig %s(#%d) at %d reading %s(#%d)\n",
+	    vmessage("    With contig %s(#%"PRIrec") at %d reading %s(#%"PRIrec")\n",
 		     get_contig_name(template->io, ABS(obj->c2)),
 		     io_clnbr(template->io, ABS(obj->c2)), obj->pos2,
 		     get_read_name(template->io, obj->read2), obj->read2);

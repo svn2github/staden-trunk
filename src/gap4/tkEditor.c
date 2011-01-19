@@ -1829,7 +1829,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
                 redisplaySequences(ed->xx, 1);
             }
             vTcl_SetResult(interp, "%d",
-                           DBI_flags(ed->xx) & DB_ACCESS_UPDATE);
+                           (int)(DBI_flags(ed->xx) & DB_ACCESS_UPDATE));
         }
     } else if ('l' == *argv[1] && strcmp(argv[1], "list_confidence") == 0) {
 	int left, right, info_only;

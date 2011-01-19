@@ -397,7 +397,7 @@ int tcl_contig_order_to_number(ClientData clientData, Tcl_Interp *interp,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 	
-    vTcl_SetResult(interp, "%d",
+    vTcl_SetResult(interp, "%"PRId64,
 		   arr(tg_rec, args.io->contig_order, args.order));
     return TCL_OK;
 }

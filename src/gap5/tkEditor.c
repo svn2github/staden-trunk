@@ -759,10 +759,10 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	if (*argv[2] == 'a')
-	    vTcl_SetResult(interp, "%d %d %d",
+	    vTcl_SetResult(interp, "%d %"PRIrec" %d",
 			   GT_Contig, xx->cnum, xx->cursor_apos);
 	else
-	    vTcl_SetResult(interp, "%d %d %d",
+	    vTcl_SetResult(interp, "%d %"PRIrec" %d",
 			   xx->cursor_type, xx->cursor_rec, xx->cursor_pos);
 	
 	break;
@@ -892,7 +892,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	rec = edGetTemplateReads(ed->xx, atorec(argv[2]), &nrec);	
 	for (i = 0; i < nrec; i++) {
-	    dstring_appendf(ds, "%d ", rec[i]);
+	    dstring_appendf(ds, "%"PRIrec" ", rec[i]);
 	}
 	Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
 	dstring_destroy(ds);
@@ -1050,7 +1050,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    
 	} else if (index == GET) {
 	    if (ed->xx->select_seq) {
-		vTcl_SetResult(interp, "%d %d %d %d",
+		vTcl_SetResult(interp, "%d %"PRIrec" %d %d",
 			       ed->xx->select_seq == ed->xx->cnum
 			       ? GT_Contig
 			       : GT_Seq,
@@ -1059,7 +1059,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 			       ed->xx->select_end);
 	    } else {
 		/* The base under the editing cursor */
-		vTcl_SetResult(interp, "%d %d %d %d",
+		vTcl_SetResult(interp, "%d %"PRIrec" %d %d",
 			       ed->xx->cursor_rec == ed->xx->cnum
 			       ? GT_Contig
 			       : GT_Seq,

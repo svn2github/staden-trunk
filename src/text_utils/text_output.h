@@ -1,31 +1,33 @@
 #ifndef _TEXT_OUTPUT_H_
 #define _TEXT_OUTPUT_H_
 
+#include "misc.h"
+
 /*
  * Usage: verror(priority, format, args...);
  * NB: don't pass more than 8K per call
  */
 #define ERR_WARN 0
 #define ERR_FATAL 1
-void verror(int priority, const char *name, const char *fmt, ...);
+void verror(int priority, const char *name, const char *fmt, ...) __PRINTF_FORMAT__(3,4);
 
 /*
  * Usage: vmessage(format, args...);
  * NB: don't pass more than 8K per call
  */
-void vmessage(const char *fmt, ...);
+void vmessage(const char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 /*
  * Adds a new header to the text output window.
  */
-void vfuncheader(const char *fmt, ...);
+void vfuncheader(const char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 /*
  * As vfuncheader, but only outputting when necessary.
  */
-void vfuncgroup(int group, const char *fmt, ...);
+void vfuncgroup(int group, const char *fmt, ...) __PRINTF_FORMAT__(2,3);
 
-void vfuncparams(const char *fmt, ...);
+void vfuncparams(const char *fmt, ...) __PRINTF_FORMAT__(1,2);
 
 void UpdateTextOutput(void);
 

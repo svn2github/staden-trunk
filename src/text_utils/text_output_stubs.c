@@ -6,17 +6,20 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "text_output.h"
+
 static int header_outputted = 0;
 
 void start_message(void) {}
-void end_message(void) {}
+void end_message(const char *parent) {}
 
 /*
  * Usage: verror(priority, name, format, args...);
  * NB: don't pass more than 8K per call
  */
 /* ARGSUSED */
-void verror(int priority, char *name, char *fmt, ...) { 
+__PRINTF_FORMAT__(3,4)
+void verror(int priority, const char *name, const char *fmt, ...) { 
     va_list args;
 
     fprintf(stderr, "%s: ", name);
@@ -29,7 +32,8 @@ void verror(int priority, char *name, char *fmt, ...) {
 /*
  * Usage: vmessage(format, args...);
  */
-void vmessage(char *fmt, ...) {
+__PRINTF_FORMAT__(1,2)
+void vmessage(const char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
@@ -39,7 +43,8 @@ void vmessage(char *fmt, ...) {
 /*
  * Adds a new header to the text output window.
  */
-void vfuncheader(char *fmt, ...) {
+__PRINTF_FORMAT__(1,2)
+void vfuncheader(const char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
@@ -48,7 +53,8 @@ void vfuncheader(char *fmt, ...) {
     header_outputted = 1;
 }
 
-void vfuncparams(char *fmt, ...) {
+__PRINTF_FORMAT__(1,2)
+void vfuncparams(const char *fmt, ...) {
 }
 
 /*
@@ -60,7 +66,8 @@ void vfuncparams(char *fmt, ...) {
  * 1	2D plot matches
  * 2	Information from template display
  */
-void vfuncgroup(int group, char *fmt, ...) {
+__PRINTF_FORMAT__(2,3)
+void vfuncgroup(int group, const char *fmt, ...) {
     static int group_num = 0;
     va_list args;
 
@@ -78,5 +85,5 @@ void vfuncgroup(int group, char *fmt, ...) {
 
 /* Dummy function for text_output lib, but used in tk_utils */
 /* ARGSUSED */
-void log_file(char *fn, char *message) {}
+void log_file(const char *fn, const char *message) {}
 void log_vmessage(int log) {}

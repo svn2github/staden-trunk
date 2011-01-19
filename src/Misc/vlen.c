@@ -37,6 +37,7 @@
  * We also assume that the largest integer and larger pointer are 64
  * bits, which at least covers the machines we'll need it for.
  */
+__PRINTF_FORMAT__(1,2)
 int flen(const char *fmt, ...)
 {
     va_list args;

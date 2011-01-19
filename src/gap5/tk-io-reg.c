@@ -1323,7 +1323,7 @@ int tk_query_cursor(ClientData clientData, Tcl_Interp *interp,
 	return TCL_OK;
 
     vTcl_SetResult(interp,
-		   "{id %d} {refs %d} {private %d} {abspos %d} {contig %d}",
+		   "{id %d} {refs %d} {private %d} {abspos %d} {contig %"PRId64"}",
 		   gc->id, gc->refs, gc->private, gc->abspos, args.cnum);
     return TCL_OK;
 }
@@ -1413,7 +1413,7 @@ int tk_cursor_ref(ClientData clientData, Tcl_Interp *interp,
     cursor = find_contig_cursor(args.io, args.cnum, args.id);
     if (!cursor) {
 	verror(ERR_WARN, "contig_notify", "Unable to find cursor for "
-	       "contig %d with id %d\n",
+	       "contig %"PRIrec" with id %d\n",
 	       args.cnum, args.id);
 	return TCL_OK;
     }

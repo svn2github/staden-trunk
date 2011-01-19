@@ -540,7 +540,7 @@ static int (*get_gel_qual(tg_rec gel, int start, int end,
     info.gel_seq.gel = gel;
     if (-1 == info_func(GET_SEQ, info_data, &info)) {
 	verror(ERR_FATAL, "get_gel_qual",
-	       "Failed to read sequence for gel no. %d\n", gel);
+	       "Failed to read sequence for gel no. %"PRIrec, gel);
 	return (int (*)[2])-1;
     }
 

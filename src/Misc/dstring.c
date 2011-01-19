@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <errno.h>
 
+#include "dstring.h"
 #include "vlen.h"
 
 /*
@@ -153,6 +154,7 @@ int dstring_vinsertf(dstring_t *ds,
  * Returns 0 for success
  *        -1 for failure
  */
+__PRINTF_FORMAT__(3,4)
 int dstring_insertf(dstring_t *ds,
 		    size_t offset,
 		    const char *fmt,
@@ -222,6 +224,7 @@ int dstring_nprepend(dstring_t *ds, const char *str, size_t len) {
  * Returns 0 for success
  *        -1 for failure
  */
+__PRINTF_FORMAT__(2,3)
 int dstring_prependf(dstring_t *ds, const char *fmt, ...) {
     
     va_list args;
@@ -329,6 +332,7 @@ int dstring_nappend(dstring_t *ds, const char *str, size_t len) {
  * Returns 0 for success
  *        -1 for failure
  */
+__PRINTF_FORMAT__(2,3)
 int dstring_appendf(dstring_t *ds, const char *fmt, ...) {
     
     va_list args;

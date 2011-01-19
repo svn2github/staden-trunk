@@ -18,14 +18,16 @@
 #ifndef _GAP_ERROR_H_
 #define _GAP_ERROR_H_
 
+#include "misc.h"
+
 extern void error_sig(int sig);
 
 /* NOT FATAL */
-extern void GAP_ERROR(char *reason, ...);
+extern void GAP_ERROR(char *reason, ...) __PRINTF_FORMAT__(1,2);
 
 
 /* FATAL */
-extern void GAP_ERROR_FATAL(char *reason, ...);
+extern void GAP_ERROR_FATAL(char *reason, ...) __PRINTF_FORMAT__(1,2);
 
 extern void set_gap_fatal_errors(int val);
 
