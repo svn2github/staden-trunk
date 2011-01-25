@@ -77,6 +77,9 @@ FFLAGS		  = @FFLAGS@
 
 EXTRA_LIBS	  = @LIBS@
 
+# System type
+OS := $(shell uname -s)
+
 
 # Large file support
 # (Enabled automatically due to AC_SYS_LARGEFILE & AC_FUNC_FSEEKO ?)

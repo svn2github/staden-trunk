@@ -2747,6 +2747,8 @@ if {[tk windowingsystem] eq "x11"} {
     bind EdNames <Shift-5>         {%W xview scroll  +1 units}
 }
 
+# These keysyms have different names, so try both and ignore errors
+catch {
 bind Editor <Key-Page_Down> {%W xview scroll  +1000 units}
 bind Editor <Key-Page_Up>   {%W xview scroll  -1000 units}
 bind Editor <Shift-Key-Page_Down> {%W xview scroll  +10000 units}
@@ -2755,6 +2757,18 @@ bind Editor <Control-Key-Page_Down> {%W xview scroll  +100000 units}
 bind Editor <Control-Key-Page_Up>   {%W xview scroll  -100000 units}
 bind Editor <Shift-Control-Key-Page_Down> {%W xview scroll  +1000000 units}
 bind Editor <Shift-Control-Key-Page_Up>   {%W xview scroll  -1000000 units}
+}
+
+catch {
+bind Editor <Key-Next> {%W xview scroll  +1000 units}
+bind Editor <Key-Prior>   {%W xview scroll  -1000 units}
+bind Editor <Shift-Key-Next> {%W xview scroll  +10000 units}
+bind Editor <Shift-Key-Prior>   {%W xview scroll  -10000 units}
+bind Editor <Control-Key-Next> {%W xview scroll  +100000 units}
+bind Editor <Control-Key-Prior>   {%W xview scroll  -100000 units}
+bind Editor <Shift-Control-Key-Next> {%W xview scroll  +1000000 units}
+bind Editor <Shift-Control-Key-Prior>   {%W xview scroll  -1000000 units}
+}
 
 # Selection control for adding tags
 bind Editor <<select-drag>> {%W select to @%x; editor_select_scroll %W %x}

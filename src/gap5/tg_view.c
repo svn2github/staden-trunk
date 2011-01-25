@@ -16,12 +16,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#ifdef HAVE_CURSES_H
-#  include <curses.h>
+#ifdef HAVE_LIBCURSES
+#  include LIBCURSES_HEADER
 #else
-#  ifdef HAVE_NCURSES_H
-#    include <ncurses.h>
-#  endif
+#  error "No curses library installed"
 #endif
 #include <signal.h>
 #include <ctype.h>

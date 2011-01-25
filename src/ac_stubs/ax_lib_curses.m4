@@ -51,13 +51,14 @@ AC_DEFUN([AX_LIB_CURSES],
 
   # Check if it's a working library
   curses_ok=no
-  if test "$xCURSES_ROOT" != "x"
+  if test "x$CURSES_ROOT" != "x"
   then
     _cppflags=$CPPFLAGS
     CPPFLAGS="$CPPFLAGS -I${CURSES_ROOT}/include"
     _ldflags=$LDFLAGS
     LDFLAGS="$LFDLAGS -L${CURSES_ROOT}/lib"
     AC_LANG_PUSH([C])
+    _nl="" 
     AC_CHECK_LIB(ncurses, mvwprintw, _nl=ncurses;
 	[AC_CHECK_HEADER(ncurses.h, curses_ok=yes; _nh=1, 
 	    [AC_CHECK_HEADER(curses.h, curses_ok=yes; _nh=0, curses_ok=no)])],
@@ -75,12 +76,24 @@ AC_DEFUN([AX_LIB_CURSES],
 
   else
     # Maybe it works "out of the box"?
+    _nl=""
+    _nh=""
     AC_CHECK_LIB(ncurses, mvwprintw, _nl=ncurses;
-	[AC_CHECK_HEADER(ncurses.h, curses_ok=yes; _nh=1, 
-	    [AC_CHECK_HEADER(curses.h, curses_ok=yes; _nh=0, curses_ok=no)])],
-	_nl=curses;
-	[AC_CHECK_LIB(curses, mvwprintw,
-	    [AC_CHECK_HEADER(curses.h, curses_ok=yes; _nh=0, curses_ok=no)])])
+	[AC_CHECK_HEADER(ncurses.h, curses_ok=yes; _nh="<ncurses.h>",
+	    [AC_CHECK_HEADER(curses.h, curses_ok=yes; _nh="<curses.h>", curses_ok=no)])])
+
+    if test "x$_nh" = "x"
+    then
+	AC_CHECK_LIB(curses, mvwprintw, _nl=curses;
+	    [AC_CHECK_HEADER(curses.h, curses_ok=yes; _nh="<curses.h>", curses_ok=no)])
+    fi
+
+    if test "x$_nh" = "x"
+    then
+	AC_CHECK_LIB(pdcurses, mvwprintw, _nl=pdcurses;
+	    [AC_CHECK_HEADER(pdcurses.h, curses_ok=yes; _nh="<pdcurses.h>",
+	        [AC_CHECK_HEADER(curses.h, curses_ok=yes; _nh="<curses.h>", curses_ok=no)])])
+    fi
   fi
 
   # perform substitutions
@@ -88,14 +101,8 @@ AC_DEFUN([AX_LIB_CURSES],
   then
       AC_DEFINE(HAVE_LIBCURSES, 1,
              [Define to 1 if you have a working curses/ncurses library.])
-      if test "$_nh" = 1
-      then
-          AC_DEFINE(HAVE_NCURSES_H, 1,
-             [Define to 1 if you have <ncurses.h> include file.])
-      else
-          AC_DEFINE(HAVE_CURSES_H, 1,
-             [Define to 1 if you have <curses.h> include file.])
-      fi
+      AC_DEFINE_UNQUOTED(LIBCURSES_HEADER, $_nh,
+	     [Define to the name of the curses header file to include])
       if test "$CURSES_ROOT" != ""
       then
           CURSES_LDFLAGS="-L${CURSES_ROOT}/lib -l$_nl"
@@ -107,20 +114,14 @@ AC_DEFUN([AX_LIB_CURSES],
       AC_SUBST([CURSES_LDFLAGS])
       AC_SUBST([CURSES_CFLAGS])
 
-      if test "$_nl" = "ncurses"
-      then
-          have_ncurses=yes
-      else
-          have_curses=yes
-      fi
+      have_curses=yes
   else
-    AC_MSG_WARN("No functioning curses found")
+      AC_MSG_WARN("No functioning curses found")
   fi
 
   # Not sure how many of these are needed, but it's belt-and-braces mode
-  AH_TEMPLATE([HAVE_NCURSES_H], [Define if you have <ncurses.h> include file])
-  AH_TEMPLATE([HAVE_CURSES_H], [Define if you have <curses.h> include file])
   AM_CONDITIONAL(HAVE_LIBCURSES, test "$curses_ok" = "yes")
+  AM_CONDITIONAL(HAVE_LIBCURSES_HEADER, test "x$_nh" != "x")
 
 
   # Execute the conditional expressions

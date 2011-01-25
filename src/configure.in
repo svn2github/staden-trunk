@@ -46,6 +46,7 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(fcntl.h limits.h unistd.h)
 AC_CHECK_HEADER(zlib.h)
+AC_CHECK_HEADER(pwd.h, AC_DEFINE(HAVE_PWD_H, 1, [Define if you have pwd.h]),,)
 
 dnl Large file support
 AC_SYS_LARGEFILE

@@ -9,11 +9,14 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <tcl.h>
 #include <X11/Xlib.h>
 
 #include "template_draw.h"
 #include "gap_range.h"
 #include "template_display.h"
+
+#include <tkInt.h>
 
 /* Define the template display item */
 
@@ -322,7 +325,7 @@ static int configure_template(Tcl_Interp *interp,
     	tdi->width = width;
     	tdi->height = height;	
 	
-	tdi->pm = Tk_GetPixmap(display, Tk_WindowId(tkwin), tdi->width, tdi->height, 24);
+	tdi->pm = Tk_GetPixmap(display, Tk_WindowId(tkwin), tdi->width, tdi->height, DefaultDepthOfScreen(Tk_Screen(tkwin)));
     }
     
     redraw_template_image(tdi, display);
@@ -777,7 +780,7 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
 	if (tdi->gr->r == NULL) {
 	    // either lack of memory or an empty part of contig, blank to black 
 	    create_image_from_buffer(tdi->image);
-	    XPutImage(display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
+	    TkPutImage(NULL, 0, display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
 	    return;
 	}
 	
@@ -868,7 +871,7 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     }
     
     create_image_from_buffer(tdi->image);
-    XPutImage(display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
+    TkPutImage(NULL, 0, display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
     
     /* some last bits of size calculation for scrolling */
     tdi->y_start = ymin - 10;

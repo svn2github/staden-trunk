@@ -46,7 +46,7 @@ AC_DEFUN([AX_LIB_ZLIB],
 
   # Check if it's a working library
   zlib_ok=no
-  if test "$xZLIB_ROOT" != "x"
+  if test "x$ZLIB_ROOT" != "x"
   then
     _cppflags=$CPPFLAGS
     CPPFLAGS="$CPPFLAGS -I${ZLIB_ROOT}/include"
@@ -111,7 +111,7 @@ AC_DEFUN([AX_LIB_ZLIB],
       if test "$ZLIB_ROOT" != ""
       then
           ZLIB_LDFLAGS="-L${ZLIB_ROOT}/lib -lz"
-	  ZLIB_CFLAGS="-I$(ZLIB_ROOT)/include"
+	  ZLIB_CFLAGS="-I${ZLIB_ROOT}/include"
       else
           ZLIB_LDFLAGS="-lz"
 	  ZLIB_CFLAGS=

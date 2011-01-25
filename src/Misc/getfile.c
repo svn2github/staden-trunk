@@ -5,9 +5,14 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pwd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include "staden_config.h"
+#ifdef HAVE_PWD_H
+#    include <pwd.h>
+#endif
+
 #include "misc.h"
 #include "getfile.h"
 

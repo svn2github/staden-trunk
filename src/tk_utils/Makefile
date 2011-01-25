@@ -3,11 +3,7 @@
 #
 
 LIBS = tk_utils
-ifneq ($(MACHINE),windows)
-PROGS= $(LIBS)
-else
-PROGS= $(LIBS)
-endif
+PROGS=$(LIBS)
 PROGLIBS=$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
@@ -21,6 +17,11 @@ CFLAGS += $(SHLIB_CFLAGS) $(TK_UTILS_DLL)
 
 #DEFINES += -DCHECK_LICENCE -DTCL_LOCAL_APPINIT=Stash_AppInit
 #DEFINES += -DTCL_LOCAL_APPINIT=Stash_AppInit
+
+# Windows requires tkWinX.o too to replace some of the missing X11 functions
+ifeq ($(findstring MINGW,$(OS)),MINGW)
+TKUTILS_EXTRAS=tkWinX.o
+endif
 
 #
 # Objects

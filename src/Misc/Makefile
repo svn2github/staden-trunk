@@ -13,6 +13,11 @@ CFLAGS += $(SHLIB_CFLAGS) $(MISC_DLL)
 
 INCLUDES_S += $(CORBA_INC)
 
+# pread/pwrite implementations for MinGW/Windows
+ifeq ($(findstring MINGW,$(OS)),MINGW)
+WIN_FUNCS=win_funcs.o
+endif
+
 #
 # Objects
 #
@@ -37,7 +42,8 @@ OBJS = \
 	array_arith.o \
 	parse_db.o\
 	dstring.o \
-	string_alloc.o
+	string_alloc.o\
+	$(WIN_FUNCS)
 
 #
 # Main dependency

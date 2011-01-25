@@ -25,8 +25,12 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <time.h>
-#include <pwd.h>
 #include <tcl.h>
+
+#include "staden_config.h"
+#ifdef HAVE_PWD_H
+#    include <pwd.h>
+#endif
 
 #include "misc.h"
 #include "array.h"

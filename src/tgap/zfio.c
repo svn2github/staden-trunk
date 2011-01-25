@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "zfio.h"
+#include "os.h"
 
 /* ------------------------------------------------------------------------ */
 /* Some wrappers around FILE * vs gzFile *, allowing for either */

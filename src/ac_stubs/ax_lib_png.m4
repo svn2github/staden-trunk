@@ -38,7 +38,7 @@ AC_DEFUN([AX_LIB_PNG],
 	    [PNG_ROOT="$withval"], [PNG_ROOT=""])
   
   png_ok=no
-  if test "$xPNG_ROOT" != "x"
+  if test "x$PNG_ROOT" != "x"
   then
     _cppflags=$CPPFLAGS
     CPPFLAGS="$CPPFLAGS -I${PNG_ROOT}/include"

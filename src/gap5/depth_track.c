@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <tcl.h>
 #include <X11/Xlib.h>
 
 #include "gap_range.h"
@@ -314,9 +315,11 @@ static int configure_depth(Tcl_Interp *interp,
 
     if (dti->copy == None) {
     	XGCValues gcValues;
-   	gcValues.foreground = dti->background->pixel;
+	gcValues.foreground = dti->background->pixel;
 	gcValues.background = dti->background->pixel;
-	dti->copy = Tk_GetGC(tkwin, GCForeground|GCBackground, &gcValues);
+	gcValues.function = GXcopy;
+	gcValues.graphics_exposures = False;
+	dti->copy = Tk_GetGC(tkwin, GCForeground|GCBackground|GCGraphicsExposures|GCFunction, &gcValues);
     }
 
     if (width != dti->width || height != dti->height) {
@@ -328,7 +331,7 @@ static int configure_depth(Tcl_Interp *interp,
     	dti->width = width;
     	dti->height = height;	
 	
-	dti->pm = Tk_GetPixmap(display, Tk_WindowId(tkwin), dti->width, dti->height, 24);
+	dti->pm = Tk_GetPixmap(display, Tk_WindowId(tkwin), dti->width, dti->height, DefaultDepthOfScreen(Tk_Screen(tkwin)));
     }
     
 
@@ -474,9 +477,9 @@ static void depth_display(Tk_Canvas canvas, Tk_Item *itemPtr,
 	 * "-background {}" work right).
 	 */
 
- 	XSetClipOrigin(display, dti->copy, draw_x - pix_x, draw_y - pix_y);
+	XSetClipOrigin(display, dti->copy, draw_x - pix_x, draw_y - pix_y);
 	XCopyArea(display, dti->pm, drawable, dti->copy, pix_x, pix_y,(unsigned int) pix_w,
-		(unsigned int) pix_h, draw_x, draw_y); 
+		  (unsigned int) pix_h, draw_x, draw_y); 
 	
 	XSetClipOrigin(display, dti->copy, 0, 0);
     }

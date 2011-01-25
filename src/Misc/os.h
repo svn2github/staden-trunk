@@ -170,12 +170,20 @@ typedef int mode_t;
  * Microsoft Windows running MinGW
  */
 #if defined(__MINGW32__)
-/* #define mkdir(filename,mode) mkdir((filename)) */
+#define mkdir(filename,mode) mkdir((filename))
 #define NOPIPE
 #define NOLOCKF
 #define NO_STRPTIME
 #define sysconf(x) 512
 #define ftruncate(fd,len) _chsize(fd,len)
+#define fsync(fd) _commit(fd)
+
+#ifndef F_OK
+#define F_OK 0
+#define X_OK 1
+#define R_OK 2
+#define W_OK 4
+#endif
 #undef HAVE_SYS_WAIT_H
 #endif
 
@@ -189,7 +197,6 @@ typedef int mode_t;
 #      define ftello _ftelli64
 #    else
        /* otherwise we're stuck with 32-bit file support */
-#      define off_t long
 #      define fseeko fseek
 #      define ftello ftell
 #    endif

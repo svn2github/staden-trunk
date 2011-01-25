@@ -51,8 +51,8 @@ static void code_colour(image_t *image, unsigned int *r, unsigned int *g, unsign
 }
 
 
-static u_int32_t get_colour32(image_t *image, unsigned int red, unsigned int green, unsigned int blue) {
-    u_int32_t colour;
+static uint32_t get_colour32(image_t *image, unsigned int red, unsigned int green, unsigned int blue) {
+    uint32_t colour;
 
     code_colour(image, &red, &green, &blue);
     colour = red | green | blue;
@@ -61,8 +61,8 @@ static u_int32_t get_colour32(image_t *image, unsigned int red, unsigned int gre
 }
 
 
-static u_int16_t get_colour16(image_t *image, unsigned int red, unsigned int green, unsigned int blue) {
-    u_int16_t colour;
+static uint16_t get_colour16(image_t *image, unsigned int red, unsigned int green, unsigned int blue) {
+    uint16_t colour;
 
     code_colour(image, &red, &green, &blue);
     colour = red | green | blue;
@@ -77,10 +77,10 @@ static u_int16_t get_colour16(image_t *image, unsigned int red, unsigned int gre
 static void *return_colour(image_t *image, int col_no) {
 
     if (image->depth >= 24) {
-    	u_int32_t *col = (u_int32_t *)(image->map_col);
+    	uint32_t *col = (uint32_t *)(image->map_col);
     	return (void *)(col + col_no);
     } else if (image->depth >= 15) {
-    	u_int16_t *col = (u_int16_t *)(image->map_col);
+    	uint16_t *col = (uint16_t *)(image->map_col);
     	return (void *)(col + col_no);
     } else {
     	return NULL; // nothing lower than 16 bit colour
@@ -95,24 +95,24 @@ static void *return_colour(image_t *image, int col_no) {
 int add_colour(image_t *image, unsigned int red, unsigned int green, unsigned int blue) {
 
     if (image->depth >= 24) {
-    	u_int32_t *map;
+    	uint32_t *map;
 
     	if (image->colour_count == image->colour_size) {
     	    image->colour_size *= 2;
-    	    image->map_col = realloc(image->map_col, image->colour_size * sizeof(u_int32_t));
+    	    image->map_col = realloc(image->map_col, image->colour_size * sizeof(uint32_t));
     	}
 
-    	map = (u_int32_t *)(image->map_col);
+    	map = (uint32_t *)(image->map_col);
     	map[image->colour_count] = get_colour32(image, red, green, blue);
     } else if (image->depth >= 15) {
-    	u_int16_t *map;
+    	uint16_t *map;
 
     	if (image->colour_count == image->colour_size) {
     	    image->colour_size *= 2;
-    	    image->map_col = realloc(image->map_col, image->colour_size * sizeof(u_int16_t));
+    	    image->map_col = realloc(image->map_col, image->colour_size * sizeof(uint16_t));
     	}
 
-    	map = (u_int16_t *)(image->map_col);
+    	map = (uint16_t *)(image->map_col);
     	map[image->colour_count] = get_colour16(image, red, green, blue);
     } else {
     	return -1;
@@ -141,10 +141,10 @@ image_t *initialise_image(Display *dis) {
     image->buf = NULL;
 	
     if (image->depth >= 24) {
-    	u_int32_t *map_col = malloc(256 * sizeof(u_int32_t));
+    	uint32_t *map_col = malloc(256 * sizeof(uint32_t));
 	image->map_col = map_col;
     } else if (image->depth >= 15) {
-    	u_int16_t *map_col = malloc(256 * sizeof(u_int16_t));
+    	uint16_t *map_col = malloc(256 * sizeof(uint16_t));
 	image->map_col = map_col;
     } else {
     	fprintf(stderr, "Min 16 bit colour needed\n");
@@ -173,24 +173,24 @@ int create_image_buffer(image_t *image, int width, int height, int bg_colour) {
     image->height = height;
 	
     if (image->depth >= 24) {
-    	u_int32_t *buf = malloc(size * sizeof(u_int32_t));
-	u_int32_t *col = return_colour(image, bg_colour);
+    	uint32_t *buf = malloc(size * sizeof(uint32_t));
+	uint32_t *col = return_colour(image, bg_colour);
 
     	if (NULL == buf) return 0;
 
     	for (i = 0; i < size; i++) {
-	    buf[i] = *(u_int32_t *)col;
+	    buf[i] = *(uint32_t *)col;
     	}
 
 	image->buf = buf;
     } else if (image->depth >= 15) {
-    	u_int16_t *buf = malloc(size * sizeof(u_int16_t));
-	u_int16_t *col = return_colour(image, bg_colour);
+    	uint16_t *buf = malloc(size * sizeof(uint16_t));
+	uint16_t *col = return_colour(image, bg_colour);
 
     	if (NULL == buf) return 0;
 
     	for (i = 0; i < size; i++) {
-	    buf[i] = *(u_int16_t *)col;
+	    buf[i] = *(uint16_t *)col;
     	}
 
 	image->buf = buf;
@@ -228,16 +228,16 @@ int draw_line(image_t *image, int x1, int x2, int y, int colour) {
     i = x1;
 	
     if (image->depth >= 24) {
-	u_int32_t *buf = (u_int32_t *)image->buf;
-    	u_int32_t *col = ((u_int32_t *)(image->map_col) + colour);
+	uint32_t *buf = (uint32_t *)image->buf;
+    	uint32_t *col = ((uint32_t *)(image->map_col) + colour);
     
     	do {
     	    buf[i] = *col;
     	} while (i++ < (x1 + length));
 		
     } else if (image->depth >= 15) {
-	u_int16_t *buf = (u_int16_t *)image->buf;
-	u_int16_t *col = ((u_int16_t *)(image->map_col) + colour);
+	uint16_t *buf = (uint16_t *)image->buf;
+	uint16_t *col = ((uint16_t *)(image->map_col) + colour);
     
     	do {
     	    buf[i] = *col;
@@ -260,7 +260,7 @@ void create_image_from_buffer(image_t *image) {
 		    (char *)image->buf, image->width, image->height, 16, 0);
     }
 
-    XInitImage(image->img);
+    //XInitImage(image->img);
 
     // set the byte order for use with XPutImage
     if ((LSBFirst == get_byte_order())) {

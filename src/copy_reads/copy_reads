@@ -75,5 +75,7 @@ STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
 PATH=$STADENROOT/bin:$PATH
 LD_LIBRARY_PATH=$STADENROOT/lib:$STADENROOT/lib/staden:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
+# For windows:
+PATH=$STADENROOT/lib/staden:$PATH
 
 exec tclsh "$STADTCL/copy_reads/copy_reads_main.tcl" ${@+"$@"}

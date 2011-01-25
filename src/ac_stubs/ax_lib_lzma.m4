@@ -46,7 +46,7 @@ AC_DEFUN([AX_LIB_LZMA],
 
   # Check if it's a working library
   lzma_ok=no
-  if test "$xLZMA_ROOT" != "x"
+  if test "x$LZMA_ROOT" != "x"
   then
     _cppflags=$CPPFLAGS
     CPPFLAGS="$CPPFLAGS -I${LZMA_ROOT}/include"
