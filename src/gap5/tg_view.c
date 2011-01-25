@@ -97,7 +97,6 @@ int calc_cons(GapIO *io, rangec_t *r, int nr, int xpos, int wid,
 	    if (sp-xpos+j < wid)
 		cvec[sp-xpos+j][lookup[seq[j]]]++;
 	}
-	cache_decr(io, sorig);
 
 	if (s != sorig)
 	    free(s);
@@ -427,8 +426,6 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 
 	if (!in_curses)
 	    putchar('\n');
-
-	cache_decr(io, sorig);
 
 	if (s != sorig)
 	    free(s);
