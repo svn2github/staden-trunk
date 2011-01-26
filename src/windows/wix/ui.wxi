@@ -61,7 +61,7 @@
             <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="374" Height="0" />
             
             <Control Id="AgreementText" Type="ScrollableText" X="20" Y="60" Width="330" Height="120" Sunken="yes" TabSkip="no">
-                <Text src="$(env.DISTROOT)/LICENCE.rtf"/>
+                <Text SourceFile="$(env.DISTROOT)/LICENCE.rtf"/>
             </Control>
 
             <Control Id="Buttons" Type="RadioButtonGroup" X="20" Y="187" Width="330" Height="40" Property="Accept" />
@@ -313,8 +313,8 @@
         </AdminUISequence>
     </UI>
 
-  <Binary Id="banner.bmp" src = "banner.bmp" />
-  <Binary Id="splash.bmp" src = "splash.bmp" />
-  <Binary Id="up.bmp" src = "up.bmp" />
-  <Binary Id="new.bmp" src = "new.bmp" />
+  <Binary Id="banner.bmp" SourceFile="banner.bmp" />
+  <Binary Id="splash.bmp" SourceFile="splash.bmp" />
+  <Binary Id="up.bmp" SourceFile="up.bmp" />
+  <Binary Id="new.bmp" SourceFile="new.bmp" />
 </Include>

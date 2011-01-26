@@ -1,13 +1,14 @@
  
 /*
  * This program is designed to be compiled and put in to
- * $STADENROOT/windows-bin.
+ * $STADENROOT/bin.
  *
- * It sets up the environment and then runs wish.exe on lib/PROG/PROG.tcl
- * where PROG is the name of this executable (copy it around to the various
- * names it has to stand for). This means that it can be used from both a
- * cmd32.exe (DOS) environment, the start menu or in a file association
- * without requiring any arguments. (It helps to give a feel more similar to
+ * It sets up the environment and then runs wish.exe on
+ * share/staden/tcl/PROG/PROG.tcl where PROG is the name of this
+ * executable (copy it around to the various names it has to stand
+ * for). This means that it can be used from both a cmd32.exe (DOS)
+ * environment, the start menu or in a file association without
+ * requiring any arguments. (It helps to give a feel more similar to
  * the unix systems too.)
  *
  * With the -console argument it instead invokes a command shell with the
@@ -147,16 +148,16 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
     }
     _strlwr( rootdir ); // lowercase
 
-    // Lop off the .exe and the windows-bin to get the Staden Package
+    // Lop off the .exe and the bin to get the Staden Package
     // root directory.
     n = strlen(rootdir)-1;
-    while (n && rootdir[n] != '\\')
+    while (n && rootdir[n] != '\\' && rootdir[n] != '/')
     	n--;
     strcpy(basename, &rootdir[n+1]);
     if (p = strstr(basename, ".exe"))
 	*p = 0;
     if (n) n--;
-    while (n && rootdir[n] != '\\')
+    while (n && rootdir[n] != '\\' & rootdir[n] != '/')
     	n--;
     rootdir[n] = 0;
 
@@ -172,17 +173,19 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
 
 
     // Add Staden Package environment variables to current environment
-    sprintf( buffer, "TK_LIBRARY=%s/lib/tk", unix_rootdir );
+    sprintf( buffer, "TK_LIBRARY=%s/lib/tk8.4", unix_rootdir );
     _putenv( buffer );
-    sprintf( buffer, "TCL_LIBRARY=%s/lib/tcl", unix_rootdir );
+    sprintf( buffer, "TCL_LIBRARY=%s/lib/tcl8.4", unix_rootdir );
     _putenv( buffer );
-    sprintf( buffer, "STADLIB=%s/lib", unix_rootdir );
+    sprintf( buffer, "STADLIB=%s/lib/staden", unix_rootdir );
     _putenv( buffer );
-    sprintf( buffer, "STADTABL=%s/tables", unix_rootdir );
+    sprintf( buffer, "STADTCL=%s/share/staden/tcl", unix_rootdir );
+    _putenv( buffer );
+    sprintf( buffer, "STADTABL=%s/share/staden/etc", unix_rootdir );
     _putenv( buffer );
     sprintf( buffer, "STADENROOT=%s", unix_rootdir );
     _putenv( buffer );
-    _putenv( "MACHINE=windows" );
+    //    _putenv( "MACHINE=windows" );
 
 
 
@@ -191,7 +194,7 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
     // we want to run more a remote copy of gap4 then the App Path will be
     // invalid, so we need to do it here again just to be sure we pick up the
     // appropriate dlls.
-    sprintf( buffer, "PATH=%s\\windows-bin;%s\\lib\\windows-binaries;", rootdir, rootdir );
+    sprintf( buffer, "PATH=%s\\bin;%s/lib/staden;", rootdir, rootdir );
     p = getenv( "PATH" );
     assert(p);
     strcat( buffer, p );
@@ -202,7 +205,7 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
     // Set default command to be winstash, don't use quotes otherwise execve
     // won't work properly, but quotes are required in argp[0]!
     strcpy( our_cmd, rootdir );
-    strcat( our_cmd, "\\windows-bin\\wish.exe" );
+    strcat( our_cmd, "\\bin\\wish84.exe" );
 
 
     // Get command console
@@ -237,7 +240,7 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
     } else {
 	// Otherwise start with a tcl file based on argv[0] and append
 	// all other arguments
-        sprintf(arg1, "\"%s\\lib\\%s\\%s.tcl\"", rootdir, basename, basename);
+        sprintf(arg1, "\"%s\\share\\staden\\tcl\\%s\\%s.tcl\"", rootdir, basename, basename);
 	argp[k++] = arg1;
 
         while( n<argc )

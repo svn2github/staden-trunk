@@ -2,11 +2,11 @@
 
 use strict;
 use Cwd;
-use Win32;
 
 my %shortcuts = ('trev.exe' => 'Trev',
 		 'pregap4.exe' => 'Pregap4',
 		 'gap.exe' => 'Gap4',
+		 'gap5.exe' => 'Gap5',
 		 'spin.exe' => 'Spin',
 		 'sprun.exe' => 'Console'
 		);
@@ -24,7 +24,7 @@ my %extensions = ('trev.exe'    => {'ztr'   => ['ZTR trace file',
 						'&quot;%1&quot;',
 						'application/octet-stream']
 				   },
-		  'gap.exe'     => {'aux'   => ['Gap4 Database',
+		  'gap4.exe'     => {'aux'   => ['Gap4 Database',
 						'&quot;%1&quot;',
 						'application/octet-stream'],
 				   },
@@ -92,15 +92,16 @@ sub printdir {
     my @files = readdir($fh);
     foreach (@files) {
 	next if /^\.(\.)?$/;
+	my $done_component=0;
 	if (-f "$_") {
 	    if ($firstfile) {
 		my $id = nextid("dir");
 		print "$sp<Component Guid=\"", guidgen(), "\" Id=\"$id\">\n";
 		push(@components, $id);
+		$done_component=1;
 	    }
 	    my $id = nextid($_);
   	    my $long = "$_";
-	    my $short = Win32::GetShortPathName($long);
 
 	    # File associations must be done in their own Components
 	    if (exists($extensions{$long})) {
@@ -110,27 +111,26 @@ sub printdir {
 		my $id = nextid("dir");
 		print "$sp<Component Guid=\"", guidgen(), "\" Id=\"$id\">\n";
 		push(@components, $id);
+		$done_component=1;
 	    }
 	    $firstfile = 0;
 
 	    if (exists($shortcuts{$long})) {
-		if ($long ne $short) {
-	            print "$sp  <File Id=\"$id\" Name=\"$short\" LongName=\"$long\" DiskId=\"1\" src=\"$cwd/$long\">\n";
-		} else {
-	            print "$sp  <File Id=\"$id\" Name=\"$short\" DiskId=\"1\" src=\"$cwd/$long\">\n";
+		if (!$done_component) {
+		    my $id = nextid("exe");
+		    print "$sp</Component>\n";
+		    print "$sp<Component Guid=\"", guidgen(), "\" Id=\"$id\">\n";
+		    push(@components, $id);
 		}
+	        print "$sp  <File Id=\"$id\" Name=\"$long\" DiskId=\"1\" Source=\"$cwd/$long\" KeyPath=\"yes\">\n";
 		if ($shortcuts{$long} eq 'Console') {
-		    print "$sp    <Shortcut Id=\"Shortcut_$long\" Directory=\"StadenMenuFolder\" Name=\"$shortcuts{$long}\" Target=\"[#$id]\" Show=\"minimized\" Arguments=\"-console\"/>\n";
+		    print "$sp    <Shortcut Id=\"Shortcut_$long\" Directory=\"ProgramMenuDir\" Name=\"$shortcuts{$long}\" Show=\"minimized\" Arguments=\"-console\" Advertise=\"yes\"/>\n";
 		} else {
-		    print "$sp    <Shortcut Id=\"Shortcut_$long\" Directory=\"StadenMenuFolder\" Name=\"$shortcuts{$long}\" Target=\"[#$id]\" Show=\"minimized\"/>\n";
+		    print "$sp    <Shortcut Id=\"Shortcut_$long\" Directory=\"ProgramMenuDir\" Name=\"$shortcuts{$long}\" Show=\"minimized\" Advertise=\"yes\"/>\n";
 		}
 	        print "$sp  </File>\n";
-	    } else {
-		if ($long ne $short) {
-		    print "$sp  <File Id=\"$id\" Name=\"$short\" LongName=\"$long\" DiskId=\"1\" src=\"$cwd/$long\"/>\n";
-		} else {
-		    print "$sp  <File Id=\"$id\" Name=\"$short\" DiskId=\"1\" src=\"$cwd/$long\"/>\n";
-		}
+ 	    } else {
+	        print "$sp  <File Id=\"$id\" Name=\"$long\" DiskId=\"1\" Source=\"$cwd/$long\"/>\n";
 	    }
 
 	    # Add ProgId blocks for file associations
@@ -160,12 +160,7 @@ sub printdir {
 	if (-d "$_") {
 	    my $id = nextid($_);
   	    my $long = "$_";
-	    my $short = Win32::GetShortPathName($long);
-	    if ($long ne $short) {
-		print "$sp<Directory Id=\"$id\" Name=\"$short\" LongName=\"$long\">\n";
-	    } else {
-		print "$sp<Directory Id=\"$id\" Name=\"$short\">\n";
-	    }
+	    print "$sp<Directory Id=\"$id\" Name=\"$long\">\n";
 	    my $lastdir = getcwd();
 	    chdir($_);
 	    printdir($indent+1);
@@ -181,6 +176,7 @@ sub printcomponents {
     foreach (@components) {
 	print "      <ComponentRef Id=\"$_\"/>\n";
     }
+    print "       <ComponentRef Id=\"ProgramMenuDir\"/>\n";
     print "    </Feature>\n";
 }
 
@@ -190,11 +186,27 @@ sub printfooter {
 
 printheader();
 chdir($ARGV[0]);
-print "    <Directory Id=\"TARGETDIR\" Name=\"SourceDir\">\n";
-print "      <Directory Id=\"ProgramMenuFolder\" Name=\"PMFolder\">\n";
-print "        <Directory Id=\"StadenMenuFolder\" Name=\"Staden~1\" LongName=\"Staden Package\"/>\n";
-print "      </Directory>\n";
-printdir(2);
-print "    </Directory>\n";
+print << "EOF";
+    <Directory Id="TARGETDIR" Name="SourceDir">
+
+      <Directory Id="ProgramMenuFolder" Name="Programs">
+        <Directory Id="ProgramMenuDir" Name="Staden Package">
+          <Component Id="ProgramMenuDir" Guid="4D3F00E3-C000-4000-A06C-0008028F89FB">
+            <RemoveFolder Id="ProgramMenuDir" On="uninstall"/>
+            <RegistryValue Root="HKCU" Key="SOFTWARE/GRL/Staden" Type="string" Value="" KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+
+      <Directory Id="ProgramFilesFolder" Name="PFiles">
+        <Directory Id="INSTALLDIR" Name="Staden Package">
+EOF
+printdir(8);
+print << "EOF";
+        </Directory>
+      </Directory>
+
+    </Directory>
+EOF
 printcomponents();
 printfooter();

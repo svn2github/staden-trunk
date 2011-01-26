@@ -3,9 +3,20 @@
 
 1. Produce the distribution directory
 
-2. perl /c/jkb/staden/src/windows/wix/generate_wxs.pl /c/jkb/staden/distrib/windows-rel-1-5-3 > staden_files.wxi
+   This is more than just a "make install", although thay is obviously
+   required too. You'll also need to add tcl, tk, zlib, gcc & stdc++
+   libs and any other dependencies into there. Currently this is a
+   manual process, so it's perhaps easiest to start from a previous
+   install tree.
+
+2. perl /c/jkb/staden/src/windows/wix/generate_wxs.pl c:/jkb/staden/distrib/windows-rel-1-5-3 > staden_files.wxi
+
+   Make sure you use a non-msys perl that doesn't munge pathnames (eg
+   strawberry perl), or else compile up your own wix. Otherwise our
+   .wxi file ends up containing /c/jkb instead and then light fails to
+   find the files.
 
 3. DISTROOT=/c/jkb/staden/distrib/windows-rel-1-5-3 candle staden.wxs
 
-4. light staden.wixobj
+4. light -ext WixUIExtension staden.wixobj
 
