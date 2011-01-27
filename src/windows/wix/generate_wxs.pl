@@ -24,7 +24,14 @@ my %extensions = ('trev.exe'    => {'ztr'   => ['ZTR trace file',
 						'&quot;%1&quot;',
 						'application/octet-stream']
 				   },
-		  'gap4.exe'     => {'aux'   => ['Gap4 Database',
+		  'gap.exe'     => {'aux'   => ['Gap4 Database',
+						'&quot;%1&quot;',
+						'application/octet-stream'],
+				   },
+		  'gap5.exe'    => {'g5d'   => ['Gap5 Database File',
+						'&quot;%1&quot;',
+						'application/octet-stream'],
+				    'g5x'   => ['Gap5 Database Index',
 						'&quot;%1&quot;',
 						'application/octet-stream'],
 				   },
@@ -108,10 +115,12 @@ sub printdir {
  	        if (!$firstfile) {
 		    print "$sp</Component>\n";
  	        }
-		my $id = nextid("dir");
-		print "$sp<Component Guid=\"", guidgen(), "\" Id=\"$id\">\n";
-		push(@components, $id);
-		$done_component=1;
+		if (!$done_component) {
+		  my $id = nextid("dir");
+		  print "$sp<Component Guid=\"", guidgen(), "\" Id=\"$id\">\n";
+		  push(@components, $id);
+		  $done_component=1;
+		}
 	    }
 	    $firstfile = 0;
 
