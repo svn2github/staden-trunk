@@ -838,8 +838,7 @@ int tk_contig_deregister(ClientData clientData, Tcl_Interp *interp,
     vTcl_SetResult(interp, "%d", ret);
 
     if (regs)
-	memset(regs, 0, sizeof(contig_t));
-    xfree(regs);
+      xfree(regs);
 
     return TCL_OK;
 }
