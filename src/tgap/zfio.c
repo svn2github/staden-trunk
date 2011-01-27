@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "zfio.h"
 #include "os.h"
+#include "zfio.h"
 
 /* ------------------------------------------------------------------------ */
 /* Some wrappers around FILE * vs gzFile *, allowing for either */

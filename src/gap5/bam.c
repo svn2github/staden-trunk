@@ -16,7 +16,9 @@
 #include "bam.h"
 #include "os.h"
 
-#define MIN(a,b) ((a)<(b)?(a):(b))
+#ifndef MIN
+#  define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
 
 
 static int bam_more_input(bam_file_t *b);

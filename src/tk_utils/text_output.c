@@ -717,14 +717,14 @@ int tcl_verror(ClientData clientData, Tcl_Interp *interp,
 	eventLogHandle = RegisterEventSource(NULL,EVENT_SOURCE); /* get default application handle */
     }
     ReportEvent(eventLogHandle,
-	level==ERR_FATAL?EVENTLOG_ERROR_TYPE:EVENTLOG_WARNING_TYPE,
-	0,
-	0,
-	NULL,
-	1,
-	0,
-	a,
-	NULL);
+		level==ERR_FATAL?EVENTLOG_ERROR_TYPE:EVENTLOG_WARNING_TYPE,
+		0,
+		0,
+		NULL,
+		1,
+		0,
+		(LPCTSTR *)a,
+		NULL);
     }
 #endif
 
@@ -849,14 +849,14 @@ void verror(int priority, const char *name, const char *fmt, ...) {
 	eventLogHandle = RegisterEventSource(NULL,EVENT_SOURCE); /* get default application handle */
     }
     ReportEvent(eventLogHandle,
-	priority==ERR_FATAL?EVENTLOG_ERROR_TYPE:EVENTLOG_WARNING_TYPE,
-	0,
-	0,
-	NULL,
-	1,
-	0,
-	a,
-	NULL);
+		priority==ERR_FATAL?EVENTLOG_ERROR_TYPE:EVENTLOG_WARNING_TYPE,
+		0,
+		0,
+		NULL,
+		1,
+		0,
+		(LPCTSTR *)a,
+		NULL);
     }
 #endif
     tout_update_stream(2, bufp, 0, NULL);
