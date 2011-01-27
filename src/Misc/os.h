@@ -193,12 +193,23 @@ typedef int mode_t;
 #    if __MSVCRT_VERSION__ >= 0x800
        /* if you have MSVCR80 installed then you can use these definitions: */
 #      define off_t __int64
+#      define lseek  _lseeki64
 #      define fseeko _fseeki64
 #      define ftello _ftelli64
 #    else
-       /* otherwise we're stuck with 32-bit file support */
-#      define fseeko fseek
-#      define ftello ftell
+#      if defined(__MINGW32__)
+         /* MinGW handles these too, via other names */
+#        define off_t  off64_t
+#        define _off_t off64_t
+#        define _OFF_T_
+#        define lseek  lseek64
+#        define fseeko fseeko64
+#        define ftello ftello64
+#      else
+         /* otherwise we're stuck with 32-bit file support */
+#        define fseeko fseek
+#        define ftello ftell
+#      endif
 #    endif
 #  endif /* !HAVE_FSEEKO */
 #endif /* _WIN32 */
