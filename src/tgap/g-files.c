@@ -140,9 +140,10 @@ GFile *g_open_file(char *fn, int read_only)
  */
 {
     GFile *gfile;
-    char fnaux[1024];
+    char fnaux[1024], fndb[1024], fnorig[1024];
     AuxIndex *idx_arr = NULL;
     int64_t recsize;
+    int try;
 
     /* g_dump_file(fn); */
 
@@ -161,8 +162,70 @@ GFile *g_open_file(char *fn, int read_only)
     /* check file name isn't too long */
     if ( strlen(fn) + strlen(G_AUX_SUFFIX) >= sizeof(fnaux) )
 	ABORT(GERR_NAME_TOO_LONG);
-    strcpy(fnaux,fn);
-    strcat(fnaux,G_AUX_SUFFIX);
+    strncpy(fnorig, fn, 1024);
+
+    /*
+     * Attempt to work alternative file names. We support
+     * foo.0 + foo.0.aux as before, but also now handle
+     * foo.0.g5d and foo.0.g5x.
+     * Sorry this is so convoluted! It got shuffled around a lot and
+     * could probably be rewritten to be a simpler structure.
+     */
+    for (try = 0; try < 2; try++) {
+	char *cp;
+
+	/* Try new format first */
+	strcpy(fndb ,fn);
+	strcat(fndb ,G5_DB_SUFFIX);
+	strcpy(fnaux,fn);
+	strcat(fnaux,G5_AUX_SUFFIX);
+
+	if (file_exists(fndb) && file_exists(fnaux))
+	    break;
+
+	/* Not new. Maybe we specified suffix too though? Strip and repeat */
+	if (try == 1) {
+	    /* Second pass of trying new format (with/without suffix */
+	    /* Fail back to old format instead then */
+	    strcpy(fndb ,fnorig);
+	    strcpy(fnaux,fnorig);
+	    strcat(fnaux,G_AUX_SUFFIX);
+    
+	    if (file_exists(fndb) && file_exists(fnaux))
+		break;
+
+	    gerr_set(GERR_OPENING_FILE);
+	    return NULL;
+	}
+
+	/* Not root of new, but maybe we specified a full name */
+	if (!(cp = strrchr(fn, '.'))) {
+	    if (try == 0)
+		continue;
+	    gerr_set(GERR_OPENING_FILE);
+	    return NULL;
+	}
+
+	if (strcmp(cp, G_AUX_SUFFIX)     != 0 &&
+	    strcmp(cp, G5_AUX_SUFFIX)    != 0 &&
+	    strcmp(cp, G5_DB_SUFFIX)     != 0 &&
+	    strcmp(cp, G5_COMMON_SUFFIX) != 0) {
+	    if (try == 0)
+		continue;
+
+	    gerr_set(GERR_OPENING_FILE);
+	    return NULL;
+	}
+	
+	*cp = 0;
+    }
+
+    /*
+     * After this, fn is the root "foo.0" while
+     * fndb and fnaux are the db and aux extensions of the root.
+     * (Either foo.0/foo.0.aux or foo.0.g5d/foo.0.g5x).
+     */
+
 
     /* allocate new data structure - GFile */
     gfile = g_new_gfile(G_32BIT);
@@ -179,8 +242,8 @@ GFile *g_open_file(char *fn, int read_only)
     /* open file and its aux */
     /* LOW LEVEL IO HERE */
     errno = 0;
-    if (read_only || (gfile->fd = open(fn,O_RDWR|O_BINARY)) == -1 )
-	if ( !read_only || (gfile->fd = open(fn,O_RDONLY|O_BINARY)) == -1 )
+    if (read_only || (gfile->fd = open(fndb,O_RDWR|O_BINARY)) == -1 )
+	if ( !read_only || (gfile->fd = open(fndb,O_RDONLY|O_BINARY)) == -1 )
 	    ABORT(GERR_OPENING_FILE);
     /* LOW LEVEL IO HERE */
     errno = 0;
@@ -211,7 +274,7 @@ GFile *g_open_file(char *fn, int read_only)
     {
 	struct stat sb;
 
-	stat(fn, &sb);
+	stat(fndb, &sb);
 	gfile->fdmap = (char *)mmap(NULL, sb.st_size, PROT_READ,
 				    MAP_FILE | /* MAP_FIXED | */ MAP_SHARED,
 				    gfile->fd, 0);

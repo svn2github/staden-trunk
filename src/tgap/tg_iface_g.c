@@ -1200,6 +1200,7 @@ void btree_dec_ref(void *cd, btree_node_t *n) {
  */
 static int bitsize = G_64BIT;
 static int io_database_create_files(char *fn) {
+    char dbfn[1024];
     char auxfn[1024];
     int fd;
     AuxHeader auxheader;
@@ -1224,14 +1225,16 @@ static int io_database_create_files(char *fn) {
     }
 
     /* check file name isn't too long */
-    if ( strlen(fn) + strlen(G_AUX_SUFFIX) >= sizeof(auxfn) ) return gerr_set(GERR_NAME_TOO_LONG);
+    if ( strlen(fn) + strlen(G5_AUX_SUFFIX) >= sizeof(auxfn) ) return gerr_set(GERR_NAME_TOO_LONG);
 	
+    strcpy(dbfn, fn);
+    strcat(dbfn, G5_DB_SUFFIX);
     strcpy(auxfn,fn);
-    strcat(auxfn,G_AUX_SUFFIX);
+    strcat(auxfn,G5_AUX_SUFFIX);
 
     /* create files */
     /* LOW LEVEL IO HERE */
-    if (NULL == (h = heap_create(fn)))
+    if (NULL == (h = heap_create(dbfn)))
 	return gerr_set(GERR_CANT_CREATE);
     heap_destroy(h, 1);
 

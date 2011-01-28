@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
     char *cp;
 
     a.fmt            = 'a'; /* auto */
-    a.out_fn         = "g_db";
+    a.out_fn         = "";
     a.no_tree        = 0;
     a.pair_reads     = 1;
     a.append         = 0;
@@ -249,6 +249,19 @@ int main(int argc, char **argv) {
 	return 1;
     }
 
+    /* Pick a default name for the DB */
+    if (!*a.out_fn) {
+	char *cp;
+
+	a.out_fn = malloc(strlen(argv[optind]+3));
+	strcpy(a.out_fn, argv[optind]);
+	if ((cp = strrchr(a.out_fn, '.')))
+	    *cp = 0;
+	strcat(a.out_fn, ".0");
+
+	printf("Selecting output database filename %s\n", a.out_fn);
+    }
+
     /* Open the DB */
     io = gio_open(a.out_fn, 0, a.append ? 0 : 1);
     if (NULL == io) {
@@ -257,7 +270,7 @@ int main(int argc, char **argv) {
     }
     io->iface->setopt(io->dbh, OPT_COMP_MODE, a.comp_mode);
 
-    if (a.no_tree) {
+    if (a.no_tree || (a.data_type & DATA_NAME) == 0) {
 	io->db = cache_rw(io, io->db);
 	io->db->seq_name_index = 0;
     }

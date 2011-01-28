@@ -55,7 +55,7 @@ proc NewFile {} {
 	-text "Browse" \
 	-command "NewFile_browse $f.files.entry \
                     \[tk_getSaveFile \
-                                 -filetypes {{database *.aux}} \
+                                 -filetypes {{database *.g5d}} \
                   		 -title {New Database} \
 				 -parent $f \
 		    \]"
@@ -107,7 +107,7 @@ proc New_OK_Pressed { f file } {
     # Parse $file to extract directory, db_name and version
     set dir [file dirname $file]
     set file [file tail $file]
-    regsub {\.aux$} $file {} file
+    regsub {\.g5d$} $file {} file
     if {[regexp {(.*)\.(.)$} $file dummy db_name version] == 0} {
 	set db_name $file
 	set version 0
@@ -133,10 +133,10 @@ proc New_OK_Pressed { f file } {
     }
 
     # Do it...
-    catch {file delete -force $db_name.$version}
-    catch {file delete -force $db_name.$version.aux}
-    catch {file delete -force $db_name.$version.log}
-    catch {file delete -force $db_name.$version.BUSY}
+    catch {file delete -force $db_name.$version.g5d}
+    catch {file delete -force $db_name.$version.g5x}
+    #catch {file delete -force $db_name.$version.log}
+    #catch {file delete -force $db_name.$version.BUSY}
     set io [open_db -name $db_name -version $version -access $access \
 	    -create $create]
 
@@ -163,7 +163,7 @@ proc DB_Load { file } {
     }
 
     #strip off .aux if is exists
-    regsub \.aux$ $file "" filename
+    regsub {\.(aux|g5d|g5x)$} $file "" filename
 
     set response [CheckOpenFile $filename]
     if {$response == 0} {

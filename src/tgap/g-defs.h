@@ -19,6 +19,11 @@
 /* aux file suffix */
 #define G_AUX_SUFFIX ".aux"
 
+/* new suffixes */
+#define G5_DB_SUFFIX     ".g5d"
+#define G5_AUX_SUFFIX    ".g5x"
+#define G5_COMMON_SUFFIX ".g5"
+
 /* default file permissions */
 #define G_DEF_PERMS 0666
 
