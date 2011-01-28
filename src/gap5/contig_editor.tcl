@@ -955,7 +955,9 @@ proc editor_pane {top w above ind arg_array} {
 		-display_quality             $opt(Quality) \
 		-display_mapping_quality     $opt(Quality) \
 		-display_cutoffs             $opt(Cutoffs) \
-	        -hide_anno                   $opt(HideAnno)]
+	        -hide_anno                   $opt(HideAnno) \
+		-fg black \
+	        -bg [tk::Darken [. cget -bg] 115]]
     set opt(curr_editor) $ed
 
     # X and y scrollbars
@@ -968,8 +970,9 @@ proc editor_pane {top w above ind arg_array} {
 	-width 15 \
 	-height 16 \
 	-xscrollcommand "$w.name.x set" \
-	-bd 0
-
+	-bd 0 \
+	-fg black \
+	-bg [tk::Darken [. cget -bg] 115]
     scrollbar $w.name.x -orient horiz
 
     entry $w.name.pos \
@@ -2569,10 +2572,6 @@ proc save_editor_settings {w} {
 
 #-----------------------------------------------------------------------------
 # Generic bindings
-bind Editor <Any-Enter> {
-    focus %W
-}
-
 bind EdNames <Any-Motion> {update_brief %W 1 @%x @%y}
 
 bind Editor <Any-Motion> {update_brief %W 0 @%x @%y}
