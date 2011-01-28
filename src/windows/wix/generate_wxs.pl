@@ -8,7 +8,9 @@ my %shortcuts = ('trev.exe' => 'Trev',
 		 'gap.exe' => 'Gap4',
 		 'gap5.exe' => 'Gap5',
 		 'spin.exe' => 'Spin',
-		 'sprun.exe' => 'Console'
+		 'sprun.exe' => 'Console',
+		 'manual.pdf' => 'PDF Manual',
+		 'index.html' => 'HTML Manual'
 		);
 
 my %extensions = ('trev.exe'    => {'ztr'   => ['ZTR trace file',
@@ -125,6 +127,10 @@ sub printdir {
 	    $firstfile = 0;
 
 	    if (exists($shortcuts{$long})) {
+	        # special case for index.html as we have two of them
+	        if ($long eq "index.html" && $cwd !~ /\/doc\/staden/) {
+		    goto skip;
+		}
 		if (!$done_component) {
 		    my $id = nextid("exe");
 		    print "$sp</Component>\n";
@@ -141,6 +147,7 @@ sub printdir {
  	    } else {
 	        print "$sp  <File Id=\"$id\" Name=\"$long\" DiskId=\"1\" Source=\"$cwd/$long\"/>\n";
 	    }
+	  skip:
 
 	    # Add ProgId blocks for file associations
 	    if (exists($extensions{$long})) {
