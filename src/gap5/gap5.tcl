@@ -383,7 +383,7 @@ proc Gap_Open { io } {
     #check if any display is busy
     if {[InitOpenAnotherDB] } {
 	set file_type {
-	    {"database"		    *.aux		    }
+	    {"database"		    {*.aux *.g5d *.g5x}	    }
 	}
 	set file [tk_getOpenFile -filetypes $file_type]
 	if {$file != ""} {
