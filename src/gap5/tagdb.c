@@ -79,7 +79,7 @@ void readInTagDB(void)
     /* 22/1/99 johnt - fallback to to use STADTABL is GTAGDB isn't defined */
     if (NULL == (path = (char *)getenv(TAGDB))){
         if(getenv("STADTABL")) {
-	    sprintf(tmp_path, "%s/TAGDB", getenv("STADTABL"));
+	    sprintf(tmp_path, "%s/GTAGDB", getenv("STADTABL"));
 	} else {
 	    strcpy(tmp_path, "GTAGDB");
 	}
