@@ -88,7 +88,7 @@ proc MapReads_bwa_aln {io} {
     okcancelhelp $w.ok_cancel \
 	    -ok_command "MapReads_bwa_aln2 $io $w" \
 	    -cancel_command "destroy $w" \
-	    -help_command "show_help gap5 {Assembly-Map}" \
+	    -help_command "show_help gap5 {Assembly-Map-bwa-aln}" \
 	    -bd 2 \
 	    -relief groove
 
@@ -238,7 +238,7 @@ proc MapReads_bwa_dbwtsw {io} {
     okcancelhelp $w.ok_cancel \
 	    -ok_command "MapReads_bwa_dbwtsw2 $io $w" \
 	    -cancel_command "destroy $w" \
-	    -help_command "show_help gap5 {Assembly-Map}" \
+	    -help_command "show_help gap5 {Assembly-Map-bwa-dbwtsw}" \
 	    -bd 2 \
 	    -relief groove
 

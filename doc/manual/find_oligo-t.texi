@@ -5,7 +5,7 @@
 @cindex string search
 
 The purpose of this function 
-(which is available from the gap4 View menu)
+(which is available from the __prog__ View menu)
 is to find matches between the consensus
 sequence and short segments of sequence defined by the user.
 The segments of sequence (or "strings") can be typed into the dialogue
@@ -52,7 +52,7 @@ otherwise the line will be perpendicular to the main diagonal. Matches found
 between a tag and a contig can be used to invoke the Join Editor 
 (_fpref(Editor-Joining,
 The Join Editor, contig_editor)) or Contig Editors (_fpref(Editor,
-Editing in gap4, contig_editor)).
+Editing in __prog__, contig_editor)).
 Matches between a specified sequence and a contig will only invoke the
 Contig Editor. All of the matches found are displayed in the Output Window e.g.
 

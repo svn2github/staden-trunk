@@ -1,0 +1,131 @@
+@chapter Checking Assemblies and Removing Readings
+@menu
+* Removing Readings::                 Removing Readings and Breaking Contigs
+* Break Contig::                      Breaking Contigs
+* Disassemble::                       Disassembling Readings
+@end menu
+
+@cindex assembly problems: breaking contigs
+@cindex assembly problems: removing readings
+@cindex assembly problems: disassembling readings
+
+After assembly, and prior to editing, it can be useful to examine the
+quality of the alignments between individual readings and the
+sections of the consensus which they overlap. This may
+reveal doubtful joins between sections of contigs, poorly aligned
+readings, or readings that have been misplaced. By using this analysis
+in combination with other gap5
+functions 
+such as Find internal joins (_fpref(FIJ, Find Internal
+Joins, fij)) and Find repeats (_fpref(Repeats, Find Repeats,
+repeats)), 
+it is also possible to discover if 
+readings have been positioned in the
+wrong copies of repeat elements. 
+
+If readings are found to be misplaced
+or need removing for other reasons, gap5 has functions
+for breaking contigs
+(_fpref(Break Contig, Breaking Contigs, disassembly)),
+and removing readings
+(_fpref(Disassemble, Disassembling Readings, disassembly)).
+These functions can be accessed through the main gap5 Edit menu or from
+within the Contig Editor.
+
+If readings are removed from contigs to start new contigs of one
+reading, these contigs can then be processed by Find internal joins 
+(_fpref(FIJ, Find Internal
+Joins, fij)) 
+and the Join editor
+(_fpref(Editor-Joining, The Join Editor, contig_editor)), which should
+reveal all the other positions at which the reading matches.
+
+@page
+_split()
+@node Removing Readings
+@section Removing Readings and Breaking Contigs
+
+Occasionally contigs require more drastic changes than simple basecall
+edits. Sometimes it is necessary
+to remove readings that have been put in the wrong
+place, or to break contigs that should not have been joined. Gap5
+contains functions to help with these problems, and two
+types of interface. 
+
+If a contig
+needs to be broken cleanly into two new contigs, with all the readings,
+other than the two at the incorrect join, still linked together, then
+Break Contig 
+(_fpref(Break Contig, Breaking Contigs, disassembly)), or
+(_fpref(Editor-Comm-Break Contig, Break Contig, contig_editor))
+should be used. The former interface is available via the main gap5 Edit
+menu, and the latter as an option in the Contig Editor.
+
+If one or more readings need removing from from contig(s), even if their
+removal will break the contiguity of a contig, then
+(_fpref(Disassemble, Disassemble Readings, disassembly)), or
+(_fpref(Editor-Comm-Remove Reading, Remove Reading, contig_editor))
+should be used. The former interface is available via the main gap5 Edit
+menu, and the latter as an option in the Contig Editor. Readings can be
+removed from the database completely, or moved to start individual new
+contigs, one for each reading.
+
+
+@page
+_split()
+@node Break Contig
+@subsection Breaking Contigs
+@cindex Break contig
+
+The Break Contig function (which is available from the gap5 Edit menu)
+enables contigs to be broken by removing the
+link between two adjacent readings. The
+user defines the contig coordinate to break at. All sequences starting
+to the right of that position will be placed into a new contig.
+
+_picture(gap5_break_contig)
+
+@page
+_split()
+@node Disassemble
+@subsection Disassembling Readings
+@cindex Disassemble readings
+@cindex Removing readings
+
+This function is used to remove readings from a database or move
+readings to new contigs. 
+
+_picture(gap5_disassembly)
+
+If readings are removed from the database all reference to them is
+deleted. If a reading is moved to a ``single-read contig'' a new
+contig will be created containing this one single reading, which may
+then be re-processed by Find Internal Joins
+(_fpref(FIJ, Find Internal Joins, fij)) 
+and the Join editor
+(_fpref(Editor-Joining, The Join Editor, contig_editor)), which should
+reveal all the other positions at which the reading matches.
+
+More useful is the general ``Move readings to new contigs''. This will
+keep any assembly relationships intact between the set of readings to
+be disassembled. For example if three readings overlap then when
+disassembled all three will end up in a single new contig. This
+function is particularly useful for pulling apart false joins or
+repeats.
+
+The set of readings to be processed can be read from a ``file'' or a ``list'' and
+clicking on the ``browse'' button will invoke an appropriate browser. If just a
+single reading is to be assembled choose ``single'' and enter the
+reading name instead of the file or list of filenames.
+
+Removal via a ``list'' is a particularly powerful option when
+controlled via the list generation functions within the contig
+editor. For example break contig could be viewed as disassembling a
+list of readings selected using ``Select this reading and all to
+right''.
+
+Unlike gap4, gap5 can cope with having holes in contigs. (This is
+obviously a requirement when dealing with mapped alignments.)  Hence
+gap5 gives us a choice whether to break contigs into two (or more)
+pieces when removing sequences produces holes in the contigs. By
+default this is enabled.

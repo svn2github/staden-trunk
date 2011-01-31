@@ -1,3 +1,4 @@
+_ifdef([[_gap4]],[[
 @menu
 * Con-Normal::                  Normal Consensus Output
 * Con-Extended::                Extended Consensus Output
@@ -8,6 +9,15 @@
 * Con-Evaluation::              List Consensus Confidence
 * Con-ListBaseConf::            List Base Confidence
 @end menu
+]],[[
+@menu
+* Con-Normal::                  Normal Consensus Output
+* Con-Calculation::             Consensus Algorithms
+* Qual-Cal::                    The Quality Calculation
+* Con-Evaluation::              List Consensus Confidence
+* Con-ListBaseConf::            List Base Confidence
+@end menu
+]])
 
 @cindex Consensus: outputting
 @cindex Calculate consensus
@@ -150,6 +160,7 @@ active, and if it is clicked, a dialogue for selecting the types to include
 will appear. 
 
 
+_ifdef([[_gap4]],[[
 _split()
 @node Con-Extended
 @section Extended Consensus Output
@@ -315,7 +326,7 @@ active.
 
 The routine can only write its consensus sequence in "staden"
 format. The output file can be chosen with the aid of a file browser. 
-
+]])
 
 _split()
 @node Con-Calculation

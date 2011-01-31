@@ -224,7 +224,7 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     label $of.tag.label -text "Tag type"
     button $of.tag.button -text "" \
 	 -command "tag_editor_select_type $tf.r.tag \[set $w.Tag\] \
-		{show_help gap4 Editor-Searching} \
+		{show_help gap5 Editor-Searching} \
 		{search_set_tag_type $of.tag.button $w.Tag}"
     search_set_tag_type $of.tag.button $w.Tag [tag_type2id [set $w.Tag]]
 	
@@ -249,7 +249,7 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     button $bf.search -text "Search" -command "do_search $w \"$com\""
     button $bf.quit -text "Cancel" -command "destroy $w"
     button $bf.help -text "Help" \
-	-command "show_help gap4 {Editor-Searching}"
+	-command "show_help gap5 {Editor-Searching}"
     pack $bf.search $bf.quit -side left -expand 1
     pack $bf.help -side right -expand 1
 

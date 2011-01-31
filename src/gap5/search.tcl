@@ -212,7 +212,7 @@ proc gap4_text_init {t} {
 	-ok_command "SearchDialog2 $io $type $w 1 $tag" \
 	-apply_command "SearchDialog2 $io $type $w 0 $tag" \
 	-cancel_command "destroy $w" \
-	-help_command "show_help gap4 [list $help_node]" \
+	-help_command "show_help gap5 [list $help_node]" \
 	-bd 2 -relief groove
 
     pack $w.pattern $w.case $w.ptype $w.list $w.ok -side top -fill both

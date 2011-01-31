@@ -92,7 +92,7 @@ proc TempDispDialog { io } {
     okcancelhelp $f.ok_cancel \
 	    -ok_command "TempDisp_OkPressed $io $f $f.id $f.infile $l" \
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap4 {Template-Display}" \
+	    -help_command "show_help gap5 {Template-Display}" \
 	    -bd 2 \
 	    -relief groove
     
@@ -842,7 +842,7 @@ proc InputSelectReadingList { io } {
     okcancelhelp $name.ok_cancel \
 	    -ok_command  "CreateReadingList $io \[lorf_get_list $name.infile\]; destroy $name"\
 	    -cancel_command "destroy $name" \
-	    -help_command "show_help gap4 {Template-Templates-Operations}" \
+	    -help_command "show_help gap5 {Template-Templates-Operations}" \
 	    -bd 2 \
 	    -relief groove
     
@@ -1375,7 +1375,7 @@ proc SetTSizeTolerance {io f t} {
     okcancelhelp $w.ok \
 	-ok_command "SetTSizeTolerance2 $io $f $t $w" \
 	-cancel_command "destroy $w" \
-	-help_command "show_help gap4 FIXME"
+	-help_command "show_help gap5 FIXME"
     
     pack $w.size $w.ok -side top -fill both
 }

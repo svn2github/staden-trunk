@@ -18,7 +18,7 @@ proc result_list_create {io} {
     scrollbar $t.s -orient vertical -command "$t.l yview"
     frame $t.bb
     button $t.bb.q -text "Quit" -command "result_list_destroy $io"
-    button $t.bb.h -text "Help" -command "show_help gap4 {Results}"
+    button $t.bb.h -text "Help" -command "show_help gap5 {Results}"
 
     bind $t.l <Motion> {
 	%W selection clear 0 end

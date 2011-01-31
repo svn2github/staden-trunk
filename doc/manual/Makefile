@@ -134,6 +134,7 @@ xref: \
 	interface.index \
 	trev.index \
 	gap4.index \
+	gap5.index \
 	manpages.index \
 	spin.index \
 	filebrowser.index 
@@ -145,6 +146,7 @@ xref: \
 contents:
 	./tools/merge_indexes.pl \
 		gap4_toc.html \
+		gap5_toc.html \
 		mutations_toc.html \
 		pregap4_toc.html \
 		read_clipping_toc.html \
@@ -193,6 +195,7 @@ manual:	 manual.pdf manual_html
 manual_html: \
 	interface_toc.html \
 	gap4_toc.html \
+	gap5_toc.html \
 	formats_toc.html \
 	vector_clip_toc.html \
 	trev_toc.html \

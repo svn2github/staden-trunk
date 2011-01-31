@@ -8,7 +8,7 @@
 @cindex masking
 @cindex marking
 
-The purpose of this function (which is invoked from the @prog{} View menu)
+The purpose of this function (which is invoked from the Gap5 View menu)
 is to use sequences already in the database
 to find possible joins between contigs.  Generally these will be joins
 that were missed or judged to be unsafe during assembly and this
@@ -32,7 +32,7 @@ the main diagonal. The matches displayed in the Contig Comparator can be
 used to invoke the Join Editor (_fpref(Editor-Joining, The Join Editor,
 contig_editor)) 
 or Contig Editor.  _fxref(Editor,
-Editing in gap4, contig_editor) 
+Editing in gap5, contig_editor) 
 Alternatively, the "Next" button at the top left of the Contig
 Comparator can be used to select each result in turn, starting with the
 best, and ending with the worst. When this is in use, users can find the 
@@ -118,7 +118,7 @@ segments during searching, but in the alignment shown
 in the Output Window, marked segments will be shown in lower case.
 
 Some alignments may be very large. For speed and ease of scrolling
-@Prog{} does not display the textual form of the longest alignments,
+Gap5 does not display the textual form of the longest alignments,
 although they are still visible within the contig comparator
 window. The maximum length of the alignment to print up is controlled
 by the ``Maximum alignment length to list (bp)'' control.

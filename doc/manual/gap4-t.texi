@@ -1,4 +1,3 @@
-@setprog{gap4}{Gap4}
 _define(_gap4)
 
 _include(gap4_org-t.texi)

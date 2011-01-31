@@ -6,11 +6,11 @@
 @cindex Comparator window
 @cindex Contig Comparator
 
-_ifdef([[_gap4]],[[@Prog{} commands such as Find Internal Joins
+_ifdef([[_gap4]],[[__Prog__ commands such as Find Internal Joins
 (_fpref(FIJ, Find Internal Joins, fij)), Find Repeats (_fpref(Repeats,
 Find Repeats, repeats)), Check Assembly (_fpref(Check Assembly, Check
 Assembly, check_ass)), and Find Read Pairs (_fpref(Read Pairs, Find
-Read Pairs, read_pairs))]],[[@Prog{} commands such as Find Internal Joins
+Read Pairs, read_pairs))]],[[__Prog__ commands such as Find Internal Joins
 (_fpref(FIJ, Find Internal Joins, fij)) and Find Repeats (_fpref(Repeats,
 Find Repeats, repeats))]])
 automatically transform the Contig Selector (_fpref(Contig Selector,
@@ -46,7 +46,7 @@ By use of popup menus the plotted results can be used to invoke a subset
 of commands.  For example if the user clicks the right mouse button over
 a result from Find Internal Joins a menu containing Invoke Join Editor
 (_fpref(Editor-Joining, The Join Editor, contig_editor)) and Invoke
-Contig Editors (_fpref(Editor, Editing in gap4, contig_editor))
+Contig Editors (_fpref(Editor, Editing in __prog__, contig_editor))
 will pop up. If the user selects Invoke Join Editor the Join Editor will
 be started with the two contigs aligned at the match position contained
 in the result. If required one of the contigs will be complemented to
@@ -146,7 +146,7 @@ lie upon the diagonal line.
 The "Results" menu on the contig selector window provides a similar mechanism
 of accessing results, but at the level of all matches in a particular search.
 This is simply a menu driven interface to the Results Manager window
-(_fpref(Results, Results Manager, gap4)), but containing only the results
+(_fpref(Results, Results Manager, __prog__)), but containing only the results
 relevant to the contig comparator window.
 
 _split()

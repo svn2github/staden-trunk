@@ -1,20 +1,20 @@
 @menu
 * List-Special::                Special list names
 * List-Commands::               Basic list commands
-* List-ContigToRead::           Contigs To Readings command
+_ifdef([[_gap4]],[[* List-ContigToRead::           Contigs To Readings command
 * List-MinCoverage::            Minimal Coverage command
 * List-Unattached::             Unattached Readings command
 * List-HighlightReadings::      Highlight Readings List
 * List-SearchSequenceNames::    Search Sequence Names
 * List-SearchTemplateNames::    Search Template Names
-* List-SearchAnnotations::      Search Annotation Contents
+* List-SearchAnnotations::      Search Annotation Contents]])
 @end menu
 
 @cindex Lists
 
-For many operations it is convenient to be able to process sets of data together - for example to calculate a consensus sequence for a subset of the contigs. To facilitate this gap4 uses lists.
+For many operations it is convenient to be able to process sets of data together - for example to calculate a consensus sequence for a subset of the contigs. To facilitate this __prog__ uses lists.
 
-Most gap4 commands dealing with batches of files or sets of readings or contigs
+Most __prog__ commands dealing with batches of files or sets of readings or contigs
 can use either files of filenames or lists. When selecting list names from
 within dialogues the "browse" button will display a window containing all the
 currently existing lists. To select a list simply double click on the list
@@ -109,6 +109,7 @@ turn on hyperlinking in any text views of this list. Double-left
 clicking on an underlined reading name will bring up the contig editor
 while right-clicking will bring up a command menu.
 
+_ifdef([[_gap4]],[[
 _split()
 @node List-ContigToRead
 @section Contigs To Readings Command
@@ -165,7 +166,7 @@ _split()
 @cindex Sequence names, searching for
 
 This command allows searching for sequences matching a given pattern. The
-function produces both a list in the text output window and a gap4 "list" of
+function produces both a list in the text output window and a __prog__ "list" of
 reading names. The highlighted output is clickable, with the left mouse button 
 invoking the contig editor and the right mouse button displaying a popup-menu
 allowing additional operations (contig editor, template display, reading notes 
@@ -203,8 +204,8 @@ _split()
 @cindex Search template names: lists
 @cindex Template names, searching for
 
-This searches for template names matching a given pattern. The gap4 list
-produce will contain just the template names, but the information listed in
+This searches for template names matching a given pattern. The list
+produced will contain just the template names, but the information listed in
 the text output window lists the template names and the readings contained
 within each template. The reading names are hyperlinks and so double
 left-clicking on them will bring up the contig editor whilst right-clicking
@@ -233,3 +234,4 @@ the right mouse button will display a popup-menu with further options.
 For a description of the types of annotation search patterns see
 _fref(List-SearchSequenceNames, Search Sequence Names, lists)
 
+]])

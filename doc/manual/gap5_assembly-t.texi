@@ -25,6 +25,7 @@ alternate step for generating the SAM file.
 
 @menu
 * Assembly-tg_index::        Importing with tg_index
+* Assembly-Fasta::           Importing fasta/fastq files
 * Assembly-Map-bwa-aln::     Mapped assembly by bwa aln
 * Assembly-Map-bwa-dbwtsw::  Mapped assembly by bwa dbwtsw
 @end menu
@@ -60,9 +61,11 @@ An example usage is:
 
 
 File formats supported are SAM, BAM, ACE, MAQ (both short and long
-variants), CAF and BAF. Tg_index typically automatically detects the
-type of file, but in rare cases you may need to explicitly state the
-input file type.
+variants), CAF, BAF, Fasta and Fastq. The latter two have no assembly
+and/or alignment information so they are simply loaded as single-read
+contigs instead.  Tg_index typically automatically detects the type of
+file, but in rare cases you may need to explicitly state the input
+file type.
 
 Tg_index options:
 
@@ -161,6 +164,21 @@ Specifies an alternate compression method. This defaults to @i{zlib},
 but can be set to either @i{none} for fastest speed or @i{lzma} for
 best compression.
 @end table
+
+_split()
+@node Assembly-Fasta
+@section Importing fasta/fastq files
+@cindex Assembly: fasta/fastq
+
+Sometimes we have a few individual sequences we wish to import as
+single-read contigs. That is we won't align them against each other or
+against existing data, but just load them into our gap5 database so we
+can then run tools such as Find Repeats or Find Internal Joins on
+them. (This can be ideal for importing consensus sequences.)
+
+The ``Import Fasta/Fastq as single-read contigs'' function is designed
+for this purpose.  Behind the scenes it is nothing more than running
+@code{tg_index -a} to add a fasta or fastq file.
 
 _split()
 @node Assembly-Map-bwa-aln

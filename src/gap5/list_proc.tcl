@@ -603,7 +603,7 @@ proc ListListbox {t {ok_command ListListbox_ok} {type read}} {
     		ListListboxQuit $t
         }" \
 	-cancel_command "ListListboxQuit $t" \
-	-help_command "show_help gap4 {List-Commands}"
+	-help_command "show_help gap5 {List-Commands}"
  
     pack $t.f -side bottom -fill x
     pack $t.f.ok -side left -fill x
@@ -664,7 +664,7 @@ proc EditListDialog {} {
     okcancelhelp $t.ok \
         -ok_command "entrybox_command $t.list.entry" \
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Commands}" \
+	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
     pack $t.list $t.ok -side top -fill x
@@ -690,7 +690,7 @@ proc PrintListDialog {} {
     okcancelhelp $t.ok \
         -ok_command "PrintList2 $t \[entrybox_get $t.list.entry\]" \
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Commands}" \
+	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
     pack $t.list $t.ok -side top -fill both
@@ -730,7 +730,7 @@ proc LoadListDialog {} {
 		               \[entrybox_get $t.list.entry\] \
 			       \[lindex {{} SEQID} \[$t.seqid get\]\]" \
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Commands}" \
+	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
     pack $t.file $t.list $t.seqid $t.ok -side top -fill both
@@ -769,7 +769,7 @@ proc SaveListDialog {{t {}} {listname {}}} {
         -ok_command "SaveList2 $t \[entrybox_get $t.file.entry\] \
 		               \[entrybox_get $t.list.entry\]" \
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Commands}" \
+	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
     pack $t.list $t.file $t.ok -side top -fill both
@@ -790,7 +790,7 @@ proc SaveThisListDialog {listname {t {}}} {
         -ok_command "SaveList2 $t \[entrybox_get $t.file.entry\] \
 		              [list $listname]" \
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Commands}" \
+	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
     pack $t.file $t.ok -side top -fill both
@@ -819,7 +819,7 @@ proc DeleteListDialog {} {
     okcancelhelp $t.ok \
         -ok_command "entrybox_command $t.list.entry" \
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Commands}" \
+	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
     pack $t.list $t.ok -side top -fill x
@@ -848,7 +848,7 @@ proc CreateListDialog {} {
     okcancelhelp $t.ok \
         -ok_command "entrybox_command $t.list.entry" \
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Commands}" \
+	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
     pack $t.list $t.ok -side top -fill x
@@ -881,7 +881,7 @@ proc CopyListDialog {} {
         -ok_command "CopyList2 $t \[entrybox_get $t.from.entry\] \
 		       		  \[entrybox_get $t.to.entry\]" \
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Commands}" \
+	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
     pack $t.from $t.to $t.ok -side top -fill x
@@ -1279,7 +1279,7 @@ proc ContigsToReadings {io} {
     okcancelhelp $t.ok \
 	-ok_command "ContigsToReadings2 $io $t $t.id $t.infile $t.outfile" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-ContigToRead}" \
+	-help_command "show_help gap5 {List-ContigToRead}" \
 	-bd 2 -relief groove
 
     pack $t.infile $t.id $t.outfile $t.ok -side top -fill both
@@ -1337,7 +1337,7 @@ proc MinimalCoverage {io} {
     okcancelhelp $t.ok \
 	-ok_command "MinimalCoverage2 $io $t $t.id $t.infile $t.outfile" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-MinCoverage}" \
+	-help_command "show_help gap5 {List-MinCoverage}" \
 	-bd 2 -relief groove
 
     pack $t.infile $t.id $t.outfile $t.ok -side top -fill both
@@ -1381,7 +1381,7 @@ proc UnattachedReadings {io} {
     okcancelhelp $t.ok \
 	-ok_command "UnattachedReadings2 $io $t $t.outfile" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap4 {List-Unattached}" \
+	-help_command "show_help gap5 {List-Unattached}" \
 	-bd 2 -relief groove
 
     pack $t.outfile $t.ok -side top -fill both

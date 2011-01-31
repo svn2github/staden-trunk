@@ -1,0 +1,59 @@
+@cindex Find read pairs
+@cindex Read pairs
+
+This function is used to check the positions and orientations of
+readings taken from the same templates. 
+It is invoked from the gap5 View menu.
+
+For each template the relative
+position of its readings and the contigs they are in are examined. This
+analysis can give information about the relative order, separation and
+orientations of contigs and also show possible problems in the data.
+The search can be over the whole database or a subset of contigs named
+in a list (_fpref(Lists, Lists, lists)) 
+or file of file names. The results are written to the Output
+Window and plotted in the Contig Comparator 
+(_fxref(Contig Comparator, Contig Comparator, comparator)).
+Read pair information is also used to colour code the results displayed in the
+Template Display 
+(_fpref(Template-Display, Template Display, template)).
+
+Note that during assembly the template names and lengths are copied from
+the experiment files into the gap database. _fxref(Formats-Exp,
+Experiment Files, exp) The accuracy of the lengths will depend upon some
+size selection being performed during the cloning procedures.
+
+_picture(gap5_find_read_pairs)
+
+Users choose to process "all contigs" or a subset selected from a file
+of file names ("file") or a list ("list"). If either of the subset
+options is selected the "browse" button will be activated and can be
+clicked on to call up a file or list browser dialogue.
+
+_split()
+@node ReadPair-Display
+@subsection Find Read Pairs Graphical Output
+@cindex Find read pairs: display
+
+The contig comparator is used to plot all templates with readings that span
+contigs. That is, the lines drawn on the contig comparator are a visual
+representation of the relationship (orientation and overlap) between contigs.
+When a template spans more than two contigs, all the combinations of pairs of
+contigs are plotted. However such cases are uncommon.
+
+_lpicture(gap5_rp_comparator)
+
+The figure above shows a typical Contig Comparator plot which includes
+several types of result in addition to those from Read Pair analysis.
+
+The lines for the read-pairs 
+are, by default, shown in blue. The length of the line is the average
+length of the two readings within the pair. The slope of the line represents
+the relative orientation of the two readings. If they are both the same
+orientation (including both complemented) the line is drawn from top left to
+bottom right, otherwise the line is drawn from top right to bottom left.
+
+Clicking with the right mouse button on a read pair line brings up a
+menu containing, amongst other things, "Invoke join editor"
+(_fpref(Editor-Joining, The Join Editor, contig_editor)).  This will
+bring up the Join Editor with the two contigs shown end to end.

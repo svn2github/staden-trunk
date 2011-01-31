@@ -12,7 +12,8 @@
 @setchapternewpage odd
 @c %**end of header
 
-\global\def\pname{gap4}
+define(`__prog__',`gap4')
+define(`__Prog__',`Gap4')
 
 @set standalone
 include(header.m4)

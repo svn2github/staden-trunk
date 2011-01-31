@@ -31,7 +31,7 @@ proc TagDialog {name path command {version {}}} {
 		      [list $version]" \
 	-asdefault_command "TagDialog_default $path $name" \
 	-cancel_command "destroy $path $name" \
-	-help_command "show_help gap4 {Conf-Tag}"
+	-help_command "show_help gap5 {Conf-Tag}"
     
     pack $path.check -fill both -expand 1
     pack $path.but -fill both

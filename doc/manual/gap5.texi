@@ -12,13 +12,14 @@
 @setchapternewpage odd
 @c %**end of header
 
+define(`__prog__',`gap5')
+define(`__Prog__',`Gap5')
+
 @set standalone
 include(header.m4)
 
-@setprog{gap5}{Gap5}
-
 @titlepage
-@title @Prog{}
+@title Gap5
 @subtitle 
 @author James Bonfield, Wellcome Trust Sanger Institute
 @page

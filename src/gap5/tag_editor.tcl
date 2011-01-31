@@ -80,13 +80,13 @@ proc create_tag_editor {w c data} {
 
     button $w.bar.type -text "Type:$long_type" \
 	-command "tag_editor_select_type $w.bar.type $type \
-		  {show_help gap4 Editor-Annotations} \
+		  {show_help gap5 Editor-Annotations} \
 		  {tag_editor_set_type $w.bar.type $w $v.t $data}"
 
     button $w.bar.strand -text [tag_editor_strand $d(strand)] \
 	-command "tag_editor_set_strand $w.bar.strand $data"
     button $w.bar.help -text "Help" \
-	-command "show_help gap4 {Editor-Annotations}"
+	-command "show_help gap5 {Editor-Annotations}"
  
     scrollbar $v.sy -orient vert -command "$v.t yview" -bd 2 -relief sunken
     scrollbar $v.b.sx -orient horiz -command "$v.t xview" -bd 2 -relief sunken

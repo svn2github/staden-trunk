@@ -57,7 +57,7 @@ proc DisReadingsDialog { io f cs} {
     okcancelhelp $f.ok_cancel \
         -ok_command "OK_Pressed_DisReading $io $f $cs $f.infile $f.id $f.sel_task $f.constags"\
 	-cancel_command "destroy $f" \
-	-help_command "show_help gap4 {Disassemble}" \
+	-help_command "show_help gap5 {Disassemble}" \
 	-bd 2 \
 	-relief groove
     ###########################################################################
@@ -156,7 +156,7 @@ proc DisEditorReadingsDialog { io list f } {
     okcancelhelp $f.ok_cancel \
         -ok_command "OK_Pressed_EdDisReading $io {$list} $f $f.sel_task $f.constags"\
 	-cancel_command "destroy $f" \
-	-help_command "show_help gap4 {Disassemble}" \
+	-help_command "show_help gap5 {Disassemble}" \
 	-bd 2 \
 	-relief groove
     ###########################################################################

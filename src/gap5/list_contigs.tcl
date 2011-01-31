@@ -47,7 +47,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 
     button $t.buttons.help \
 	-text "Help" \
-	-command "show_help gap4 Contig-Selector-Contigs"
+	-command "show_help gap5 Contig-Selector-Contigs"
 
     pack $t.buttons.cancel $t.buttons.save $t.buttons.copy $t.buttons.help \
 	-side left -expand 1

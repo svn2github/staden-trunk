@@ -81,7 +81,7 @@ proc ListBaseConfidence {io} {
     okcancelhelp $t.ok \
 	-ok_command "ListBaseConfidence2 $io $t $t.infile $t.id" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap5 {Con-Evaluation}" \
+	-help_command "show_help gap5 {Con-ListBaseConf}" \
 	-bd 2 -relief groove
 
     pack $t.infile $t.id $t.ok -side top -fill x

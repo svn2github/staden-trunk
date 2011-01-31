@@ -22,9 +22,9 @@ add_command {Edit.Delete}		1 18 {DeleteNote $io $w}
 add_command {View.Reading Notes}	1 0 {SelectReadingNote $io $w}
 add_command {View.Contig Notes}		1 0 {SelectContigNote $io $w}
 add_command {View.Database Notes}	1 0 {SelectDBNote $io $w}
-add_command {Help.Selecting Notes}	1 0 {show_help gap4 {Notes-Selector}}
-add_command {Help.Editing Notes}	1 0 {show_help gap4 {Notes-Editor}}
-add_command {Help.Special Note Types}	1 0 {show_help gap4 {Notes-Special}}
+add_command {Help.Selecting Notes}	1 0 {show_help gap5 {Notes-Selector}}
+add_command {Help.Editing Notes}	1 0 {show_help gap5 {Notes-Editor}}
+add_command {Help.Special Note Types}	1 0 {show_help gap5 {Notes-Special}}
 
 # Note editor menus
 set_menu edit_note_menu
@@ -34,9 +34,9 @@ add_menu Help				1 0 right
 add_command {File.Save}			1 18 {EditNoteSave $io $w $nn}
 add_command {File.Delete}		1 18 {EditNoteDelete $io $w $nn}
 add_command {File.Exit}			1 0 {EditNoteExit $io $w $nn}
-add_command {Help.Selecting Notes}	1 0 {show_help gap4 {Notes-Selector}}
-add_command {Help.Editing Notes}	1 0 {show_help gap4 {Notes-Editor}}
-add_command {Help.Special Note Types}	1 0 {show_help gap4 {Notes-Special}}
+add_command {Help.Selecting Notes}	1 0 {show_help gap5 {Notes-Selector}}
+add_command {Help.Editing Notes}	1 0 {show_help gap5 {Notes-Editor}}
+add_command {Help.Special Note Types}	1 0 {show_help gap5 {Notes-Special}}
 
 # Main Gap5 menus
 set_menu gap_menu
@@ -201,11 +201,11 @@ add_command	{Assembly.Map Reads.Bwa dbwtsw} 12 22 {MapReads_bwa_dbwtsw \$io}
 
 
 
-add_command	{Help.Contents}		1 0 {show_help gap4 Contents}
-add_command	{Help.Introduction}	1 0 {show_help gap4 Gap4-Introduction}
+add_command	{Help.Contents}		1 0 {show_help gap5 Contents}
+add_command	{Help.Introduction}	1 0 {show_help gap5 Gap4-Introduction}
 add_command	{Help.Output Window}	1 0 {show_help interface {UI-Output}}
 add_separator	{Help.S1}
-add_command	{Help.Index}		1 0 {show_help gap4 Index}
+add_command	{Help.Index}		1 0 {show_help gap5 Index}
 add_separator	{Help.S2}
 add_command	{Help.Show Licence}	1 0 {ShowLicence}
 
@@ -443,50 +443,48 @@ add_command	{Edit Modes.Mode set 2}			1 0 \
 
 
 add_command	{Help.Introduction}			1 0 \
-	{show_help gap4 {Editor}}
+	{show_help gap5 {Editor}}
 add_separator	{Help.S1}
 add_command	{Help.Movement}				1 0 \
-	{show_help gap4 {Editor-Movement}}
+	{show_help gap5 {Editor-Movement}}
 add_cascade	{Help.Editing}					1 0
 add_command	{Help.Editing.General}				1 0 \
-	{show_help gap4 {Editor-Editing}}
-add_command	{Help.Editing.Editing Modes}			1 0 \
-	{show_help gap4 {Editor-Modes}}
+	{show_help gap5 {Editor-Editing}}
+#add_command	{Help.Editing.Editing Modes}			1 0 \
+#	{show_help gap5 {Editor-Modes}}
 add_command	{Help.Editing.Adjusting the Quality Values}	1 0 \
-	{show_help gap4 {Editor-Quality Values}}
+	{show_help gap5 {Editor-Quality Values}}
 add_command	{Help.Editing.Adjusting the Cutoff Data}	1 0 \
-	{show_help gap4 {Editor-Cutoffs}}
-add_command	{Help.Editing.Consensus/Quality Cutoff Data}	1 0 \
-	{show_help gap4 {Editor-Techniques-Cutoffs}}
+	{show_help gap5 {Editor-Cutoffs}}
+#add_command	{Help.Editing.Consensus/Quality Cutoff Data}	1 0 \
+#	{show_help gap5 {Editor-Techniques-Cutoffs}}
 add_command	{Help.Editing.Summary of Editing Commands}	1 0 \
-	{show_help gap4 {Editor-Editing Summary}}
+	{show_help gap5 {Editor-Editing Summary}}
 add_command	{Help.Editing.Selections}			1 0 \
-	{show_help gap4 {Editor-Selections}}
+	{show_help gap5 {Editor-Selections}}
 add_command	{Help.Editing.Annotations}			1 0 \
-	{show_help gap4 {Editor-Annotations}}
+	{show_help gap5 {Editor-Annotations}}
 add_command	{Help.Editing.Searching}			1 0 \
-	{show_help gap4 {Editor-Searching}}
-add_command	{Help.Editing.Commands Menu}			1 0 \
-	{show_help gap4 {Editor-Commands}}
+	{show_help gap5 {Editor-Searching}}
+#add_command	{Help.Editing.Commands Menu}			1 0 \
+#	{show_help gap5 {Editor-Commands}}
 add_command	{Help.Editing.Settings Menu}			1 0 \
-	{show_help gap4 {Editor-Settings}}
+	{show_help gap5 {Editor-Settings}}
 add_command	{Help.Editing.Primer Selection}			1 0 \
-	{show_help gap4 {Editor-Primer Selection}}
+	{show_help gap5 {Editor-Primer Selection}}
 add_command	{Help.Editing.Traces}				1 0 \
-	{show_help gap4 {Editor-Traces}}
+	{show_help gap5 {Editor-Traces}}
 add_command	{Help.Editing.Join Editor}			1 0 \
-	{show_help gap4 {Editor-Joining}}
+	{show_help gap5 {Editor-Joining}}
 add_command	{Help.Editing.Using Several Editors at Once}	1 0 \
-	{show_help gap4 {Editor-Multiple Editors}}
+	{show_help gap5 {Editor-Multiple Editors}}
 add_cascade	{Help.Control Summary}			1 0
 add_command	{Help.Control Summary.Keys for editing window}		1 0 \
-	{show_help gap4 {Editor-Summary-Keys}}
+	{show_help gap5 {Editor-Summary-Keys}}
 add_command	{Help.Control Summary.Mouse usage for editing window}	1 0 \
-	{show_help gap4 {Editor-Summary-Mouse}}
+	{show_help gap5 {Editor-Summary-Mouse}}
 add_command	{Help.Control Summary.Mouse usage for names window}	1 0 \
-	{show_help gap4 {Editor-Summary-MouseNames}}
-add_command	{Help.Control Summary.Mouse usage for scrollbar}	1 0 \
-	{show_help gap4 {Editor-Summary-Scroll}}
+	{show_help gap5 {Editor-Summary-MouseNames}}
 
 #template display menu
 set_menu template_menu
@@ -527,11 +525,11 @@ add_command {View.Clear ActiveReadings} 1 0 {ListClear readings}
 add_command {View.Highlight reading list} 1 0 {InputSelectReadingList $io}
 add_command {View.Set Template-size Tolerance} 1 0 {SetTSizeTolerance $io $f $t_win}
 
-add_command {Help.Introduction} 1 0 {show_help gap4 {Template-Display}}
-add_command {Help.Reading and Template Plot} 1 0 {show_help gap4 {Template-Templates}}
-add_command {Help.Active Readings} 1 0 {show_help gap4 {Template-Templates-Operations}}
-add_command {Help.Quality Plot} 1 0 {show_help gap4 {Template-Quality}}
-add_command {Help.Restriction Enzyme Plot} 1 0 {show_help gap4 {Template-Restriction}}
+add_command {Help.Introduction} 1 0 {show_help gap5 {Template-Display}}
+add_command {Help.Reading and Template Plot} 1 0 {show_help gap5 {Template-Templates}}
+add_command {Help.Active Readings} 1 0 {show_help gap5 {Template-Templates-Operations}}
+add_command {Help.Quality Plot} 1 0 {show_help gap5 {Template-Quality}}
+add_command {Help.Restriction Enzyme Plot} 1 0 {show_help gap5 {Template-Restriction}}
 
 #contig selector menu
 set_menu selector_menu
@@ -552,22 +550,22 @@ add_check   {View.Display diagonal} 	1 0 {$f.diagonal} \
 	{DisplayDiagonal $f $csp_win $io}
 add_command {View.Clear all} 		1 0 {CSClearAll $io $f $csp_win $csv_win}
 
-add_command {Help.Contig Selector Introduction} 1 0 {show_help gap4 {Contig Selector}}
-add_command {Help.Selecting Contigs}		1 0 {show_help gap4 {Contig-Selector-Contigs}}
-add_command {Help.Changing the Contig Order} 	1 0 {show_help gap4 {Contig-Selector-Order}}
-add_command {Help.View Menu} 			1 0 {show_help gap4 {Contig-Selector-Menus}}
+add_command {Help.Contig Selector Introduction} 1 0 {show_help gap5 {Contig Selector}}
+add_command {Help.Selecting Contigs}		1 0 {show_help gap5 {Contig-Selector-Contigs}}
+add_command {Help.Changing the Contig Order} 	1 0 {show_help gap5 {Contig-Selector-Order}}
+add_command {Help.View Menu} 			1 0 {show_help gap5 {Contig-Selector-Menus}}
 add_separator {Help.S1}
-add_command {Help.Contig Comparator Introduction} 1 0 {show_help gap4 {Contig Comparator}}
-add_command {Help.Examining Results} 1 0 {show_help gap4 {Compar-Examining}}
-add_command {Help.Using The Next Button} 1 0 {show_help gap4 {Compar-AutoNavigation}}
+add_command {Help.Contig Comparator Introduction} 1 0 {show_help gap5 {Contig Comparator}}
+add_command {Help.Examining Results} 1 0 {show_help gap5 {Compar-Examining}}
+add_command {Help.Using The Next Button} 1 0 {show_help gap5 {Compar-AutoNavigation}}
 add_separator {Help.S2}
-add_command {Help.Results Manager} 1 0 {show_help gap4 {Results}}
+add_command {Help.Results Manager} 1 0 {show_help gap5 {Results}}
 add_separator {Help.S3}
-add_command {Help.Find Internal Joins} 1 0 {show_help gap4 {FIJ}}
-add_command {Help.Find Repeats} 1 0 {show_help gap4 {Repeats}}
-add_command {Help.Find Read Pairs} 1 0 {show_help gap4 {Read Pairs}}
-add_command {Help.Check Assembly} 1 0 {show_help gap4 {Check Assembly}}
-add_command {Help.Sequence Search} 1 0 {show_help gap4 {Find Oligos}}
+add_command {Help.Find Internal Joins} 1 0 {show_help gap5 {FIJ}}
+add_command {Help.Find Repeats} 1 0 {show_help gap5 {Repeats}}
+add_command {Help.Find Read Pairs} 1 0 {show_help gap5 {Read Pairs}}
+#add_command {Help.Check Assembly} 1 0 {show_help gap5 {Check Assembly}}
+add_command {Help.Sequence Search} 1 0 {show_help gap5 {Find Oligos}}
 
 #consistency menu
 set_menu consistency_menu
@@ -595,11 +593,11 @@ add_command {View.Readpair coverage histogram} 	1 0 \
 add_command {View.Strand coverage} 	1 0 \
 	{ConsistencyStrandCoverage $io \[set $t.cons_id\] $t}
 
-add_command {Help.Introduction} 1 0 {show_help gap4 {Consistency-Display}}
-add_command {Help.Confidence value graph} 	1 0 {show_help gap4 {Consistency-Confidence}}
-add_command {Help.Reading coverage histogram} 	1 0 {show_help gap4 {Consistency-ReadingCov}}
-add_command {Help.Readpair coverage histogram} 	1 0 {show_help gap4 {Consistency-ReadPairCov}}
-add_command {Help.Strand coverage} 	1 0 {show_help gap4 {Consistency-Strand}}
+add_command {Help.Introduction} 1 0 {show_help gap5 {Consistency-Display}}
+add_command {Help.Confidence value graph} 	1 0 {show_help gap5 {Consistency-Confidence}}
+add_command {Help.Reading coverage histogram} 	1 0 {show_help gap5 {Consistency-ReadingCov}}
+add_command {Help.Readpair coverage histogram} 	1 0 {show_help gap5 {Consistency-ReadPairCov}}
+add_command {Help.Strand coverage} 	1 0 {show_help gap5 {Consistency-Strand}}
 
 # new gap5 template display
 set_menu new_template_menu
@@ -614,3 +612,6 @@ add_check {Tracks.Template}     1 0 {${w}(template)} \
 add_check {Tracks.Depth}    	1 0 {${w}(depth)} \
     	    	    	    	{show_track $w depth_item -50 \[set ${w}(depth)\]}
 
+add_command {Help.Main plot} 	1 0 {show_help gap5 {Template Display}}
+add_command {Help.Template button} 	1 0 {show_help gap5 {Template-Template}}
+add_command {Help.Filter button} 	1 0 {show_help gap5 {Template-Filter}}

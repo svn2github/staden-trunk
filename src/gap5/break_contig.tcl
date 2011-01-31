@@ -19,7 +19,7 @@ proc BreakContig {io} {
     okcancelhelp $t.ok_cancel \
 	    -ok_command "BC_OK_Pressed $io $t $t.id $t.pos"\
 	    -cancel_command "destroy $t" \
-	    -help_command "show_help gap4 {Break Contig}" \
+	    -help_command "show_help gap5 {Break Contig}" \
 	    -bd 2 \
 	    -relief groove
     

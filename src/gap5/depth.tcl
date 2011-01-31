@@ -1787,6 +1787,7 @@ proc seq_seqs_filter {w t} {
 	-ok_command "seq_seqs_filter_ok $w $t $f" \
 	-cancel_command "seq_seqs_filter_cancel $w $t $f" \
 	-apply_command "seq_seqs_filter_apply $w $t $f 1" \
+	-help_command "show_help gap5 Template-Filter" \
 	-bd 2 \
 	-relief groove
 
@@ -1919,11 +1920,13 @@ proc template_dialog {w t} {
     }
     
     # Ok for changes
-    okcancelhelp $c.ok -ok_command "seq_seqs_filter_ok $w $t $c" \
-    		       -apply_command "seq_seqs_filter_apply $w $t $c 1" \
-    		       -cancel_command "seq_seqs_filter_cancel $w $t $c" \
-		       -bd 2 \
-		       -relief groove
+    okcancelhelp $c.ok \
+	-ok_command "seq_seqs_filter_ok $w $t $c" \
+	-apply_command "seq_seqs_filter_apply $w $t $c 1" \
+	-cancel_command "seq_seqs_filter_cancel $w $t $c" \
+	-help_command "show_help gap5 Template-Template" \
+	-bd 2 \
+	-relief groove
 
     pack $cf $c.ok -side top -fill both -expand 1   
 }
@@ -2098,7 +2101,7 @@ proc ReadingCoverage { io } {
     okcancelhelp $f.ok_cancel \
 	    -ok_command "ReadingCoverage2 $io $f $f.id" \
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap4 {Consistency-ReadingCov}" \
+	    -help_command "show_help gap5 {Template-Depth}" \
 	    -bd 2 \
 	    -relief groove
 
@@ -2138,7 +2141,7 @@ proc TemplateDisplay { io } {
     okcancelhelp $f.ok_cancel \
 	    -ok_command "TemplateDisplay2 $io $f $f.id" \
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap4 {Consistency-ReadingCov}" \
+	    -help_command "show_help gap5 {Template-Display}" \
 	    -bd 2 \
 	    -relief groove
 

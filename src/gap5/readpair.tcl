@@ -45,7 +45,7 @@ proc ReadPairDialog { io f} {
     okcancelhelp $f.ok_cancel \
 	    -ok_command "ReadPairs_OK_Pressed $io $f $f.infile $f.mode $f.end_size $f.min_mq"\
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap4 {Read Pairs}" \
+	    -help_command "show_help gap5 {Read Pairs}" \
 	    -bd 2 \
 	    -relief groove
     ###########################################################################

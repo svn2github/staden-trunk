@@ -1,0 +1,84 @@
+@node ImportGFF
+@section Importing GFF
+@cindex GFF: importing from
+@cindex Import GFF Annotations
+
+Annotations within GFF files can be imported to Gap5 as annotations
+(sometimes referred to as tags).  The ``Import GFF Annotatons''
+function in the main File menu performs this task. Note that in order
+for this to work the contigs should not have been edited or
+complemented since the GFF file was created, otherwise the coordinates
+in the GFF file will not match.
+
+One caveat to this relates to sequence gaps.  By default consensus
+gaps/padding characters are excluded from the contig consensus
+sequences when counting GFF sequence coordinates.  In some cases we
+may wish to support annotations in a gapped sequence, so the ``GFF
+coordinates are already padded'' checkbox may be used to disable this
+coordinate de-padding process.
+
+
+_split()
+@node ExportTags
+@section Export Tags
+@cindex Export Tags
+@cindex Export GFF
+@cindex GFF: exporting
+
+This dialogue allows annotations (``tags'') to be written to disk as
+a GFF version 3 file.
+
+Currently this just uses the GFF ``remark'' type, but future plans
+will be to support a more wide variety of GFF types. 
+
+_picture(gap5_export_tags)
+
+By default the coordinates generated are de-padded, such that ``*''s
+in the consensus sequence are not counted when identifying the
+coordinate of an annotation. This may be disabled by deselecting the
+``Unpadded coordinates'' checkbox.
+
+The object a tag is attached to is typically the contig it is within,
+with the contig name being used in the first column of the GFF
+file. This applies even for annotations place on a sequence rather
+than the consensus. This feature may also be disabled by deselecting
+the ``Map sequence tags to consensus'' checkbox.
+
+Example GFF output follows, with ``...'' to denote lines truncated for
+illustrative purposes.
+
+@example
+Contig6  gap5  remark  4745  4745  .  .  .  type=COMM;Note=Possible SNP?
+Contig2  gap5  remark  3178  3196  .  .  .  type=OLIG;Note=Template%09xb63f10%0AOligoname%09??%0A...
+@end example
+
+Note we can see URL style percent encoding being used to avoid GFF
+format metacharacters, as per the GFFv3 specification.
+
+
+_split()
+@node ExportSequences
+@section Export Sequences
+@cindex Export Sequences
+
+This function exports sequence and annotation data from a Gap5
+database to a variety of assembly formats.
+
+_picture(gap5_export_sequences)
+
+The fasta and fastq formats are basic sequence-only or sequence plus
+quality, with no support for contigs or alignments.  The BAF, CAF, ACE
+and SAM formats all hold assembly data and so are reasonably complete
+representatives of data within Gap5. Note that ACE does not directly
+support quality values and this export function does not create the
+associated phdball file that houses this data.
+
+There is also no direct support for BAM, however command line tools
+like samtools or picard can convert the SAM file into BAM format. The
+SAM file should already be sorted by position.
+
+For SAM only there is an additional option: whether to fix mate-pair
+information.  This will ensure that the MRNM (Mate Reference Name),
+MPOS and ISIZE fields are filled out. Note that this considerably
+slows down the speed of exporting, so it is disabled by default.
+

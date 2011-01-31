@@ -443,7 +443,7 @@ proc EditContig {io} {
     okcancelhelp $t.but \
 	-ok_command "EditContig2 $io $t $t.id" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap4 {Editor}"
+	-help_command "show_help gap5 {Editor}"
 
     pack $t.id -side top -fill both
     pack $t.but -side bottom -fill both
@@ -472,7 +472,7 @@ proc JoinContig {io} {
     okcancelhelp $t.but \
 	-ok_command "JoinContig2 $io $t $t.id1 $t.id2" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap4 {Editor-Joining}"
+	-help_command "show_help gap5 {Editor-Joining}"
 
     #initialise current frame
     SetCurFrame $t [list $t.id1 $t.id2]
@@ -1238,7 +1238,7 @@ proc set_differences_quality {w} {
 	-cancel_command "set_differences_quality_callback $w $start;
                          set ${w}(DisagreeQuality) $start;
                          destroy $t" \
-        -help_command "show_help gap4 {Editor-Differences Quality}"
+        -help_command "show_help gap5 {Editor-Disagree}"
 
     pack $t.qual $t.ok -side top -fill both
 }

@@ -260,7 +260,7 @@ proc trace_diff_specific {w e} {
     okcancelhelp $t.ok \
         -ok_command "trace_diff_specific2 $e $t \[$t.name.entry get\]"\
         -cancel_command "destroy $t" \
-	-help_command "show_help gap4 {Editor-Trace Display}" \
+	-help_command "show_help gap5 {Editor-Trace Display}" \
         -bd 2 -relief groove
 
     pack $t.name $t.ok -side top -fill x
@@ -399,13 +399,13 @@ proc new_trace_create2 {w e title allow_diff} {
 	menu $w.bar.help.m
 	$w.bar.help.m add command \
 	    -label "Trace Display" \
-	    -command "show_help gap4 {Editor-Traces}"
+	    -command "show_help gap5 {Editor-Traces}"
 	$w.bar.help.m add command \
 	    -label "Settings" \
-	    -command "show_help gap4 {Editor-Trace Display}"
+	    -command "show_help gap5 {Editor-Trace Display}"
 	$w.bar.help.m add command \
 	    -label "Consensus Trace" \
-	    -command "show_help gap4 {Editor-Comm-Consensus Trace}"
+	    -command "show_help gap5 {Editor-Comm-Consensus Trace}"
 	pack $w.bar.help $w.bar.quit -side right -fill both
 	
 	# Information line

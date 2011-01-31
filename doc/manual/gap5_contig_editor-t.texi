@@ -15,7 +15,7 @@
 * Editor-Summary::             Summary of key and mouse bindings
 @end menu
 
-The @prog{} Contig Editor is designed to allow rapid checking and editing of
+The Gap5 Contig Editor is designed to allow rapid checking and editing of
 characters in assembled readings. Very large savings in time can be achieved
 by its sophisticated problem finding procedures which automatically direct the
 user only to the bases that require attention.  The following is a selection of
@@ -46,7 +46,7 @@ cursor in a word processor and need not be visible in the portion of
 the contig we are viewing.
 
 Also visible is a set of bases coloured yellow. These are an OLIGO
-annotation. @Prog{} supports a wide variety of annotation types (often
+annotation. Gap5 supports a wide variety of annotation types (often
 also referred to as ``tags''). These are covered later in more detail.
 
 _picture(gap5_contig_editor.traces)
@@ -210,7 +210,7 @@ _split()
 @end menu
 
 Editing can take up a significant portion of the time taken to finish
-a sequencing project. @Prog{} has a selection of searches
+a sequencing project. Gap5 has a selection of searches
 (_fpref(Editor-Searching, Searching, contig_editor)) designed to speed
 up this process.  The problems that require most attention are
 conflicts between good bases. Where base confidence values are present
@@ -221,7 +221,7 @@ anyway.
 
 Pads in the consensus should not be considered a problem requiring
 edits because it is possible to output the consensus sequence (from
-the main @prog{} File menu) with pads stripped out. Obviously poorly
+the main Gap5 File menu) with pads stripped out. Obviously poorly
 defined pads (a mixture of several alignment padding characters and
 real bases) require checking in the same manner as other poorly
 defined consensus bases.
@@ -494,7 +494,7 @@ As usual, ``undo'' can be used to undo any of these annotation creations,
 edits and removals.
 
 Some tags may contain graphical controls instead of the usual text
-panel. These are encoded with the master gap4 tag database
+panel. These are encoded with the master gap4/5 tag database
 (@i{GTAGDB}) by specifying the default tag text to be a piece of
 ``ACD'' code. A full description of the (modified for gap4/5) ACD syntax
 is not available currently, but it is strongly modelled on the the
@@ -842,12 +842,12 @@ There are two forms of trace display which are selected using the ``Compact''
 button at the top of the Trace display. The compact form differs by not
 showing the Info, Diff, Comp. and Cancel buttons at the left of each trace.
 
-Note that @prog{} does not store the trace files in the project database:
+Note that Gap5 does not store the trace files in the project database:
 it stores only their names and reads them when required. By default it
 will attempt to look for them in the current working directory (likely
 the same directory as the gap database). However this can be adjusted
 to look in other directories or via URLs using ``Trace file location''
-in the main @prog{} configure menu
+in the main Gap5 configure menu
 (_fpref(Conf-Trace File Location, Trace File Location, configure)). 
 
 _picture(gap5_contig_editor.traces)

@@ -1,4 +1,5 @@
 _define(_gap5)
+
 @c __include(gap5_org-t.texi)
 @c __include(gap5_mini-t.texi)
 @c __include(gap5_intro-t.texi)
@@ -31,6 +32,12 @@ _split()
 @node Assembly
 @chapter Assembling and Adding Readings to a Database
 _include(gap5_assembly-t.texi)
+
+@page
+_split
+@node Export
+@chapter Other forms of Importing / Exporting data
+_include(gap5_export-t.texi)
  
 @c @page
 @c __split()
@@ -40,7 +47,7 @@ _include(gap5_assembly-t.texi)
 @c 
 
 @page
-__split()
+_split()
 @node FIJ
 @section Find Internal Joins
 _include(gap5_fij-t.texi)
@@ -51,24 +58,29 @@ _split()
 @section Find Repeats
 _include(gap5_repeats-t.texi)
 
-@c Export sequences
-@c Export tags
-@c Save consensus
-@c Import GFF
-@c Break contig
-@c Complement a contig
-@c Sequence search
-@c Database information
-@c List Libraries
-@c List Consensus Confidence
-@c List Base Confidence
+@page
+_split()
+@node Read Pairs
+@section Find Read Pairs
+_include(gap5_read_pairs-t.texi)
 
-@c 
-@c @page
-@c __split()
-@c @node Calculate Consensus
-@c @chapter Calculating Consensus Sequences
-@c __include(calc_consensus-t.texi)
+@page
+_split()
+@node Find Oligos
+@section Sequence Search
+_include(find_oligo-t.texi)
+
+@page
+_split
+@node Disassembly
+_include(gap5_disassembly-t.texi)
+
+@page
+_split()
+@node Calculate Consensus
+@chapter Calculating Consensus Sequences
+_include(calc_consensus-t.texi)
+
 @c 
 @c @page
 @c __split()
@@ -79,20 +91,18 @@ _include(gap5_repeats-t.texi)
 @c * Import/export Tags::    Importing and Exporting Annotations
 @c @end menu
 @c 
-@c __split()
-@c __include(complement-t.texi)
 @c 
-@c @page
-@c __split()
-@c @node Results
-@c @chapter Results Manager
-@c __include(results-t.texi)
-@c 
-@c @page
-@c __split()
-@c @node Lists
-@c @chapter Lists
-@c __include(lists-t.texi)
+@page
+__split()
+@node Results
+@chapter Results Manager
+_include(results-t.texi)
+ 
+@page
+_split()
+@node Lists
+@chapter Lists
+_include(lists-t.texi)
 @c 
 @c @page
 @c __split()

@@ -1,7 +1,7 @@
 @cindex Find repeats
 @cindex Repeat search
 
-The purpose of this function (which is invoked from the @prog{} View menu) 
+The purpose of this function (which is invoked from the Gap5 View menu) 
 is to find exact repeats in contig
 consensus sequences. An exact repeat is defined as a run of consecutive
 identical ACGT characters; no mismatches or gaps are permitted.
@@ -19,7 +19,7 @@ will be parallel to the main diagonal, if they are not the line will be
 perpendicular to the main diagonal. The matches displayed in the Contig
 Comparator can be used to invoke the Join Editor (_fpref(Editor-Joining,
 The Join Editor, contig_editor)) or Contig Editors (_fpref(Editor,
-Editing in @prog{}, contig_editor)), and an Information button will display
+Editing in Gap5, contig_editor)), and an Information button will display
 data about the match in the Output window. e.g.
 
 @example

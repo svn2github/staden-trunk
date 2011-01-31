@@ -67,7 +67,7 @@ proc NewFile {} {
      okcancelhelp $f.ok_cancel \
 	-ok_command "New_OK_Pressed $f \[expandpath \[entrybox_get $f.files.entry\]\]" \
 	-cancel_command "destroy $f" \
-	-help_command "show_help gap4 {GapDB-New}" \
+	-help_command "show_help gap5 {GapDB-New}" \
 	-bd 2 \
 	-relief groove
    

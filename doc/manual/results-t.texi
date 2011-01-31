@@ -3,14 +3,14 @@
 @cindex Results: removing
 @cindex Removing results
 
-Some commands within gap4 produce "results" that are updated
+Some commands within __prog__ produce "results" that are updated
 automatically as data is edited. The Result Manager provides a way to
 list these results, and to interact with them.
 
 A result is an abstract term used to define any collection of
 data. Typically this data can be displayed, manipulated and is usually
-updated automatically when changes are made that affect it. In gap4
-each set of matches from a particular search
+updated automatically when changes are made that affect it. Each set
+of matches from a particular search 
 plotted on the Contig Comparator 
 (_fpref(Contig Comparator, Contig
 Comparator, comparator))

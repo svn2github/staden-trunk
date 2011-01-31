@@ -111,7 +111,7 @@ proc FindRepeatsDialog { io f} {
 			 \[entrybox_get $f.min_rpt\] $f.save_tags.yn \
 			 $f.save_tags.name" \
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap4 {Repeats}" \
+	    -help_command "show_help gap5 {Repeats}" \
 	    -bd 2 \
 	    -relief groove
     ###########################################################################

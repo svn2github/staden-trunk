@@ -21,7 +21,7 @@ proc show_url {url} {
     global tk_utils_defs
     set prog [keylget tk_utils_defs HELP_PROGRAM]
 
-    set cmd [format {[ "`%s -remote 'OpenUrl(%s)' 2>&1`" != "" ] \
+    set cmd [format {[ "`%s -remote 'OpenUrl(%s,new-tab)' 2>&1`" != "" ] \
 	    && %s '%s'} $prog $url $prog $url]
 
     exec sh -c "$cmd" &

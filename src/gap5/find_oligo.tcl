@@ -110,7 +110,7 @@ proc FindOligos { io } {
 	    		 $f.sel_mode.l.rl $f.mis_match $f.sel_mode.r.seq \
 			 $f.cons_or_seq $f.hidden_data $f.sel_mode.r.fasta" \
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap4 {Find Oligos}" \
+	    -help_command "show_help gap5 {Find Oligos}" \
 	    -bd 2 \
 	    -relief groove
     ###########################################################################

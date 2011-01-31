@@ -67,7 +67,7 @@ proc ConfigureCutoffs {} {
 	-perm_command "ConfigureCutoffs2 1 $t $t.consensus $t.quality \
 		$t.chem.v $t.mode $t.iub.v" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap4 {Conf-Consensus Algorithm}"
+	-help_command "show_help gap5 {Con-Calculation}"
 
     pack $t.mode $t.consensus $t.quality -side top -fill both
     pack $t.chem -pady 7 -side top -fill both
@@ -143,7 +143,7 @@ proc SetMaxseq {io} {
     okcancelhelp $t.ok -bd 2 -relief groove \
 	-ok_command "SetMaxseq2 $t $t.maxseq_val $t.maxdb_val" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap4 {Conf-Set Maxseq}"
+	-help_command "show_help gap5 {Conf-Set Maxseq}"
 
     pack $t.maxseq_val $t.maxdb_val $t.ok -side top -fill both
 }
@@ -261,7 +261,7 @@ proc SetGeneticCode {} {
 	-ok_command "SetGeneticCode2 0 $w $w.codes.l [list $index]" \
 	-perm_command "SetGeneticCode2 1 $w $w.codes.l [list $index]" \
 	-cancel_command "destroy $w" \
-	-help_command "show_help gap4 {Conf-Set Genetic Code}"
+	-help_command "show_help gap5 {Conf-Set Genetic Code}"
     pack $w.ok -side top -fill both
 }
 
@@ -322,7 +322,7 @@ proc SetAlignmentScores {} {
 	-ok_command "SetAlignmentScores2 0 $w $w.open $w.extend" \
 	-perm_command "SetAlignmentScores2 1 $w $w.open $w.extend" \
 	-cancel_command "destroy $w" \
-	-help_command "show_help gap4 {Conf-Alignment Scores}"
+	-help_command "show_help gap5 {Conf-Alignment Scores}"
     pack $w.ok -side top -fill both
 }
 
@@ -375,7 +375,7 @@ proc SetRawData {io} {
     okcancelhelp $w.ok -bd 2 -relief groove \
 	-ok_command "SetRawData2 $io $w \[entrybox_get $w.val\]" \
 	-cancel_command "destroy $w" \
-	-help_command "show_help gap4 {Conf-Trace File Location}"
+	-help_command "show_help gap5 {Conf-Trace File Location}"
 
     pack $w.val $w.ok -side top -fill both
 }
@@ -482,7 +482,7 @@ proc SetTemplateStatusConfig {} {
 	-ok_command "SetTemplateStatusConfig2 $w 0" \
 	-perm_command "SetTemplateStatusConfig2 $w 1" \
 	-cancel_command "destroy $w" \
-	-help_command "show_help gap4 {Conf-Template Status}"
+	-help_command "show_help gap5 {Conf-Template Status}"
 
     pack $w.size $w.vector -side top -fill both
     pack $w.ignore_all_ptype $w.ignore_custom_ptype -side top -fill both -expand 1
