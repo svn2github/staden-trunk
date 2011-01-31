@@ -257,48 +257,51 @@ int list_confidence(int *freqs, int length)
  */
 int get_base_confidences(GapIO *io, tg_rec contig,
 			 int *match_freqs, int *mismatch_freqs) {
-#if 0
-    int rnum;
-    int pos;
-#endif
     char *con;
+    contig_iterator *ci;
+    rangec_t *r;
+    int clen = io_clength(io, contig);
 
     /* Get the consensus along with the confidence values */
-    con = (char *)xmalloc((io_clength(io, contig)+1) * sizeof(*con));
+    con = (char *)xmalloc((clen+1) * sizeof(*con));
     if (!con)
 	return -1;
 
-    calc_consensus(contig, 1, io_clength(io, contig), CON_SUM,
+    calc_consensus(contig, 1, clen, CON_SUM,
 		   con, NULL, NULL, NULL,
 		   consensus_cutoff, quality_cutoff,
 		   database_info, (void *)io);
 
-    puts("FIXME: get_base_confidences()");
-#if 0
     /* Loop through all sequences in this contig */
-    for (rnum = io_clnbr(io, contig); rnum; rnum = io_rnbr(io, rnum)) {
-	int len, start, end;
-	char *seq;
-	int1 *conf;
+    ci = contig_iter_new(io, contig, 1, CITER_FIRST, CITER_CSTART, CITER_CEND);
 
-	/* get sequence, confidence, etc */
-	if (-1 == io_aread_seq(io, rnum, &len, &start, &end,
-			       &seq, &conf, NULL, 0))
-	    continue;
+    while ((r = contig_iter_next(io, ci))) {
+	seq_t *s = cache_search(io, GT_Seq, r->rec);
+	seq_t *origs = s;
+	int i, p;
 
-
-	for (pos = start; pos < end-1; pos++) {
-	    if (tolower(seq[pos]) ==
-		tolower(con[pos - start + io_relpos(io, rnum) - 1]))
-		match_freqs[conf[pos]]++;
-	    else
-		mismatch_freqs[conf[pos]]++;
+	if ((s->len < 0) ^ r->comp) {
+	    s = dup_seq(s);
+	    complement_seq_t(s);
 	}
 
-	xfree(seq);
-	xfree(conf);
+	for (i = s->left-1, p = r->start + i - 1; i < s->right; i++, p++) {
+	    char con_base = p-1 >= 0 && p-1 < clen ? con[p] : 'N';
+
+	    /* Skip pads for now */
+	    if (con_base == '*' || s->seq[i] == '*')
+		continue;
+
+	    if (tolower(s->seq[i]) == tolower(con_base))
+		match_freqs[s->conf[i]]++;
+	    else
+		mismatch_freqs[s->conf[i]]++;
+	}
+
+	if (s != origs)
+	    free(s);
     }
-#endif
+
     xfree(con);
 
     return 0;
