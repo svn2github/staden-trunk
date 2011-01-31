@@ -119,12 +119,12 @@ proc ExportTags {io} {
          {contig_id_configure $f.id -state normal}
         " -bd 2 -relief groove
 
-    #--- formats
-    radiolist $f.format \
-	-title "Select format" \
-	-default 2 \
-	-orient horizontal \
-	-buttons "baf gff"
+#    #--- formats
+#    radiolist $f.format \
+#	-title "Select format" \
+#	-default 2 \
+#	-orient horizontal \
+#	-buttons "baf gff"
 
     #--- Output options
     checkbutton $f.unpadded \
@@ -153,7 +153,7 @@ proc ExportTags {io} {
 	-relief groove
 
     #--- Packing
-    pack $f.infile $f.id $f.format $f.unpadded $f.consensus \
+    pack $f.infile $f.id $f.unpadded $f.consensus \
 	$f.outfile $f.ok -anchor w -side top -fill both
 }
 
@@ -161,7 +161,8 @@ proc ExportTags2 {io f} {
     global $f.Unpadded
     global $f.Consensus
 
-    set format [lindex "x baf gff" [radiolist_get $f.format]]
+    #set format [lindex "x baf gff" [radiolist_get $f.format]]
+    set format gff
     if {[lorf_in_get $f.infile] == 4} {
 	set gel_name [contig_id_gel $f.id]
 	set lreg [contig_id_lreg $f.id]
