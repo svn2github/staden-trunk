@@ -1786,6 +1786,9 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 void *cache_rw(GapIO *io, void *data) {
     cached_item *ci = ci_ptr(data);
     cached_item *mi = cache_master(ci);
+    
+    if (io->read_only)
+	return NULL;
 
     if (io->base && mi->lock_mode < G_LOCK_RW) {
 	ci = cache_dup(io, ci);
