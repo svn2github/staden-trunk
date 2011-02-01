@@ -32,6 +32,7 @@ _include(copyright.texi)
 @end ifinfo
 
 @menu
+* Gap5::                Next generation assembly editing with Gap5
 * Gap4::                Sequence assembly and finishing using Gap4
 * Mutations::           Searching for mutations using pregap4 and gap4
 * Pregap4::             Preparing readings for assembly using pregap4
@@ -51,6 +52,12 @@ _include(copyright.texi)
 @node Manual-preface
 @unnumberedsec Preface
 _include(preface-t.texi)
+
+@node Gap5
+@chapter Next generation assembly editing with Gap5
+@lowersections
+_include(gap5-t.texi)
+@raisesections
 
 @node Gap
 @chapter Sequence assembly and finishing using Gap4

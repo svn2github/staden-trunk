@@ -569,6 +569,7 @@ manpages.eps_done: manpages-t.eps_done
 manual.pdf_done:
 manual.pdf_done: copyright.pdf_done
 manual.pdf_done: preface-t.pdf_done
+manual.pdf_done: gap5-t.pdf_done
 manual.pdf_done: gap4-t.pdf_done
 manual.pdf_done: mutations-t.pdf_done
 manual.pdf_done: pregap4-t.pdf_done
@@ -583,6 +584,7 @@ manual.pdf_done: references-t.pdf_done
 manual.eps_done:
 manual.eps_done: copyright.eps_done
 manual.eps_done: preface-t.eps_done
+manual.eps_done: gap5-t.eps_done
 manual.eps_done: gap4-t.eps_done
 manual.eps_done: mutations-t.eps_done
 manual.eps_done: pregap4-t.eps_done
