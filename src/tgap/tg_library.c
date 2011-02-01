@@ -237,16 +237,35 @@ int update_library_stats(GapIO *io, tg_rec rec, int min_count,
     if (mean) *mean = isize[j];
     if (sd)   *sd   = sd_[j];
 
+    /*
+     * We update this data anyway so read only versions get to see
+     * on-the-fly computations, but if they've changed and we can lock it rw
+     * then we also permit archival of these figures.
+     */
     if (N[0] + N[1] + N[2] >= min_count) {
-	lib = cache_rw(io, lib);
-	if (!lib)
-	    return -1;
+	int edited = 0;
+
+	if (lib->lib_type != j)
+	    edited = 1;
+
+	for (i = 0; i < 3; i++) {
+	    if (lib->insert_size[i] != isize[i])
+		edited = 1;
+	    if (fabs(sd_[i] - lib->sd[i]) > 0.01)
+		edited = 1;
+	}
+
+	if (edited) {
+	    library_t *elib;
+	    if ((elib = cache_rw(io, lib)) != NULL)
+		lib = elib;
+	}
 
 	lib->lib_type = j;
 
-	for (j = 0; j < 3; j++) {
-	    lib->insert_size[j] = isize[j];
-	    lib->sd[j] = sd_[j];
+	for (i = 0; i < 3; i++) {
+	    lib->insert_size[i] = isize[i];
+	    lib->sd[i] = sd_[i];
 	}
     }
 

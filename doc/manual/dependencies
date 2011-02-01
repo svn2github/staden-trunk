@@ -349,17 +349,41 @@ gap5-t.pdf_done: contig_selector-t.pdf_done
 gap5-t.pdf_done: comparator-t.pdf_done
 gap5-t.pdf_done: gap5_template-t.pdf_done
 gap5-t.pdf_done: gap5_contig_editor-t.pdf_done
+gap5-t.pdf_done: gap5_assembly-t.pdf_done
+gap5-t.pdf_done: gap5_export-t.pdf_done
+gap5-t.pdf_done: gap5_fij-t.pdf_done
+gap5-t.pdf_done: gap5_repeats-t.pdf_done
+gap5-t.pdf_done: gap5_read_pairs-t.pdf_done
+gap5-t.pdf_done: find_oligo-t.pdf_done
+gap5-t.pdf_done: gap5_disassembly-t.pdf_done
+gap5-t.pdf_done: calc_consensus-t.pdf_done
+gap5-t.pdf_done: list_libraries-t.pdf_done
+gap5-t.pdf_done: results-t.pdf_done
+gap5-t.pdf_done: lists-t.pdf_done
 gap5-t.eps_done:
 gap5-t.eps_done: contig_selector-t.eps_done
 gap5-t.eps_done: comparator-t.eps_done
 gap5-t.eps_done: gap5_template-t.eps_done
 gap5-t.eps_done: gap5_contig_editor-t.eps_done
+gap5-t.eps_done: gap5_assembly-t.eps_done
+gap5-t.eps_done: gap5_export-t.eps_done
+gap5-t.eps_done: gap5_fij-t.eps_done
+gap5-t.eps_done: gap5_repeats-t.eps_done
+gap5-t.eps_done: gap5_read_pairs-t.eps_done
+gap5-t.eps_done: find_oligo-t.eps_done
+gap5-t.eps_done: gap5_disassembly-t.eps_done
+gap5-t.eps_done: calc_consensus-t.eps_done
+gap5-t.eps_done: list_libraries-t.eps_done
+gap5-t.eps_done: results-t.eps_done
+gap5-t.eps_done: lists-t.eps_done
 gap5.pdf_done:
 gap5.pdf_done: copyright.pdf_done
 gap5.pdf_done: gap5-t.pdf_done
 gap5.eps_done:
 gap5.eps_done: copyright.eps_done
 gap5.eps_done: gap5-t.eps_done
+gap5_assembly-t.pdf_done:
+gap5_assembly-t.eps_done:
 gap5_contig_editor-t.pdf_done:
 gap5_contig_editor-t.eps_done:
 gap5_contig_editor-t.pdf_done: gap5_contig_editor.screen.pdf
@@ -388,8 +412,36 @@ gap5_contig_editor-t.eps_done: gap5_contig_editor.primers.eps
 gap5_contig_editor-t.eps_done: gap5_contig_editor.traces.eps
 gap5_contig_editor-t.eps_done: gap5_contig_editor.454trace.eps
 gap5_contig_editor-t.eps_done: gap5_contig_editor.join.eps
+gap5_disassembly-t.pdf_done:
+gap5_disassembly-t.eps_done:
+gap5_disassembly-t.pdf_done: gap5_break_contig.pdf
+gap5_disassembly-t.pdf_done: gap5_disassembly.pdf
+gap5_disassembly-t.eps_done: gap5_break_contig.eps
+gap5_disassembly-t.eps_done: gap5_disassembly.eps
+gap5_export-t.pdf_done:
+gap5_export-t.eps_done:
+gap5_export-t.pdf_done: gap5_export_tags.pdf
+gap5_export-t.pdf_done: gap5_export_sequences.pdf
+gap5_export-t.eps_done: gap5_export_tags.eps
+gap5_export-t.eps_done: gap5_export_sequences.eps
+gap5_fij-t.pdf_done:
+gap5_fij-t.eps_done:
+gap5_fij-t.pdf_done: gap5_comparator.pdf
+gap5_fij-t.pdf_done: fij.dialogue.pdf
+gap5_fij-t.eps_done: gap5_comparator.eps
+gap5_fij-t.eps_done: fij.dialogue.eps
 gap5_org-t.pdf_done:
 gap5_org-t.eps_done:
+gap5_read_pairs-t.pdf_done:
+gap5_read_pairs-t.eps_done:
+gap5_read_pairs-t.pdf_done: gap5_find_read_pairs.pdf
+gap5_read_pairs-t.pdf_done: gap5_rp_comparator.pdf
+gap5_read_pairs-t.eps_done: gap5_find_read_pairs.eps
+gap5_read_pairs-t.eps_done: gap5_rp_comparator.eps
+gap5_repeats-t.pdf_done:
+gap5_repeats-t.eps_done:
+gap5_repeats-t.pdf_done: repeats.pdf
+gap5_repeats-t.eps_done: repeats.eps
 gap5_template-t.pdf_done:
 gap5_template-t.eps_done:
 gap5_template-t.pdf_done: gap5_template_by_size.pdf
@@ -450,6 +502,10 @@ interface.pdf_done: interface-t.pdf_done
 interface.eps_done:
 interface.eps_done: copyright.eps_done
 interface.eps_done: interface-t.eps_done
+list_libraries-t.pdf_done:
+list_libraries-t.eps_done:
+list_libraries-t.pdf_done: gap5_list_libraries.pdf
+list_libraries-t.eps_done: gap5_list_libraries.eps
 lists-t.pdf_done:
 lists-t.eps_done:
 makeSCF.1.pdf_done:

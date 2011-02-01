@@ -5,15 +5,21 @@ _define(_gap5)
 @c __include(gap5_intro-t.texi)
 @page
 _split()
+@node Contig Selector and Comparator
+@chapter Contig Selector / Comparator
 @node Contig Selector
-@chapter Contig Selector
+@section Contig Selector
+@lowersections
 _include(contig_selector-t.texi)
+@raisesections
 
 @page
 _split()
 @node Contig Comparator
-@chapter Contig Comparator
+@section Contig Comparator
+@lowersections
 _include(comparator-t.texi)
+@raisesections
 
 @page
 _split()
@@ -29,14 +35,15 @@ _include(gap5_contig_editor-t.texi)
  
 @page
 _split()
+@chapter Importing and Exporting Data
+@section Assembly
 @node Assembly
-@chapter Assembling and Adding Readings to a Database
+@lowersections
 _include(gap5_assembly-t.texi)
+@raisesections
 
 @page
 _split
-@node Export
-@chapter Other forms of Importing / Exporting data
 _include(gap5_export-t.texi)
  
 @c @page
@@ -48,6 +55,8 @@ _include(gap5_export-t.texi)
 
 @page
 _split()
+@node Matches
+@chapter Finding Sequence Matches
 @node FIJ
 @section Find Internal Joins
 _include(gap5_fij-t.texi)
@@ -81,19 +90,17 @@ _split()
 @chapter Calculating Consensus Sequences
 _include(calc_consensus-t.texi)
 
-@c 
-@c @page
-@c __split()
-@c @node gap4-misc
-@c @chapter Miscellaneous functions
-@c @menu
-@c * Complement::    Complement a contig
-@c * Import/export Tags::    Importing and Exporting Annotations
-@c @end menu
-@c 
-@c 
 @page
-__split()
+_split()
+@node Misc
+@chapter Other Miscellany
+@lowersections
+@node List Libraries
+@chapter List Libraries
+_include(list_libraries-t.texi)
+
+@page
+_split()
 @node Results
 @chapter Results Manager
 _include(results-t.texi)
@@ -103,6 +110,8 @@ _split()
 @node Lists
 @chapter Lists
 _include(lists-t.texi)
+@raisesections
+
 @c 
 @c @page
 @c __split()

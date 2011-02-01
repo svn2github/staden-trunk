@@ -1578,7 +1578,7 @@ static int library_cmd(ClientData clientData, Tcl_Interp *interp,
 	"delete",         "io",           "get_rec",
 	"get_orient",     "get_machine",  "get_dist",
 	"get_insert_size","get_insert_sd","get_count",
-	"get_name",
+	"get_name",	  "update_stats",
 	(char *)NULL,
     };
 
@@ -1586,7 +1586,7 @@ static int library_cmd(ClientData clientData, Tcl_Interp *interp,
 	DELETE,          IO,             GET_REC,
 	GET_ORIENT,      GET_MACHINE,    GET_DIST,
 	GET_INSERT_SIZE, GET_INSERT_SD,  GET_COUNT,
-	GET_NAME
+	GET_NAME,	 UPDATE_STATS
     };
 
     if (objc < 2) {
@@ -1681,6 +1681,10 @@ static int library_cmd(ClientData clientData, Tcl_Interp *interp,
 	    sprintf(buf, "rec#%"PRIrec, tl->library->rec);
 	    Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, -1);
 	}
+	break;
+
+    case UPDATE_STATS:
+	update_library_stats(tl->io, tl->library->rec, 100, NULL, NULL, NULL);
 	break;
     }
 

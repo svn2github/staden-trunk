@@ -9,6 +9,7 @@ package require Plotchart
     set nc [$db get_num_libraries]
     for {set i 0} {$i < $nc} {incr i} {
 	set lib [$io get_library [$db get_library_rec $i]]
+	$lib update_stats
 	set name    [$lib get_name]
 	set orient  [$lib get_orient]
 	set type    [$lib get_machine]
@@ -48,6 +49,12 @@ proc ListLibraries {io} {
     if {$t == ""} return
     wm title $t "List Libraries"
     wm geometry $t 550x600
+
+    # Menus
+    global list_libraries_menu
+    menu $t.menubar
+    $t configure -menu $t.menubar
+    create_menus $list_libraries_menu $t.menubar
 
     # Create our tablelist
     tablelist $t.list \

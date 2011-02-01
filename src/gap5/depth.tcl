@@ -2141,7 +2141,7 @@ proc TemplateDisplay { io } {
     okcancelhelp $f.ok_cancel \
 	    -ok_command "TemplateDisplay2 $io $f $f.id" \
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap5 {Template-Display}" \
+	    -help_command "show_help gap5 {Template Display}" \
 	    -bd 2 \
 	    -relief groove
 

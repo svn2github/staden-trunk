@@ -615,3 +615,12 @@ add_check {Tracks.Depth}    	1 0 {${w}(depth)} \
 add_command {Help.Main plot} 	1 0 {show_help gap5 {Template Display}}
 add_command {Help.Template button} 	1 0 {show_help gap5 {Template-Template}}
 add_command {Help.Filter button} 	1 0 {show_help gap5 {Template-Filter}}
+
+
+# List libraries window
+set_menu list_libraries_menu
+add_menu File			1 0 left
+add_menu Help			1 0 right
+
+add_command {File.Exit}		1 0 {destroy $t}
+add_command {Help.Introduction}	1 0 {show_help gap5 {List Libraries}}
