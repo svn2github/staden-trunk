@@ -254,6 +254,8 @@ int edview_search_name(edview *xx, int dir, int strand, char *value)
     iter = contig_iter_new_by_type(xx->io, xx->cnum, 1,
 				   dir == 1 ? CITER_FIRST : CITER_LAST,
 				   start-1, end+1, GRANGE_FLAG_ISSEQ);
+    if (!iter)
+	return -1;
 
     /*
      * The iterator also finds overlapping objects, not just ones beyond this
@@ -344,6 +346,9 @@ int edview_search_tag_type(edview *xx, int dir, int strand, char *value) {
     iter = contig_iter_new_by_type(xx->io, xx->cnum, 1,
 				   dir == 1 ? CITER_FIRST : CITER_LAST,
 				   start, end, GRANGE_FLAG_ISANNO);
+    if (!iter)
+	/* Can happen legitimately when we're already at the end of contig */
+	return -1;
 
     while (r = ifunc(xx->io, iter)) {
 	if ((dir  && r->start < start) ||
@@ -398,6 +403,8 @@ int edview_search_tag_anno(edview *xx, int dir, int strand, char *value) {
     iter = contig_iter_new_by_type(xx->io, xx->cnum, 1,
 				   dir == 1 ? CITER_FIRST : CITER_LAST,
 				   start, end, GRANGE_FLAG_ISANNO);
+    if (!iter)
+	return -1;
 
     while (r = ifunc(xx->io, iter)) {
 	anno_ele_t *ae;
