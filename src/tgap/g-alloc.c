@@ -843,7 +843,7 @@ void heap_check(dheap_t *h) {
 	    pmax--;
 
 	    if (p[i])
-		printf(" pool(%d) = %"PRIu64"d (%d..%d)\n",
+		printf(" pool(%d) = %"PRId64" (%d..%d)\n",
 		       i, p[i], pmin, pmax);
 
 	    assert(pool(pmin) == i);
@@ -858,21 +858,52 @@ void heap_check(dheap_t *h) {
 	uint32_t len, len2;
 	uint64_t prev, next;
 	uint64_t offset = 8*NPOOLS;
+	char *type[256];
+	char *comp_mode[4];
+	int i;
+
+	for (i = 0; i < 256; i++)
+	    type[i] = "unknown";
+	type[0] = "Generic";
+	type[3] = "RecArray";
+	type[5] = "Bin";
+	type[6] = "Range";
+	type[7] = "BTree";
+	type[16] = "Database";
+	type[17] = "Contig";
+	type[18] = "Seq";
+	type[19] = "Library";
+	type[20] = "Track";
+	type[21] = "AnnoEle";
+	type[22] = "Anno";
+	type[23] = "SeqBlock";
+	type[24] = "AnnoEleBlock";
+	type[25] = "SeqCons";
+
+	comp_mode[0] = "Zlib";
+	comp_mode[1] = "Uncompressed";
+	comp_mode[2] = "LZMA";
+	comp_mode[3] = "Unknown_compression";
 
 	while (4 == read(h->fd, &len, 4)) {
+	    char c[4];
 	    read(h->fd, &prev, 8);
 	    read(h->fd, &next, 8);
+
+	    memcpy(c, &prev, 4);
 
 	    len = be_int4(len);
 	    prev = be_int8(prev);
 	    next = be_int8(next);
 
 	    if (len & 1) {
-		printf("%5"PRIu64"d+%4"PRIu32"d free prev=%5"PRIu64"d "
+		printf("%8"PRIu64"+%6"PRIu32" free prev=%5"PRIu64" "
 		       "next=%5"PRIu64"d\n",
 		       offset, len & ~1, prev, next);
 	    } else {
-		printf("%5"PRIu64"d+%4"PRIu32"d used\n", offset, len & ~1);
+		printf("%8"PRId64"+%6"PRIu32" used %3d %-13s  %s\n",
+		       offset, len & ~1, c[0], type[(unsigned char)c[0]],
+		       comp_mode[((unsigned char)c[1]) >> 6]);
 	    }
 
 	    assert(len < 10000000);
