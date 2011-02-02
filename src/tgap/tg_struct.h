@@ -31,7 +31,6 @@ typedef int64_t tg_rec;
  */
  
 #define GT_Generic       0
-#define GT_Generic       0
 #define GT_RecArray      3
 #define GT_Bin           5
 #define GT_Range         6
