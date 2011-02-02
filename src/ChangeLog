@@ -1,3 +1,660 @@
+2011-02-01  jkbonfield
+
+	* staden/trunk/doc/manual/dependencies,
+	  staden/trunk/doc/manual/gap5-t.texi,
+	  staden/trunk/doc/manual/gap5_list_libraries.png,
+	  staden/trunk/doc/manual/list_libraries-t.texi,
+	  gap5/depth.tcl, gap5/gap5rc_menu_full, gap5/libraries.tcl,
+	  tgap/tg_library.c, tgap/tg_tcl.c: Improved List Libraries
+	  interface in gap5 and also added it to the
+	  documentatiopn. Other minor gap5 doc changes too.
+
+	* tgap/tg_cache.c: Fixed bug where attempting to call
+	  cache_rw() in read-only mode would grant access, but then
+	  cause a crash later on. It now properly returns NULL.
+
+2011-01-31  jkbonfield
+
+	* staden/trunk/doc/manual/Makefile,
+	  staden/trunk/doc/manual/calc_consensus-t.texi,
+	  staden/trunk/doc/manual/comparator-t.texi,
+	  staden/trunk/doc/manual/contig_selector-t.texi,
+	  staden/trunk/doc/manual/find_oligo-t.texi,
+	  staden/trunk/doc/manual/gap4-t.texi,
+	  staden/trunk/doc/manual/gap4.texi,
+	  staden/trunk/doc/manual/gap5-t.texi,
+	  staden/trunk/doc/manual/gap5.texi,
+	  staden/trunk/doc/manual/gap5_assembly-t.texi,
+	  staden/trunk/doc/manual/gap5_break_contig.png,
+	  staden/trunk/doc/manual/gap5_contig_editor-t.texi,
+	  staden/trunk/doc/manual/gap5_disassembly-t.texi,
+	  staden/trunk/doc/manual/gap5_disassembly.png,
+	  staden/trunk/doc/manual/gap5_export-t.texi,
+	  staden/trunk/doc/manual/gap5_export_sequences.png,
+	  staden/trunk/doc/manual/gap5_export_tags.png,
+	  staden/trunk/doc/manual/gap5_fij-t.texi,
+	  staden/trunk/doc/manual/gap5_find_read_pairs.png,
+	  staden/trunk/doc/manual/gap5_read_pairs-t.texi,
+	  staden/trunk/doc/manual/gap5_repeats-t.texi,
+	  staden/trunk/doc/manual/gap5_rp_comparator.png,
+	  staden/trunk/doc/manual/header.m4,
+	  staden/trunk/doc/manual/lists-t.texi,
+	  staden/trunk/doc/manual/results-t.texi, gap5/break_contig.tcl,
+	  gap5/configure.tcl, gap5/contig_editor.tcl, gap5/depth.tcl,
+	  gap5/dis_readings.tcl, gap5/editor_search.tcl,
+	  gap5/find_oligo.tcl, gap5/find_repeats.tcl,
+	  gap5/gap5rc_menu_full, gap5/list_contigs.tcl, gap5/list_proc.tcl,
+	  gap5/map_reads.tcl, gap5/ng_fb_cmds.tcl, gap5/qual.tcl,
+	  gap5/readpair.tcl, gap5/result_manager.tcl, gap5/search.tcl,
+	  gap5/tag_checklist.tcl, gap5/tag_editor.tcl,
+	  gap5/template_display.tcl, gap5/trace_display.tcl,
+	  tk_utils/help_netscape.tcl: Fixes to gap5 documentation.
+	  (Unsure what happened to last commit...)
+
+	* gap5/export_contigs.tcl: Removed BAF output as it's unimplemented
+	  atm.
+
+	* gap5/qualIO.c: Implemented get_base_confidences() function at
+	  last.
+
+2011-01-28  jkbonfield
+
+	* gap5/contig_editor.tcl: Fixed default colours for contig editor
+	  window.
+
+	* gap5/ng_fb_cmds.tcl, gap5/tg_index.c, tgap/g-defs.h,
+	  tgap/g-files.c, tgap/tg_iface_g.c: Renamed Gap5 database
+	  suffixes. We now have .g5d/.g5x instead of ""/.aux.
+	  
+	  Also adjusted tg_index to generate a sensible default
+	  database name instead of g_db, named after the input
+	  filename.
+
+	* gap5/gap.tcl, gap5/gap5, gap5/gap5.tcl: Renamed gap.tcl to
+	  gap5.tcl to make sprun.exe work on Windows.
+
+	* gap4/tagdb.c, gap5/tagdb.c: Changed the default tagdb file
+	  to GTAGDB. Previously with GTAGDB environ unset it looked in
+	  $STADTABL/TAGDB which didn't exist, causing gap4 to die.
+
+	* windows/wix/generate_wxs.pl: Added manual to the startup menu.
+
+2011-01-27  jkbonfield
+
+	* Misc/win_funcs.h, gap5/bam.c, tgap/zfio.c,
+	  tk_utils/text_output.c: Minor updates to remove warnings under
+	  Windows.
+
+	* Misc/os.h, Misc/win_funcs.h: Enabled large file support when
+	  building under mingw. Tested on a 32-bit vista
+	  system, but we need to verify these defines are needed when
+	  building on a
+	  native 64bit system.
+
+	* windows/wix/generate_wxs.pl: Improved handling of file
+	  associations.
+
+	* gap5/tk-io-reg.c: Removed bizarre memset of regs in the
+	  tk_contig_deregister function. It was overflowing the struct
+	  and corrupting memory.
+
+2011-01-26  jkbonfield
+
+	* windows/run/main.cpp, windows/wix/README, windows/wix/banner.bmp,
+	  windows/wix/generate_wxs.pl, windows/wix/splash.bmp,
+	  windows/wix/staden.wxs, windows/wix/ui.wxi: More windows tweaks,
+	  this time for the installer.
+	  
+	  Upgraded the wix generation code to work with the latest WiX
+	  release (3.5).
+
+2011-01-25  jkbonfield
+
+	* tgap/tg_iface_g.c: Reversed earlier change to i32 data type
+	  (int to uint). It's meant to be signed due to the older
+	  range format. This was an error in the past (and has already
+	  been fixed for newer format databases), but we can't just
+	  fix the datatype to remove compiler warnings without doing
+	  more work as we introduce decoding bugs.
+
+	* gap5/template_draw.h, staden_config.h.in: Report back to unix.
+	  Required inttypes.h added after the previous
+	  change from u_int32_t to uint32_t.
+
+	* Misc/Makefile, Misc/getfile.c, Misc/os.h, Misc/win_funcs.c,
+	  Misc/win_funcs.h, ac_stubs/ax_lib_curses.m4,
+	  ac_stubs/ax_lib_lzma.m4, ac_stubs/ax_lib_png.m4,
+	  ac_stubs/ax_lib_zlib.m4, configure.in, copy_reads/copy_reads,
+	  gap4/IO.c, gap4/gap4, gap5/contig_editor.tcl, gap5/depth_track.c,
+	  gap5/gap5, gap5/gap5_consensus, gap5/gap5_export,
+	  gap5/template_display.c, gap5/template_draw.c,
+	  gap5/template_draw.h, gap5/tg_index, gap5/tg_view,
+	  gap5/tg_view.c, prefinish/prefinish, pregap4/pregap4, spin/spin,
+	  spin_emboss/create_emboss_files, staden_config.h.in,
+	  system.mk.in, tgap/zfio.c, tk_utils/Makefile, trev/trev: Windows
+	  port - misc and minor edits mainly.
+
+	* gap5/tg_view.c: Removed incorrect cache_decr calls.
+
+2011-01-19  jkbonfield
+
+	* Misc/dstring.c, Misc/dstring.h, Misc/error.c, Misc/error.h,
+	  Misc/misc.h, Misc/vlen.c, Misc/vlen.h, gap4/gap-error.c,
+	  gap4/gap-error.h, gap4/gap_hash.c, gap4/tkEditor.c,
+	  gap5/cs-object.h, gap5/dis_readings.c, gap5/do_fij.c, gap5/fij.c,
+	  gap5/find_oligo.c, gap5/find_repeats.c, gap5/gap-error.c,
+	  gap5/gap-error.h, gap5/gap_hash.c, gap5/newgap5_cmds.c,
+	  gap5/qual.c, gap5/qualIO.c, gap5/readpair.c, gap5/tk-io-reg.c,
+	  gap5/tkEditor.c, polyA_clip/seqInfo.c, polyA_clip/seqInfo.h,
+	  qclip/seqInfo.c, qclip/seqInfo.h, text_utils/text_output.h,
+	  text_utils/text_output_stubs.c, tk_utils/tcl_utils.c,
+	  tk_utils/tcl_utils.h, tk_utils/text_output.c,
+	  tk_utils/text_output.h: Added gcc printf format checking via
+	  __attribute__ (if using gcc).
+	  This spotted a myriad of minor bugs (mostly in error handling
+	  code), even including some 10+ years old. Now fixed.
+
+2011-01-18  jkbonfield
+
+	* gap5/bam.c, gap5/bam.h, gap5/sam_index.c, gap5/sam_pileup.c,
+	  tgap/tg_iface_g.c: Minor signed vs unsigned changes to prevent
+	  compiler warnings.
+
+	* ac_stubs/ax_lib_staden_io_lib.m4: Extra checks for header files,
+	  incase we have io_lib-config but no headers installed
+
+	* gap5/bam.c: Bug fixed endianness reversal code after testing on a
+	  PowerPC iMac.
+
+	* tgap/g-files.c: Rearranged code to remove (incorrect?) gcc
+	  warning on gcc 3.3
+
+2011-01-17  jkbonfield
+
+	* gap5/dis_readings.c: Bug fix to disassemble readings with
+	  the "remove reads from database" option. The order of this
+	  is critical to not produce errors and abort early, which it
+	  was doing. Also since the addition of a proper bin removal
+	  system the r->rec == s->rec assert could be hit; we now only
+	  perform this section if the bin index hasn't already been
+	  updated to be BIN_RANGE_UNUSED.
+
+	* gap5/assemble_single.tcl, gap5/gap5rc,
+	  gap5/gap5rc_menu_full, gap5/newgap5_cmds.c, gap5/tclIndex:
+	  Added a basic GUI to support import of fasta/fastq files
+	  (equiv to tg_index -a foo.fasta).
+
+	* gap5/fasta.c: Bug fix to fasta parsing
+
+	* gap5/fasta.c: Bug fix to fasta parsing
+
+2011-01-14  jkbonfield
+
+	* seq_utils/sequence_formats.h: Fixed potential single byte
+	  buffer overflow in parse_feat(). On all mainstream platforms
+	  the single byte coincides with structure padding so it had
+	  nil effect anyway.
+
+	* gap5/Makefile, gap5/fasta.c, gap5/tg_index.c,
+	  gap5/tg_index_common.c, tgap/zfio.c, tgap/zfio.h: Added
+	  fasta and fastq reading code to tg_index. It just creates
+	  single read contigs, but this can be useful for pulling in
+	  consensus sequences or a few finishing reads with the aim to
+	  then searches for matches within gap5.
+
+	* Misc/misc.h, convert/gapDB.c, convert/list.h,
+	  copy_reads/copy_reads.c, eba/qual.c, gap4/assemble_direct.c,
+	  gap4/clones.c, gap4/oligo.c, gap4/shuffle_pads.c,
+	  gap4/tman_cons.c, gap4/tman_diff.c, gap4/tman_interface.c,
+	  gap5/ace.c, gap5/bam.c, gap5/editor_join.c, gap5/editor_search.c,
+	  gap5/find_oligo.c, gap5/import_gff.c, gap5/readpair.c,
+	  gap5/sam_index.c, gap5/tg_index.c, gap5/tg_index_common.c,
+	  gap5/tman_interface.c, get_scf_field/get_scf_field.c,
+	  haplo/haplo_snps.c, hetins/hetins.c, make_weights/make_weights.c,
+	  prefinish/finish_pcr.c, primer3/src/dpal.c,
+	  primer3/src/primer3_lib.c, screen_seq/screen_seq.c,
+	  seq_utils/align_lib.c, seq_utils/filter_words.c,
+	  seq_utils/renz_utils.c, spin/nip_splice_search.c,
+	  spin/seq_plot_funcs.c, spin/seq_raster.c, spin/seqed_write.c,
+	  spin/sim.c, spin/sip_find_identity.c, spin/splice_search.c,
+	  spin/tkSeqed.c, spin/trna_search.c, stops/stops.c,
+	  tgap/g-alloc.c, tgap/tg_anno.c, tgap/tg_bin.c, tgap/tg_cache.c,
+	  tgap/tg_contig.c, tgap/tg_sequence.c, vector_clip/vector_clip.c:
+	  Many updates to fix gcc warnings.
+	  
+	  - Removal of type punned casts to resolve strict aliasing
+	  problems.
+	  
+	  - Initialising more variables to avoid "may be used
+	  uninitialised" warnings. Note most of these are invalid gcc
+	  warnings, but a few cases are real when faced with invalid
+	  data or abnormal errors.
+
+	* gap5/export_contigs.c: Bug fix to export SAM format. When
+	  outputting aux fields (if stored in gap5) we were missing a
+	  tab before the first aux record.
+
+	* convert/main.c: Bug fix to rev 2344: replacing gets by fgets
+	  isn't the whole story. I now also remove the \n which is
+	  left in by fgets but removed by gets.
+
+2011-01-13  jkbonfield
+
+	* gap4/confidence_graph.c, gap4/gap-error.c, gap5/gap-error.c,
+	  prefinish/finish_hash.c, tgap/tg_cache.c: More minor warning
+	  removal - mostly around string literals.
+
+	* convert/main.c: Replaced use of gets by fgets. Not that it
+	  matters much in such old
+	  code, but I'm on a roll with warning removal.
+
+	* Misc/parse_db.c, seq_utils/align_lib.c: Added initialisations to
+	  variables to remove compiler warnings about
+	  "may be used uninitialised". The compiler is wrong, but this
+	  keeps
+	  things happy.
+
+	* Misc/misc.h, Misc/vlen.c, Misc/vlen.h, mutlib/sp_align_lib.cpp,
+	  text_utils/text_output.h, tgap/misc.h, tk_utils/misc.c,
+	  tk_utils/text_output.c, tk_utils/text_output.h: Added const to
+	  various functions. By no means is this all, but it's
+	  the ones we're passing string constants into, eg
+	  vmessage("foobar"),
+	  which with gcc 4.5 now emits warnings about removing const from
+	  string
+	  literal.
+
+	* Misc/Makefile, copy_reads/Makefile, gap4/Makefile, gap5/Makefile,
+	  polyA_clip/Makefile, prefinish/Makefile, spin/Makefile,
+	  tgap/Makefile, tk_utils/Makefile: Updates from 'make depend'
+
+2011-01-12  jkbonfield
+
+	* seq_utils/filter_words.c: Fixed potential (but rare) buffer
+	  overflow
+
+	* mutlib/tracealign_helper.cpp: Fixed transposed memset arguments
+	  (thank you gcc!)
+
+2011-01-07  jkbonfield
+
+	* tk_utils/user_defaults.tcl: Fix to make this work on MacOS
+	  X. I'm not sure on the cause of bdir not ending in a /, but
+	  by ensuring it is so we now find the libraries correctly.
+
+	* configure.in: Bug fix to previous itcl* changes
+
+	* README.build, configure.in: Made itcl/itk/iwidgets optional
+
+	* tk_utils/xcombobox.tcl: Added -command option for ttk::combobox
+	  version
+
+	* spin/comborange.tcl: Bugfix with xcombobox -text vs -label
+
+	* spin/nip_translation.tcl: Removal of debugging info
+
+	* spin_emboss/acd2tcl.tcl,
+	  spin_emboss/acdtcl/aaindexextract.acd,
+	  spin_emboss/acdtcl/abiview.acd,
+	  spin_emboss/acdtcl/ajbad.acd,
+	  spin_emboss/acdtcl/ajfeatest.acd,
+	  spin_emboss/acdtcl/ajtest.acd,
+	  spin_emboss/acdtcl/antigenic.acd,
+	  spin_emboss/acdtcl/backtranseq.acd,
+	  spin_emboss/acdtcl/banana.acd,
+	  spin_emboss/acdtcl/biosed.acd,
+	  spin_emboss/acdtcl/btwisted.acd, spin_emboss/acdtcl/cai.acd,
+	  spin_emboss/acdtcl/chaos.acd, spin_emboss/acdtcl/charge.acd,
+	  spin_emboss/acdtcl/checktrans.acd,
+	  spin_emboss/acdtcl/chips.acd, spin_emboss/acdtcl/cirdna.acd,
+	  spin_emboss/acdtcl/codcmp.acd,
+	  spin_emboss/acdtcl/coderet.acd,
+	  spin_emboss/acdtcl/complex.acd,
+	  spin_emboss/acdtcl/compseq.acd, spin_emboss/acdtcl/cons.acd,
+	  spin_emboss/acdtcl/contacts.acd,
+	  spin_emboss/acdtcl/corbatest.acd,
+	  spin_emboss/acdtcl/cpgplot.acd,
+	  spin_emboss/acdtcl/cpgreport.acd,
+	  spin_emboss/acdtcl/cusp.acd,
+	  spin_emboss/acdtcl/cutgextract.acd,
+	  spin_emboss/acdtcl/cutseq.acd, spin_emboss/acdtcl/dan.acd,
+	  spin_emboss/acdtcl/dbiblast.acd,
+	  spin_emboss/acdtcl/dbifasta.acd,
+	  spin_emboss/acdtcl/dbiflat.acd,
+	  spin_emboss/acdtcl/dbigcg.acd,
+	  spin_emboss/acdtcl/degapseq.acd,
+	  spin_emboss/acdtcl/demoalign.acd,
+	  spin_emboss/acdtcl/demofeatures.acd,
+	  spin_emboss/acdtcl/demolist.acd,
+	  spin_emboss/acdtcl/demoreport.acd,
+	  spin_emboss/acdtcl/demosequence.acd,
+	  spin_emboss/acdtcl/demostring.acd,
+	  spin_emboss/acdtcl/demotable.acd,
+	  spin_emboss/acdtcl/descseq.acd,
+	  spin_emboss/acdtcl/diffseq.acd,
+	  spin_emboss/acdtcl/digest.acd,
+	  spin_emboss/acdtcl/distmat.acd,
+	  spin_emboss/acdtcl/domainer.acd,
+	  spin_emboss/acdtcl/dotmatcher.acd,
+	  spin_emboss/acdtcl/dotpath.acd,
+	  spin_emboss/acdtcl/dottup.acd, spin_emboss/acdtcl/dreg.acd,
+	  spin_emboss/acdtcl/einverted.acd,
+	  spin_emboss/acdtcl/embossdata.acd,
+	  spin_emboss/acdtcl/embossversion.acd,
+	  spin_emboss/acdtcl/emma.acd, spin_emboss/acdtcl/emowse.acd,
+	  spin_emboss/acdtcl/entrails.acd,
+	  spin_emboss/acdtcl/entret.acd,
+	  spin_emboss/acdtcl/epestfind.acd,
+	  spin_emboss/acdtcl/eprimer3.acd,
+	  spin_emboss/acdtcl/equicktandem.acd,
+	  spin_emboss/acdtcl/est2genome.acd,
+	  spin_emboss/acdtcl/etandem.acd,
+	  spin_emboss/acdtcl/extractfeat.acd,
+	  spin_emboss/acdtcl/extractseq.acd,
+	  spin_emboss/acdtcl/findkm.acd,
+	  spin_emboss/acdtcl/fraggle.acd,
+	  spin_emboss/acdtcl/freak.acd, spin_emboss/acdtcl/funky.acd,
+	  spin_emboss/acdtcl/fuzznuc.acd,
+	  spin_emboss/acdtcl/fuzzpro.acd,
+	  spin_emboss/acdtcl/fuzztran.acd,
+	  spin_emboss/acdtcl/garnier.acd,
+	  spin_emboss/acdtcl/geecee.acd,
+	  spin_emboss/acdtcl/getorf.acd,
+	  spin_emboss/acdtcl/helixturnhelix.acd,
+	  spin_emboss/acdtcl/hetparse.acd,
+	  spin_emboss/acdtcl/histogramtest.acd,
+	  spin_emboss/acdtcl/hmmgen.acd,
+	  spin_emboss/acdtcl/hmoment.acd, spin_emboss/acdtcl/iep.acd,
+	  spin_emboss/acdtcl/infoalign.acd,
+	  spin_emboss/acdtcl/infoseq.acd,
+	  spin_emboss/acdtcl/interface.acd,
+	  spin_emboss/acdtcl/isochore.acd,
+	  spin_emboss/acdtcl/lindna.acd,
+	  spin_emboss/acdtcl/listor.acd,
+	  spin_emboss/acdtcl/marscan.acd,
+	  spin_emboss/acdtcl/maskfeat.acd,
+	  spin_emboss/acdtcl/maskseq.acd,
+	  spin_emboss/acdtcl/matcher.acd,
+	  spin_emboss/acdtcl/megamerger.acd,
+	  spin_emboss/acdtcl/merger.acd, spin_emboss/acdtcl/msbar.acd,
+	  spin_emboss/acdtcl/mwcontam.acd,
+	  spin_emboss/acdtcl/mwfilter.acd,
+	  spin_emboss/acdtcl/needle.acd,
+	  spin_emboss/acdtcl/newcoils.acd,
+	  spin_emboss/acdtcl/newcpgreport.acd,
+	  spin_emboss/acdtcl/newcpgseek.acd,
+	  spin_emboss/acdtcl/newseq.acd,
+	  spin_emboss/acdtcl/noreturn.acd,
+	  spin_emboss/acdtcl/notseq.acd,
+	  spin_emboss/acdtcl/nthseq.acd,
+	  spin_emboss/acdtcl/octanol.acd,
+	  spin_emboss/acdtcl/oddcomp.acd,
+	  spin_emboss/acdtcl/palindrome.acd,
+	  spin_emboss/acdtcl/pasteseq.acd,
+	  spin_emboss/acdtcl/patmatdb.acd,
+	  spin_emboss/acdtcl/patmatmotifs.acd,
+	  spin_emboss/acdtcl/patmattest.acd,
+	  spin_emboss/acdtcl/pdbparse.acd,
+	  spin_emboss/acdtcl/pdbtosp.acd,
+	  spin_emboss/acdtcl/pepcoil.acd,
+	  spin_emboss/acdtcl/pepinfo.acd,
+	  spin_emboss/acdtcl/pepnet.acd,
+	  spin_emboss/acdtcl/pepstats.acd,
+	  spin_emboss/acdtcl/pepwheel.acd,
+	  spin_emboss/acdtcl/pepwindow.acd,
+	  spin_emboss/acdtcl/pepwindowall.acd,
+	  spin_emboss/acdtcl/plotcon.acd,
+	  spin_emboss/acdtcl/plotorf.acd,
+	  spin_emboss/acdtcl/polydot.acd, spin_emboss/acdtcl/preg.acd,
+	  spin_emboss/acdtcl/prettyplot.acd,
+	  spin_emboss/acdtcl/prettyseq.acd,
+	  spin_emboss/acdtcl/prima.acd,
+	  spin_emboss/acdtcl/primers.acd,
+	  spin_emboss/acdtcl/primersearch.acd,
+	  spin_emboss/acdtcl/printsextract.acd,
+	  spin_emboss/acdtcl/profgen.acd,
+	  spin_emboss/acdtcl/profit.acd,
+	  spin_emboss/acdtcl/prophecy.acd,
+	  spin_emboss/acdtcl/prophet.acd,
+	  spin_emboss/acdtcl/prosextract.acd,
+	  spin_emboss/acdtcl/pscan.acd, spin_emboss/acdtcl/qatest.acd,
+	  spin_emboss/acdtcl/qatestcalcfeat.acd,
+	  spin_emboss/acdtcl/qatestcalcregexp.acd,
+	  spin_emboss/acdtcl/qatestcalcseq.acd,
+	  spin_emboss/acdtcl/qatestcalcseqall.acd,
+	  spin_emboss/acdtcl/qatestcalcseqset.acd,
+	  spin_emboss/acdtcl/qatestcalcstring.acd,
+	  spin_emboss/acdtcl/rebaseextract.acd,
+	  spin_emboss/acdtcl/recoder.acd,
+	  spin_emboss/acdtcl/redata.acd, spin_emboss/acdtcl/remap.acd,
+	  spin_emboss/acdtcl/restover.acd,
+	  spin_emboss/acdtcl/restrict.acd,
+	  spin_emboss/acdtcl/revseq.acd,
+	  spin_emboss/acdtcl/scopalign.acd,
+	  spin_emboss/acdtcl/scopnr.acd,
+	  spin_emboss/acdtcl/scopparse.acd,
+	  spin_emboss/acdtcl/scoprep.acd,
+	  spin_emboss/acdtcl/scopreso.acd,
+	  spin_emboss/acdtcl/scopseqs.acd,
+	  spin_emboss/acdtcl/seealso.acd,
+	  spin_emboss/acdtcl/seqalign.acd,
+	  spin_emboss/acdtcl/seqinfo.acd,
+	  spin_emboss/acdtcl/seqmatchall.acd,
+	  spin_emboss/acdtcl/seqnr.acd, spin_emboss/acdtcl/seqret.acd,
+	  spin_emboss/acdtcl/seqretall.acd,
+	  spin_emboss/acdtcl/seqretallfeat.acd,
+	  spin_emboss/acdtcl/seqretset.acd,
+	  spin_emboss/acdtcl/seqretsingle.acd,
+	  spin_emboss/acdtcl/seqretsplit.acd,
+	  spin_emboss/acdtcl/seqrettype.acd,
+	  spin_emboss/acdtcl/seqsearch.acd,
+	  spin_emboss/acdtcl/seqsort.acd,
+	  spin_emboss/acdtcl/seqwords.acd,
+	  spin_emboss/acdtcl/showalign.acd,
+	  spin_emboss/acdtcl/showdb.acd,
+	  spin_emboss/acdtcl/showfeat.acd,
+	  spin_emboss/acdtcl/showorf.acd,
+	  spin_emboss/acdtcl/showseq.acd,
+	  spin_emboss/acdtcl/shuffleseq.acd,
+	  spin_emboss/acdtcl/sigcleave.acd,
+	  spin_emboss/acdtcl/siggen.acd,
+	  spin_emboss/acdtcl/sigplot.acd,
+	  spin_emboss/acdtcl/sigscan.acd,
+	  spin_emboss/acdtcl/silent.acd, spin_emboss/acdtcl/sirna.acd,
+	  spin_emboss/acdtcl/sixpack.acd,
+	  spin_emboss/acdtcl/skipseq.acd,
+	  spin_emboss/acdtcl/splitter.acd,
+	  spin_emboss/acdtcl/stretcher.acd,
+	  spin_emboss/acdtcl/stssearch.acd,
+	  spin_emboss/acdtcl/supermatcher.acd,
+	  spin_emboss/acdtcl/syco.acd, spin_emboss/acdtcl/tclIndex,
+	  spin_emboss/acdtcl/tcode.acd,
+	  spin_emboss/acdtcl/testplot.acd,
+	  spin_emboss/acdtcl/textsearch.acd,
+	  spin_emboss/acdtcl/tfextract.acd,
+	  spin_emboss/acdtcl/tfm.acd, spin_emboss/acdtcl/tfscan.acd,
+	  spin_emboss/acdtcl/tmap.acd,
+	  spin_emboss/acdtcl/tranalign.acd,
+	  spin_emboss/acdtcl/transeq.acd,
+	  spin_emboss/acdtcl/treetypedisplay.acd,
+	  spin_emboss/acdtcl/trimest.acd,
+	  spin_emboss/acdtcl/trimseq.acd,
+	  spin_emboss/acdtcl/twofeat.acd,
+	  spin_emboss/acdtcl/union.acd,
+	  spin_emboss/acdtcl/vectorstrip.acd,
+	  spin_emboss/acdtcl/water.acd,
+	  spin_emboss/acdtcl/whichdb.acd,
+	  spin_emboss/acdtcl/wobble.acd,
+	  spin_emboss/acdtcl/wordcount.acd,
+	  spin_emboss/acdtcl/wordmatch.acd,
+	  spin_emboss/acdtcl/wossname.acd,
+	  spin_emboss/acdtcl/yank.acd,
+	  spin_emboss/create_emboss_files.tcl, spin_emboss/tclIndex:
+	  Removed the Tcl generated from .acd files and instead made
+	  the tclIndex auto-generate them as needed. The
+	  create_emboss_files program may still be used to create and
+	  save them though if desired.
+
+2011-01-07  awhitwham
+
+	* gap5/sam_index.c: Removed line causing double free.
+
+2011-01-06  jkbonfield
+
+	* gap4/gap_prefinish.tcl: Added a error window to cope with
+	  Iwidgets package possibly being
+	  absent.
+	  
+	  When it is absent, we simply warn the user that the
+	  prefinish GUI is unavailable. This is a reasonable
+	  alternative to completely rewriting it to avoid itcl (which
+	  is non-trivial).
+
+	* gap4/tag_editor.tcl: Removal of debugging output
+
+	* gap4/acd2tag.tcl, gap5/contig_editor.tcl,
+	  spin/comborange.tcl, spin_emboss/acd2tcl.tcl,
+	  spin_emboss/emboss_utils.tcl, tk_utils/tclIndex,
+	  tk_utils/xcombo.tcl, tk_utils/xcombobox.tcl: Replaced a
+	  hacky xcombo with a proper mega-widget implementation of
+	  xcombobox, which uses either native tk 8.4 or the
+	  ttk::combobox from tk8.5.
+	  
+	  Rewrote the acd2tcl (and derived acd2tag) code to remove all
+	  iwidgets uses.
+
+2011-01-05  jkbonfield
+
+	* pregap4/gui.tcl, pregap4/pregap4.tcl, spin/Makefile,
+	  spin/comborange.itk, spin/comborange.tcl, spin/dataentry.itk,
+	  spin/dataentry.tcl, spin/nip_translation.tcl,
+	  spin/nip_trna_search.c, spin/orientedradiobox.itk,
+	  spin/radioboxn.itk, spin/seq_id.tcl, spin/seqentry.tcl,
+	  spin/sequence_manager.tcl, spin/sip_similar_spans.tcl,
+	  spin/spin.tcl, spin/spinrange.itk, spin/spinrc, spin/tclIndex,
+	  spin/twinnedrange.itk: Removal of itcl/itk/iwidgets dependencies
+	  for pregap4 and spin.
+	  
+	  Tested on Tcl8.4, but if 8.5 is present we'll use some of those
+	  ttk widgets in preference (specifically ttk:notebook for now).
+
+	* tk_utils/init.tcl, tk_utils/tabnotebook.tcl, tk_utils/tclIndex,
+	  tk_utils/xcombo.tcl, tk_utils/xentry.tcl,
+	  tk_utils/xfilebrowser.tcl, tk_utils/xget_fname.tcl,
+	  tk_utils/xradiobox.tcl, tk_utils/xscrolledlistbox.tcl,
+	  tk_utils/xscrolledtext.tcl, tk_utils/xspinbox.tcl,
+	  tk_utils/xtwinspin.tcl: Added various new mega-widgets and
+	  tweaked existing ones.
+	  
+	  This is part of a larger goal to totally remove any dependency on
+	  incrtcl, incrtk and incrwidgets.
+
+	* tk_utils/tk_utilsrc: Minor font changes for MacOS X
+
+	* gap5/depth.tcl: Use canvas "-dash -.." instead of the
+	  numeric equivalent "-dash {6 4 2 4 2 4}". I've no idea why
+	  this matters, but it fixes a crash in the MacOS Tk
+	  implementation (or X libraries?).
+
+	* tgap/tg_iface_g.c: Improved handling of HAVE_LIBLZMA macro for
+	  when lzma isn't found by autoconf
+
+	* copy_reads/copy_reads.c, gap4/init.c, gap5/init.c,
+	  haplo/haplo_tcl.c, prefinish/finish.c, spin/seq_reg_cmds.c,
+	  tgap/tg_tcl.c, tk_utils/init.c: Added Unload and SafeUnload
+	  tcl init functions. These aren't used by our code, but Tcl
+	  looks for them on load and the MacOS X symbol table querying
+	  library seems to spit out unsightly error messages.
+
+2010-12-16  jkbonfield
+
+	* gap5/cs-object.h: Bug fixed FIJ.
+	  
+	  After adding find read pairs I chanegd the size of some
+	  structures, but forgot to make obj_fij the same size. I
+	  should be using a union instead, but it's nastily coded with
+	  casting (supposedly) compatible data structs.
+
+2010-12-15  awhitwham
+
+	* find_renz/Makefile, gap4/Makefile: Added explicit io_lib links
+	  for Centos compilation.
+
+	* make_weights/Makefile: Added an explicit link to io_lib.
+	  Centos-5.5 seems to prefer it this way.
+
+	* gap5/caf.c: Cosmetic file changes.
+
+2010-12-13  awhitwham
+
+	* gap5/tg_index_common.c, gap5/tg_index_common.h: Replaced the
+	  useful, but non-standard, getline with one of my own making.
+
+2010-12-09  awhitwham
+
+	* Misc/string_alloc.c: Removed the size limitations to make it more
+	  flexible.
+
+2010-12-08  awhitwham
+
+	* gap5/ace.c, gap5/baf.c, gap5/caf.c, gap5/maq.c, gap5/sam_index.c,
+	  gap5/tg_index.c, gap5/tg_index.h, gap5/tg_index_common.c,
+	  gap5/tg_index_common.h: Added a -q option to tg_index to limit
+	  the amount of unpaired reads held in memory. This should
+	  significantly reduce the memory usage of tg_index at the cost of
+	  longer running times.
+
+	* tgap/hache_table.c, tgap/hache_table.h: Added a table empty
+	  function to remove all data but keep the data structures in
+	  place.
+
+2010-12-02  jkbonfield
+
+	* gap4/gap-tcl.c: Added io_read_array and io_write_array Tcl
+	  commands. These also copy to the internal cached copies of
+	  arrays if the record number matches.
+	  
+	  The purpose is to ease implementation of code to reorder
+	  contigs at the scripting level.
+
+2010-12-01  jkbonfield
+
+	* tgap/tg_bin.c, tgap/tg_cache.c, tgap/tg_gio.h: Removed a
+	  reference count leak (which looks like a memory leak, but
+	  isn't traceable by valgrind) in the bin_for_range() function.
+	  
+	  Also added extra cache leak detection code. This can be enabled
+	  by adding -DCACHE_REF_DEBUG to the CFLAGS in system.mk and
+	  recompiling
+	  everything.
+
+	* gap5/sam_index.c, gap5/sam_pileup.c, gap5/tg_index_common.c:
+	  Various minor memory leaks fixed
+
+2010-11-30  jkbonfield
+
+	* gap5/tg_index.c: Added a cache_flush call while indexing
+	  read names. This resolves excessive memory using during
+	  tg_index -t on large data sets.
+
+2010-11-29  jkbonfield
+
+	* gap5/cs-object.h, gap5/gap5rc, gap5/newgap5_cmds.c,
+	  gap5/newgap_structs.h, gap5/readpair.c, gap5/readpair.h,
+	  gap5/readpair.tcl: Added a minimum mapping quality filter to the
+	  Find Read Pairs plot.
+
+2010-11-29  awhitwham
+
+	* gap4/newgap_cmds.c: Removed header include.
+
+2010-11-29  jkbonfield
+
+	* gap5/bam.c, gap5/bam.h: Forgot to add these with previous commit.
+	  
+	  Reimplementation of portions of samtools library for use in new
+	  pileup code.s
+
 2010-11-26  jkbonfield
 
 	* gap5/editor_view.c: When displaying tags we now draw a box
