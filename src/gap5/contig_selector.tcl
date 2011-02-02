@@ -1365,7 +1365,16 @@ proc ContigParams { io } {
     global LREG
     global RREG
 
-    set cnum [db_info get_contig_num $io $CurContig]
+    # Check if =cnum notation, and if so whether cnum still exists as
+    # a contig record (we may have joined it to something else).
+    if {[regexp {^=(\d+)$} $CurContig dummy cnum] == 1} {
+	if {[$io rec_exists 17 $cnum] == 0} {
+	    set cnum -1
+	}
+    } else {
+	set cnum [db_info get_contig_num $io $CurContig]
+    }
+
     if {$cnum != -1} {
 	set LREG 1
 	set RREG [c_length $io $cnum]
