@@ -16,7 +16,13 @@
 #include "gap_range.h"
 #include "template_display.h"
 
-#include <tkInt.h>
+/*
+ * On windows we need to use TkPutImage instead
+ */
+#ifdef _WIN32
+#  include <tkInt.h>
+#  define XPutImage(a,b,c,d,e,f,g,h,i,j) XPutImage(NULL, 0, (a),(b),(c),(d),(e),(f),(g),(h),(i),(j))
+#endif
 
 /* Define the template display item */
 
@@ -780,7 +786,7 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
 	if (tdi->gr->r == NULL) {
 	    // either lack of memory or an empty part of contig, blank to black 
 	    create_image_from_buffer(tdi->image);
-	    TkPutImage(NULL, 0, display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
+	    XPutImage(display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
 	    return;
 	}
 	
@@ -871,7 +877,7 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     }
     
     create_image_from_buffer(tdi->image);
-    TkPutImage(NULL, 0, display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
+    XPutImage(display, (Drawable)tdi->pm, tdi->gc, tdi->image->img, 0, 0, 0, 0, tdi->width, tdi->height);
     
     /* some last bits of size calculation for scrolling */
     tdi->y_start = ymin - 10;
