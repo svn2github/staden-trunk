@@ -21,7 +21,7 @@
  */
 #ifdef _WIN32
 #  include <tkInt.h>
-#  define XPutImage(a,b,c,d,e,f,g,h,i,j) XPutImage(NULL, 0, (a),(b),(c),(d),(e),(f),(g),(h),(i),(j))
+#  define XPutImage(a,b,c,d,e,f,g,h,i,j) TkPutImage(NULL, 0, (a),(b),(c),(d),(e),(f),(g),(h),(i),(j))
 #endif
 
 /* Define the template display item */
