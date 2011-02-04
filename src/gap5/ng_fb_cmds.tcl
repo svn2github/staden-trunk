@@ -162,16 +162,16 @@ proc DB_Load { file } {
         set access "rw"
     }
 
-    #strip off .aux if is exists
-    regsub {\.(aux|g5d|g5x)$} $file "" filename
-
-    set response [CheckOpenFile $filename]
+    set response [CheckOpenFile $file]
     if {$response == 0} {
 	    bell
 	    #wait until user has re-entered a value
 	    tkwait variable re_enter
 	    return ""
     }
+
+    #strip off .aux if is exists
+    regsub {\.(aux|g5d|g5x)$} $file "" filename
 
     set db_name $filename
 
