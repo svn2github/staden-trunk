@@ -1,4 +1,45 @@
 -----------------------------------------------------------------------------
+Feb 3rd 2011 - MacOS X 10.6 build notes.
+
+Require io_lib-1.12.5 to get va_copy() macro supported correctly.
+
+If building for binary release, compile io_lib with --disable-shared.
+Otherwise libtool will hardcode an rpath requirement into the shared
+library meaning the executables must be in the same place on all
+platforms (duh!).
+
+Requires non-aqua tcl/tk (eg MacPorts).
+
+Then build staden as normal. Eg:
+
+../configure --prefix=/Users/jbonfield/install \
+	     --with-io_lib=/Users/jbonfield/install \
+	     --with-tklib=/usr/local/tklib/lib/tklib0.5 \
+	     --with-lzma=/opt/local \
+	     --with-png=/opt/local \
+	     --with-tcl=/opt/local/lib \
+	     --with-tk=/opt/local/lib
+
+
+If you wish to build using the native Aqua version of Tk, then this is
+possible, but not trivially. The program layout (using multiple
+windows) also isn't ideal for aqua use. However for the brave:
+
+1) Edit tk_utils/Makefile and add tkAquaX.c to the list of object
+   files (OBJS= ...).
+
+2) Remove the #ifdef _WIN32 and #endif at the start of
+   gap5/template_display.c. (The aqua version also needs TkPutImage
+   instead of XPutImage). Note this doesn't make the template display
+   work alas; it crashes somewhere for me. However it does at least
+   now compile.
+
+3) You need your shell scripts (eg bin/gap4, bin/gap5) to use
+   /usr/bin/tclsh8.5 or similar, rather than /opt/local/bin/tclsh or
+   wherever your X11 tcl variant is.
+
+
+-----------------------------------------------------------------------------
 On imac08739
 
 1. Use the commented out TK_LIB definition in system.mk.in. Ie:
