@@ -582,6 +582,12 @@ static int deallocate(g_io *io, tg_rec rec, GView v) {
     return g_remove_(io->gdb, io->client, v);
 }
 
+/* Sanity checking, incase memory/algorithm errors produce on-disk errors */
+static void check_view_rec(g_io *io, cached_item *ci) {
+    View *v = arrp(View, io->gdb->view, ci->view);
+    assert(ci->rec == v->lcache.rec);
+}
+
 static GView lock(g_io *io, tg_rec rec, int mode) {
     if (!mode)
 	mode = G_LOCK_EX;
@@ -999,6 +1005,9 @@ static int btree_write(g_io *io, btree_node_t *n) {
     GIOVec vec[2];
     cached_item *ci = n->cache;
     char *gzout;
+
+    assert(ci->rec > 0);
+    check_view_rec(io, ci);
 
     /* Set up data type and version */
     fmt[0] = GT_BTree;
@@ -1526,6 +1535,8 @@ static int io_database_write(void *dbh, cached_item *ci) {
     database_t *db = (database_t *)&ci->data;;
 
     assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec == 0);
+    check_view_rec(io, ci);
     return io_database_write_view(io, db, ci->view);
 }
 
@@ -1735,6 +1746,7 @@ static int io_contig_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
     return io_contig_write_view(io, c, ci->view);
 }
 
@@ -1830,6 +1842,7 @@ static int io_array_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
     ar = (Array)&ci->data;
     ret = io_generic_write_rec(io, ci->view, GT_RecArray,
 			       ArrayBase(tg_rec, ar),
@@ -1967,6 +1980,7 @@ static int io_anno_ele_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
     return io_anno_ele_write_view(io, e, ci->view);
 }
 
@@ -2002,6 +2016,7 @@ static cached_item *io_anno_read(void *dbh, tg_rec rec) {
 
 static int io_anno_write(void *dbh, cached_item *ci) {
     assert(ci->rec > 0);
+    check_view_rec((g_io *)dbh, ci);
     return io_generic_write(dbh, ci);
 }
 
@@ -2113,6 +2128,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
 
     fmt[0] = GT_Library;
     fmt[1] = (lib->name ? 1 : 0) | (io->comp_mode << 6);
@@ -2667,6 +2683,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	}
 #endif
 
+	assert(bin->rng_rec > 0);
 	v = lock(io, (int)bin->rng_rec, G_LOCK_EX);
 	//	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
 	//	       sizeof(GRange) * ArrayMax(bin->rng));
@@ -2820,6 +2837,7 @@ static int io_bin_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
     return io_bin_write_view(io, bin, ci->view);
 }
 
@@ -3058,6 +3076,7 @@ static int io_track_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
     return io_track_write_view(io, track, ci->view);
 }
 
@@ -3532,6 +3551,7 @@ static int io_seq_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
     return io_seq_write_view(io, seq, ci->view, (GRec)ci->rec);
 }
 
@@ -3998,6 +4018,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
 
     set_dna_lookup();
 
@@ -4292,6 +4313,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     assert(ci->lock_mode >= G_LOCK_RW);
     wrstats[GT_SeqBlock] += cp-cp_start + 2;
     wrcounts[GT_SeqBlock]++;
+
     err = g_writev(io, ci->view, vec, 2);
     if (err == 0)
 	g_flush(io, ci->view);
@@ -4466,6 +4488,7 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
+    check_view_rec(io, ci);
 
     /* Compute worst-case sizes, for memory allocation */
     for (i = 0; i < 7; i++) {
