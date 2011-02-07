@@ -3573,6 +3573,7 @@ static tg_rec *io_seq_index_query_all(void *dbh, char *name, int prefix,
 				      int *nrecs) {
     g_io *io = (g_io *)dbh;
     
+    *nrecs = 0;
     if (!io->seq_name_tree)
 	return NULL;
 
