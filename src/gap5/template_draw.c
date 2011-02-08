@@ -272,6 +272,18 @@ void create_image_from_buffer(image_t *image) {
     // bitmap_bit_order doesn't matter with ZPixmap
     image->img->bitmap_bit_order = MSBFirst;
 
+    /*
+     * Most X servers use 32-bit arrays for 24-bit depth, which is easy
+     * and fast to fill out.
+     *
+     * We assume this too, so force 32-bit data if depth is 24.
+     */
+    if (image->img->depth >= 24)
+        image->img->bits_per_pixel = 32;
+
+    image->img->bytes_per_line =
+	image->img->width * image->img->bits_per_pixel / 8;
+
     return;
 
 }
