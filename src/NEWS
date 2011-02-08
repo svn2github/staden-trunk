@@ -1,7 +1,7 @@
-Staden 2.0.0b8,  2nd Feb 2011
+Staden 2.0.0b8,  8th Feb 2011
 =============================
 
-Gap5/tg_index 1.2.10
+Gap5/tg_index 1.2.11
 
 General changes
 ---------------
@@ -117,6 +117,10 @@ Bug fixes
 *	Removed a small memory corruption when shutting down
         plots. This sometimes caused crashes when quitting the contig
         editor.
+
+*	Fixed occasional crash when joining contigs.
+
+*	Editor searching crash fixes.
 
 
 Staden 2.0.0b7,  July 14th 2010
