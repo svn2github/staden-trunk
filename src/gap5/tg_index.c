@@ -121,9 +121,9 @@ int main(int argc, char **argv) {
     a.sam_aux        = 0;
     a.pair_queue     = 0;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.10\n");
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.11\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
-    printf("\t        \t2007-2010, Wellcome Trust Sanger Institute\n\n");
+    printf("\t        \t2007-2011, Wellcome Trust Sanger Institute\n\n");
 
     //mallopt(M_TRIM_THRESHOLD, 100000);
     //mallopt(M_MMAP_MAX, 0);

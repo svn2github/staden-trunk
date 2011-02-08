@@ -1,7 +1,9 @@
-		    Unix build - 7th January 2011
-		    =============================
+	       General build instructions, 7th Feb 2011
+	       ========================================
 
 See NEWS and/or ChangeLog for version updates.
+
+See below for platform specific build instructions.
 
 
 External dependencies
@@ -16,24 +18,23 @@ Packages required (newer versions should work; older versions may work
 but are untested - please tell me if they work too).
 
 * staden-io_lib	>=1.12.2
-* samtools	>=0.1.3 (optional[1])
 * tcl		>=8.4
 * tk		>=8.4
 * zlib		>=1.2.x
-* xz utils	>=4.999 (optional[2], aka liblzma)
-* libpng	>=1.2.x (optional[4])
-* curl		>=7.x
+* liblzma	>=4.999 (optional[2])
+* libpng	>=1.2.x (optional[1])
+* curl		>=7.x (needed by io_lib)
 * tklib		>=0.3? (for tablelist widget)
 * itcl		>=3.2 (optional[3])
 * itk		>=3.2 (optional[3])
 * iwidgets	>=4.0 (optional[3])
 
-[1] Samtools is only needed by tg_index to build Gap5 databases from
-bam format files. Note that if used it must be built as a relocatable library
-by adding -fPIC to the CFLAGS in the samtools Makefile.
+[1] Libpng development packages are only needed for some obscure
+output from Gap4: the editor Report Mutations function.
 
-[2] XZ utils includes a liblzma library. If present it may be used for
-Gap5 to perform better compression, but it is not mandatory.
+[2] liblzma-dev linux packages or the XZ utils source tarball includes
+the liblzma library.  If present it may be used for Gap5 to perform
+better compression, but it is not mandatory.
 
 [3] itcl/itk/iwidgets are now needed only by the GUI for the
 auto-finishing system used in Gap4 ("prefinish"). However it is a
@@ -41,12 +42,9 @@ run-time dependency and the package will build without these
 installed. Note that if you link against Tcl/Tk 8.5 then the minimum
 version of itcl/itk is 3.4 and not 3.2.
 
-[4] Libpng development packages are only needed for some obscure
-outputs from Gap4: the editor Report Mutations function.
-
 If your operating system separates out run-time from development files
 then you will need both installed. For example on Debian you need
-tcl8.5 and tcl8.5-dev packages.
+tcl8.5 and tcl8.5-dev packages (or tcl8.4 + tcl8.4-dev).
 
 Other system prerequisites:
 
@@ -56,22 +54,23 @@ Other system prerequisites:
 	            src/gap4/Makefile if this is an issue)
 * GNU make
 * TexInfo (for documentation only)
+* Perl, Awk, Sed (for documentation only)
 
 Note that if you are using gfortran then the GNU autoconf system does
 not automatically detect the requirement of -lgfortran on link lines
 while building libraries. To fix this add "LIBS=-lgfortran" on to the
 end of your ./configure command.
 
-Building the package consists of three main components: source,
-documentation and course notes.
+Building the package consists of two main components: source code and 
+documentation plus course material.
 
 
 Source code
 ===========
 
 The program source is all held within the src directory. It now uses
-the GNU autoconf system, but we recommend using it in the following
-manner.
+the GNU autoconf system on all systems, but we recommend using it in
+the following manner.
 
     cd src
     mkdir build.myhost
@@ -81,11 +80,6 @@ manner.
 
 You may need to specify options to the configure script in order to
 find certain third-party packages:
-
-  --with-samtools=DIR
-	Specifies either a prefix directory for the installed samtools
-	files, or alternatively the root of an unpacked and built
-	samtools source tree.
 
   --with-io_lib=DIR
 	Specifies the prefix for an io_lib install.
@@ -115,6 +109,12 @@ find certain third-party packages:
 	If not found in the place specified in tkConfig.sh, this
 	specifies the root directory of a tcl source tree (so it
 	should have generic, unix, etc subdirectories).
+
+  --with-tklib=DIR
+	Specifies the root directory of the tklib package; that is the
+	package directory for tk extensions, written in pure tcl code,
+	rather than the Tk library itself (which is specified using
+	--with-tk).
 	
 You may also want to use the --prefix=DIR option to control the
 install prefix (defaults to /usr/local/staden).
@@ -125,121 +125,75 @@ include the location of any run-time libraries prior to linking
 against them. This shouldn't be an issue for libraries installed in
 the default system locations.
 
-Examples for standard systems follow.
+Examples for standard systems follow. Try first with a minimum of
+--with parameters and then read the summary at the end (if it gets
+that far) to see whether it correctly detected the packages. You
+should see something like this:
 
-Debian etch
------------
+External packages used:
+curl:      via /usr/bin/curl-config
+zlib:      DIR (system)
+curses:    DIR (system)
+liblzma:   DIR /software/badger/opt/xz_utils
+io_lib:    via /software/badger/bin/io_lib-config
+Tcl:       via /usr/lib/tcl8.4/tclConfig.sh
+Tk:        via /usr/lib/tk8.4/tkConfig.sh
+tklib:     /software/badger/opt/tcl_packages/tklib0.5
+Iwidgets:  /usr/lib/iwidgets4.0.1
+Itcl:      /usr/lib/itcl3.2
+Itk:       /usr/lib/itk3.2
 
-mkdir src/build.etch
-cd src/build.etch
+As noted above, do not be concerned if it reports "***NOT FOUND***"
+for some of the optional packages, in particularly iwidgets, itcl and
+itk.
+
+
+Linux / Debian
+--------------
+
+(My local build system, which produced the configure summary above.)
+
+mkdir src/build.debian
+cd src/build.debian
 ../configure \
-    --with-samtools=$HOME/ftp/samtools-0.1.5c \
     --with-tcl=/usr/lib/tcl8.4 --with-tk=/usr/lib/tk8.4 \
-    --with-tkinclude=/usr/include/tcl8.4/tk-private/generic
+    --with-tklib=/software/badger/opt/tcl_packages/tklib0.5 \
+    --with-lzma=/software/badger/opt/xz_utils \
+    --with-io_lib=/software/badger \
+    --prefix=$HOME/staden.install
 
 
+Linux / Ubuntu 10
+-----------------
 
-Documentation / Course notes
-============================
+Packages used (may be incomplete):
 
-These have now been moved to their own package named
-"staden_doc-2.0.0b1-src.tar.gz". (They haven't been updated since
-then.)
-
-Please download this from sourceforge and read the building and
-install documentation within there.
-
-
-=============================================================================
-
-
-		     Windows build 1st July 2004
-		     ===========================
-
-TODO: Update this. Windows build can be made to look largely like the
-unix build if you use mingw/msys, but you'll most likely have to build
-the prerequisites yourself.
+apt-get install g++
+apt-get install zlib1g-dev
+apt-get install tk8.5-dev
+apt-get install liblzma-dev
+apt-get install tklib
+apt-get install libcurl3-gnutls-dev
+apt-get install libncurses5-dev
 
 
+Linux / Fedora
+--------------
 
-* Install mingw (3.1.0), msys (1.0.10).
-Put these somewhere without a space in their path. Ie not "/program
-files/mingw". This causes problems for some tools (eg windres). It's
-not critical however (see below).
+Much the same as other linux systems, but I took note of the packages
+I had to install:
 
-* Install zlib (1.2.1)
-Unpack this in $STADENROOT/src when doing the compile and leave it
-there. It is needed by other parts of the staden package.
+yum install gcc
+yum install gcc-c++
+yum install zlib-devel
+yum install tk-devel
+yum install tklib
+yum install curl-devel
+yum install ncurses-devel
+yum install libpng-devel
+yum install libXt-devel (for X11/Intrinsic.h)
 
-* Install libpng (1.2.5)
-Again, unpack this in $STADENROOT/src. You'll need to edit the
-scripts/makefile.cygwin to specify where the zlib include and library
-is. png also expects zlib to be -lz where as for windows it is
--lzlib1. Edit accordingly.
-We're only interested in shared libraries so "make -f
-scripts/makefile.cygwin all-shared" will suffice (after editing).
-Once built, copy the cygpng12.dll to
-STADENROOT/lib/windows-binaries/png12.dll.
-
-* Install tcl (8.4.6) and tk (8.4.6).
-Other versions probably work, but these are the ones I tested it with.
-
-When compiling tcl/tk put them in the STADENROOT/src directory and
-rename to tcl8.4/ and tk8.4/. Use "cd win; ./configure
---enable-shared; make". I had problems with windres failing as it
-doesn't like to run from a directory containing a space (see above),
-but copying it elsewhere cures that.
-
-* Install the prebuilt binaries of itcl/itk (itcl-3.3b1_win32.zip from
-sourceforge). Copy the lib directory contents (itcl3.3 and itk3.3) to
-$STADENROOT/lib.
-
-* Install iwidgets-4.0.1 (from the same sourceforge page as incrtcl
-above) in lib.
-
-* Install WiX somewhere (needs light & candle executables)
-
-* Edit STADENROOT/mk/global.mk to update the versions of the various
-third party libraries so that the compilation environment knows where
-the proper include search path should be. (Ie for zlib, linpng, tcl, tk).
-
-* Make STADENROOT/src/lib/windows-binaries.
-
-* Put in STADENROOT/src/lib/windows-binaries your libzlib1.dll,
-libtcl8.4.6.dll and libtk8.4.6.dll
-
-* Make :)
-
-* cd STADENROOT/src/windows/wix and make the .msi file
-  (Optionally install perl too if you want to regenerate the .wxs files.)
-
-
-
-
------------------------------------------------------------------------------
-
-Fedora
-------
-
-Packages I needed to install:
-
-zlib-devel
-libcurl-devel
-libpng-devel
-tcl-devel
-tk-devel
-libXt-devel
-itcl-devel
-itk-devel
-tcllib
-tklib
-gcc
-gcc-c++
-gfortran
-imake (for makedepend)
-staden-io_lib-devel (needs fix to compress.h to remove pipe2?)
-
-After compile and install you may find this error on running:
+After compiling and installing you may see errors like this:
 
 ".../lib/staden/libtk_utils.so: cannot restore segment prot
 after reloc: Permission denied"
@@ -255,41 +209,104 @@ where PREFIX is the --prefix value used in autoconf.
  "/usr/sbin/setenforce 0")
 
 
-TODO
-----
+Linux / Centos
+--------------
 
-*	Fix ./configure and make in top directory instead of
-        subdir. gap5/gap5 script was removed. (Because it's target
-        for library?)
+yum install xz-devel
+yum install tk-devel
+yum install zlib-devel
 
------------------------------------------------------------------------------
+Other packages as listed in Fedora, but appeared to be installed as
+part of the base OS.
+
+
+Microsoft Windows
+-----------------
+
+1. Main source tree
+
+The Windows build can use the same configure script as the Unix build,
+provided you have the GNU tools installed. I used MinGW and Msys as
+the compiler / environment, but it may build in other environments.
+Please let me know of any necessary changes if you try this.
+
+I used the automated mingw installer
+(https://sourceforge.net/projects/mingw/files/) however it wasn't
+entirely trouble free to get a working install.
+
+You may also need to run "mingw-get install libz" to get a working
+zlib with include files. (Mileage seems to vary per person on this
+which is confusing; perhaps the installer is changing rapidly.)
+
+
+2. src/windows/run
+
+Once the main package has built, you'll also want to cd into the
+src/windows/run directory and build that. This is a little executable
+front end that replaces the bourne shell startup scripts used on unix
+(eg the "gap4" or "trev" scripts and similar). The purpose is simply
+to set up environment variables before running tclsh on the
+appropriate GUI program.
+
+
+3. WiX installer and .msi files
+
+Install WiX somewhere. It can be found on sourceforge or via
+google.  This takes an XML config and uses it to create a Microsoft
+Installer file (.msi). 
+
+You need a full Staden Package "make install" and any additional files
+you wish manually placed there. I typically put tcl/tk in that
+directory too and any additional run time libraries (zlib, lzma,
+etc) to make the code self contained.
+
+# See the README file in this directory too
+cd src/windows/wix
+
+# The c:/jkb/staden/install_root is the target of my --prefix earlier,
+# but with proper windows-style drive letter naming.
+#
+# You may also need Strawberry Perl here as the msys one munges
+# pathnames when it generates the .wxi file, which wix then will reject.
+perl generate_wxs.pl c:/jkb/staden/install_root > staden_files.wxi
+
+# This produces the staden.msi file
+DISTROOT=/c/jkb/staden/install_root candle staden.wxs
+light -ext WixUIExtension staden.wixobj
+
 
 MacOS X
 -------
 
-Tested on an Intel Mac running 10.5.8 (Leopard).
+Tested on both 10.5 and 10.6.  Just use the configure script as per
+any normal Unix system, but be aware of a few specifics regarding
+tcl/tk.
 
-Note I used macports to obtain the X11 versions of Tcl/Tk. The package
-has not been ported to the Mac Aqua native look and feel so the system
-tcl/tk (if installed) will probably not work.
+Tk comes in two forms - a native Aqua look-and-feel (with Frameworks)
+and an X11 version. The latter is simply the product of building
+tcl/tk using the "unix" subdirectory instead of the "macosx"
+directory.
 
-Package versions used:
+*** NOTE: The staden package needs the X11 version of Tk ***
+
+It's quite likely you will have the aqua Tk already installed too, and
+configure will probably detect this first. In this case manually
+specify the tcl & tk locations. Eg if using MacPorts:
+
+./configure --with-tcl=/opt/local/lib --with-tk=/opt/local/lib
+
+Macport packages used (not an exhaustive list):
 
 tcllib 1.11
 tklib 0.5
-tcl/tk 8.5.8
-itcl 3.3
-itk 3.3
-iwidgets 4.0.1
+tcl/tk 8.5.9
 
 
-It's critical to get the correct matching versions of itcl/itk and
-tcl/tk. Using incompatible versions will most likely generate an error
-when attempting to launch programs. (Pregap4 is a good test for this.)
+Documentation / Course notes
+============================
 
-Tcl version	Itcl/itk version
---------------------------------
-8.4		3.3
-8.5		3.4
-8.6		4.0 (or 3.4?)
+These have now been moved to their own package named
+"staden_doc-2.0.0b8-src.tar.gz".
 
+Please download this from sourceforge and read the building and
+install documentation within there.
