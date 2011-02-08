@@ -170,7 +170,7 @@ Packages used (may be incomplete):
 
 apt-get install g++
 apt-get install zlib1g-dev
-apt-get install tk8.5-dev
+apt-get install tk-dev
 apt-get install liblzma-dev
 apt-get install tklib
 apt-get install libcurl3-gnutls-dev

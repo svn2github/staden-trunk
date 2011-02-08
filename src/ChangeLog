@@ -1,3 +1,89 @@
+2011-02-08  jkbonfield
+
+	* README.build, gap5/gap5.tcl, gap5/tg_index.c, gap5/tg_view.c:
+	  Updates to gap5 versions (1.2.11). 1.2.9 was last beta release,
+	  but 1.2.10 has been used as several internal interim releases.
+
+2011-02-07  jkbonfield
+
+	* tgap/tg_iface_g.c: Better handling of error case in
+	  io_seq_index_query_all()
+
+2011-02-04  jkbonfield
+
+	* tgap/tg_iface_g.c: Added extra paranoia after observing a
+	  corrupted database, where another record type got written to aux
+	  slot 0 (should be a GDatabase record), despite an apparent check
+	  for this with an assert.
+	  
+	  The cached_item struct holds both a record and a View; a handle
+	  to that record. The View in turn has a cache of the aux data for
+	  this record, which in turn holds the record number again. Double
+	  check that these two are identical so at least we die rather
+	  than corrupt
+	  (and hopefully help to point out what went wrong if so).
+
+	* README.macosx:
+
+	* gap5/template_display.c: Fixed error in XPutImage macro for
+	  windows.
+
+	* tk_utils/tkAquaX.c: Not used, but there incase we wish to restart
+	  the aqua port some day.
+
+	* gap5/ng_fb_cmds.tcl: Fixed DB_Load to work with the new file
+	  suffixes.
+
+2011-02-03  jkbonfield
+
+	* configure.in: Added check for the Aqua framework version of
+	  tcl/tk. These aren't supported currently as we need the X11
+	  build of Tk.
+	  
+	  Rather than accept this at configure time and barf mysteriously
+	  mid compile, we now spot the issue and fail early.
+
+	* gap5/template_display.c: Replaced TkPutImage calls with
+	  XPutImage and a check for _WIN32 to #define back to TkPutImage.
+	  
+	  The reason for this is that Windows is the exception here, not
+	  vice versa. Plus TkPutImage requires use of the internal
+	  tkInt.h, which causes compilation problems on many platforms.
+
+2011-02-02  jkbonfield
+
+	* gap5/editor_search.c: Fixed crash when searching (name, tag
+	  type, tag contents) with the editor cursor at the end of the
+	  contig. This caused the iterator to
+	  (validly) be NULL. I now check.
+
+	* gap5/contig_selector.tcl: Fixed ContigParams to work when
+	  CurContig is a contig that has just been removed (eg by joining
+	  it to another) and CurContig is specified using the =cnum
+	  notation.
+	  
+	  To trigger the bug before, try:
+	  
+	  tg_index -z 65536 NT_113898.bam; # produces 1 contig
+	  gap5 NT_113898.0 &
+	  
+	  Break Contig dialogue, pos 1000000, OK
+	  [ CurContig is now eg =5]
+	  Complement Contig via contig selector popup menu
+	  Find Internal Joins
+	  "Next" button -> Join editor -> "Join" button
+	  [ We now have joined eg contig =5 to contig =581]
+	  Complement Contig via contig selector poup menu
+	  [ Calls ContigParams with CurContig =5, which crashed. ]
+
+	* tgap/tg_struct.h: Removal of duplicate #define
+
+	* tgap/g-alloc.c: Improvements to the debug program built when
+	  using -DHEAP_CHECK. (No affect on gap5.) We now output the
+	  object type and compression method used.
+
+	* ChangeLog, NEWS: Updates from svn log
+
 2011-02-01  jkbonfield
 
 	* staden/trunk/doc/manual/dependencies,
