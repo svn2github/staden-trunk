@@ -92,7 +92,7 @@
 /*
  * PowerPC
  */
-#if defined(__ppc__) || defined(__ppc)
+#if defined(__ppc__) || defined(__ppc) || defined(__ppc64__)
 #  if defined(SP_LITTLE_ENDIAN)
 #    undef SP_LITTLE_ENDIAN
 #  endif
