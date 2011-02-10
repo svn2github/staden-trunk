@@ -302,6 +302,40 @@ tklib 0.5
 tcl/tk 8.5.9
 
 
+MacOS X - native libs
+---------------------
+
+If you want to build a fat (universal) binary you will need to use the
+native install of X11 libraries in /usr/X11R6/lib instead, as the
+MacPort libraries are not cross-platform. To do this, you'll need to
+build third party packages yourself, including tcl/tk in X11 mode.
+
+As an example, in bourne shell syntax:
+
+$ cd src/tcl8.5.9/unix
+$ CFLAGS="-O -arch i386 -arch x86_64 -arch ppc -arch ppc64" ./configure --prefix=/nfs/sam_scratch/jkb/src/tcltk_inst
+$ make; make install
+$ cd ../../src/tk8.5.9/unix
+$ CFLAGS="-O -arch i386 -arch x86_64 -arch ppc -arch ppc64" ./configure --prefix=/nfs/sam_scratch/jkb/src/tcltk_inst --with-tcl=/nfs/sam_scratch/jkb/src/tcltk_inst8.5/lib
+$ make; make install
+
+When compiling the Staden Package remember that there are one or two
+C++ libraries too, so you need to redefine CXXFLAGS as CFLAGS on the
+command line.
+
+Tracking down problems can be tricky in fat binaries. A handy hint for
+telling what dependencies and architectures binaries and libraries
+have is to use otool.
+
+$ otool -arch all -h libstaden-read.dylib
+...
+$ otool -L libstaden-read.dylib
+...
+$ lipo -info libstaden-read.dylib
+...
+
+
+
 Documentation / Course notes
 ============================
 
