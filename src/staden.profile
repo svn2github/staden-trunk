@@ -46,9 +46,9 @@ else
         then
             [ x"$STADEN_PREPEND" != "x" ] \
             && LD_LIBRARY_PATH=$STADLIB:$LD_LIBRARY_PATH \
-            || LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$STADLIB
+            || LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$STADLIB:$STADENROOT/lib
         else
-            LD_LIBRARY_PATH=$STADLIB
+            LD_LIBRARY_PATH=$STADLIB:$STADENROOT/lib
         fi
         export LD_LIBRARY_PATH
     fi

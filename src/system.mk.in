@@ -61,6 +61,7 @@ TK_LIB		  = @TK_LIB_SPEC@ @TCL_LIB_SPEC@ @TK_LIBS@
 # How else do we get commas in a subst text or pattern?
 comma = ,
 
+LIB_RUNTIME_DIR   = ${prefix}/lib/staden
 CC		  = @CC@
 #CDEBUG		  = -Wall -Wno-sign-compare -Wno-pointer-sign -Wno-parentheses -Wno-unused -Wno-char-subscripts -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 CFLAGS		  = @CFLAGS@ $(DEFINES) $(INCLUDES)
@@ -68,9 +69,9 @@ CXX		  = @CXX@
 CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES)
 CPP		  = @CPP@
 CPPFLAGS	  = @CPPFLAGS@
-LDFLAGS		  = -L$(L) @LDFLAGS@
+LDFLAGS		  = -L$(L) @LDFLAGS@ @CC_SEARCH_FLAGS@
 #CLDFLAGS	  = -L$(L) -Wl,-rpath-link,$(L) $(subst -L,-Wl$(comma)-rpath-link$(comma),$(filter -L%,$(IOLIB_LIB)))
-CLDFLAGS	  = -L$(L)
+CLDFLAGS	  = -L$(L) @CC_SEARCH_FLAGS@
 CXXLDFLAGS	  = $(CLDFLAGS)
 F77		  = @F77@
 FFLAGS		  = @FFLAGS@

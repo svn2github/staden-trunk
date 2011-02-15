@@ -2245,6 +2245,8 @@ dnl # preprocessing tests use only CPPFLAGS.
 
     AC_SUBST(LD_LIBRARY_PATH_VAR)
 
+    AC_SUBST(CC_SEARCH_FLAGS)
+
     # These must be called after we do the basic CFLAGS checks and
     # verify any possible 64-bit or similar switches are necessary
     TEA_TCL_EARLY_FLAGS
