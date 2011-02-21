@@ -143,6 +143,12 @@ int tman_get_trace_position(EdStruct *xx, tman_dc *dc, int pos, int *end) {
 
     seq = dc->derivative_seq ? dc->derivative_seq : dc->seq;
     
+    if (!dc->derivative_seq)
+	(void) DBgetSeq(DBI(xx), seq); /* force sequence to be read */
+
+    if (DB_Length2(xx, seq) == 0)
+	return 0;
+
     p = pos - DB_RelPos(xx, seq) + DB_Start(xx, seq) + 1;
     if (p < 1) {
 	/* best guess */
