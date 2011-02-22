@@ -573,9 +573,10 @@ static int bam_more_output(bam_file_t *b) {
 
 	/* Inflate */
 	if (b->in_sz < bsize + 8) {
-	    bam_more_input(b);
-	    if (b->in_sz < bsize + 8)
-		return -1; /* truncated */
+	    do {
+		if (bam_more_input(b) == -1)
+		    return -1; /* Truncated */
+	    } while (b->in_sz < bsize + 8);
 	}
 	b->s.avail_in  = bsize;
 	b->s.next_in   = b->in_p;
