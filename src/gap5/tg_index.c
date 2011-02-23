@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
     if (!*a.out_fn) {
 	char *cp;
 
-	a.out_fn = malloc(strlen(argv[optind]+3));
+	a.out_fn = malloc(strlen(argv[optind])+3);
 	strcpy(a.out_fn, argv[optind]);
 	if ((cp = strrchr(a.out_fn, '.')))
 	    *cp = 0;
