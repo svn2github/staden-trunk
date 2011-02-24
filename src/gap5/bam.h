@@ -22,6 +22,11 @@ typedef struct {
 typedef struct {
     uint32_t alloc; /* total size of this struct + 'data' onwards */
     uint32_t blk_size;
+
+    /* Unpacked copy of cigar_len */
+    uint32_t cigar_len;
+
+    /* The raw bam block follows, in same order as on the disk */
     int32_t  ref;
     int32_t  pos;
     uint32_t bin_mq_nl;
@@ -110,13 +115,17 @@ typedef struct {
 //#define bam_name_len(b)  ((b)->name_len)
 
 #define bam_flag(b)      ((b)->flag_nc >> 16)
-#define bam_cigar_len(b) ((b)->flag_nc & 0xffff)
 #define bam_set_flag(b,v) \
     ((b)->flag_nc = ((b)->flag_nc & 0x0000ffff) | (((v) & 0xffff)<<16))
-#define bam_set_cigar_len(b,v) \
+
+#if 0
+#  define bam_cigar_len(b) ((b)->flag_nc & 0xffff)
+#  define bam_set_cigar_len(b,v) \
     ((b)->flag_nc = ((b)->flag_nc & 0xffff0000) | ((v) & 0xffff))
-//#define bam_flag(b)      ((b)->flag)
-//#define bam_cigar_len(b) ((b)->cigar_len)
+#else
+#  define bam_cigar_len(b)        ((b)->cigar_len)
+#  define bam_set_cigar_len(b, v) ((b)->cigar_len = (v))
+#endif
 
 #define bam_strand(b)    ((bam_flag((b)) & BAM_FREVERSE) != 0)
 #define bam_name(b)      ((char *)(&(b)->data))

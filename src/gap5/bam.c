@@ -383,6 +383,10 @@ tag_list_t *bam_find_rg(bam_file_t *b, char *id) {
     return hi ? (tag_list_t *)hi->data.p : NULL;
 }
 
+#ifndef O_BINARY
+#    define O_BINARY 0
+#endif
+
 bam_file_t *bam_open(char *fn, char *mode) {
     bam_file_t *b = calloc(1, sizeof *b);
     
@@ -392,8 +396,13 @@ bam_file_t *bam_open(char *fn, char *mode) {
     if (!b)
 	return NULL;
 
-    if (-1 == (b->fd = open(fn, O_RDONLY, 0)))
-	goto error;
+    if (strcmp(mode, "rb") == 0) {
+	if (-1 == (b->fd = open(fn, O_RDONLY | O_BINARY, 0)))
+	    goto error;
+    } else {
+	if (-1 == (b->fd = open(fn, O_RDONLY, 0)))
+	    goto error;
+    }
     b->in_p     = b->in;
     b->in_sz    = 0;
     b->out_p    = b->out;
@@ -976,10 +985,10 @@ int bam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     }
 
     if (!*bsp || blk_size > (*bsp)->blk_size) {
-	/* 12 extra is for bs->alloc, bs->blk_size & next blk_size */
-	if (!(*bsp = realloc(*bsp, blk_size+12)))
+	/* 20 extra is for bs->alloc to bs->cigar_len plus next_len */
+	if (!(*bsp = realloc(*bsp, blk_size+20)))
 	    return -1;
-	(*bsp)->alloc = blk_size+12;
+	(*bsp)->alloc = blk_size+20;
 	(*bsp)->blk_size = blk_size;
     }
     bs = *bsp;
@@ -1010,6 +1019,9 @@ int bam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     bs->mate_pos  = le_int4(bs->mate_pos);
     bs->ins_size  = le_int4(bs->ins_size);
 
+    /* Unpack flag_nc into separate flag & cigar_len */
+    bs->cigar_len = bs->flag_nc & 0xffff;
+    
     if (10 == be_int4(10)) {
 	int i, cigar_len = bam_cigar_len(bs);
 	uint32_t *cigar = bam_cigar(bs);
@@ -1039,9 +1051,9 @@ int bam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     }
 
     if (!*bsp || blk_size > (*bsp)->blk_size) {
-	if (!(*bsp = realloc(*bsp, blk_size+16)))
+	if (!(*bsp = realloc(*bsp, blk_size+24)))
 	    return -1;
-	(*bsp)->alloc = blk_size+16;
+	(*bsp)->alloc = blk_size+24;
 	(*bsp)->blk_size = blk_size;
     }
     bs = *bsp;
@@ -1062,6 +1074,9 @@ int bam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     bs->mate_ref  = le_int4(bs->mate_ref);
     bs->mate_pos  = le_int4(bs->mate_pos);
     bs->ins_size  = le_int4(bs->ins_size);
+
+    /* Unpack flag_nc into separate flag & cigar_len */
+    bs->cigar_len = bs->flag_nc & 0xffff;
 
     /* Name */
     if (bam_read(b, &bs->data, bam_name_len(bs)) != bam_name_len(bs))
@@ -1129,8 +1144,8 @@ char *bam_aux_find(bam_seq_t *b, char *key) {
 		while (*cp++)
 		    ;
 	    } else {
-		fprintf(stderr, "Unknown aux type code %c(%d)\n",
-			cp[2], cp[2]);
+		fprintf(stderr, "Unknown aux type code %c(%d) in seq %s\n",
+			cp[2], cp[2], bam_name(b));
 		return NULL;
 	    }
 	}
