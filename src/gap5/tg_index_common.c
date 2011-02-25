@@ -599,6 +599,8 @@ void unescape_line(char *txt) {
 		*cp++ = '\n';
 	    else
 		*cp++ = *txt;
+	    if (!*txt)
+		break;
 	}
     }
     *cp++ = 0;
