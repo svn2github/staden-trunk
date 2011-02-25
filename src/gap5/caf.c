@@ -216,12 +216,12 @@ static int find_name(char *in_line, char **name) {
 
 
 /* an alternative to the Gnu specific getline */
-static long get_line(char **line, long *length, zfp *fp) {
+static long get_line(char **line, long *length, zfp *fp, int continuation) {
     char *in_line;
     long len;
     long offset = 0;
     long in_chars;
-    
+
     if (line == NULL || fp == NULL || length == NULL) {
     	return -1;
     }
@@ -240,13 +240,19 @@ static long get_line(char **line, long *length, zfp *fp) {
     while ((zfgets((in_line + offset), (len - offset), fp))) {
     	char *tmp = NULL;
 	
-    	in_chars = strlen(in_line);
+    	in_chars = strlen(in_line + offset);
 	
-    	offset = in_chars;
+    	offset += in_chars;
 	
 	// see if we have our full line
 	if (*(in_line + offset - 1) == '\n') {
-	    break;
+	    long bs_count = 0;
+	    if (continuation) {
+	      while (offset - bs_count - 1 > 0
+		     && in_line[offset - bs_count - 2] == '\\') bs_count++;
+	    }
+	    if ((bs_count & 1) == 0) break;
+	    if (bs_count > 0) in_line[offset -= 2] = '\0';
 	}
     	
     	len += len;
@@ -638,14 +644,14 @@ static int index_caf(zfp *fp, pools *pool, caf_node *caf, caf_index *contig_entr
     int dna_no    = 0;
     int qual_no   = 0;
     
-    while (!err && get_line(&line, &size, fp) > 0) {
+    while (!err && get_line(&line, &size, fp, 0) > 0) {
 	line_num++;
 	char *name = NULL;
 	
 	if ((line_size = strlen(line))) {
 	    if ((name = get_value("Sequence :", line))) {
 		if (name) {
-		    if (get_line(&line, &size, fp) == -1) {
+		    if (get_line(&line, &size, fp, 0) == -1) {
 		    	err = 1;
 			continue;
 		    }
@@ -752,7 +758,7 @@ static int read_contig_section(zfp *fp, GapIO *io, contig_t **contig, tg_args *a
     
     zfseeko(fp, pos, SEEK_SET);
  
-    while (get_line(&line, &size, fp) > 0) {
+    while (get_line(&line, &size, fp, 1) > 0) {
     	if (isspace(line[0])) break; // blank line at end of section
 	
     	// grab the read name and data from the assembly part of the section
@@ -845,9 +851,9 @@ static long read_section_as_line(zfp *fp, long pos, char **line, int is_seq) {
 
     zfseeko(fp, pos, SEEK_SET);
     
-    get_line(&line_in, &size, fp); // skip over the header
+    get_line(&line_in, &size, fp, 0); // skip over the header
 
-    while ((length = get_line(&line_in, &size, fp)) > 0) {
+    while ((length = get_line(&line_in, &size, fp, 0)) > 0) {
     	if (isspace(line_in[0])) break; // blank line at end of section
 	
 	if (is_seq) {
@@ -1036,9 +1042,9 @@ static int read_data(zfp *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 
 	zfseeko(fp, pos, SEEK_SET);
 	
-    	get_line(&line_in, &size, fp); // skip over the header
+    	get_line(&line_in, &size, fp, 0); // skip over the header
 	
-	while (get_line(&line_in, &size, fp) > 0) {
+	while (get_line(&line_in, &size, fp, 1) > 0) {
 	    char *value;
 	    
 	    if (isspace(line_in[0])) break; // blank line at end of section
