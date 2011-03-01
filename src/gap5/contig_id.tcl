@@ -241,6 +241,7 @@ proc contig_id_rec {path} {
 	} else {
 	    SetContigGlobals [set $path.Io] $cn
 	}
+	$c delete
     }
 
     return $r

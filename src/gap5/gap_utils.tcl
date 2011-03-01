@@ -53,7 +53,9 @@ proc left_gel { io contig_num } {
 #returns the reading name from the reading number
 proc r_name {io r_num} {
     set s [$io get_seq $r_num]
-    return [$s get_name]
+    set name [$s get_name]
+    $s delete
+    return $name
 }
 
 ##############################################################################

@@ -171,6 +171,7 @@ proc io_undo_exec {w crec cmdu} {
 		    }
 		    $seq delete
 		}
+		$contig delete
 	    }
 	    
 	    C_DEL {
@@ -751,6 +752,11 @@ proc contig_editor {w args} {
 #	[font measure sheet_font A] $font(-linespace)
 
     $e redraw
+
+    $c delete
+    if {$join} {
+	$c2 delete
+    }
 }
 
 proc editor_search {w args} {
@@ -2627,6 +2633,7 @@ bind EdNames <<menu>> {
 	    }
 
 	    $s delete
+	    $sc delete
 	}
     }
 
