@@ -540,7 +540,8 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     }
 
     if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-	if (contig_get_start(c) == contig_get_end(c)) {
+	if (contig_get_start(c) == contig_get_end(c)
+	    && contig_get_start(c) == 0) {
 	    contig_set_start(io, c, r->start);
 	    contig_set_end(io, c, r->end);
 	}
