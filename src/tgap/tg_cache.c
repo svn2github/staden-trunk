@@ -714,6 +714,7 @@ int cache_flush(GapIO *io) {
 	    for (hi = h->bucket[i]; hi; hi = next) {
 		HacheData data;
 		cached_item *ci = hi->data.p;
+		int ref_count;
 
 		next = hi->next;
 
@@ -766,21 +767,41 @@ int cache_flush(GapIO *io) {
 		}
 		}
 
+
+
+		/*
+		 * Synchronise references.
+		 *
+		 * When we use the child io all reads look in the child first
+		 * and then base if not found in child. Once we run cache_rw
+		 * on the child, we perform a copy-on-write system (cache_dup)
+		 * and create a duplicate of the object in the child cache.
+		 *
+		 * FIXME: at this stage, if anything else decides to hold a
+		 * long-term reference to an object then it could be
+		 * overwritten when we flush the child IO. We maybe need
+		 * some registration system, or at least a standard protocol
+		 * for how to program long-duration windows. (Don't trust
+		 * cache_incr.)
+		 */
+		/* FIXME: not implemented! Need to think on this more. */
+
+		ref_count = ci->hi->ref_count;
+
 		/* Purge from parent */
 		HacheTableRemove(io->base->cache,
 				 ci->hi->key, ci->hi->key_len, 0);
-
-		/* FIXME: search for parent ci first and deallocate after */
 
 		/* Move this item to parent */
 		data.p = ci;
 		ci->hi = HacheTableAdd(io->base->cache, 
 				       ci->hi->key, ci->hi->key_len,
 				       data, NULL);
-		HacheTableIncRef(ci->hi->h, ci->hi);
 
 		/* Remove from this hache */
 		HacheTableRemove(io->cache, ci->hi->key, ci->hi->key_len, 0);
+
+		ci->hi->ref_count = ref_count;
 	    }
 	}
 
@@ -1092,6 +1113,43 @@ int cache_updated(GapIO *io) {
 }
 
 /*
+ * Dumps information about the cache, for debugging purposes.
+ */
+static int interested_rec = -1;
+void cache_dump(GapIO *io) {
+    int i;
+    HacheTable *h = io->cache;
+    int nused = 0, nlocked = 0, nupdated = 0;
+
+    printf("\nCheck for io = %p (%s)\n", io,
+	   io->base ? "child" : "base");
+
+    for (i = 0; i < h->nbuckets; i++) {
+	HacheItem *hi;
+	for (hi = h->bucket[i]; hi; hi = hi->next) {
+	    cached_item *ci = hi->data.p;
+
+	    if (interested_rec != -1 && ci->rec != interested_rec)
+		continue;
+
+	    printf("  rec=%"PRIrec"\tv=%d\tlock=%d\ttype=%d\tci=%p\trc=%d\n",
+		   ci->rec, ci->view, ci->lock_mode, ci->type, ci,
+		   hi->ref_count);
+
+	    nused++;
+	    if (ci->lock_mode >= G_LOCK_RW)
+		nlocked++;
+	    if (ci->updated)
+		nupdated++;
+
+	    assert(ci->updated == 0 || ci->lock_mode >= G_LOCK_RW);
+	    assert(ci->hi == hi);
+	    assert(hi->h == io->cache);
+	}
+    }
+}
+
+/*
  * Loads an in item into the cache (if not present) and returns it.
  * The query parameters are the object type (GT_*) and the record number.
  * For "io overlays" this may just return the object in the base io
@@ -1307,7 +1365,7 @@ static tg_rec cache_item_create_seq(GapIO *io, void *from) {
 }
 
 /*
- * Creates a new seq_t item.
+ * Creates a new anno_ele_t item.
  */
 static int cache_item_init_anno_ele(GapIO *io, void *from, tg_rec rec) {
     anno_ele_t *t, *f = (anno_ele_t *)from;
@@ -1556,6 +1614,9 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
     HacheItem *hi_new;
     cached_item *ci_new = NULL;
 
+    /* Ensure base io copy cannot go out of scope */
+    HacheTableIncRef(ci->hi->h, ci->hi);
+
     /* Force load into this io, if not loaded already */
     hi_new = HacheTableQuery(io->cache, hi_old->key, hi_old->key_len);
     if (!hi_new) {
@@ -1731,7 +1792,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    b->seq[s->idx] = s;
 
 	    /* Bump reference count of master again */
-	    HacheTableIncRef(ci_new->hi->h, ci_new->hi);
+	    //HacheTableIncRef(ci_new->hi->h, ci_new->hi);
 
 	    break;
 	}
@@ -1758,7 +1819,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    b->ae[e->idx] = e;
 
 	    /* Bump reference count of master again */
-	    HacheTableIncRef(ci_new->hi->h, ci_new->hi);
+	    //HacheTableIncRef(ci_new->hi->h, ci_new->hi);
 
 	    break;
 	}
