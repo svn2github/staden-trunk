@@ -332,10 +332,10 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	     * Note, it may not span the entire bin if the contig is
 	     * short or this bin is at the beginning or end.
 	     */
-	    if (start < bstart) {
+	    
+	    if (start <= bstart) {
 		if (con) {
-		    if (bstart > start &&
-			MIN(bend, end) + 1 > bstart) {
+		    if (MIN(bend, end) + 1 > bstart) {
 			memcpy(&con[bstart - start], s->seq,
 			       MIN(bend, end) - bstart + 1);
 		    }
@@ -348,8 +348,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		}
 	    } else {
 		if (con) {
-		    if (start > bstart &&
-			MIN(bend, end) + 1 > start) {
+		    if (MIN(bend, end) + 1 > start) {
 			memcpy(con, &s->seq[start - bstart],
 			       MIN(bend, end) - start + 1);
 		    }
