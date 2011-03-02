@@ -171,7 +171,19 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 
 	default:
 	    p->qual = p->b_qual[p->seq_offset];
+	    /*
+	     * If you need to label inserted bases as different from
+	     * (mis)matching bases then this is where we'd make that change.
+	     * The reason could be to allow the consensus algorithm to easily
+	     * distinguish between reference bases and non-reference bases.
+	     *
+	     * Eg:
+	     * if (nth)
+	     *     p->base = tolower(tab[p->b_seq[p->seq_offset/2]][p->seq_offset&1]);
+	     * else
+	     */
 	    p->base = tab[p->b_seq[p->seq_offset/2]][p->seq_offset&1];
+		
 	    break;
 	}
     }
@@ -221,12 +233,12 @@ int pileup_loop(bam_file_t *fp,
 		int (*seq_init)(void *client_data,
 				bam_file_t *fp,
 				pileup_t *p),
-		int (*func)(void *client_data,
-			    bam_file_t *fp,
-			    pileup_t *p,
-			    int depth,
-			    int pos,
-			    int nth),
+		int (*seq_add)(void *client_data,
+			       bam_file_t *fp,
+			       pileup_t *p,
+			       int depth,
+			       int pos,
+			       int nth),
 		void *client_data) {
     int ret = -1;
     pileup_t *phead = NULL, *p, *pfree = NULL, *last, *next, *ptail = NULL;
@@ -256,8 +268,11 @@ int pileup_loop(bam_file_t *fp,
 	if (r >= 0) {
 	    if (bam_flag(b) & BAM_FUNMAP)
 		continue;
-
-	    if (b->ref == last_ref) {
+	    
+	    if (b->ref == -1) {
+		/* Another indicator for unmapped */
+		continue;
+	    } else if (b->ref == last_ref) {
 		pos = b->pos+1;
 		//printf("New seq at pos %d @ %d %s\n", pos, b->ref,
 		//       bam_name(b));
@@ -289,7 +304,7 @@ int pileup_loop(bam_file_t *fp,
 	    }
 
 	    /* Call our function on phead linked list */
-	    v = func(client_data, fp, phead, depth, col, nth);
+	    v = seq_add(client_data, fp, phead, depth, col, nth);
 
 	    /* Remove dead seqs */
 	    for (p = phead, last = NULL; p; p = next) {

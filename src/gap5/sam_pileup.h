@@ -31,12 +31,12 @@ int pileup_loop(bam_file_t *fp,
 		int (*seq_init)(void *client_data,
 				bam_file_t *fp,
 				pileup_t *p),
-		int (*func)(void *client_data,
-			    bam_file_t *fp,
-			    pileup_t *p,
-			    int depth,
-			    int pos,
-			    int nth),
+		int (*seq_add)(void *client_data,
+			       bam_file_t *fp,
+			       pileup_t *p,
+			       int depth,
+			       int pos,
+			       int nth),
 		void *client_data);
 
 #endif

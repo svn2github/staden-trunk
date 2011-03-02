@@ -262,6 +262,10 @@ int load_sam_header(bam_file_t *b) {
 	}
     }
 
+    /* Blank header if none supplied */
+    if (!b->header)
+	b->header = strdup("");
+
     if (header_pos)
 	b->header[header_pos] = '\0';
     b->header_len = header_pos;
@@ -730,12 +734,30 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     //while (*cpf && *cpf != '\t')
     while (*cpf > '\t')
 	cpf++;
-    hi = HashTableSearch(b->ref_hash, (char *)cp, cpf-cp);
-    if (!hi) {
-	fprintf(stderr, "Reference seq %.*s unknown\n", (int)(cpf-cp), cp);
-	return -1;
+    if (*cp == '*') {
+	/* Unmapped */
+	bs->ref = -1;
+    } else {
+	hi = HashTableSearch(b->ref_hash, (char *)cp, cpf-cp);
+	if (!hi) {
+	    HashData hd;
+
+	    fprintf(stderr, "Reference seq %.*s unknown\n", (int)(cpf-cp), cp);
+
+	    /* Fabricate it instead */
+	    b->ref = realloc(b->ref, (b->nref+1)*sizeof(*b->ref));
+	    if (!b->ref)
+		return -1;
+	    b->ref[b->nref].len  = 0; /* Unknown value */
+	    b->ref[b->nref].name = malloc(cpf-cp+1);
+	    memcpy(b->ref[b->nref].name, cp, cpf-cp);
+
+	    hd.i = b->nref;
+	    hi = HashTableAdd(b->ref_hash, b->ref[b->nref].name, 0, hd, NULL);
+	    b->nref++;
+	}
+	bs->ref = hi->data.i;
     }
-    bs->ref = hi->data.i; // FIXME
     cpf++;
 
     /* Pos */
