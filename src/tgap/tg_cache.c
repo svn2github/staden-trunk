@@ -714,7 +714,6 @@ int cache_flush(GapIO *io) {
 	    for (hi = h->bucket[i]; hi; hi = next) {
 		HacheData data;
 		cached_item *ci = hi->data.p;
-		int ref_count;
 
 		next = hi->next;
 
@@ -786,8 +785,6 @@ int cache_flush(GapIO *io) {
 		 */
 		/* FIXME: not implemented! Need to think on this more. */
 
-		ref_count = ci->hi->ref_count;
-
 		/* Purge from parent */
 		HacheTableRemove(io->base->cache,
 				 ci->hi->key, ci->hi->key_len, 0);
@@ -797,11 +794,10 @@ int cache_flush(GapIO *io) {
 		ci->hi = HacheTableAdd(io->base->cache, 
 				       ci->hi->key, ci->hi->key_len,
 				       data, NULL);
+		HacheTableIncRef(ci->hi->h, ci->hi);
 
 		/* Remove from this hache */
 		HacheTableRemove(io->cache, ci->hi->key, ci->hi->key_len, 0);
-
-		ci->hi->ref_count = ref_count;
 	    }
 	}
 
@@ -1792,7 +1788,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    b->seq[s->idx] = s;
 
 	    /* Bump reference count of master again */
-	    //HacheTableIncRef(ci_new->hi->h, ci_new->hi);
+	    HacheTableIncRef(ci_new->hi->h, ci_new->hi);
 
 	    break;
 	}
@@ -1819,7 +1815,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    b->ae[e->idx] = e;
 
 	    /* Bump reference count of master again */
-	    //HacheTableIncRef(ci_new->hi->h, ci_new->hi);
+	    HacheTableIncRef(ci_new->hi->h, ci_new->hi);
 
 	    break;
 	}
