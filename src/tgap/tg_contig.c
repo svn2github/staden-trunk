@@ -348,8 +348,8 @@ static int contig_delete_base2(GapIO *io, tg_rec bnum,
 				    MIN(ch->pos, ch->pos + ch->size-1));
 
 		/* Children to the right of this one need pos updating too */
-	    } else {
-	      ch = get_bin(io, bin->child[i]);
+	    } else if (pos < MIN(ch->pos, ch->pos + ch->size-1)) {
+		ch = get_bin(io, bin->child[i]);
 		if (!(ch = cache_rw(io, ch))) {
 		    cache_decr(io, bin);
 		    return -1;
