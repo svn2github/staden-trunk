@@ -193,7 +193,7 @@ static int contig_insert_base2(GapIO *io, tg_rec bnum,
 		contig_insert_base2(io, bin->child[i], pos,
 				    MIN(ch->pos, ch->pos + ch->size-1),
 				    base, conf);
-		/* All children to the right of this one need pos updating too */
+		/* Children to the right of this one need pos updating too */
 	    } else if (pos < MIN(ch->pos, ch->pos + ch->size-1)) {
 		ch = get_bin(io, bin->child[i]);
 		if (!(ch = cache_rw(io, ch))) {
@@ -346,21 +346,18 @@ static int contig_delete_base2(GapIO *io, tg_rec bnum,
 		pos <= MAX(ch->pos, ch->pos + ch->size-1)) {
 		contig_delete_base2(io, bin->child[i], pos,
 				    MIN(ch->pos, ch->pos + ch->size-1));
-		//break;
-	    }
-	}
 
-	/* All children to the right of this one need pos updating too */
-	if (i == 0 && bin->child[1-i]) {
-	    ch = get_bin(io, bin->child[1-i]);
-	    if (!(ch = cache_rw(io, ch))) {
-		cache_decr(io, bin);
-		return -1;
-	    }
+		/* Children to the right of this one need pos updating too */
+	    } else {
+	      ch = get_bin(io, bin->child[i]);
+		if (!(ch = cache_rw(io, ch))) {
+		    cache_decr(io, bin);
+		    return -1;
+		}
 
-	    if (--ch->pos < 0)
-		ch->pos = 0;
-	    ch->flags |= BIN_BIN_UPDATED;
+		ch->pos--;
+		ch->flags |= BIN_BIN_UPDATED;
+	    }
 	}
     }
 
