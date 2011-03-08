@@ -16,13 +16,16 @@ typedef int SheetHilight;
 #define sh_underline	(1L<<2)
 #define sh_inverse	(1L<<3)
 #define sh_light	(1L<<4)
-#define sh_tick		(1L<<5)
-#define sh_bold		(1L<<6)
+#define sh_tick  	(1L<<5)
+#define sh_bold 	(1L<<6)
 #define sh_italic	(1L<<7)
 #define sh_select       (1L<<8)
 #define sh_box          (1L<<9)
 #define sh_box_alt      (1L<<10) /* alternative to allow neighbouring boxes */
-#define sh_mask         ((1L<<11) - 1)
+#define sh_caret_l  	(1L<<11)
+#define sh_caret_r  	(1L<<12)
+#define sh_indel  	(1L<<13)
+#define sh_mask         ((1L<<14) - 1)
 
 /* hilight operations */
 #define HOP_MASK 0xF
@@ -70,6 +73,7 @@ typedef struct {
     /* resources */
     Pixel foreground;
     Pixel background;
+    Pixel indel_foreground;
     sheet_cursor   cursor;
     SheetRow       rows;
     SheetColumn    columns;
@@ -87,6 +91,7 @@ typedef struct {
     GC             normgc;
     GC             greygc;
     GC             whitegc;
+    GC		   indelgc;
     GC             sparegc;
     Pixel	   default_fg;
     Pixel	   default_bg;
@@ -97,8 +102,8 @@ typedef struct {
 } Sheet;
 
 extern void sheet_destroy(Sheet *sw);
-extern int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg);
-extern void sheet_config(Sheet *sw, Pixel light, Pixel fg, Pixel bg);
+extern int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg, Pixel ifg);
+extern void sheet_config(Sheet *sw, Pixel light, Pixel fg, Pixel bg, Pixel ifg);
 extern void sheet_resize(Sheet *sw, int old_rows, int old_columns);
 extern void sheet_display(Sheet *sw);
 extern void sheet_clear(Sheet *sw);

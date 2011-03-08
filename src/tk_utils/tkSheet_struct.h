@@ -11,6 +11,7 @@
     Tk_3DBorder border;
     XColor *fg;
     XColor *light;
+    XColor *indel_fg;
 
     Tk_ConfigSpec *configSpecs;
 

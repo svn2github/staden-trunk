@@ -49,6 +49,7 @@ Tk_Window SheetCmdCommon(Tcl_Interp *interp, Tk_Window main,
     sw->border = NULL;
     sw->fg = NULL;
     sw->light = NULL;
+    sw->indel_fg = NULL;
     sw->flags = 0;
     sw->initialised = 0;
     sw->extension = NULL;
@@ -108,7 +109,8 @@ int SheetConfigureCommon(Tcl_Interp *interp, tkSheet *sw,
      */
     if (!sw->initialised) {
 	sheet_create(&sw->sw, sw->light->pixel, sw->fg->pixel,
-		     Tk_3DBorderColor(sw->border)->pixel);
+		     Tk_3DBorderColor(sw->border)->pixel,
+		     sw->indel_fg->pixel);
 	sw->initialised = 1;
 
 	if (sw->grid)
@@ -118,7 +120,8 @@ int SheetConfigureCommon(Tcl_Interp *interp, tkSheet *sw,
 	int old_rows = sw->sw.rows, old_columns = sw->sw.columns;
 	sheet_resize(&sw->sw, old_rows, old_columns);
         sheet_config(&sw->sw, sw->light->pixel, sw->fg->pixel,
-		     Tk_3DBorderColor(sw->border)->pixel);
+		     Tk_3DBorderColor(sw->border)->pixel,
+		     sw->indel_fg->pixel);
     }
 
     sw->flags |= SHEET_REDRAW_ALL;

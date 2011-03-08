@@ -110,13 +110,14 @@ void sheet_resize(Sheet *sw, int rows, int columns) {
  * (re)configures a sheet. This contains such things are allocating foreground
  * and background colours.
  */
-void sheet_config(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
+void sheet_config(Sheet *sw, Pixel light, Pixel fg, Pixel bg, Pixel ifg) {
     unsigned long valuemask;
     XGCValues values;
 
     sw->light = light;
     sw->foreground = fg;
     sw->background = bg;
+    sw->indel_foreground = ifg;
 
     /*
      * Change GC colours
@@ -140,13 +141,17 @@ void sheet_config(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
     values.foreground = bg;
     values.background = fg;
     sw->whitegc = Tk_GetGC(sw->tkwin, valuemask, &values);
+
+    values.foreground = ifg;
+    values.background = bg;
+    sw->indelgc = Tk_GetGC(sw->tkwin, valuemask, &values);
 }
 
 
 /*
  * Initialises a sheet, returns -1 for error
  */
-int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
+int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg, Pixel ifg) {
     unsigned long valuemask;
     XGCValues values;
 
@@ -156,6 +161,7 @@ int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
     sw->light = light;
     sw->foreground = fg;
     sw->background = bg;
+    sw->indel_foreground = ifg;
     sw->cursor_row = sw->cursor_column = -1;
     sw->display_cursor = 1;
     sw->window = 0;
@@ -170,6 +176,10 @@ int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
     valuemask = GCFont | GCGraphicsExposures | GCForeground | GCBackground ;
     values.font = Tk_FontId(sw->font);
     values.graphics_exposures = False;
+
+    values.foreground = sw->indel_foreground;
+    values.background = sw->background;
+    sw->indelgc = Tk_GetGC(sw->tkwin, valuemask, &values);
 
     values.foreground = sw->foreground;
     values.background = sw->background;
@@ -476,14 +486,16 @@ static void _repaint_colour(Sheet *sw, int c, int r, int l, sheet_ink ink, char 
 
      /* and underline if required */
      if (ink->sh & sh_select || ink->sh & sh_underline) {
+	 int row = ROW_TO_BASELINE_PIXEL(sw,r);
+	 if (sw->fm.descent > 1)
+	     row++;
 	 XDrawLine(sw->display,
 		   p,
-		   sw->sparegc,
+		   (ink->sh & sh_indel) ? sw->indelgc : sw->sparegc,
 		   (int) COL_TO_PIXEL(sw,c),
-		   (int) ROW_TO_BASELINE_PIXEL(sw,r),
+		   row,
 		   (int) COL_TO_PIXEL(sw,c+l)-1,
-		   (int) ROW_TO_BASELINE_PIXEL(sw,r)
-		   );
+		   row);
      }
 
      if (ink->sh & (sh_box | sh_box_alt)) {
@@ -508,6 +520,31 @@ static void _repaint_colour(Sheet *sw, int c, int r, int l, sheet_ink ink, char 
 			    1, 2);
 	 }
      }
+
+     /* Add carets */
+     if (ink->sh & sh_caret_l) {
+	 int i;
+	 GC gc = (ink->sh & sh_indel) ? sw->indelgc : sw->sparegc;
+	 
+	 for (i = 0; i < l; i++) {
+	     int x = (int)COL_TO_PIXEL(sw, c+i);
+	     int y = (int)ROW_TO_BASELINE_PIXEL(sw,r)+1;
+	     XDrawLine(sw->display, p, gc, x,   y-1, x+2, y+1);
+	 }
+     }
+
+     /* add insertion caret, split in two halves */
+     if (ink->sh & sh_caret_r) {
+	 int i;
+	 GC gc = (ink->sh & sh_indel) ? sw->indelgc : sw->sparegc;
+
+	 for (i = 0; i < l; i++) {
+	     int x = (int)COL_TO_PIXEL(sw, c+i+1);
+	     int y = (int)ROW_TO_BASELINE_PIXEL(sw,r)+1;
+	     XDrawLine(sw->display, p, gc, x-1, y-1, x-3, y+1);
+	 }
+     }
+     
 
      XCopyArea(sw->display, p, sw->window, copygc,
 	       (int) COL_TO_PIXEL(sw,c),
