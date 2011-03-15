@@ -99,7 +99,7 @@ proc ConfigureCutoffs2 {perm t consensus quality chem mode iub} {
     keylset gap5_defs CONSENSUS_IUB    $consensus_iub
 
     if {$perm} {
-        update_defs gap5_defs $env(HOME)/.gaprc \
+        update_defs gap5_defs $env(HOME)/.gap5rc \
 	    CONSENSUS_MODE CONSENSUS_CUTOFF QUALITY_CUTOFF CHEM_AS_DOUBLE \
 	    CONSENSUS_IUB
     }
@@ -212,7 +212,7 @@ proc ConfigureMenus2 {perm w menu} {
     reset_menu_state gap_menu .mainwin.menus
 
     if {$perm} {
-        update_defs gap5_defs $env(HOME)/.gaprc MENU_LEVEL
+        update_defs gap5_defs $env(HOME)/.gap5rc MENU_LEVEL
     }
 }
 
@@ -286,7 +286,7 @@ proc SetGeneticCode2 {perm w listbox index} {
     keylset gap5_defs GENETIC_CODE [keylget gap5_defs GENETIC_CODE_DIR]/$file
 
     if {$perm} {
-        update_defs gap5_defs $env(HOME)/.gaprc GENETIC_CODE
+        update_defs gap5_defs $env(HOME)/.gap5rc GENETIC_CODE
     }
 
     destroy $w
@@ -336,7 +336,7 @@ proc SetAlignmentScores2 {perm w open extend} {
     keylset gap5_defs ALIGNMENT.EXTEND.COST $align_extend_cost
 
     if {$perm} {
-        update_defs gap5_defs $env(HOME)/.gaprc \
+        update_defs gap5_defs $env(HOME)/.gap5rc \
 		ALIGNMENT.OPEN.COST ALIGNMENT.EXTEND.COST
     }
 
@@ -523,9 +523,9 @@ proc SetTemplateStatusConfig2 {w perm} {
 	[expr {$ignore_all_ptype*4 + $ignore_custom_ptype*8}]
 
     if {$perm} {
-	update_defs gap5_defs $env(HOME)/.gaprc TEMPLATE_TOLERANCE
-	update_defs gap5_defs $env(HOME)/.gaprc MIN_VECTOR_LENGTH
-	update_defs gap5_defs $env(HOME)/.gaprc IGNORE_ALL_PTYPE
-	update_defs gap5_defs $env(HOME)/.gaprc IGNORE_CUSTOM_PTYPE
+	update_defs gap5_defs $env(HOME)/.gap5rc TEMPLATE_TOLERANCE
+	update_defs gap5_defs $env(HOME)/.gap5rc MIN_VECTOR_LENGTH
+	update_defs gap5_defs $env(HOME)/.gap5rc IGNORE_ALL_PTYPE
+	update_defs gap5_defs $env(HOME)/.gap5rc IGNORE_CUSTOM_PTYPE
     }
 }

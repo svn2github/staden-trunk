@@ -60,7 +60,7 @@ proc TagDialog_default {path name} {
     }
 
     keylset gap5_defs $name $active_tags
-    update_defs gap5_defs $env(HOME)/.gaprc $name
+    update_defs gap5_defs $env(HOME)/.gap5rc $name
 }
 
 ##############################################################################

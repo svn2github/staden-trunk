@@ -877,7 +877,7 @@ proc trace_save_layout {} {
     keylset gap5_defs TRACE_DISPLAY.SHOW_CONFIDENCE $trace_confidence
     keylset gap5_defs TRACE_DISPLAY.COMPACT_MODE $trace_compact_mode
 
-    update_defs gap5_defs $env(HOME)/.gaprc \
+    update_defs gap5_defs $env(HOME)/.gap5rc \
 	TRACE_DISPLAY.ROWS \
 	TRACE_DISPLAY.COLUMNS \
 	TRACE_DISPLAY.WINDOW_WIDTH \
