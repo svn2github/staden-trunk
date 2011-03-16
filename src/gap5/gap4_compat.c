@@ -35,6 +35,8 @@ tg_rec io_clnbr(GapIO *io, tg_rec cnum) {
     rangec_t *r;
     contig_iterator *ci = contig_iter_new(io, cnum, 1, CITER_FIRST,
 					  CITER_CSTART, CITER_CEND);
+    if (!ci)
+	return 0;
 
     r = contig_iter_next(io, ci);
     rec = r ? r->rec : 0;
@@ -49,6 +51,8 @@ tg_rec io_crnbr(GapIO *io, tg_rec cnum) {
     rangec_t *r;
     contig_iterator *ci = contig_iter_new(io, cnum, 1, CITER_LAST,
 					  CITER_CSTART, CITER_CEND);
+    if (!ci)
+	return 0;
 
     r = contig_iter_next(io, ci);
     rec = r ? r->rec : 0;
@@ -265,7 +269,12 @@ tg_rec get_gel_num(GapIO *io, char *gel_name, int is_name) {
  *    -1 for failure, otherwise the contig number
  */
 tg_rec rnumtocnum(GapIO *io, tg_rec gel) {
-    return sequence_get_contig(io, gel);
+    if (cache_exists(io, GT_Seq, gel))
+	return sequence_get_contig(io, gel);
+    else if (cache_exists(io, GT_Contig, gel))
+	return gel;
+    else
+	return -1;
 }
 
 /*
