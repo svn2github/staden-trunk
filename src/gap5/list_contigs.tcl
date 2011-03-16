@@ -220,7 +220,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	set cstruct [$io get_contig $num]
 	set clen [$cstruct get_length]
 	set nreads [$cstruct nseqs]
-	$w insert end [list "$name (#$num)" $clen $nreads]
+	$w insert end [list "$name (=$num)" $clen $nreads]
     }
     if {[$w sortcolumn] != -1} {
 	$w sortbycolumn [$w sortcolumn] -[$w sortorder]
