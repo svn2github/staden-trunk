@@ -265,6 +265,31 @@ void bin_destroy_recurse(GapIO *io, tg_rec rec) {
 }
 
 /*
+ * Checks if a bin is truely empty. It's not just sufficient to check
+ * nseqs==0 as we could have tags or refpos markers too.
+ *
+ * Returns 1 if empty.
+ *         0 if not.
+ */
+static int bin_empty(GapIO *io, bin_index_t *bin) {
+    int i;
+
+    if (bin->nseqs || bin->nrefpos)
+	return 0;
+
+    if (!bin->rng)
+	return 1;
+
+    for (i = 0; i < ArrayMax(bin->rng); i++) {
+	range_t *r = arrp(range_t, bin->rng, i);
+	if (!(r->flags & GRANGE_FLAG_UNUSED))
+	    return 0;
+    }
+
+    return 1;
+}
+
+/*
  * Looks for contig gaps between start..end in contig and if it finds them,
  * breaking the contig in two.
  */
@@ -283,7 +308,7 @@ static int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
     /* Destroy contigs if they're now entirely empty */
     c = cache_search(io, GT_Contig, contig);
     bin = cache_search(io, GT_Bin, c->bin);
-    if (bin->nseqs == 0) {
+    if (bin_empty(io, bin)) {
 	puts("Removing empty contig");
 
 	if (c->bin)
