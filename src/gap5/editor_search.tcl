@@ -27,6 +27,7 @@ set search_setup(discrepancy)		"0 0 0 0 value"
 set search_setup(consdiscrepancy)	"0 0 0 0 value"
 set search_setup(tag)			"0 0 1 0"
 set search_setup(difference)		"0 0 0 0"
+set search_setup(indel)			"0 0 0 0"
 
 proc create_search_win {w com {dir 0} {raise 1}} {
      global NGTag gap5_defs search_setup
@@ -141,6 +142,7 @@ proc create_search_win {w com {dir 0} {raise 1}} {
 #	{r {evidence for edits (2)}  verifyor}
 #	{r discrepancies             discrepancy}
 #	{r {consensus discrepancies} consdiscrepancy}
+	{r {reference indel}         indel}
     }
 
     # Type frame

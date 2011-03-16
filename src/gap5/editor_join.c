@@ -5,6 +5,7 @@
 #include <tg_gio.h>
 #include <assert.h>
 #include <string.h>
+#include <assert.h>
 
 #include "editor_view.h"
 #include "align_lib.h"
@@ -732,6 +733,72 @@ int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
     return 0;
 }
 
+
+/*
+ * Returns the last refpos marker position (passed) for a contig.
+ * Returns contig_start if none present.
+ */
+int last_refpos (GapIO *io, contig_t *c) {
+    contig_iterator *ci;
+    rangec_t *r;
+    int pos;
+
+    ci = contig_iter_new_by_type(io, c->rec, 0, CITER_LAST,
+				 CITER_CSTART, CITER_CEND,
+				 GRANGE_FLAG_ISREFPOS);
+    if (!ci)
+	return contig_get_start(&c);
+
+    r = contig_iter_next(io, ci);
+    if (!r) {
+	contig_iter_del(ci);
+	return contig_get_start(&c);
+    }
+
+    pos = r->start;
+
+    contig_iter_del(ci);
+    return pos;
+}
+
+
+/*
+ * Removes REFPOS markers in contig 'c' between 'from' and 'to'. We do this
+ * for the overlapping contig region when joining to avoid regions of our
+ * contig from being indicated as having multiple references.
+ * While technically that is true after a join, it adds excessive complexity
+ * and grants abilities that few people want.
+ */
+static void contig_remove_refpos_markers(GapIO *io, contig_t *c,
+					 int from, int to) {
+    contig_iterator *ci;
+    rangec_t *rc;
+
+    ci = contig_iter_new_by_type(io, c->rec, 0, CITER_FIRST, from, to,
+				 GRANGE_FLAG_ISREFPOS);
+    if (!ci)
+	return;
+
+    while ((rc = contig_iter_next(io, ci))) {
+	bin_index_t *bin = cache_search(io, GT_Bin, rc->orig_rec);
+	range_t *r = arrp(range_t, bin->rng, rc->orig_ind);
+
+	assert((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS);
+
+	bin = cache_rw(io, bin);
+
+	r->flags |= GRANGE_FLAG_UNUSED;
+	r->rec = bin->rng_free;
+	bin->rng_free = rc->orig_ind;
+
+	bin->flags |= BIN_BIN_UPDATED | BIN_RANGE_UPDATED;
+	bin_incr_nrefpos(io, bin, -1);
+    }
+
+    contig_iter_del(ci);
+}
+
+
 /*
  * Perform the actual join process
  * Returns 0 for success
@@ -854,6 +921,10 @@ int edJoin(edview *xx) {
     binr = cache_rw(io, binr);
     cl   = cache_rw(io, cl);
 
+    contig_remove_refpos_markers(io, cr, contig_get_start(&cr),
+				 contig_get_start(&cr) +
+				 last_refpos(io, cl)-offset-1);
+
     /* Update the contig links */
     contig_set_bin  (io, &cl, binp_id);
     contig_set_start(io, &cl, MIN(contig_get_start(&cl),
@@ -863,6 +934,8 @@ int edJoin(edview *xx) {
 
     /* Link the new bins together */
     binp->nseqs = binl->nseqs + binr->nseqs;
+    binp->nrefpos = binl->nrefpos + binr->nrefpos;
+    binp->nanno = binl->nanno + binr->nanno;
     binp->child[0] = binl->rec;
     binp->child[1] = binr->rec;
     binp->pos = MIN(binl->pos, binr->pos + offset);

@@ -16,6 +16,23 @@
 #include "active_tags.h"
 #include "io_utils.h"
 
+/*
+ * Use this if you wish to make the cached consensus visible as its own
+ * sequence, for debugging only.
+ *
+ * #define CACHED_CONS_VISIBLE
+ */
+
+/*
+ * Similarly for debugging, define this if you want the REFPOS markers to be
+ * visible. They appear on line 1 as square boxes. Not ideal and it doesn't
+ * reveal the type (I/D) or size of deletion, but it's still useful debugging
+ * data.
+ *
+ * #define REFPOS_VISIBLE
+ */
+#define REFPOS_VISIBLE
+
 static void redisplaySelection(edview *xx);
 
 /*
@@ -592,7 +609,8 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
  * %%	Single % sign
  * %n	Contig name
  * %#	Contig number
- * %p	Position
+ * %p	padded position
+ * %r	reference position
  * %l	Length
  * %s	Start of clip
  * %e	End of clip
@@ -655,6 +673,13 @@ char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format) {
 
 	case 'p': {
 	    add_number(status_buf, &j, l1, l2, pos);
+	    break;
+	}
+
+	case 'r': {
+	    add_number(status_buf, &j, l1, l2,
+		       padded_to_reference_pos(xx->io, xx->cnum, pos,
+					       NULL, NULL));
 	    break;
 	}
 
@@ -1151,12 +1176,20 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 #ifndef CACHED_CONS_VISIBLE
 		|| (r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS
 #endif
+		|| (r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS
 		) {
 		i++;
 		continue;
 	    }
 
 	    if (xx->r[i].y - xx->displayYPos < j - xx->y_seq_start) {
+		i++;
+		continue;
+	    }
+
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+		int p2 = r[i].start - xx->displayPos;
+		ink[p2].sh |= sh_box;
 		i++;
 		continue;
 	    }
@@ -1448,6 +1481,27 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
     if (xx->anno_hash)
 	tk_redisplaySeqTags(xx, ink, NULL, 0, 0, 0);
 
+#ifdef REFPOS_VISIBLE
+    for (i = 0; i < nr; i++) {
+	int p2;
+
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS)
+	    continue;
+
+	p2 = r[i].start - xx->displayPos;
+	if (p2 < 0 || p2 >= wid)
+	    continue;
+
+	if ((r[i].flags & GRANGE_FLAG_REFPOS_INDEL) == GRANGE_FLAG_REFPOS_INS)
+	    ink[p2].sh |= sh_underline | sh_indel;
+	else {
+	    ink[p2].sh |= sh_caret_l | sh_indel;
+	    if (p2 > 0)
+		ink[p2-1].sh |= sh_caret_r | sh_indel;
+	}
+    }
+#endif
+
     XawSheetPutJazzyText(&xx->ed->sw, 0, xx->y_cons, wid,
 			 xx->displayedConsensus, ink);
 }
@@ -1483,13 +1537,16 @@ static int tk_redisplaySeqDiffs(edview *xx) {
  * Calculates the numbers for the contig editor ruler line.
  * The return value is the index into this ruler buffer to plot.
  */
-static int generate_ruler(edview *xx, char *ruler, int pos, int width) {
+static int generate_ruler(edview *xx, char *ruler, XawSheetInk *ink,
+			  int pos, int width) {
     char *k = ruler;
+    XawSheetInk *K = ink;
     int j;
 
     //int padded_pos[MAX_DISPLAY_WIDTH+21];
 
     memset(ruler, ' ', MAX_DISPLAY_WIDTH+21);
+    memset(ink, 0, (MAX_DISPLAY_WIDTH+21) * sizeof(*ink));
 #if 0
     if (DBI(xx)->reference_seq) {
 	/* Number relative to a specific sequence number */
@@ -1580,25 +1637,55 @@ static int generate_ruler(edview *xx, char *ruler, int pos, int width) {
 	return 9;
     } /* else */
 #endif
-    {
-	/* Basic numbering */
+    if (xx->ed->pos_type == 'P') {
+	/* Basic padded coordinate numbering */
 	int lower,times;
 	lower = (pos - pos%10);
 	times = width/10 + 3;
-	for (j=0;j<times;j++,k+=10,lower+=10)
+	for (j=0;j<times;j++,k+=10,K+=10,lower+=10) {
 	    sprintf(k,"%10d",lower);
+	    K[9].sh |= sh_underline;
+	}
 	return 9+pos%10;
-	
+    } else {
+	int last_x = -100;
+	/* Reference based coordinates, where known */
+	int rpos[MAX_DISPLAY_WIDTH+11], rid[MAX_DISPLAY_WIDTH+11], i;
+
+	padded_to_reference_array(xx->io, xx->cnum, xx->displayPos,
+				  xx->displayPos+xx->displayWidth+10-1,
+				  rpos, rid);
+
+	k += 10;
+	K += 10;
+	for (i = 0; i < xx->displayWidth+10; i++) {
+	    int len = log(rpos[i]) * 0.4342945; /* 1/log(10) */
+	    len++;
+
+	    if (rpos[i] % 10 == 0 && rid[i] != -1) {
+		if (i - last_x > len) {
+		    sprintf(&k[i-(len-1)], "%.*d", len, rpos[i]);
+		    k[i+1] = ' ';
+		    K[i].sh |= sh_underline;
+		} else {
+		    k[i] = '|';
+		    K[i].sh |= sh_underline;
+		}
+		last_x = i;
+	    }
+	}
+	return 10;
     }
 }
 
 static void tk_redisplaySeqNumbers(edview *xx) {
     char ruler[MAX_DISPLAY_WIDTH+21];
+    XawSheetInk ink[MAX_DISPLAY_WIDTH+21];
     int off;
 
-    off = generate_ruler(xx, ruler, xx->displayPos, xx->displayWidth);
-    XawSheetPutText(&xx->ed->sw, 0, xx->y_numbers, xx->displayWidth,
-		    &ruler[off]);
+    off = generate_ruler(xx, ruler, ink, xx->displayPos, xx->displayWidth);
+    XawSheetPutJazzyText(&xx->ed->sw, 0, xx->y_numbers, xx->displayWidth,
+    			 &ruler[off], &ink[off]);
 }
 
 
@@ -2132,6 +2219,7 @@ int edCursorUp(edview *xx) {
 #ifndef CACHED_CONS_VISIBLE
 	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
 #endif
+	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS)
 	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
 	    if (!xx->ed->display_cutoffs) {
 		seq_t *s = get_seq(xx->io, xx->r[j].rec);
@@ -2202,6 +2290,7 @@ int edCursorDown(edview *xx) {
 #ifndef CACHED_CONS_VISIBLE
 	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
 #endif
+	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS)
 	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
 	    if (!xx->ed->display_cutoffs) {
 		seq_t *s = get_seq(xx->io, xx->r[j].rec);
@@ -2570,6 +2659,9 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 	    continue;
 #endif
 
+	if ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+	    continue;
+
 	if (xx->r[i].y + xx->y_seq_start - xx->displayYPos == row) {
 	    int delta;
 
@@ -2639,6 +2731,9 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 int edview_row_for_item(edview *xx, tg_rec rec, int *xmin, int *xmax) {
     int i, r = -1;
     HacheItem *hi;
+
+    if (rec == 0)
+	return -1;
 
     if (rec == xx->cnum) {
 	if (xmin) *xmin = -xx->displayPos;
@@ -2763,7 +2858,7 @@ static void toggle_select(edview *xx, tg_rec seq, int from_pos, int to_pos) {
     /* Find out the X and Y coord, and exit now if it's not visible */
     if (-1 == (row = edview_row_for_item(xx, seq, &xmin, NULL)))
 	return;
-    
+
     /* Convert xmin/xmax to the region we wish to view */
     xmin += from_pos;
     xmax = xmin + to_pos - from_pos;

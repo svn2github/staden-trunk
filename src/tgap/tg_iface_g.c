@@ -298,6 +298,9 @@ static char *zlib_mem_deflate_parts(char *data,
 		return NULL;
 	    }
 	    err = deflate(&s, Z_SYNC_FLUSH); // also try Z_FULL_FLUSH
+
+	    //printf("Part %d  %d => %d\n", i, part_size[i], (cdata_alloc - cdata_pos) - s.avail_out);
+
 	    cdata_pos = cdata_alloc - s.avail_out;
 	    if (err != Z_OK) {
 		fprintf(stderr, "zlib deflate error: %s\n", s.msg);
@@ -359,6 +362,9 @@ static char *zlib_mem_deflate_lparts(char *data,
 	    deflateParams(&s, tg_zlevel == -1 ? level[i] : tg_zlevel,
 			  Z_DEFAULT_STRATEGY);
 	    err = deflate(&s, Z_SYNC_FLUSH); // also try Z_FULL_FLUSH
+
+	    //printf("Part %d  %d => %d\n", i, part_size[i], (cdata_alloc - cdata_pos) - s.avail_out);
+
 	    cdata_pos = cdata_alloc - s.avail_out;
 	    if (err != Z_OK) {
 		fprintf(stderr, "zlib deflate error: %s\n", s.msg);
@@ -1481,8 +1487,10 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 	bt->io = io;
 	bt->h = io->seq_name_hash;
 	io->seq_name_tree = btree_new(bt, db->seq_name_index);
-	if (!io->seq_name_tree || !io->seq_name_tree->root)
-	    return NULL;
+	if (!io->seq_name_tree || !io->seq_name_tree->root) {
+	    //return NULL;
+	    db->seq_name_index = 0;
+	}
     }
 
     //printf("seq_name_hash=%p\n", io->seq_name_hash);
@@ -1493,8 +1501,10 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 	bt->io = io;
 	bt->h = io->contig_name_hash;
 	io->contig_name_tree = btree_new(bt, db->contig_name_index);
-	if (!io->contig_name_tree || !io->contig_name_tree->root)
-	    return NULL;
+	if (!io->contig_name_tree || !io->contig_name_tree->root) {
+	    //return NULL;
+	    db->contig_name_index = 0;
+	}
     }
 
     return ci;
@@ -2182,15 +2192,21 @@ static char *pack_rng_array(int comp_mode, int fmt,
 			    GRange *rng, int nr, int *sz) {
     int i;
     size_t part_sz[7];
-    GRange last, last_tag;
+    GRange last, last_tag, last_refpos;
     unsigned char *cp[6], *cp_orig[6], *out;
     char *out_orig;
     //char *cpt, *cpt_orig;
     //HacheTable *h = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
     //int ntags;
 
+    int last_r_rec = 0;
+    int last_r_mqual = 0;
+    int last_r_flags = 640;
+    int last_r_pair_rec = 0;
+
     memset(&last, 0, sizeof(last));
     memset(&last_tag, 0, sizeof(last_tag));
+    memset(&last_refpos, 0, sizeof(last_refpos));
 
     /* Pack the 6 structure elements to their own arrays */
     for (i = 0; i < 6; i++)
@@ -2212,6 +2228,9 @@ static char *pack_rng_array(int comp_mode, int fmt,
 	    r.end   -= r.start;
 	    r.start -= last_tag.start;
 	    r.rec   -= last_tag.rec;
+	} else if ((r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+	    r.mqual -= r.start + (last_refpos.mqual - last_refpos.start) -1;
+	    r.start -= last_refpos.start;
 	} else {
 	    r.end   -= r.start;
 	    r.start -= last.start;
@@ -2234,7 +2253,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 		    cp[5] += int2s7(r.pair_rec - last.pair_rec, cp[5]);
 		last = rng[i];
 	    }
-	} else {
+	} else if (fmt == 1) {
 	    cp[0] += int2s7 (r.start, cp[0]);
 	    cp[1] += int2u7 (r.end,   cp[1]);
 	    cp[2] += intw2s7(r.rec,   cp[2]);
@@ -2249,6 +2268,70 @@ static char *pack_rng_array(int comp_mode, int fmt,
 		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
 		    cp[5] += intw2s7(r.pair_rec - last.pair_rec, cp[5]);
 		last = rng[i];
+	    }
+	} else {
+	    /* fmt2 with ISREFPOS markers */
+	    int flags;
+
+	    switch (r.flags & GRANGE_FLAG_ISMASK) {
+	    case GRANGE_FLAG_ISREFPOS:
+		/* These bits are unused for ISREFPOS, so reuse ourselves */
+		flags = r.flags;
+		flags &= ~(GRANGE_FLAG_REFPOS_HAVE_ID |
+			   GRANGE_FLAG_REFPOS_HAVE_POS |
+			   GRANGE_FLAG_REFPOS_HAVE_SIZE);
+
+		cp[0] += int2s7(r.start, cp[0]);
+
+		/* BAM ref number (tid) */
+		if (r.rec != last_r_rec) {
+		    flags |= GRANGE_FLAG_REFPOS_HAVE_ID;
+		    cp[2] += intw2u7(r.rec, cp[2]);
+		    last_r_rec = r.rec;
+		}
+
+		/* absolute ref coordinate */
+		if (r.mqual != last_r_mqual) {
+		    flags |= GRANGE_FLAG_REFPOS_HAVE_POS;
+		    cp[3] += int2u7 (r.mqual, cp[3]);
+		    last_r_mqual = r.mqual;
+		}
+
+		/* deletion size */
+		if (r.pair_rec != last_r_pair_rec) {
+		    flags |= GRANGE_FLAG_REFPOS_HAVE_SIZE;
+		    cp[5] += intw2u7 (r.pair_rec, cp[5]);
+		    last_r_pair_rec = r.pair_rec;
+		}
+	
+		cp[4] += int2u7(flags, cp[4]);
+
+		last_refpos = rng[i];
+		break;
+
+	    case GRANGE_FLAG_ISANNO:
+		cp[0] += int2s7 (r.start, cp[0]);
+		cp[1] += int2u7 (r.end,   cp[1]);
+		cp[2] += intw2s7(r.rec,   cp[2]);
+		cp[3] += int2u7 (r.mqual, cp[3]);
+		cp[4] += int2u7 (r.flags, cp[4]);
+
+		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
+		    cp[5] += intw2s7(r.pair_rec - last_tag.pair_rec, cp[5]);
+		last_tag = rng[i];
+		break;
+
+	    default:
+		cp[0] += int2s7 (r.start, cp[0]);
+		cp[1] += int2u7 (r.end,   cp[1]);
+		cp[2] += intw2s7(r.rec,   cp[2]);
+		cp[3] += int2u7 (r.mqual, cp[3]);
+		cp[4] += int2u7 (r.flags, cp[4]);
+
+		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
+		    cp[5] += intw2s7(r.pair_rec - last.pair_rec, cp[5]);
+		last = rng[i];
+		break;
 	    }
 	}
     }
@@ -2282,7 +2365,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
     	char *gzout;
 	size_t ssz;
 
-	if (*sz < 512)
+	if (*sz < 1024)
 	    gzout = mem_deflate(comp_mode, out_orig, *sz, &ssz);
 	else
 	    gzout = mem_deflate_parts(comp_mode, out_orig, part_sz, 7, &ssz);
@@ -2305,8 +2388,10 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
     uint32_t i, off[6];
     int32_t i32;
     unsigned char *cp[6], *zpacked = NULL;
-    GRange last, *r, *ls = &last, *lt = &last;
+    GRange last, *r, *ls = &last, *lt = &last, lastr, *lr = &lastr;
     size_t ssz;
+    int64_t last_r_rec = 0, last_r_pair_rec = 0;
+    int32_t last_r_mqual = 0;
 
     /* First of all, inflate the compressed data */
     zpacked = packed = (unsigned char *)mem_inflate(comp_mode,
@@ -2326,27 +2411,26 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 
     r = (GRange *)malloc(*nr * sizeof(*r));
     memset(ls, 0, sizeof(*ls));
-    memset(lt, 0, sizeof(*lt));
+    memset(lt, 0, sizeof(*lt)); /* Correct? Same mem as *ls */
+    memset(lr, 0, sizeof(*lr));
 
     /* And finally unpack from the 6 components in parallel for each struct */
     for (i = 0; i < *nr; i++) {
 	r[i].y = 0;
 
-	if (fmt == 0) {
+	switch (fmt) {
+	case 0:
 	    cp[2] += u72int(cp[2], &i32); r[i].rec = i32;
-	}
-	cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
-	if (r[i].flags & GRANGE_FLAG_UNUSED) {
-	    if (fmt != 0)
+	    cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
+	    if (r[i].flags & GRANGE_FLAG_UNUSED) {
 		r[i].rec = 0;
-	    r[i].start = 0;
-	    r[i].end = 0;
-	    r[i].mqual = 0;
-	    r[i].pair_rec = 0;
-	    continue;
-	}
+		r[i].start = 0;
+		r[i].end = 0;
+		r[i].mqual = 0;
+		r[i].pair_rec = 0;
+		continue;
+	    }
 	
-	if (fmt == 0) {
 	    cp[0] += u72int(cp[0], (uint32_t *)&r[i].start);
 	    cp[1] += u72int(cp[1], (uint32_t *)&r[i].end);
 	    cp[3] += u72int(cp[3], (uint32_t *)&r[i].mqual);
@@ -2379,8 +2463,21 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 
 		ls = &r[i];
 	    }
-	} else {
+	    break;
+	    
+	case 1: {
 	    int64_t rec_tmp;
+
+	    cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
+	    if (r[i].flags & GRANGE_FLAG_UNUSED) {
+		r[i].rec = 0;
+		r[i].start = 0;
+		r[i].end = 0;
+		r[i].mqual = 0;
+		r[i].pair_rec = 0;
+		continue;
+	    }
+	
 	    cp[0] += s72int (cp[0], (int32_t *)&r[i].start);
 	    cp[1] += u72int (cp[1], (uint32_t *)&r[i].end);
 	    cp[2] += s72intw(cp[2], (int64_t *)&rec_tmp);
@@ -2415,9 +2512,110 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 
 		ls = &r[i];
 	    }
+
+	    break;
+	}
+
+	case 2: {
+	    int64_t rec_tmp;
+
+	    cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
+	    if (r[i].flags & GRANGE_FLAG_UNUSED) {
+		r[i].rec = 0;
+		r[i].start = 0;
+		r[i].end = 0;
+		r[i].mqual = 0;
+		r[i].pair_rec = 0;
+		continue;
+	    }
+	
+	    switch(r[i].flags & GRANGE_FLAG_ISMASK) {
+	    case GRANGE_FLAG_ISREFPOS:
+		cp[0] += s72int (cp[0], (int32_t *)&r[i].start);
+
+		if (r[i].flags & GRANGE_FLAG_REFPOS_HAVE_ID) {
+		    cp[2] += u72intw(cp[2], (int64_t *)&r[i].rec);
+		    last_r_rec = r[i].rec;
+		} else {
+		    r[i].rec = last_r_rec;
+		}
+
+		if (r[i].flags & GRANGE_FLAG_REFPOS_HAVE_POS) {
+		    cp[3] += u72int(cp[3], (int32_t *)&r[i].mqual);
+		    last_r_mqual = r[i].mqual;
+		} else {
+		    r[i].mqual = last_r_mqual;
+		}
+
+		if (r[i].flags & GRANGE_FLAG_REFPOS_HAVE_SIZE) {
+		    cp[5] += u72intw(cp[5], (int64_t *)&r[i].pair_rec);
+		    last_r_pair_rec = r[i].pair_rec;
+		} else {
+		    r[i].pair_rec = last_r_pair_rec;
+		}
+
+		r[i].start += lr->start; r[i].end = r[i].start;
+		r[i].mqual += r[i].start + (lr->mqual - lr->start) - 1;
+
+		/* These flags as only used for storage optimisation */
+		r[i].flags &= ~(GRANGE_FLAG_REFPOS_HAVE_ID |
+				GRANGE_FLAG_REFPOS_HAVE_POS |
+				GRANGE_FLAG_REFPOS_HAVE_SIZE);
+
+		lr = &r[i];
+
+		break;
+
+	    case GRANGE_FLAG_ISANNO:
+		cp[0] += s72int (cp[0], (int32_t *)&r[i].start);
+		cp[1] += u72int (cp[1], (uint32_t *)&r[i].end);
+		cp[2] += s72intw(cp[2], (int64_t *)&rec_tmp);
+		cp[3] += u72int (cp[3], (uint32_t *)&r[i].mqual);
+		r[i].rec = rec_tmp;
+
+		if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
+		    int64_t pr;
+		    cp[5] += s72intw(cp[5], &pr);
+		    r[i].pair_rec = pr + lt->pair_rec;
+		} else {
+		    r[i].pair_rec = 0;
+		}
+	    
+		r[i].rec += lt->rec;
+		r[i].start += lt->start;
+		r[i].end += r[i].start;
+
+		lt = &r[i];
+		break;
+
+	    default:
+		cp[0] += s72int (cp[0], (int32_t *)&r[i].start);
+		cp[1] += u72int (cp[1], (uint32_t *)&r[i].end);
+		cp[2] += s72intw(cp[2], (int64_t *)&rec_tmp);
+		cp[3] += u72int (cp[3], (uint32_t *)&r[i].mqual);
+		r[i].rec = rec_tmp;
+
+		if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
+		    int64_t pr;
+		    cp[5] += s72intw(cp[5], &pr);
+		    r[i].pair_rec = pr + ls->pair_rec;
+		} else {
+		    r[i].pair_rec = 0;
+		}
+	    
+		r[i].rec += ls->rec;
+		r[i].start += ls->start;
+		r[i].end += r[i].start;
+
+		ls = &r[i];
+		break;
+	    }
+
+	    break;
+	}
 	}
     }
-
+	
     assert(cp[5] - zpacked == packed_sz);
 
     if (zpacked)
@@ -2470,6 +2668,8 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 	g.track = 0;
 	g.nseqs = 0;
 	g.rng_free = -1;
+	g.nrefpos = 0;
+	g.nanno = 0;
 	goto empty_bin;
     }
     cp = buf;
@@ -2479,7 +2679,7 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 
     assert(cp[0] == GT_Bin);
     version = cp[1];
-    assert(version <= 1); /* format */
+    assert(version <= 2); /* format */
     cp += 2;
     cp += u72int(cp, &bflag);
     g.flags = (bflag & BIN_COMPLEMENTED) ? BIN_COMPLEMENTED : 0;
@@ -2537,6 +2737,14 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 	g.rng_free = -1;
     }
 
+    if (version > 1) {
+	cp += u72int(cp, (uint32_t *)&g.nrefpos);
+	cp += u72int(cp, (uint32_t *)&g.nanno);
+    } else {
+	g.nrefpos = 0;
+	g.nanno = 0;
+    }
+
  empty_bin:
     /*
     printf("<%d / p=%d+%d, %d..%d p=%d/%d, ch=%d/%d, id=%d, f=%d t=%d ns=%d r=%d\n",
@@ -2566,6 +2774,8 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
     bin->track_rec   = b->track;
     bin->track       = NULL;
     bin->nseqs       = b->nseqs;
+    bin->nrefpos     = b->nrefpos;
+    bin->nanno       = b->nanno;
     bin->rng_free    = b->rng_free;
 
     /* Load ranges */
@@ -2585,7 +2795,7 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 	    g_read(io, v, buf, vi.used);
 	    fmt = buf[1] & 0x3f;
 	    assert(buf[0] == GT_Range);
-	    assert(fmt <= 1);
+	    assert(fmt <= 2);
 	    comp_mode = ((unsigned char)buf[1]) >> 6;
 	    r = unpack_rng_array(comp_mode, fmt, buf+2, vi.used-2, &nranges);
 	    free(buf);
@@ -2652,7 +2862,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	char *cp, fmt[2];
 	int sz;
 	GIOVec vec[2];
-	int fmt2 = 1;
+	int fmt2 = 2;
 
 	fmt[0] = GT_Range;
 	fmt[1] = fmt2 | (io->comp_mode << 6);
@@ -2748,6 +2958,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     /* Bin struct itself */
     if (bin->flags & BIN_BIN_UPDATED) {
 	unsigned char cpstart[12*5+2], *cp = cpstart;
+	int vers = 0;
 
 	bin->flags &= ~BIN_BIN_UPDATED;
 	g.pos         = bin->pos;
@@ -2763,6 +2974,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	g.range       = bin->rng_rec;
 	g.track       = bin->track_rec;
 	g.nseqs       = bin->nseqs;
+	g.nrefpos     = bin->nrefpos;
+	g.nanno       = bin->nanno;
 	g.rng_free    = bin->rng_free;
 
 #ifdef DEBUG
@@ -2801,7 +3014,12 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (g.flags & BIN_CONS_VALID)   bflag |= BIN_CONS_VALID_;
 
 	*cp++ = GT_Bin;
-	*cp++ = g.rng_free == -1 ? 0 : 1; /* Format */
+	vers = 2;
+//	if (g.rng_free != -1)
+//	    vers = 1;
+//	if (g.nrefpos > 0 || g.nanno > 0)
+//	    vers = 2;
+	*cp++ = vers; /* Format */
 
 	cp += int2u7(bflag, cp);
 	if (!(bflag & BIN_POS_ZERO))     cp += int2s7(g.pos, cp);
@@ -2816,8 +3034,12 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (!(bflag & BIN_NO_TRACK))     cp += intw2u7(g.track, cp);
 	cp += intw2u7(g.parent, cp);
 	cp += int2u7(g.nseqs, cp);
-	if (g.rng_free != -1)
+	if (vers >= 1)
 	    cp += int2s7(g.rng_free, cp);
+	if (vers >= 2) {
+	    cp += int2u7(g.nrefpos, cp);
+	    cp += int2u7(g.nanno, cp);
+	}
 
 	wrstats[GT_Bin] += cp-cpstart;
 	//wrstats[GT_Bin] += sizeof(g);
@@ -2879,6 +3101,8 @@ static tg_rec io_bin_create(void *dbh, void *vfrom) {
 	b.track_rec   = 0;
 	b.flags       = 0;
 	b.nseqs	      = 0;
+	b.nrefpos     = 0;
+	b.nanno       = 0;
 	b.rng_free    = -1;
 	io_bin_write_view(io, &b, v);
     }
@@ -2911,7 +3135,7 @@ static int io_bin_destroy(void *dbh, tg_rec r, GView v) {
     rdcounts[GT_Bin]++;
 
     assert(cp[0] == GT_Bin);
-    assert(cp[1] <= 1); /* format */
+    assert(cp[1] <= 2); /* format */
     cp += 2;
     cp += u72int(cp, &bflag);
     if (!(bflag & BIN_POS_ZERO))

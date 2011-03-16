@@ -599,7 +599,7 @@ static int contig_consensus_in_range2(GapIO *io, tg_rec brec,
     }
 
     /* Recurse down bins */
-    for (i = 0; i < 2 > 0; i++) {
+    for (i = 0; i < 2; i++) {
 	bin_index_t *ch;
 	if (!bin->child[i])
 	    continue;

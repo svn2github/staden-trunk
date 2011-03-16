@@ -24,6 +24,8 @@ typedef struct {
     int store_unmapped;
     int sam_aux;
     int pair_queue;
+    int store_refpos;
+    int remove_dups;
 } tg_args;
 
 #define DATA_SEQ	1

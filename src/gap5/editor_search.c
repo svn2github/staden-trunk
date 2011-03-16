@@ -443,6 +443,48 @@ int edview_search_tag_anno(edview *xx, int dir, int strand, char *value) {
     return -1;
 }
 
+int edview_search_tag_indel(edview *xx, int dir, int strand, char *value) {
+    contig_iterator *iter;
+    int start, end;
+    rangec_t *r;
+    rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
+
+    if (dir) {
+	start = xx->cursor_apos + (dir ? 1 : -1);
+	end   = xx->contig->end;
+	ifunc = contig_iter_next;
+    } else {
+	start = xx->contig->start;
+	end   = xx->cursor_apos + (dir ? 1 : -1);
+	ifunc = contig_iter_prev;
+    }
+
+    iter = contig_iter_new_by_type(xx->io, xx->cnum, 1,
+				   dir == 1 ? CITER_FIRST : CITER_LAST,
+				   start, end, GRANGE_FLAG_ISREFPOS);
+    if (!iter)
+	return -1;
+
+    while (r = ifunc(xx->io, iter)) {
+	anno_ele_t *ae;
+
+	if ((dir  && r->start < start) ||
+	    (!dir && r->start > end))
+	    continue;
+
+	break;
+    }
+
+    if (r) {
+	edSetCursorPos(xx, GT_Contig, xx->cnum, r->start, 1);
+	contig_iter_del(iter);
+	return 0;
+    }
+
+    contig_iter_del(iter);
+    return -1;
+}
+
 /*
  * Performs a search within the editor.
  * type   is a string indicating the search type - name, tag, sequence, ...
@@ -465,6 +507,7 @@ int edview_search(edview *xx, int dir, int strand,
 	{"name",         edview_search_name},
 	{"tag",          edview_search_tag_type},
 	{"annotation",   edview_search_tag_anno},
+	{"indel",        edview_search_tag_indel},
     };
     int i;
 

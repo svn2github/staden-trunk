@@ -139,6 +139,8 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
  *        -1 on failure
  */
 int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n);
+int bin_incr_nrefpos(GapIO *io, bin_index_t *bin, int n);
+int bin_incr_nanno(GapIO *io, bin_index_t *bin, int n);
 
 
 /*

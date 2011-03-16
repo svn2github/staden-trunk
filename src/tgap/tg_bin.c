@@ -35,6 +35,8 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
     bin.track_rec   = 0;
     bin.nseqs       = 0;
     bin.rng_free    = -1;
+    bin.nrefpos     = 0;
+    bin.nanno       = 0;
 
     if (-1 == (rec = io->iface->bin.create(io->dbh, &bin)))
 	return -1;
@@ -68,6 +70,8 @@ tg_rec bin_new(GapIO *io, int pos, int sz, tg_rec parent, int parent_type) {
     bin->track_rec   = 0;
     bin->nseqs       = 0;
     bin->rng_free    = -1;
+    bin->nrefpos     = 0;
+    bin->nanno       = 0;
 
     return rec;
 }
@@ -104,7 +108,9 @@ static bin_index_t *contig_extend_bins_right(GapIO *io, contig_t **c) {
 
     nroot->child[0] = old_root_id;
     nroot->child[1] = 0;
-    nroot->nseqs = oroot->nseqs;
+    nroot->nseqs    = oroot->nseqs;
+    nroot->nrefpos  = oroot->nrefpos;
+    nroot->nanno    = oroot->nanno;
 
     nroot->flags |= BIN_BIN_UPDATED;
     cache_decr(io, nroot);
@@ -146,7 +152,9 @@ static bin_index_t *contig_extend_bins_left(GapIO *io, contig_t **c) {
 
     nroot->child[0] = 0;
     nroot->child[1] = old_root_id;
-    nroot->nseqs = oroot->nseqs;
+    nroot->nseqs    = oroot->nseqs;
+    nroot->nrefpos  = oroot->nrefpos;
+    nroot->nanno    = oroot->nanno;
 
     nroot->flags |= BIN_BIN_UPDATED;
     cache_decr(io, nroot);
@@ -503,6 +511,57 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
     return 0;
 }
 
+
+/*
+ * Adds 'n' to the nrefpos counter for a bin and all parent bins chaining up
+ * to the root node. 'n' may be negative too.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_incr_nrefpos(GapIO *io, bin_index_t *bin, int n) {
+    while (bin) {
+	if (!(bin = cache_rw(io, bin)))
+	    return -1;
+	bin->nrefpos += n;
+	bin->flags |= BIN_BIN_UPDATED;
+	bin->flags &= ~BIN_CONS_VALID;
+
+	if (bin->parent_type != GT_Bin)
+	    break;
+
+	bin = get_bin(io, bin->parent);
+    }
+
+    return 0;
+}
+
+
+/*
+ * Adds 'n' to the nanno counter for a bin and all parent bins chaining up
+ * to the root node. 'n' may be negative too.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_incr_nanno(GapIO *io, bin_index_t *bin, int n) {
+    while (bin) {
+	if (!(bin = cache_rw(io, bin)))
+	    return -1;
+	bin->nanno += n;
+	bin->flags |= BIN_BIN_UPDATED;
+	bin->flags &= ~BIN_CONS_VALID;
+
+	if (bin->parent_type != GT_Bin)
+	    break;
+
+	bin = get_bin(io, bin->parent);
+    }
+
+    return 0;
+}
+
+
 /*
  * Adds a range to the contig.
  *
@@ -525,16 +584,20 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     range_t *r2;
     int nr, offset, comp;
     static tg_rec last_bin = 0;
-    static int incr_value = 0;
+    static int incr_svalue = 0;
+    static int incr_rvalue = 0;
+    static int incr_avalue = 0;
 
     /* Tidy-up operation when adding ranges in bulk */
     if (delay_nseq == -1) {
-	if (last_bin && incr_value) {
+	if (last_bin && (incr_svalue || incr_rvalue)) {
 	    bin = cache_search(io, GT_Bin, last_bin);
-	    bin_incr_nseq(io, bin, incr_value);
+	    bin_incr_nseq(io, bin, incr_svalue);
+	    bin_incr_nrefpos(io, bin, incr_rvalue);
+	    bin_incr_nanno(io, bin, incr_avalue);
 	}
 	last_bin = 0;
-	incr_value = 0;
+	incr_svalue = incr_rvalue = incr_avalue = 0;
 
 	return NULL;
     }
@@ -597,10 +660,13 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 	*r_out = r2;
 
     /* Update nseq in bins, delaying this to avoid needless writes */
-    if (delay_nseq == 1 && bin->rec != last_bin && incr_value) {
+    if (delay_nseq == 1 && bin->rec != last_bin
+	&& (incr_svalue || incr_rvalue)) {
 	bin_index_t *b2 = cache_search(io, GT_Bin, last_bin);
-	bin_incr_nseq(io, b2, incr_value);
-	incr_value = 0;
+	bin_incr_nseq(io, b2, incr_svalue);
+	bin_incr_nrefpos(io, b2, incr_rvalue);
+	bin_incr_nanno(io, b2, incr_avalue);
+	incr_svalue = incr_rvalue = incr_avalue = 0;
 	last_bin = bin->rec;
     }
 
@@ -608,7 +674,25 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 	if (delay_nseq == 0) {
 	    bin_incr_nseq(io, bin, 1);
 	} else {
-	    incr_value++;
+	    incr_svalue++;
+	    last_bin = bin->rec;
+	}
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+	if (delay_nseq == 0) {
+	    bin_incr_nrefpos(io, bin, 1);
+	} else {
+	    incr_rvalue++;
+	    last_bin = bin->rec;
+	}
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	if (delay_nseq == 0) {
+	    bin_incr_nanno(io, bin, 1);
+	} else {
+	    incr_avalue++;
 	    last_bin = bin->rec;
 	}
     }
@@ -756,6 +840,12 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
 	    bin_incr_nseq(io, bin, -1);
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+	    bin_incr_nrefpos(io, bin, -1);
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+	    bin_incr_nanno(io, bin, -1);
 
 	break;
     }

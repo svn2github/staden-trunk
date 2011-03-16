@@ -20,7 +20,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 
     # Create our tablelist
     tablelist $t.list \
-	-columns {0 "Name" 10 "Length" 14 "# sequences"} \
+	-columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations"} \
 	-labelcommand tablelist::sortByColumn \
 	-exportselection 0 \
 	-stretch 0 \
@@ -28,6 +28,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	-yscrollcommand [list $t.yscroll set]
     $t.list columnconfigure 1 -sortmode integer
     $t.list columnconfigure 2 -sortmode integer
+    $t.list columnconfigure 3 -sortmode integer
     
     frame $t.buttons -bd 0
     button $t.buttons.cancel \
@@ -68,7 +69,7 @@ proc InitListContigs {io parent {csh_win {}}} {
     bind [$t.list bodypath] <<select-release>> \
 	"+ListContigsSelectReleaseBinding $io $t.list"
 
-    wm geometry $t 400x200
+    wm geometry $t 600x300
 
     set trace_cmd "ListContigsUpdate $io $t.list"
     trace variable NGList(contigs) w $trace_cmd
@@ -220,7 +221,8 @@ proc InitListContigs {io parent {csh_win {}}} {
 	set cstruct [$io get_contig $num]
 	set clen [$cstruct get_length]
 	set nreads [$cstruct nseqs]
-	$w insert end [list "$name (=$num)" $clen $nreads]
+	set nanno [$cstruct nanno]
+	$w insert end [list "$name (=$num)" $clen $nreads $nanno]
     }
     if {[$w sortcolumn] != -1} {
 	$w sortbycolumn [$w sortcolumn] -[$w sortorder]

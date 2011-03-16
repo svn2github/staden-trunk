@@ -563,8 +563,10 @@ proc contig_editor {w args} {
     set opt(DisagreeCase)    [keylget gap5_defs CONTIG_EDITOR.DISAGREE_CASE]
     set opt(DisagreeQuality) [keylget gap5_defs CONTIG_EDITOR.DISAGREE_QUAL]
     set opt(PackSequences)   [keylget gap5_defs CONTIG_EDITOR.PACK_SEQUENCES]
+    set opt(StripeMode)      [keylget gap5_defs CONTIG_EDITOR.STRIPE_SIZE]
     set opt(Quality)         [keylget gap5_defs CONTIG_EDITOR.SHOW_QUALITY]
     set opt(Cutoffs)         [keylget gap5_defs CONTIG_EDITOR.SHOW_CUTOFFS]
+    set opt(PosType)	     [keylget gap5_defs CONTIG_EDITOR.POS_TYPE]
     set opt(HideAnno)        0
     set opt(Status)          "--- Status info here ---"
 
@@ -884,7 +886,13 @@ proc editor_exit {w {get_lock 0}} {
 
 proc display_pos_set {ed pos} {
     global $ed
-    set ${ed}(displayPos) $pos
+    upvar \#0 [set ${ed}(top)] opt
+
+    if {$opt(PosType) == "P"} {
+	set ${ed}(displayPos) $pos
+    } else {
+	set ${ed}(displayPos) [lindex [$ed reference_pos $pos] 0]
+    }
 }
 
 proc jog_editor {cmd dist} {
@@ -942,6 +950,7 @@ proc editor_pane {top w above ind arg_array} {
 		-diff1_fg    [keylget gap5_defs CONTIG_EDITOR.DIFF1_FG] \
 		-diff2_fg    [keylget gap5_defs CONTIG_EDITOR.DIFF2_FG] \
 		-stripe_bg   [keylget gap5_defs CONTIG_EDITOR.STRIPE_BG] \
+		-stripe_mode [keylget gap5_defs CONTIG_EDITOR.STRIPE_SIZE] \
 		-qualcolour0 [keylget gap5_defs CONTIG_EDITOR.QUAL0_COLOUR] \
 		-qualcolour1 [keylget gap5_defs CONTIG_EDITOR.QUAL1_COLOUR] \
 		-qualcolour2 [keylget gap5_defs CONTIG_EDITOR.QUAL2_COLOUR] \
@@ -962,12 +971,14 @@ proc editor_pane {top w above ind arg_array} {
 		-display_mapping_quality     $opt(Quality) \
 		-display_cutoffs             $opt(Cutoffs) \
 	        -hide_anno                   $opt(HideAnno) \
+		-pos_type		     [scan $opt(PosType) %c] \
 		-fg black \
+		-indelcolour [keylget gap5_defs CONTIG_EDITOR.INDEL_COLOUR] \
 	        -bg [tk::Darken [. cget -bg] 115]]
     set opt(curr_editor) $ed
 
     # X and y scrollbars
-    scrollbar $w.seq.x -orient horiz -repeatinterval 30
+    scrollbar $w.seq.x -orient horiz -repeatinterval 10
     scrollbar $w.seq.y -orient vert 
 
     # Names panel
@@ -986,6 +997,28 @@ proc editor_pane {top w above ind arg_array} {
 	-font {Helvetica -12} \
 	-width 15
     bind $w.name.pos <Return> "editor_goto $ed $w.seq.sheet"
+    button $w.name.pos_type \
+	-textvariable ${top}(PosType) \
+	-padx 2 \
+	-pady 0 \
+	-highlightthickness 0 \
+	-command "toggle_editor_pos_type $top"
+#    xmenubutton $w.name.pos_type \
+#	-textvariable $w.name.PosType \
+#	-menu $w.name.pos_type.m
+#    set m [menu $w.name.pos_type.m]
+#    $m add radiobutton \
+#	-label Padded \
+#	-value P \
+#	-variable $w.name.PosType \
+#	-command "puts \[set $w.name.PosType\]"
+#    $m add radiobutton \
+#	-label Reference \
+#	-value R \
+#	-variable $w.name.PosType \
+#	-command "puts \[set $w.name.PosType\]"
+#    global $w.name.PosType
+#    set $w.name.PosType P
 
     # The jog control for scrolling the editor
     set posh [font metrics [$w.name.pos cget -font] -linespace]
@@ -998,9 +1031,9 @@ proc editor_pane {top w above ind arg_array} {
     # Pack it all in the paned window
     grid rowconfigure $w.name $textrow -weight 1
     grid columnconfigure $w.name 0 -weight 1
-    grid $w.name.sheet -row $textrow   -sticky nsew
-    grid $w.name.x     -row $scrollrow -sticky nsew
-    grid $w.name.pos   -row $jogrow    -sticky nsew
+    grid $w.name.sheet - -row $textrow   -sticky nsew
+    grid $w.name.x     - -row $scrollrow -sticky nsew
+    grid $w.name.pos $w.name.pos_type -row $jogrow    -sticky nsew
 
     $w.name configure -width [expr {11*[font measure sheet_font A]}]
 
@@ -1118,11 +1151,38 @@ proc editor_hl {ed col} {
 # A coordinate jump
 proc editor_goto {ed w} {
     upvar \#0 $ed eopt
+    upvar \#0 $eopt(top) opt
 
     set pos $eopt(displayPos)
 
-    if {[regexp {^[-+]?[0-9]+$} $pos] == 1} {
+    if {[regexp {^([-+]?[0-9]+)[rR]$} $pos _ _p]} {
+	set opt(PosType) R
+	set pos $_p
+    } elseif {[regexp {^([-+]?[0-9]+)[pP]$} $pos _ _p]} {
+	set opt(PosType) P
+	set pos $_p
+    } elseif {![regexp {^[-+]?[0-9]+$} $pos]} {
+	set opt(Status) "**ERROR**: $pos is not a number"
+	bell
+	return
+    }
+
+    set opt(Status) ""
+
+    if {$opt(PosType) == "P"} {
 	$w xview $pos
+    } else {
+	set crec [$ed contig_rec]
+	set c [[$ed io] get_contig $crec]
+	catch {set ppos [$c ref_to_padded $pos [$ed xview]]}
+	$c delete
+	
+	if {[info exists ppos] && $ppos != ""} {
+	    $w xview $ppos
+	} else {
+	    set opt(Status) "**WARNING**: Unable to find reference position $pos"
+	    bell
+	}
     }
 }
 
@@ -1207,6 +1267,15 @@ proc set_editor_pack_sequences {w} {
     }
 }
 
+proc set_editor_stripe_mode {w} {
+    upvar \#0 $w opt
+
+    foreach ed $opt(all_editors) {
+	$ed configure -stripe_mode [expr {2*$opt(StripeMode)}]
+	$ed redraw
+    }
+}
+
 proc set_differences_quality_callback {w val} {
     upvar \#0 $w opt
 
@@ -1247,6 +1316,30 @@ proc set_differences_quality {w} {
         -help_command "show_help gap5 {Editor-Disagree}"
 
     pack $t.qual $t.ok -side top -fill both
+}
+
+proc toggle_editor_pos_type {w} {
+    upvar \#0 $w opt
+
+    switch -- $opt(PosType) {
+	P {
+	    set opt(PosType) R
+	}
+	R {
+	    set opt(PosType) P
+	}
+    }
+
+    set_editor_pos_type $w
+}
+
+proc set_editor_pos_type {w} {
+    upvar \#0 $w opt
+
+    foreach ed $opt(all_editors) {
+	$ed configure -pos_type [scan $opt(PosType) %c]
+	$ed redraw
+    }
 }
 
 #-----------------------------------------------------------------------------

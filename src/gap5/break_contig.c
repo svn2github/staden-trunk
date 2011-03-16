@@ -297,8 +297,11 @@ static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
 	range_t *r = arrp(range_t, bin->rng, i);
 	if (r->flags & GRANGE_FLAG_UNUSED)
 	    continue;
-
-	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+	    /* No object associated with this range */
+	    continue;
+	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    anno_ele_t *a = (anno_ele_t *)cache_search(io, GT_AnnoEle, r->rec);
 	    if (a->bin != bin->rec) {
 		a = cache_rw(io, a);
@@ -321,6 +324,7 @@ static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
  * A recursive break contig function.
  * bin_num	The current bin being moved or split.
  * pos		The contig break point.
+ * pos2		The maximum right extend observed for the left hand contig
  * offset	The absolute positional offset of this bin in original contig
  * pleft	The parent bin/contig record num in the left new contig
  * pright	The parent bin/contig record num in the right new contig
@@ -328,14 +332,14 @@ static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
  */
 static int break_contig_recurse(GapIO *io, HacheTable *h,
 				contig_t *cl, contig_t *cr,
-				tg_rec bin_num, int pos, int offset,
+				tg_rec bin_num, int pos, int pos2, int offset,
 				int level, tg_rec pleft, tg_rec pright,
 				int child_no, int complement) {
-    int i, j, f_a, f_b;
+    int i, j, k, l, f_a, f_b;
     tg_rec rbin;
     bin_index_t *bin = get_bin(io, bin_num), *bin_dup ;
     //int bin_min, bin_max;
-    int nseqs;
+    int nseqs, nrefpos, nanno;
     tg_rec opright; /* old pright, needed if we revert back */
 
     cache_incr(io, bin);
@@ -361,6 +365,10 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
     bin = cache_rw(io, bin);
     nseqs = bin->nseqs;
     bin->nseqs = 0;
+    nrefpos = bin->nrefpos;
+    bin->nrefpos = 0;
+    nanno = bin->nanno;
+    bin->nanno = 0;
 
     /* Invalidate any cached data */
     bin_invalidate_track(io, bin, TRACK_ALL);
@@ -383,15 +391,18 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
      * that the absolute positions of the used portion of the right child
      * won't be < pos.
      */
-    if (offset >= pos /*|| (bin_min >= pos && !bin->child[0])*/) {
+    if (offset >= pos2 /*|| (bin_min >= pos && !bin->child[0])*/) {
 	printf("%*sADD_TO_RIGHT pl=%"PRIrec" pr=%"PRIrec"\n",
 	       level*4, "", pleft, pright);
+
 	if (0 != break_contig_move_bin(io, bin,
 				       cl, pleft, cr, pright, 
 				       child_no))
 	    return -1;
 
 	bin_incr_nseq(io, bin, nseqs);
+	bin_incr_nrefpos(io, bin, nrefpos);
+	bin_incr_nanno(io, bin, nanno);
 	cache_decr(io, bin);
 
 	return 0;
@@ -408,6 +419,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	//return -1;
 
 	bin_incr_nseq(io, bin, nseqs);
+	bin_incr_nrefpos(io, bin, nrefpos);
+	bin_incr_nanno(io, bin, nanno);
 	cache_decr(io, bin);
 	
 	return 0;
@@ -443,7 +456,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	rbin = 0;
 
 	/* Possibly steal left contig's bin */
-	if (pleft == cl->rec && NMIN(bin->start_used, bin->end_used) >= pos) {
+	if (pleft == cl->rec && NMIN(bin->start_used, bin->end_used) >= pos2) {
 #if 0
 	    /* Currently this doesn't always work */
 	    if (bin->child[1]) {
@@ -509,7 +522,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    bin_dup->flags |= BIN_BIN_UPDATED;
 	}
 	    
-    } else if (NMIN(bin->start_used, bin->end_used) >= pos) {
+    } else if (NMIN(bin->start_used, bin->end_used) >= pos2) {
 	/* Move range to right contig */
 	printf("%*sDUP %"PRIrec", MOVE Array to right\n",
 	       level*4, "", bin_dup->rec);
@@ -532,18 +545,25 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 	if (bin_dup->rng) {
 	    int n = ArrayMax(bin_dup->rng);
-	    for (i = j = 0; i < n; i++) {
+	    for (i = j = k = l = 0; i < n; i++) {
 		range_t *r = arrp(range_t, bin_dup->rng, i);
 		if (r->flags & GRANGE_FLAG_UNUSED)
 		    continue;
 
-		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO &&
+		    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS) {
 		    HacheData hd; hd.i = 1;
 		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
 		    j++;
 		}
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+		    k++;
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+		    l++;
 	    }
 	    bin_incr_nseq(io, bin_dup, j);
+	    bin_incr_nrefpos(io, bin_dup, k);
+	    bin_incr_nanno(io, bin_dup, l);
 	}
     } else if (NMAX(bin->start_used, bin->end_used) < pos) {
 	/* Range array already in left contig, so do nothing */
@@ -554,22 +574,36 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 	if (bin->rng) {
 	    int n = ArrayMax(bin->rng);
-	    for (i = j = 0; i < n; i++) {
+	    for (i = j = k = l = 0; i < n; i++) {
 		range_t *r = arrp(range_t, bin->rng, i);
 		if (r->flags & GRANGE_FLAG_UNUSED)
 		    continue;
 
-		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO &&
+		    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS) {
 		    HacheData hd; hd.i = 0;
 		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
 		    j++;
 		}
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+		    k++;
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+		    l++;
 	    }
 	    bin_incr_nseq(io, bin, j);
+	    bin_incr_nrefpos(io, bin, k);
+	    bin_incr_nanno(io, bin, l);
 	}
     } else {
-	/* Range array covers pos, so split in two */
-	int n, nl = 0, nr = 0;
+	/*
+	 * Range array covers pos and/or pos2, so split in two.
+	 * Optimisation (to do): maybe it doesn't overlap pos though, in
+	 * which case we can move the bin, but sift out affected tags.
+	 */
+	int n;
+	int nsl = 0, nsr = 0; /* no. seqs */
+	int nrl = 0, nrr = 0; /* no. refpos */
+	int nal = 0, nar = 0; /* no. anno */
 	int lmin = bin->size, lmax = 0, rmin = bin->size, rmax = 0;
 
 	printf("%*sDUP %"PRIrec", SPLIT array\n", level*4, "", bin_dup->rec);
@@ -593,6 +627,9 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
 		continue;
 
+	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+		continue;
+
 	    s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	    if ((s->len < 0) ^ complement) {
 		cstart = NMAX(r->start, r->end) - (s->right-1);
@@ -604,8 +641,14 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		HacheData hd; hd.i = 1;
 		HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, NULL);
 	    } else {
+		int end;
+
 		HacheData hd; hd.i = 0;
 		HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, NULL);
+
+		end = NMAX(r->start, r->end);
+		if (pos2 < end)
+		    pos2 = end;
 	    }
 	}
 	
@@ -620,6 +663,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 		cstart = NMAX(r->start, r->end);
+	    } else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+		cstart = NORM(r->start);
 	    } else {
 		seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 		if ((s->len < 0) ^ complement) {
@@ -666,27 +711,45 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		if (rmax < r->start) rmax = r->start;
 		if (rmax < r->end)   rmax = r->end;
 		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
-		    nr++;
+		    nsr++;
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+		    nrr++;
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+		    nar++;
+
+		/* Mark as unused in old bin */
+		r->flags = GRANGE_FLAG_UNUSED;
+		r->rec = bin->rng_free;
+		bin->rng_free = i;
 	    } else {
 		if (lmin > r->start) lmin = r->start;
 		if (lmin > r->end)   lmin = r->end;
 		if (lmax < r->start) lmax = r->start;
 		if (lmax < r->end)   lmax = r->end;
-
+		/*
 		if (j != i) {
 		    r2 = arrp(range_t, bin->rng, j);
 		    *r2 = *r;
 		}
 		j++;
+		*/
 		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
-		    nl++;
+		    nsl++;
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+		    nrl++;
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+		    nal++;
 	    }
 	}
-	bin_incr_nseq(io, bin, nl);
-	bin_incr_nseq(io, bin_dup, nr);
-
-
-	ArrayMax(bin->rng) = j;
+	bin_incr_nseq(io, bin, nsl);
+	bin_incr_nseq(io, bin_dup, nsr);
+	bin_incr_nrefpos(io, bin, nrl);
+	bin_incr_nrefpos(io, bin_dup, nrr);
+	bin_incr_nanno(io, bin, nal);
+	bin_incr_nanno(io, bin_dup, nar);
+	
+	//ArrayMax(bin->rng) = j;
+	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
 #if 0
 	/*
@@ -747,7 +810,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    continue;
 
 	ch = get_bin(io, bin->child[i]);
-	if (0 != break_contig_recurse(io, h, cl, cr, bin->child[i], pos,
+	if (0 != break_contig_recurse(io, h, cl, cr, bin->child[i], pos, pos2,
 				      NMIN(ch->pos, ch->pos + ch->size-1),
 				      level+1, pleft, pright,
 				      i, complement))
@@ -789,6 +852,91 @@ int remove_redundant_bins(GapIO *io, contig_t *c) {
     }
 
     return 0;
+}
+
+/*
+ * Given a left and right contig (cl,cr) with an overlap such that
+ * cl ends at left_end and cr starts at right_start, we need to duplicate
+ * any ISREFPOS type sequences from cr into cl.
+ *
+ * ie:            |              |left_end
+ *                |              v
+ * cl ------------|---------------
+ *            +   |  x     x    x           x   x      x
+ * cr             |      ---------------------------------
+ *                |      ^
+ *       break pos|      |right start
+ *
+ * The ISREFPOS markers (x) will have been moved from cl to cr.
+ * (Actually right start will be the left-most 'x' and not where the sequence
+ * data starts, but this is something we need to fix too.)
+ */
+int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
+			  int right_start, int left_end) {
+    contig_iterator *ci;
+    rangec_t *rc;
+    int first_seq = left_end;
+
+    printf("Moving ISREFPOS markers from contig %"PRIrec" (%d..%d) to"
+	   " contig %"PRIrec".\n",
+	   cl->rec, right_start, left_end, cr->rec);
+
+    ci = contig_iter_new_by_type(io, cr->rec, 0, CITER_FIRST,
+				 right_start, left_end,
+				 GRANGE_FLAG_ISANY);
+    if (!ci)
+	return right_start;
+
+    while (rc = contig_iter_next(io, ci)) {
+	range_t r;
+
+	if ((rc->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	    if (first_seq > rc->start)
+		first_seq = rc->start;
+	}
+
+	if ((rc->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS)
+	    continue;
+
+	printf("R=%d..%d\n", rc->start, rc->end);
+	if (rc->start < first_seq) {
+	    bin_index_t *bin;
+	    range_t *r2;
+
+	    printf("** Deleting from cr, bin %"PRIrec" **\n", rc->orig_rec);
+	    
+	    bin = cache_search(io, GT_Bin, rc->orig_rec);
+	    bin = cache_rw(io, bin);
+
+	    r2 = arrp(range_t, bin->rng, rc->orig_ind);
+	    assert(r2->mqual == rc->mqual);
+	    assert(r2->flags == rc->flags);
+
+	    printf("Mark %d for removal\n", rc->orig_ind);
+	    r2->flags = GRANGE_FLAG_UNUSED;
+	    r2->rec = bin->rng_free;
+	    bin->rng_free = rc->orig_ind;
+
+	    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+	    bin_incr_nrefpos(io, bin, -1);
+	}
+
+	r.start    = rc->start;
+	r.end      = rc->end;
+	r.rec      = rc->rec;
+	r.pair_rec = rc->pair_rec;
+	r.mqual    = rc->mqual;
+	r.flags    = rc->flags;
+	
+	bin_add_range(io, &cl, &r, NULL, NULL, 1);
+    }
+    bin_add_range(io, NULL, NULL, NULL, NULL, -1);
+
+    printf("First real seq in cr = %d\n", first_seq);
+
+    contig_iter_del(ci);
+
+    return first_seq;
 }
 
 /*
@@ -851,12 +999,18 @@ int break_contig(GapIO *io, tg_rec crec, int cpos) {
     do_comp = bin->flags & BIN_COMPLEMENTED;
 
     break_contig_recurse(io, h, cl, cr,
-			 contig_get_bin(&cl), cpos, contig_offset(io, &cl),
-			 0, cl->rec, cr->rec, 0, 0);
+			 contig_get_bin(&cl), cpos, cpos,
+			 contig_offset(io, &cl), 0, cl->rec, cr->rec, 0, 0);
 
     /* Recompute end positions */
     left_end    = contig_visible_end(io, cl->rec);
     right_start = contig_visible_start(io, cr->rec);
+
+    //if (cl->bin) contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
+    //if (cr->bin) contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
+
+    /* Duplicate overlapping ISREFPOS markers between right_start & left_end */
+    right_start = copy_isrefpos_markers(io, cl, cr, right_start, left_end);
 
     /* Ensure start/end positions of contigs work out */
     bin = cache_rw(io, get_bin(io, cr->bin));

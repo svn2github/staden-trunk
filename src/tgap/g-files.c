@@ -56,6 +56,7 @@
 #include "g-db.h" /* IMPORT: panic_shutdown() */
 #include "g-defs.h" /* IMPORT: G_AUX_SUFFIX */
 #include "xalloc.h"
+#include "misc.h"
 
 /* johnt 6/1/99 - O_BINARY required to open files in binary mode for MS Windows */
 #ifndef O_BINARY

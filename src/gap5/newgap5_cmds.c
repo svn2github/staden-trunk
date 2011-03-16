@@ -397,7 +397,7 @@ int tcl_contig_order_to_number(ClientData clientData, Tcl_Interp *interp,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 	
-    vTcl_SetResult(interp, "%"PRId64,
+    vTcl_SetResult(interp, "%"PRIrec,
 		   arr(tg_rec, args.io->contig_order, args.order));
     return TCL_OK;
 }
@@ -1701,6 +1701,81 @@ tcl_leak_check(ClientData clientData,
 }
 #endif
 
+int tcl_iter_test(ClientData clientData,
+		  Tcl_Interp *interp,
+		  int objc,
+		  Tcl_Obj *CONST objv[]) {
+    int rargc, i, j;
+    contig_list_t *rargv;
+    list2_arg args;
+    Tcl_Obj *res;
+
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    vfuncheader("complement contig");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    /* create contig name array */
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    if (rargc == 0) {
+        xfree(rargv);
+        return TCL_OK;
+    }
+
+    printf("\n=== Contig %"PRIrec" (1 of %d)  %d..%d ===\n",
+	   rargv[0].contig, rargc, rargv[0].start, rargv[0].end);
+
+    for (j = 0; j < 3; j++) {
+	int type;
+
+	switch(j) {
+	case 0: type = GRANGE_FLAG_ISANNO;   break;
+	case 1: type = GRANGE_FLAG_ISREFPOS; break;
+	case 2: type = GRANGE_FLAG_ISSEQ;    break;
+	}
+
+	printf("X: \nX: *** Iterator test with type = %d ***\n", type);
+
+	for (i = 0; i < rargc; i++) {
+	    Tcl_Obj *l = Tcl_NewListObj(0, NULL);
+	    tg_rec crec = rargv[i].contig;
+	    int start = rargv[i].start;
+	    int end = rargv[i].end;
+	    contig_iterator *ci;
+	    rangec_t *r;
+
+#if 0
+	    ci = contig_iter_new_by_type(args.io, crec, 0, CITER_FIRST,
+					 start, end, type);
+
+	    while (r = contig_iter_next(args.io, ci)) {
+		printf("X:  %"PRIrec" %d..%d\n", r->rec, r->start, r->end);
+	    }
+
+	    contig_iter_del(ci);
+#else
+	    ci = contig_iter_new_by_type(args.io, crec, 0, CITER_LAST,
+					 start, end, type);
+
+	    while (r = contig_iter_prev(args.io, ci)) {
+		printf("X:  %"PRIrec" %d..%d\n", r->rec, r->start, r->end);
+	    }
+
+	    contig_iter_del(ci);
+#endif
+	}
+    }
+
+    return TCL_OK;
+}
+		  
+
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
 /*				   NewGap_Init				     */
@@ -1899,6 +1974,10 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "consensus_valid_range",
 			 tcl_consensus_valid_range,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "iter_test",
+			 tcl_iter_test,
 			 (ClientData) NULL, NULL);
 			 
     

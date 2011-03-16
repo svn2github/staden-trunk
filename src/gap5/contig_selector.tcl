@@ -1487,7 +1487,9 @@ proc GetItemInfo {io plot nearest} {
 	} elseif {[string compare [string range $tag 0 3] num_] == 0} {
 	    set c_num [string trim $tag num_]
 	    set c [$io get_contig $c_num]
-	    return "Contig: [$c get_name]  Length: [$c get_length] NSeqs: [$c nseqs]"
+	    set msg "Contig: [$c get_name]  Length: [$c get_length]  NSeqs: [$c nseqs]  NAnno: [$c nanno]"
+	    $c delete
+	    return $msg
 	}
     }
 }

@@ -557,8 +557,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_start",    "get_end",      "get_len",      "get_length",
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
-	"nseqs",	"anno_in_range","get_pileup",
-	(char *)NULL,
+	"nseqs",	"anno_in_range","get_pileup",   "ref_to_padded",
+	"nrefpos",	"nanno",        (char *)NULL,
     };
 
     enum options {
@@ -566,7 +566,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_START,      GET_END,        GET_LEN,        GET_LENGTH,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
-	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP
+	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
+	NREFPOS,        NANNO,
     };
 
     if (objc < 2) {
@@ -786,9 +787,68 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(nseqs));
 	break;
     } 
+
+    case NREFPOS: {
+	int nrefpos;
+	if (!tc->contig->bin) {
+	    nrefpos = 0;
+	} else {
+	    bin_index_t *bin;
+	    bin = (bin_index_t *)cache_search(tc->io, GT_Bin, tc->contig->bin);
+	    nrefpos = bin->nrefpos;
+	}
+
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(nrefpos));
+	break;
+    } 
+
+    case NANNO: {
+	int nanno;
+	if (!tc->contig->bin) {
+	    nanno = 0;
+	} else {
+	    bin_index_t *bin;
+	    bin = (bin_index_t *)cache_search(tc->io, GT_Bin, tc->contig->bin);
+	    nanno = bin->nanno;
+	}
+
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(nanno));
+	break;
+    } 
+
     case GET_PILEUP: 
 	return tcl_contig_pileup(tc, interp, objc-1, objv+1);
 	break;
+	
+    case REF_TO_PADDED: {
+	int rpos, ppos;
+
+	if (objc < 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s ref_to_padded ref_pos ?padded_start_pos?\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &rpos);
+	if (objc >= 4) {
+	    /* From known starting point */
+	    Tcl_GetIntFromObj(interp, objv[3], &ppos);
+	    if (!reference_to_padded_pos2(tc->io, tc->contig->rec, -1,
+					  rpos, ppos, &ppos))
+		Tcl_SetIntObj(Tcl_GetObjResult(interp), ppos);
+	    else
+		return TCL_ERROR;
+	} else {
+	    if (!reference_to_padded_pos(tc->io, tc->contig->rec, -1,
+					 rpos, &ppos))
+		Tcl_SetIntObj(Tcl_GetObjResult(interp), ppos);
+	    else
+		return TCL_ERROR;
+	}
+
+	break;
+    }
     }
 
     return TCL_OK;
@@ -820,6 +880,11 @@ static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 	c = (contig_t *)cache_search(io, GT_Contig, cnum);
     else
 	gio_read_contig(io, -(int)cnum, &c); /* contig order lookup */
+
+    if (!c) {
+	vTcl_SetResult(interp, "Unable to read contig =%"PRIrec, cnum);
+	return TCL_ERROR;
+    }
 
     if (NULL == (tc = (tcl_contig *)ckalloc(sizeof(*tc))))
 	return TCL_ERROR;
@@ -1111,7 +1176,10 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
-	sequence_get_base(ts->io, &ts->seq, pos, &base, &conf, &cutoff, 1);
+	if (-1 == sequence_get_base(ts->io, &ts->seq, pos,
+				    &base, &conf, &cutoff, 1))
+	    return TCL_ERROR;
+
 	vTcl_SetResult(interp, "%c %d %d", base, conf, cutoff);
 	break;
     }

@@ -95,18 +95,24 @@ proc DatabaseInfo {io} {
 
     set tcl 0
     set nr  0
+    set na  0
+    set nm  0
     for {set i 0} {$i < $nc} {incr i} {
 	set cnum [$io contig_order $i]
 	set c [$io get_contig $cnum]
 	incr tcl [$c get_len]
 	incr nr  [$c nseqs]
+	incr na  [$c nanno]
+	incr nm  [$c nrefpos]
 	$c delete
     }
 
     set i ""
     append i [format "No. Contigs         %12d\n" $nc]
     append i [format "No. Sequences       %12d\n" $nr]
+    append i [format "No. Annotations     %12d\n" $na]
     append i [format "No. Read-groups     %12d\n" $nl]
+    append i [format "No. Refpos markers  %12d\n" $nm]
     append i "\n"
     append i [format "Total contig length %12d\n" $tcl]
     append i [format "Avg. contig length  %14.1f\n" [expr double($tcl)/$nc]]

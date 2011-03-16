@@ -200,4 +200,57 @@ int contig_destroy(GapIO *io, tg_rec rec);
 int plot_seqs_in_range(GapIO *io, contig_t **c, int start, int end, void *template, void *drawing, 
 			void (*plot_func)(void *, void *, void *));
 
+/* -------------------------------------------------------------------------
+ * Padded / reference coordinate mappings.
+ */
+int padded_to_reference_pos(GapIO *io, tg_rec cnum, int ppos, int *dir_p,
+			    int *ref_id);
+
+/*
+ * Looks for a refpos marker at position ppos. If it finds one it returns
+ * 0 and sets the bin and bin_idx fields.
+ *
+ * If it doesn't, it returns -1;
+ */
+int find_refpos_marker(GapIO *io, tg_rec cnum, int ppos,
+		       tg_rec *bin_r, int *bin_idx_r, rangec_t *rp);
+
+/*
+ * Given a contig record and a reference position, attempt to return
+ * the padded coordinate. Note this may not exist, it may in extreme cases
+ * exist multiple times (after breaking and rejoining), or it may exist
+ * only once but be too hard to discover. If we don't care which specific
+ * reference ID to search, pass in ref_id == -1.
+ *
+ * We only attempt to tackle easy cases of a single reference in this contig
+ * with monotonically increasing or decreasing values. (We need more data
+ * stored to allow arbitrary queries to be fast.)
+ *
+ * Returns 0 on success, position stored in *padded_pos.
+ *        -1 on failure, *padded_pos undefined.
+ */
+int reference_to_padded_pos(GapIO *io, tg_rec cnum, int ref_id, int ref_pos,
+			    int *padded_pos);
+
+/*
+ * As above, but starting from a single known point on that reference.
+ * This allows for reference positions to occur more than once.
+ */
+int reference_to_padded_pos2(GapIO *io, tg_rec cnum, int ref_id, int ref_pos,
+			     int cur_padded_pos, int *padded_pos);
+
+/*
+ * Converts a range of padded coordinates to reference coordinates.
+ * Optionally also fills out a reference seq ID array too, if non-NULL.
+ *
+ * ref_pos and ref_id should be allocated by the caller to be of
+ * appropriate size (paddeed_end - padded_start + 1).
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int padded_to_reference_array(GapIO *io, tg_rec cnum,
+			      int padded_start, int padded_end,
+			      int *ref_pos, int *ref_id);
+
 #endif /* _TG_CONTIG_H_ */

@@ -54,11 +54,16 @@ void usage(void) {
     fprintf(stderr, "      -A                   Input is ACE format\n");
     fprintf(stderr, "      -B                   Input is BAF format\n");
     fprintf(stderr, "      -C                   Input is CAF format\n");
+    fprintf(stderr, "      -f                   Input is FASTA format\n");
+    fprintf(stderr, "      -F                   Input is FASTQ format\n");
     fprintf(stderr, "      -b                   Input is BAM format\n");
     fprintf(stderr, "      -s                   Input is SAM format (with @SQ headers)\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "      -u                   Also store unmapped reads (from SAM/BAM only)\n");
-    fprintf(stderr, "      -x                   Also store auxillary records (from SAM/BAM only)\n");
+    fprintf(stderr, "      -u                   Also store unmapped reads           (SAM/BAM only)\n");
+    fprintf(stderr, "      -x                   Also store auxillary records        (SAM/BAM only)\n");
+    fprintf(stderr, "      -r                   Store reference-position data (on)  (SAM/BAM only)\n");
+    fprintf(stderr, "      -R                   Don't store reference-position data (SAM/BAM only)\n");
+    fprintf(stderr, "      -D                   Do not remove duplicates (SAM/BAM only)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "      -p                   Link read-pairs together (default on)\n");
     fprintf(stderr, "      -P                   Do not link read-pairs together\n");
@@ -120,6 +125,8 @@ int main(int argc, char **argv) {
     a.store_unmapped = 0;
     a.sam_aux        = 0;
     a.pair_queue     = 0;
+    a.store_refpos   = 1;
+    a.remove_dups    = 1;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.11\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
@@ -129,7 +136,7 @@ int main(int argc, char **argv) {
     //mallopt(M_MMAP_MAX, 0);
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPq:nz:fr:d:c:gux123456789")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPq:nz:fd:c:gux123456789rRD")) != -1) {
 	switch(opt) {
 	case 'g':
 	    a.repad = 1;
@@ -230,6 +237,18 @@ int main(int argc, char **argv) {
 	case '8':
 	case '9':
 	    set_tg_compression_level(opt-'0');
+	    break;
+
+	case 'r':
+	    a.store_refpos = 1;
+	    break;
+
+	case 'R':
+	    a.store_refpos = 0;
+	    break;
+
+	case 'D':
+	    a.remove_dups = 0;
 	    break;
 	    
 	default:

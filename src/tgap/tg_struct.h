@@ -60,6 +60,8 @@ typedef struct {
     tg_rec track;
     GCardinal nseqs;
     GCardinal rng_free; /* forms a linked list of items in rng that are free */
+    GCardinal nrefpos;
+    GCardinal nanno;
 } GBin;
 
 typedef struct {
@@ -82,7 +84,39 @@ typedef struct {
 #define GRANGE_FLAG_ISCONS     (2<<7)
 #define GRANGE_FLAG_ISREF      (3<<7)
 #define GRANGE_FLAG_ISUMSEQ    (4<<7) /* unmapped sequence */
+#define GRANGE_FLAG_ISREFPOS   (5<<7)
 #define GRANGE_FLAG_ISANY      (7<<7) /* Any */
+
+/* For reference position ranges: */
+/* .mqual => ref coord */
+/* .rec   => ref ID (SAM header 'tid') */
+/* .pair_rec => size of deletion if appropriate */
+
+/*
+ * We have 3 types of indel. I, D or DI. These can be seen as:
+ *
+ * Ref AGCTGAGAGCTG ACATCGATGA CGGCGGATCA CGATGCG
+ * Seq AGCTA  ACCTGGACATCGAT  CCGGCGGATCAT  ATGCG
+ *            ^    ^          ^          ^  ^
+ *          D2     I        D2I          I D2
+ *
+ * D2I is a single refpos as it resides on a single base.
+ * I D2 resides on two neighbouring bases, so is just I & D2.
+ * 
+ * Our implementation, for simplicity, just treats D<N>I as D<N-1> and
+ * essentially collapses TGA-C/T--CC down to TGAC/T-CC.
+ */
+#define GRANGE_FLAG_REFPOS_INS   (0<<0)
+#define GRANGE_FLAG_REFPOS_DEL   (1<<0)
+#define GRANGE_FLAG_REFPOS_INDEL (3<<0) /* Allow for NOP too? */
+
+#define GRANGE_FLAG_REFPOS_FWD (0<<2)
+#define GRANGE_FLAG_REFPOS_REV (1<<2)
+#define GRANGE_FLAG_REFPOS_DIR (1<<2)
+
+#define GRANGE_FLAG_REFPOS_HAVE_ID   (1<<3)
+#define GRANGE_FLAG_REFPOS_HAVE_POS  (1<<4)
+#define GRANGE_FLAG_REFPOS_HAVE_SIZE (1<<5)
 
 /* For annotation ranges: */
 #define GRANGE_FLAG_TAG_SEQ    (1<<1) /* 0=>contig, 1=>sequence */
@@ -137,7 +171,8 @@ typedef struct {
  * it to force a newer gap5 release to keep writing data in an older
  * backwards compatible manner when editing an old DB.
  */
-#define DB_VERSION 1 /* 1.2.6 */
+//#define DB_VERSION 1 /* 1.2.6 */
+#define DB_VERSION 2 /* 1.2.12 */
 
 /* g-layer equivalent of database_t : this is as it's written on disc */
 typedef struct { 
@@ -280,6 +315,8 @@ typedef struct index {
     tg_rec track_rec;
     int nseqs;
     int rng_free; /* forms a linked list of items in rng that are free */
+    int nrefpos;  /* number of refpos markers in and below this bin */
+    int nanno;    /* number of annotations in and below this bin */
 } bin_index_t;
 
 /* Bit flags for bin_index_t.flags */

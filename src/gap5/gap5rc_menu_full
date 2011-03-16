@@ -374,8 +374,16 @@ add_check       {Settings.Pack Sequences}               1 0 {${w}(PackSequences)
 	{set_editor_pack_sequences $w}
 add_check       {Settings.Hide Annotations}             1 0 {${w}(HideAnno)} \
 	{editor_toggle_annos $w}
+add_check       {Settings.Background stripes}           1 0 {${w}(StripeMode)} \
+	{set_editor_stripe_mode $w}
 
 add_separator	{Settings.S3}
+add_radio	{Settings.Padded coordinates}		1 0 {${w}(PosType)} \
+	P {set_editor_pos_type $w}
+add_radio	{Settings.Reference coordinates}	1 0 {${w}(PosType)} \
+	R {set_editor_pos_type $w}
+
+add_separator	{Settings.S4}
 add_command     {Settings.Save Tag Macros}		1 0 {tag_macro_save}
 add_command	{Settings.Save Settings}		1 0 \
         {save_editor_settings $w}

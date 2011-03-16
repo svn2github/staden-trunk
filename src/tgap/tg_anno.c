@@ -109,6 +109,8 @@ int anno_ele_destroy(GapIO *io, anno_ele_t *e) {
     bin->rng_free = i;
     bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
+    bin_incr_nanno(io, bin, -1);
+
     return 0;
 }
 

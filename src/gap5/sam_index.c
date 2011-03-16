@@ -257,8 +257,15 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
     } else if (p->seq_offset == 0) {
 	i = 0;
     } else {
-	fprintf(stderr, "Data is not sorted by position. Aborting.\n");
-	exit(1);
+	fprintf(stderr, "Data is not sorted by position. "
+		"You will probably have incorrect alignments.\n");
+	//exit(1);
+
+	/*
+	 * Either the input data is unsorted (caught elsewhere?)
+	 * or the CIGAR string starts with a deletion.
+	 */
+	i = 0;
     }
 
     s->seq_len = i;
@@ -1492,8 +1499,13 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	r.mqual    = str2type(tag_type);
 	r.start    = tag_pos-1 + s.pos;
 	r.end      = tag_pos-1 + s.pos + tag_len-1;
-	r.pair_rec = (aux_key[1] == 'c') ? bio->c->rec : recno;
-	r.flags    = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+	if (aux_key[1] == 'c') {
+	    r.pair_rec = bio->c->rec;
+	    r.flags    = GRANGE_FLAG_ISANNO;
+	} else {
+	    r.pair_rec = recno;
+	    r.flags    = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+	}
 	r.rec      = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual,
 				  tag_text);
 
@@ -1538,6 +1550,9 @@ static int sam_check_unmapped(void *cd, bam_file_t *fp, pileup_t *p) {
 	bio_add_unmapped(bio, p->b);
     }
 
+    if ((bam_flag(p->b) & BAM_FDUP) && bio->a->remove_dups)
+	return 0;
+
     return 1;
 }
 
@@ -1553,7 +1568,6 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
     tid = p->b->ref;
     if (tid != bio->last_tid)
 	bio_new_contig(bio, tid);
-
 
     /* tg_index -g mode */
     if (bio->a->repad) {
@@ -1674,6 +1688,32 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
     }
     if (nth)
 	bio->n_inserts++;
+
+    /*
+     * Store mapping of reference to padded coordinates.
+     */
+    if (bio->a->store_refpos && nth) {
+	range_t r;
+	int ppos = bio->tree
+	    ? bio->npads +
+	    get_padded_coord(bio->tree,
+			     pos + bio->n_inserts - bio->npads)
+	    : pos + bio->n_inserts;
+
+	//printf("%csam_seqadd(..., pos=%d, nth=%d) => {%d, %d}\n",
+	//       " *"[nth > 0], pos, nth, pos, ppos);
+
+	r.start    = ppos;
+	r.end      = ppos;
+	r.rec      = tid;   /* ref seq ID */
+	r.pair_rec = 0;     /* size of deletion */
+	r.mqual    = pos;   /* map from ppos -> pos */
+	r.flags    = GRANGE_FLAG_ISREFPOS
+	           | GRANGE_FLAG_REFPOS_INS
+	           | GRANGE_FLAG_REFPOS_FWD;
+	
+	bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 1);
+    }
 
     return 0;
 }

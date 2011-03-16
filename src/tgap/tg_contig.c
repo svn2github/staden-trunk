@@ -150,7 +150,8 @@ static int contig_insert_base2(GapIO *io, tg_rec bnum,
 	     */
 
 	    /* Insert */
-	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
+		(r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
 		sequence_insert_base(io, &s, pos - MIN(r->start, r->end),
 				     base, conf, 0);
@@ -214,12 +215,98 @@ static int contig_insert_base2(GapIO *io, tg_rec bnum,
 
 int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
     contig_t *n;
+    int rpos, add_indel = 1;
+    bin_index_t *bin;
+    int bin_idx;
+    tg_rec bin_rec;
+    rangec_t rc;
+    tg_rec ref_id = 0;
+    int dir;
+
     if (!(n = cache_rw(io, *c)))
 	return -1;
     *c = n;
 
     contig_insert_base2(io, contig_get_bin(c), pos, contig_offset(io, c),
 			base, conf);
+
+    rpos = padded_to_reference_pos(io, (*c)->rec, pos, &dir, NULL);
+    rpos -= dir; /* Compensate for complemented contigs */
+
+    /* Add a pad marker too for reference adjustments */
+    if (find_refpos_marker(io, (*c)->rec, pos + 1,
+			   &bin_rec, &bin_idx, &rc) == 0) {
+	assert((rc.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS);
+	if ((rc.flags & GRANGE_FLAG_REFPOS_INDEL) == GRANGE_FLAG_REFPOS_DEL) {
+	    /* Existing deletion, so decrement and maybe remove */
+	    range_t *r;
+
+	    bin = cache_search(io, GT_Bin, bin_rec);
+	    bin = cache_rw(io, bin);
+	    r = arrp(range_t, bin->rng, bin_idx);
+
+	    if (rc.pair_rec <= 1) {
+		//printf("Remove DEL of size %d\n", rc.pair_rec);
+		r->flags |= GRANGE_FLAG_UNUSED;
+		r->rec = bin->rng_free;
+		bin->rng_free = bin_idx;
+		bin_incr_nrefpos(io, bin, -1);
+	    } else {
+		//printf("Decrement DEL of size %d\n", rc.pair_rec);
+		r->pair_rec--;
+	    }
+
+	    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+	    add_indel = 0;
+	}
+	ref_id = rc.rec;
+    }
+
+    if (add_indel &&
+	find_refpos_marker(io, (*c)->rec, pos - 1,
+			   &bin_rec, &bin_idx, &rc) == 0) {
+	assert((rc.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS);
+	if ((rc.flags & GRANGE_FLAG_REFPOS_INDEL) == GRANGE_FLAG_REFPOS_DEL) {
+	    /* Existing deletion, so decrement and maybe remove */
+	    range_t *r;
+
+	    bin = cache_search(io, GT_Bin, bin_rec);
+	    bin = cache_rw(io, bin);
+	    r = arrp(range_t, bin->rng, bin_idx);
+
+	    if (rc.pair_rec <= 1) {
+		//printf("Remove DEL of size %d\n", rc.pair_rec);
+		r->flags |= GRANGE_FLAG_UNUSED;
+		r->rec = bin->rng_free;
+		bin->rng_free = bin_idx;
+		bin_incr_nrefpos(io, bin, -1);
+	    } else {
+		//printf("Decrement DEL of size %d\n", rc.pair_rec);
+		r->pair_rec--;
+	    }
+
+	    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+	    add_indel = 0;
+	}
+	ref_id = rc.rec;
+    }
+
+    if (dir != -1 && add_indel) {
+	range_t r;
+
+	//printf("Adding insertion REFPOS at %d/%d\n", pos, rpos);
+	r.start    = pos;
+	r.end      = pos;
+	r.rec      = ref_id;
+	r.pair_rec = 0;
+	r.mqual    = rpos;
+
+	/* Dir needs checking */
+	r.flags    = GRANGE_FLAG_ISREFPOS
+	           | GRANGE_FLAG_REFPOS_INS
+	           | GRANGE_FLAG_REFPOS_FWD;
+	bin_add_range(io, c, &r, NULL, NULL, 0);
+    }
 
     contig_set_end(io, c, contig_get_end(c)+1);
 
@@ -289,15 +376,20 @@ static int contig_delete_base2(GapIO *io, tg_rec bnum,
 	     */
 	    if (MIN(r->start, r->end) == MAX(r->start, r->end)) {
 		/* Remove object entirely */
-		fprintf(stderr, "Delete sequence/tag #%"PRIrec"\n", r->rec);
+		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS) {
+		    fprintf(stderr, "Delete sequence/tag #%"PRIrec"\n",
+			    r->rec);
+		}
 		r->flags |= GRANGE_FLAG_UNUSED;
 		r->rec = bin->rng_free;
 
 		bin->rng_free = i;
 		bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+		bin_incr_nrefpos(io, bin, -1);
 	    } else {
 		/* Delete */
-		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
+		    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		    seq_t *s = cache_search(io, GT_Seq, r->rec);
 		    sequence_delete_base(io, &s,
 					 pos - MIN(r->start, r->end),
@@ -368,10 +460,113 @@ static int contig_delete_base2(GapIO *io, tg_rec bnum,
 
 int contig_delete_base(GapIO *io, contig_t **c, int pos) {
     contig_t *n;
+    int bin_idx;
+    tg_rec bin_rec;
+    rangec_t rc;
+    int cur_del = 0;
+    int done = 0;
 
     if (!(n = cache_rw(io, *c)))
 	return -1;
     *c = n;
+
+    /*
+     * Look for a pad marker too. If we don't have one, create one to mark
+     * a deletion from reference.
+     * If we do have one neighbouring, either increment it (if deletion) or
+     * remove it (if insertion).
+     */
+    if (find_refpos_marker(io, (*c)->rec, pos, &bin_rec, &bin_idx, &rc) == 0) {
+	range_t *r;
+	bin_index_t *bin;
+
+	assert((rc.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS);
+
+	bin = cache_search(io, GT_Bin, bin_rec);
+	bin = cache_rw(io, bin);
+	r = arrp(range_t, bin->rng, bin_idx);
+
+	if ((rc.flags & GRANGE_FLAG_REFPOS_INDEL) == GRANGE_FLAG_REFPOS_INS) {
+	    /* Existing insertion, so remove it */
+	    //printf("Remove insertion marker\n");
+	    r->flags |= GRANGE_FLAG_UNUSED;
+	    r->rec = bin->rng_free;
+	    bin->rng_free = bin_idx;
+	    bin_incr_nrefpos(io, bin, -1);
+	    done = 1;
+	} else {
+	    /* Existing deletion, add it to neighbouring position */
+	    //printf("DEL %d marker to apply to right\n", r->pair_rec);
+	    cur_del = r->pair_rec;
+	}
+
+	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+    }
+
+    if (!done && find_refpos_marker(io, (*c)->rec, pos+1, &bin_rec,
+				    &bin_idx, &rc) == 0) {
+	range_t *r;
+	bin_index_t *bin;
+	int ins_type;
+
+	assert((rc.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS);
+
+	bin = cache_search(io, GT_Bin, bin_rec);
+	bin = cache_rw(io, bin);
+	r = arrp(range_t, bin->rng, bin_idx);
+
+	ins_type = (rc.flags & GRANGE_FLAG_REFPOS_INDEL);
+	cur_del++;
+
+	if (ins_type == GRANGE_FLAG_REFPOS_INS && cur_del == 1) {
+	    //printf("Remove INS marker\n");
+	    /* 1 del + 1 ins => remove marker */
+	    r->flags |= GRANGE_FLAG_UNUSED;
+	    r->rec = bin->rng_free;
+	    bin->rng_free = bin_idx;
+	    bin_incr_nrefpos(io, bin, -1);
+	} else {
+	    /* Otherwise N del + 1 ins => N-1 del */
+	    if (ins_type == GRANGE_FLAG_REFPOS_INS) {
+		cur_del--;
+		r->flags &= ~GRANGE_FLAG_REFPOS_INDEL;
+		r->flags |= GRANGE_FLAG_REFPOS_DEL;
+		r->pair_rec = cur_del;
+		//printf("Replace INS with DEL %d\n", r->pair_rec);
+	    } else {
+		/* N del + M ndel => N+M del */
+		//printf("Inc DEL %d to DEL %d\n",
+		//       r->pair_rec, r->pair_rec + cur_del);
+		r->pair_rec += cur_del;
+	    }
+	}
+	
+	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+
+    } else if (!done) {
+	/* No existing marker at pos or pos+1 => a new +1 DEL marker */
+	range_t r;
+	int dir;
+	int rpos = padded_to_reference_pos(io, (*c)->rec, pos+1, &dir, NULL);
+
+	if (dir != -1) {
+	    rpos += dir; /* Compensate for complemented contigs */
+
+	    /* Create a deletion marker */
+	    //printf("Adding deletion REFPOS at %d/%d\n", pos, rpos);
+	    r.start    = pos+1;
+	    r.end      = pos+1;
+	    r.rec      = 0;
+	    r.pair_rec = 1+cur_del;
+	    r.mqual    = rpos;
+
+	    /* Dir needs checking */
+	    r.flags    = GRANGE_FLAG_ISREFPOS
+		| GRANGE_FLAG_REFPOS_DEL
+		| GRANGE_FLAG_REFPOS_FWD;
+	    bin_add_range(io, c, &r, NULL, NULL, 0);
+	} /* else no refpos data => don't keep tracking it */
+    }
 
     contig_delete_base2(io, contig_get_bin(c), pos, contig_offset(io, c));
 
@@ -778,9 +973,11 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
 	for (i = j = 0; i < nr; i++) {
 #ifdef CACHED_CONS_VISIBLE
-	    if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
+		(r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 #else
-		if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO &&
+		if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS&&
+		    (r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO &&
 		    (r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
 #endif
 		    r[i].y = j++;
@@ -801,9 +998,11 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
     /* Compute Y coords */
     for (i = 0; i < nr; i++) {
 #ifdef CACHED_CONS_VISIBLE
-	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS ||
+	    (r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
 #else
-	    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO ||
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS ||
+		(r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO ||
 		(r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS)
 #endif
 		{
@@ -1118,7 +1317,7 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
     }
 
     /* Recurse down bins */
-    for (i = 0; i < 2 > 0; i++) {
+    for (i = 0; i < 2; i++) {
 	bin_index_t *ch;
 	if (!bin->child[i])
 	    continue;
@@ -1256,6 +1455,7 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
     rangec_t *r = NULL;
     int alloc = 0;
     
+
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISSEQ);
@@ -1315,6 +1515,23 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 
 	if (job & CSIR_SORT_BY_Y)
 	    qsort(r, *count, sizeof(*r), sort_range_by_y);
+    }
+
+    return r;
+}
+
+rangec_t *contig_refpos_in_range(GapIO *io, contig_t **c, int start, int end,
+				 int job, int *count) {
+    rangec_t *r = NULL;
+    int alloc = 0;
+
+    *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
+				   contig_offset(io, c), &r, &alloc, 0, 0,
+				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISREFPOS);
+
+    if (r) {
+	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+	    qsort(r, *count, sizeof(*r), sort_range_by_x);
     }
 
     return r;
@@ -1403,7 +1620,7 @@ static int contig_cons_in_range2(GapIO *io, tg_rec bin_num,
     }
 
     /* Recurse down bins */
-    for (i = 0; i < 2 > 0; i++) {
+    for (i = 0; i < 2; i++) {
 	bin_index_t *ch;
 	if (!bin->child[i])
 	    continue;
@@ -1572,6 +1789,370 @@ void contig_bin_dump(GapIO *io, tg_rec cnum) {
 /* ---------------------------------------------------------------------- */
 /* iterators on a contig to allow scanning back and forth */
 
+/* Block size for iterator fetches */
+#define CITER_BS 10000
+
+/*
+ * Similar to contig_bins_in_range(), but checking for the first bin to
+ * contain data of a specific type rather than to overlap a specific
+ * range.
+ *
+ * Given start we try to find the first bin with coordinate >= start that
+ * contains somewhere within it an object of 'type'. This allows us to
+ * rapidly search for needles in haystacks (eg refpos markers in an
+ * illumina assembly) by skipping down the bin tree rather than linearly
+ * scanning through all objects.
+ *
+ * It does this using the nseqs, nrefpos or nannos fields in bin_index_t,
+ * which act as accumulative figures for the number of these object types
+ * in this bin plus children.
+ *
+ * Returns the next starting position, or best_start if none found.
+ */
+static int range_next_by_type2(GapIO *io, contig_t *c, int bin_num,
+			       int offset, int comp, int start, int type,
+			       int best_start) {
+    bin_index_t *bin = get_bin(io, bin_num);
+    int i, j, f_a, f_b, n_in_this;
+    int child_pos[2], order[2], child_total;
+
+    switch (type) {
+    case GRANGE_FLAG_ISSEQ:
+	if (bin->nseqs <= 0)
+	    return best_start;
+	n_in_this = bin->nseqs;
+	break;
+
+    case GRANGE_FLAG_ISANNO:
+	if (bin->nanno <= 0)
+	    return best_start;
+	n_in_this = bin->nanno;
+	break;
+
+    case GRANGE_FLAG_ISREFPOS:
+	if (bin->nrefpos <= 0)
+	    return best_start;
+	n_in_this = bin->nrefpos;
+	break;
+
+    case GRANGE_FLAG_ISANY:
+	if (bin->nseqs + bin->nanno + bin->nrefpos <= 0)
+	    return best_start;
+	n_in_this = bin->nseqs + bin->nanno + bin->nrefpos;
+	break;
+
+    default:
+	fprintf(stderr, "Unknown type given to range_next_by_type2\n");
+	return best_start;
+    }
+
+    cache_incr(io, bin);
+    if (bin->flags & BIN_COMPLEMENTED) {
+	comp ^= 1;
+    }
+
+    if (comp) {
+	f_a = -1;
+	f_b = offset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = offset;
+    }
+
+    /* Determine left to right order of children (varies if complemented) */
+    /* Also compute sum of data in children while we're at it */
+    child_total = 0;
+    for (i = 0; i < 2; i++) {
+	bin_index_t *ch;
+
+	if (!bin->child[i]) {
+	    child_pos[i] = INT_MAX;
+	    continue;
+	}
+	ch = get_bin(io, bin->child[i]);
+	child_pos[i] = NMIN(ch->pos,  ch->pos + ch->size-1);
+
+	switch (type) {
+	case GRANGE_FLAG_ISSEQ:
+	    child_total += ch->nseqs;
+	    break;
+
+	case GRANGE_FLAG_ISANNO:
+	    child_total += ch->nanno;
+	    break;
+
+	case GRANGE_FLAG_ISREFPOS:
+	    child_total += ch->nrefpos;
+	    break;
+
+	case GRANGE_FLAG_ISANY:
+	    child_total += ch->nseqs + ch->nanno + ch->nrefpos;
+	    break;
+	}
+    }
+    /* Need to generalise if we have > 2 children ever */
+    if (child_pos[0] < child_pos[1]) {
+	order[0] = 0;
+	order[1] = 1;
+    } else {
+	order[0] = 1;
+	order[1] = 0;
+    }
+
+    if (bin->rng &&
+	best_start > NMIN(bin->start_used, bin->end_used) &&
+	start     <= NMAX(bin->start_used, bin->end_used)) {
+	/* Bin overlaps, but possibly the items are in children */
+	if (n_in_this > child_total)
+	    best_start = NMIN(bin->start_used, bin->end_used);
+    }
+
+    if (best_start <= start) {
+	return start;
+    }
+
+    /* Recurse down bins */
+    for (i = 0; i < 2; i++) {
+	bin_index_t *ch;
+	if (!bin->child[order[i]])
+	    continue;
+
+	ch = get_bin(io, bin->child[order[i]]);
+
+	switch (type) {
+	case GRANGE_FLAG_ISSEQ:
+	    if (ch->nseqs <= 0)
+		continue;
+	    break;
+
+	case GRANGE_FLAG_ISANNO:
+	    if (ch->nanno <= 0)
+		continue;
+	    break;
+
+	case GRANGE_FLAG_ISREFPOS:
+	    if (ch->nrefpos <= 0)
+		continue;
+	    break;
+
+	case GRANGE_FLAG_ISANY:
+	    if (ch->nseqs + ch->nanno + ch->nrefpos <= 0)
+		continue;
+	    break;
+	}
+
+	if (NMAX(ch->pos, ch->pos + ch->size-1) < start)
+	    continue;
+
+	if (NMIN(ch->pos, ch->pos + ch->size-1) < best_start) {
+	    int b;
+
+	    b = range_next_by_type2(io, c, bin->child[order[i]],
+				    NMIN(ch->pos, ch->pos + ch->size-1),
+				    comp, start, type, best_start);
+
+	    if (best_start > b)
+		best_start = b;
+	}
+    }
+
+    cache_decr(io, bin);
+
+    return best_start;
+}
+
+/*
+ * See comments above range_next_by_type2() for the algorithm details.
+ *
+ * We return a new coordinate >= start such that there are no objects of
+ * a given type between this coordinate and start - essentially skipping
+ * through the contig faster than a linear scan could achieve.
+ */
+static int range_next_by_type(GapIO *io, tg_rec cnum, int start, int type) {
+    contig_t *c = cache_search(io, GT_Contig, cnum);
+    int ret;
+
+    cache_incr(io, c);
+    ret = range_next_by_type2(io, c,
+			      contig_get_bin(&c), contig_offset(io, &c),
+			      0 /* comp */, start, type, INT_MAX);
+    cache_decr(io, c);
+
+    return ret;
+}
+
+static int range_prev_by_type2(GapIO *io, contig_t *c, int bin_num,
+			       int offset, int comp, int start, int type,
+			       int best_start) {
+    bin_index_t *bin = get_bin(io, bin_num);
+    int i, j, f_a, f_b, n_in_this;
+    int child_pos[2], order[2], child_total;
+
+    switch (type) {
+    case GRANGE_FLAG_ISSEQ:
+	if (bin->nseqs <= 0)
+	    return best_start;
+	n_in_this = bin->nseqs;
+	break;
+
+    case GRANGE_FLAG_ISANNO:
+	if (bin->nanno <= 0)
+	    return best_start;
+	n_in_this = bin->nanno;
+	break;
+
+    case GRANGE_FLAG_ISREFPOS:
+	if (bin->nrefpos <= 0)
+	    return best_start;
+	n_in_this = bin->nrefpos;
+	break;
+
+    case GRANGE_FLAG_ISANY:
+	if (bin->nseqs + bin->nanno + bin->nrefpos <= 0)
+	    return best_start;
+	n_in_this = bin->nseqs + bin->nanno + bin->nrefpos;
+	break;
+
+    default:
+	fprintf(stderr, "Unknown type given to range_prev_by_type2\n");
+	return best_start;
+    }
+
+    cache_incr(io, bin);
+    if (bin->flags & BIN_COMPLEMENTED) {
+	comp ^= 1;
+    }
+
+    if (comp) {
+	f_a = -1;
+	f_b = offset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = offset;
+    }
+
+    /* Determine left to right order of children (varies if complemented) */
+    /* Also compute sum of data in children while we're at it */
+    child_total = 0;
+    for (i = 0; i < 2; i++) {
+	bin_index_t *ch;
+
+	if (!bin->child[i]) {
+	    child_pos[i] = INT_MAX;
+	    continue;
+	}
+	ch = get_bin(io, bin->child[i]);
+	child_pos[i] = NMIN(ch->pos,  ch->pos + ch->size-1);
+
+	switch (type) {
+	case GRANGE_FLAG_ISSEQ:
+	    child_total += ch->nseqs;
+	    break;
+
+	case GRANGE_FLAG_ISANNO:
+	    child_total += ch->nanno;
+	    break;
+
+	case GRANGE_FLAG_ISREFPOS:
+	    child_total += ch->nrefpos;
+	    break;
+
+	case GRANGE_FLAG_ISANY:
+	    child_total += ch->nseqs + ch->nanno + ch->nrefpos;
+	    break;
+	}
+    }
+    /* Need to generalise if we have > 2 children ever */
+    if (child_pos[0] < child_pos[1]) {
+	order[0] = 1;
+	order[1] = 0;
+    } else {
+	order[0] = 0;
+	order[1] = 1;
+    }
+
+    if (bin->rng &&
+	best_start < NMAX(bin->start_used, bin->end_used) &&
+	start     >= NMIN(bin->start_used, bin->end_used)) {
+	/* Bin overlaps, but possibly the items are in children */
+	if (n_in_this > child_total)
+	    best_start = NMAX(bin->start_used, bin->end_used);
+    }
+
+    if (best_start >= start) {
+	return start;
+    }
+
+    /* Recurse down bins */
+    for (i = 0; i < 2; i++) {
+	bin_index_t *ch;
+	if (!bin->child[order[i]])
+	    continue;
+
+	ch = get_bin(io, bin->child[order[i]]);
+
+	switch (type) {
+	case GRANGE_FLAG_ISSEQ:
+	    if (ch->nseqs <= 0)
+		continue;
+	    break;
+
+	case GRANGE_FLAG_ISANNO:
+	    if (ch->nanno <= 0)
+		continue;
+	    break;
+
+	case GRANGE_FLAG_ISREFPOS:
+	    if (ch->nrefpos <= 0)
+		continue;
+	    break;
+
+	case GRANGE_FLAG_ISANY:
+	    if (ch->nseqs + ch->nanno + ch->nrefpos <= 0)
+		continue;
+	    break;
+	}
+
+	if (NMIN(ch->pos, ch->pos + ch->size-1) > start)
+	    continue;
+
+	if (NMAX(ch->pos, ch->pos + ch->size-1) > best_start) {
+	    int b;
+
+	    b = range_prev_by_type2(io, c, bin->child[order[i]],
+				    NMIN(ch->pos, ch->pos + ch->size-1),
+				    comp, start, type, best_start);
+
+	    if (best_start < b)
+		best_start = b;
+	}
+    }
+
+    cache_decr(io, bin);
+
+    return best_start;
+}
+
+/*
+ * See comments above range_next_by_type2() for the algorithm details.
+ *
+ * We return a new coordinate <= start such that there are no objects of
+ * a given type between this coordinate and start - essentially skipping
+ * through the contig faster than a linear scan could achieve.
+ */
+static int range_prev_by_type(GapIO *io, tg_rec cnum, int start, int type) {
+    contig_t *c = cache_search(io, GT_Contig, cnum);
+    int ret;
+
+    cache_incr(io, c);
+    ret = range_prev_by_type2(io, c,
+			      contig_get_bin(&c), contig_offset(io, &c),
+			      0 /* comp */, start, type, INT_MIN);
+    cache_decr(io, c);
+
+    return ret;
+}
+
 /*
  * Populates a sequence iterator.
  * Returns 0 on success
@@ -1619,6 +2200,9 @@ static int range_populate(GapIO *io, contig_iterator *ci,
     else if (ci->type == GRANGE_FLAG_ISANNO)
 	ci->r = contig_anno_in_range(io, &c, start, end,
 				     ci->sort_mode, &ci->nitems);
+    else if (ci->type == GRANGE_FLAG_ISREFPOS)
+	ci->r = contig_refpos_in_range(io, &c, start, end,
+				       ci->sort_mode, &ci->nitems);
     else
 	ci->r = contig_items_in_range(io, &c, start, end,
 				      ci->sort_mode, &ci->nitems);
@@ -1693,10 +2277,10 @@ contig_iterator *contig_iter_new_by_type(GapIO *io, tg_rec cnum,
 
     if ((whence & CITER_FL_MASK) == CITER_FIRST) {
 	start = ci->cstart;
-	end   = start + 9999;
+	end   = start + CITER_BS-1;
     } else {
 	end   = ci->cend;
-	start = end - 9999;
+	start = end - CITER_BS+1;
     }
 
     if (0 != range_populate(io, ci, cnum, start, end)) {
@@ -1726,21 +2310,30 @@ contig_iterator *contig_iter_new(GapIO *io, tg_rec cnum, int auto_extend,
  *        NULL on failure (typically fallen off the end of the contig)
  */
 rangec_t *contig_iter_next(GapIO *io, contig_iterator *ci) {
-    rangec_t *r;
+    rangec_t *r = NULL;
 
     for (;;) {
 	while (ci->index >= ci->nitems) {
+	    int candidate;
+
 	    /* Fallen off the range edge */
 	    //	if (!ci->auto_extend)
 	    //	    return NULL;
 
+	    candidate = range_next_by_type(io, ci->cnum, ci->start + CITER_BS,
+					   ci->type);
+
 	    if (-1 == range_populate(io, ci, ci->cnum,
-				     ci->start + 10000, ci->end + 10000))
+	    			     candidate, candidate + CITER_BS-1))
+				     //ci->start + CITER_BS, ci->end + CITER_BS))
 		return NULL;
 
 	    ci->index = 0;
 	    ci->first_r = 0;
 	}
+
+	if (ci->nitems == 0)
+	    return NULL;
 
 	/*
 	 * The first range query we start from the first item, even if it's
@@ -1765,12 +2358,19 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
 
     for (;;) {
 	while (ci->index < 0 || ci->nitems == 0) {
+	    int candidate;
+
 	    /* Fallen off the range edge */
 	    //	if (!ci->auto_extend)
 	    //	    return NULL;
 	    
+	    candidate = range_prev_by_type(io, ci->cnum, ci->end - CITER_BS,
+					   ci->type);
+	    
 	    if (-1 == range_populate(io, ci, ci->cnum,
-				     ci->start - 10000, ci->end - 10000))
+				     candidate - CITER_BS+1, candidate))
+	    //if (-1 == range_populate(io, ci, ci->cnum,
+	    //ci->start - CITER_BS, ci->end - CITER_BS))
 		return NULL;
 	    
 
@@ -1779,9 +2379,9 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
 	}
 
 	while (ci->index >= 0 && (r = &ci->r[ci->index--])) {
-	    if (r->start <= ci->end)
+	    if (r->end <= ci->end)
 		return r;
-	    else if (ci->first_r && r->end <= ci->start)
+	    else if (ci->first_r && r->start <= ci->end)
 		return r;
 	}
     }
@@ -1870,7 +2470,7 @@ static int contig_get_track2(GapIO *io, tg_rec bin_num, int start, int end,
 	return count;
 
     /* Recurse down bins */
-    for (i = 0; i < 2 > 0; i++) {
+    for (i = 0; i < 2; i++) {
 	bin_index_t *ch;
 	if (!bin->child[i]) {
 	    /* No data available, so fill with zero values */
@@ -2140,25 +2740,46 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 	}
 	scale = 800.0 / bin->size;
 	o -= offset * scale;
-	fprintf(gv, "%%!\n/Times-Roman findfont\n5 scalefont\nsetfont\n"
-		"%d %d translate\n90 rotate\nnewpath\n", 90+H, o);
+	fprintf(gv, "%%!\n"
+		"/l{lineto}def\n"
+		"/L{rlineto}def\n"
+		"/m{moveto}def\n"
+		"/M{rmoveto}def\n"
+		"/g{setgray}def\n"
+		"/s{stroke}def\n"
+		"/S{show}def\n"
+		"/w{setlinewidth}def\n"
+		"/f{\n"
+		"    /Times-Roman findfont\n"
+		"    exch 2 mul qscalefont\n"
+		"    setfont\n"
+		"}def\n"
+		"5 f\n"
+		"%d %d translate\n"
+		"90 rotate\n"
+		"newpath\n\n",
+		90+H, o);
 
 	for (i = 0; i < 100; i++) {
 	    level_end[i] = -1e10;
 	    level_st[i] = 1e10;
 	}
 
-	fprintf(gv, "%f %d moveto (%d) show\n",
+	fprintf(gv, "%g %d m (%d) S\n",
 		scale * (*c)->start, level*(H+G)+H+20+7, (*c)->start);
-	fprintf(gv, "%f %d moveto (%d) show\n",
+	fprintf(gv, "%g %d m (%d) S\n",
 		scale * (*c)->end, level*(H+G)+H+20+7, (*c)->end);
-	fprintf(gv, "2 setlinewidth\n"
-		"%f %d moveto 0 3 rmoveto 0 -6 rlineto 0 3 rmoveto\n"
-		"%f %d lineto 0 3 rmoveto 0 -6 rlineto 0 3 rmoveto stroke\n"
-		"1 setlinewidth\n",
+	fprintf(gv, "2 w\n"
+		"1 setlinecap\n"
+		"%g %d m 0 3 M 0 -6 L 0 3 M\n"
+		"%g %d l 0 3 M 0 -6 L 0 3 M s\n"
+		"1 w\n",
 		scale * (*c)->start, level*(H+G)+H+20,
 		scale * (*c)->end,    level*(H+G)+H+20);
     }
+
+    fprintf(gv, "\n%g f\n", 5 * pow(0.8, -level));
+    fprintf(gv, "%g w\n", 2 * pow(0.8, -level));
 
     for (i = -level; i < 100; i++) {
 	double p1 = scale * offset;
@@ -2174,7 +2795,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     /* linking lines */
     if (rootx || rooty) {
 	g = child == 0 ? 0.6 : 0.9;
-	fprintf(gv, "%f setgray %f %f moveto %f %d lineto stroke\n",
+	fprintf(gv, "%g g %g %g m %g %d l s\n",
 		g, rootx, rooty,
 		scale*(offset+bin->size/2),
 		level*(H+G)+H);
@@ -2184,7 +2805,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 
     if (level >= -8) {
 	/* Inner grey box showing the used portion */
-	fprintf(gv, "0.8 setgray %f %d moveto %f 0 rlineto 0 %d rlineto -%f 0 rlineto 0 -%d rlineto stroke\n",
+	fprintf(gv, "0.8 g %g %d m %g 0 L 0 %d L -%g 0 L 0 -%d L s\n",
 		scale * NMIN(bin->start_used, bin->end_used), level*(H+G)+3,
 		scale * (NMAX(bin->start_used, bin->end_used) -
 			 NMIN(bin->start_used, bin->end_used)),
@@ -2194,7 +2815,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 		H-6);
 	
 	/* bin offset */
-	fprintf(gv, "0.5 setgray %f %d moveto (%d) show\n",
+	fprintf(gv, "0.5 g %g %d m (%d) S\n",
 		scale * offset, level*(H+G)-7, offset);
     }
 
@@ -2207,10 +2828,13 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 	    range_t *r = arrp(range_t, bin->rng, n);
 	    int start = NORM(r->start), end = NORM(r->end);
 
-	    fprintf(gv, "%f setgray\n",
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
+
+	    fprintf(gv, "%g g ",
 		    (r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ
 		    ? 0 : 0.5);
-	    fprintf(gv, "%f %f moveto %f 0 rlineto\n",
+	    fprintf(gv, "%g %g m %g 0 L s\n",
 		    scale * MIN(start, end),
 		    level*(H+G)+3 + ((double)n/(ArrayMax(bin->rng)+1))*(H-6),
 		    scale * abs(end-start));
@@ -2220,7 +2844,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 
     /* Outer bin bounding box */
     g = complement ? 0.5 : 0;
-    fprintf(gv, "%f setgray %f %d moveto %f 0 rlineto 0 %d rlineto -%f 0 rlineto 0 -%d rlineto stroke\n",
+    fprintf(gv, "%g g %g %d m %g 0 L 0 %d L -%g 0 L 0 -%d L s\n",
 	    g, scale * offset, level*(H+G), scale * bin->size,
 	    H, scale * bin->size, H);
 
@@ -2231,19 +2855,19 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 
     /* bin start_used position */
     if (bin->rng)
-	fprintf(gv, "%f %d moveto (%d) show\n",
+	fprintf(gv, "%g %d m (%d) S\n",
 		scale * NMIN(bin->start_used, bin->end_used),
 		level*(H+G)+H+2,
 		NMIN(bin->start_used, bin->end_used));
     else
-	fprintf(gv, "%f %d moveto (empty) show\n",
+	fprintf(gv, "%g %d m (empty) S\n",
 		scale * offset,
 		level*(H+G)+H+2);
 
     /* Bin record ID */
-    fprintf(gv, "%f %d moveto (#%"PRIrec"/%d) show\n",
+    fprintf(gv, "%g %d m (#%"PRIrec"/%d/%d) S\n",
 	    scale * (offset+bin->size/2)-10, level*(H+G)+H/2-2, bin->rec,
-	    bin->nseqs);
+	    bin->nseqs, bin->nrefpos);
 
     fflush(gv);
 
@@ -2288,3 +2912,346 @@ void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
 }
 
 
+/* -------------------------------------------------------------------------
+ * Padded / reference coordinate mappings.
+ */
+
+/*
+ * Convert a padded coordinate to a reference coordinate.
+ * *dir_p is filled out, if non-null, to hold the direction we count in
+ * when going right. -1 => no data (no ref), 0 => upwards, 1 => downwards.
+ * ref_id, if non-null, will be returned containing the reference ID used
+ * for computing the reference position; -1 if not known
+ */
+int padded_to_reference_pos(GapIO *io, tg_rec cnum, int ppos, int *dir_p,
+			    int *ref_id) {
+    contig_iterator *ci;
+    rangec_t *r;
+    int rpos;
+    int orient;
+    int dir;
+
+    ci = contig_iter_new_by_type(io, cnum, 1, CITER_FIRST | CITER_ISTART, 
+				 ppos, CITER_CEND, GRANGE_FLAG_ISREFPOS);
+
+    if (!ci) {
+	if (ref_id) *ref_id = -1;
+	if (dir_p)  *dir_p  = -1;
+	return ppos;
+    }
+
+    r = contig_iter_next(io, ci);
+
+    /*
+     * Maybe we're at the end of the contig. If so we search backwards instead
+     * of forwards to find the previous REFPOS marker.
+     */
+    if (!r) {
+	contig_iter_del(ci);
+	ci = contig_iter_new_by_type(io, cnum, 1, CITER_LAST | CITER_ISTART,
+				     CITER_CSTART, ppos, GRANGE_FLAG_ISREFPOS);
+	if (!ci) {
+	    if (ref_id) *ref_id = -1;
+	    if (dir_p)  *dir_p  = -1;
+	    return ppos;
+	}
+
+	r = contig_iter_prev(io, ci);
+	if (!r) {
+	    contig_iter_del(ci);
+	    if (dir_p)  *dir_p = -1;
+	    if (ref_id) *ref_id = -1;
+	    return ppos;
+	}
+
+	dir = 0 ^ r->comp;
+    } else {
+	dir = 1 ^ r->comp;
+    }
+
+    if (((r->flags & GRANGE_FLAG_REFPOS_DIR) == GRANGE_FLAG_REFPOS_FWD) ^ r->comp)
+	rpos = r->mqual + (ppos - r->start + dir);
+    else
+	rpos = r->mqual - (ppos - r->start - dir);
+
+    if ((r->flags & GRANGE_FLAG_REFPOS_INDEL) == GRANGE_FLAG_REFPOS_DEL) {
+	if (dir == 1) /* fwd */
+	    rpos -= (ppos < r->start) * r->pair_rec + 1;
+    }
+    
+    if (dir_p)
+	*dir_p = r->comp;
+    if (ref_id)
+	*ref_id = r->rec;
+
+    contig_iter_del(ci);
+
+    return rpos;
+}
+
+/*
+ * Looks for a refpos marker at position ppos. If it finds one it returns
+ * 0 and sets the bin and bin_idx fields.
+ *
+ * If it doesn't, it returns -1;
+ */
+int find_refpos_marker(GapIO *io, tg_rec cnum, int ppos,
+		       tg_rec *bin_r, int *bin_idx_r, rangec_t *rp) {
+    contig_iterator *ci;
+    rangec_t *r;
+
+    if (bin_r)
+	*bin_r = 0;
+    if (bin_idx_r)
+	*bin_idx_r = 0;
+
+    ci = contig_iter_new_by_type(io, cnum, 0, CITER_FIRST | CITER_ISTART, 
+				 ppos, ppos, GRANGE_FLAG_ISREFPOS);
+    if (!ci)
+	return -1;
+
+    r = contig_iter_next(io, ci);
+
+    if (!r) {
+	contig_iter_del(ci);
+	return -1;
+    }
+
+    if (r->start == ppos && r->end == ppos) {
+	*bin_r = r->orig_rec;
+	*bin_idx_r = r->orig_ind;
+	*rp = *r;
+	contig_iter_del(ci);
+	return 0;
+    }
+
+    contig_iter_del(ci);
+    return -1;
+}
+
+
+/*
+ * Converts a range of padded coordinates to reference coordinates.
+ * Optionally also fills out a reference seq ID array too, if non-NULL.
+ *
+ * ref_pos and ref_id should be allocated by the caller to be of
+ * appropriate size (paddeed_end - padded_start + 1).
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int padded_to_reference_array(GapIO *io, tg_rec cnum,
+			      int padded_start, int padded_end,
+			      int *ref_pos, int *ref_id) {
+    int dir, rpos, i, rid;
+    contig_iterator *ci;
+    int len = padded_end - padded_start + 1;
+    rangec_t *r;
+
+    /* Starting point */
+    rpos = padded_to_reference_pos(io, cnum, padded_start, &dir, &rid);
+    switch (dir) {
+    case -1: dir = +1; break; /* guess */
+    case  0: dir = +1; break;
+    case  1: dir = -1; break;
+    }
+
+    /* Now iterate from here up to padded_end */
+    ci = contig_iter_new_by_type(io, cnum, 0, CITER_FIRST | CITER_ISTART, 
+				 padded_start, padded_end,
+				 GRANGE_FLAG_ISREFPOS);
+    if (!ci) {
+	for (i = 0; i < len; i++) {
+	    ref_pos[i] = rpos;
+	    rpos += dir;
+	    if (ref_id)
+		ref_id[i] = rid;
+	}
+	return 0;
+    }
+
+    i = 0;
+    while ((r = contig_iter_next(io, ci))) {
+	int fwd;
+
+	while (i < len && padded_start < r->start) {
+	    ref_pos[i] = rpos;
+	    rpos += dir;
+	    rid = r->rec;
+	    if (ref_id)
+		ref_id[i] = rid;
+	    i++;
+	    padded_start++;
+	}
+
+	dir = 1 ^ r->comp;
+
+	fwd = ((r->flags & GRANGE_FLAG_REFPOS_DIR) == GRANGE_FLAG_REFPOS_FWD);
+	if (fwd ^ r->comp)
+	    rpos = r->mqual + (padded_start - r->start + dir);
+	else
+	    rpos = r->mqual - (padded_start - r->start - dir);
+
+	if ((r->flags & GRANGE_FLAG_REFPOS_INDEL) == GRANGE_FLAG_REFPOS_DEL) {
+	    if (dir == 1) /* fwd */
+		rpos -= (padded_start < r->start) * r->pair_rec + 1;
+	} else {
+	    ref_pos[i] = rpos;
+	    if (ref_id)
+		ref_id[i] = -1; /* indel */
+	    i++;
+	    padded_start++;
+	}
+    }
+
+    while (i < len) {
+	ref_pos[i] = rpos;
+	rpos += dir;
+	if (ref_id)
+	    ref_id[i] = rid;
+	i++;
+    }
+
+    return 0;
+}
+
+
+/*
+ * Given a contig record and a reference position, attempt to return
+ * the padded coordinate. Note this may not exist, it may in extreme cases
+ * exist multiple times (after breaking and rejoining), or it may exist
+ * only once but be too hard to discover. If we don't care which specific
+ * reference ID to search, pass in ref_id == -1.
+ *
+ * We only attempt to tackle easy cases of a single reference in this contig
+ * with monotonically increasing or decreasing values. (We need more data
+ * stored to allow arbitrary queries to be fast.)
+ *
+ * Returns 0 on success, position stored in *padded_pos.
+ *        -1 on failure, *padded_pos undefined.
+ */
+int reference_to_padded_pos(GapIO *io, tg_rec cnum, int ref_id, int ref_pos,
+			    int *padded_pos) {
+    int dir_s, dir_e, dir, rid;
+    contig_t *c = cache_search(io, GT_Contig, cnum);
+    int cstart = c->start;
+    int cend = c->end;
+    int rstart, rend;
+    int cguess, rguess;
+
+    /* FIXME: ignoring ref_id for now */
+
+    rstart = padded_to_reference_pos(io, cnum, cstart, &dir_s, &rid);
+    if (ref_id != -1 && rid != ref_id)
+	return -1;
+
+    rend   = padded_to_reference_pos(io, cnum, cend,   &dir_e, &rid);
+    if (ref_id != -1 && rid != ref_id)
+	return -1;
+
+    if (dir_s != dir_e)
+	return -1;
+
+    if (ref_pos == rstart) {
+	*padded_pos = cstart;
+	return 0;
+    } else if (ref_pos == rend) {
+	*padded_pos = cend;
+	return 0;
+    }
+
+
+    while ((dir_s == 0 && ref_pos >= rstart && ref_pos <= rend) ||
+	   (dir_s == 1 && ref_pos <= rstart && ref_pos >= rend)) {
+
+	/* Make a guess */
+	cguess = (ref_pos - rstart) / (rend - rstart + .0) * (cend - cstart)
+	    + cstart;
+
+	/*
+	 * Same as previous guess, but still not found it. Maybe it doesn't
+	 * exist (eg deletion), so return the guess anyway
+	 */
+	if (cguess == cstart || cguess == cend) {
+	    *padded_pos = cguess;
+	    return 0;
+	}
+
+	rguess = padded_to_reference_pos(io, cnum, cguess, &dir, &rid);
+	if (ref_id != -1 && rid != ref_id)
+	    return -1;
+
+	//printf("(%d,%d)..(%d,%d) => guess (%d,%d)\n",
+	//       cstart, rstart,  cend, rend,  cguess, rguess);
+
+	if (rguess == ref_pos) {
+	    *padded_pos = cguess;
+	    return 0;
+	}
+
+	if (rguess < ref_pos) {
+	    cstart = cguess;
+	    rstart = rguess;
+	} else {
+	    cend = cguess;
+	    rend = rguess;
+	}
+    }
+
+    return -1;
+}
+
+/*
+ * As above, but starting from a single known point on that reference.
+ * This allows for reference positions to occur more than once.
+ */
+int reference_to_padded_pos2(GapIO *io, tg_rec cnum, int ref_id, int ref_pos,
+			     int cur_padded_pos, int *padded_pos) {
+    int dir, rid;
+    contig_t *c = cache_search(io, GT_Contig, cnum);
+    int cguess, rguess, cpos, rpos, try;
+    int last1 = INT_MAX, last2 = INT_MAX;
+
+    cpos = cur_padded_pos;
+    rpos = padded_to_reference_pos(io, cnum, cpos, &dir, &rid);
+
+    printf("\nLooking for %d\n", ref_pos);
+    printf("Starting at %d,%d\n", cpos, rpos);
+
+    if (ref_id != -1 && rid != ref_id)
+	return -1;
+
+    for (try = 0; try < 100; try++) {
+	if (dir == 0 /* fwd */ || dir == -1) {
+	    cguess = cpos + ref_pos - rpos;
+	} else {
+	    cguess = cpos + rpos - ref_pos;
+	}
+	
+	rguess = padded_to_reference_pos(io, cnum, cguess, &dir, &rid);
+	printf("Got %d,%d\n", cguess, rguess);
+
+	if (ref_id != -1 && rid != ref_id)
+	    return -1;
+
+	if (rguess == ref_pos) {
+	    *padded_pos = cguess;
+	    return 0;
+	}
+
+	if (cguess == last2) {
+	    printf("Loop detected - guessing\n");
+	    /* 2-step loop, likely due to deletion. Just use our best guess */
+	    *padded_pos = (last1 + last2) / 2;
+	    return 0;
+	}
+
+	cpos = cguess;
+	rpos = rguess;
+
+	last2 = last1;
+	last1 = cpos;
+    }
+
+    return -1;
+}

@@ -229,6 +229,9 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_INT,
          "-hide_anno", "hideAnno", "HideAnno",
          "0", offset(hide_annos), 0, NULL},
+    {TK_CONFIG_INT,
+         "-pos_type", "posType", "PosType",
+         "0", offset(pos_type), 0, NULL},
     {TK_CONFIG_END,
 	 (char *)NULL,	(char *)NULL,	(char *)NULL,	(char *) NULL,
          0,	0,	NULL},
@@ -476,7 +479,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"select",	 "edit_annotation",  "clear_visibility_cache",
 	"cursor_id",     "get_cursor",	  "search",      "get_xy",
 	"decr_contig",   "incr_contig",   "select_oligo","show_cursor",
-	NULL
+	"reference_pos", NULL
     };
     enum options {
 	_CONFIGURE,      _INIT,          _IO,            _REDRAW,
@@ -489,7 +492,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_JOIN_ALIGN,     _JOIN_MISMATCH, _JOIN,          _JOIN_OFFSET,
 	_SELECT,	 _EDIT_ANNOTATION,  _CLEAR_VISIBILITY_CACHE,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	 _GET_XY,
-	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO,  _SHOW_CURSOR
+	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO,  _SHOW_CURSOR,
+	_REFERENCE_POS,
     };
 
     if (argc < 2) {
@@ -549,7 +553,20 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     /* Save contig */
     case _SAVE: {
 	reg_length rl;
+
+	/*
+	 * We shouldn't have to do the decr, flush, search & incr here.
+	 * However cache_flush on a child I/O is currently buggy in that
+	 * it moves the pointer to the parent object (OK) and in doing
+	 * so fails to correct the reference counting hash (not OK).
+	 *
+	 * This is a convenient work around until we update the caching
+	 * layer.
+	 */
+	cache_decr(xx->io, xx->contig);
 	result = cache_flush(xx->io);
+	xx->contig = cache_search(xx->io, GT_Contig, xx->cnum);
+	cache_incr(xx->io, xx->contig);
 
 	rl.job = REG_LENGTH;
 	rl.length = xx->contig->end - xx->contig->start + 1;
@@ -1184,6 +1201,22 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	xx->r = NULL;
 
 	break;
+
+    case _REFERENCE_POS: {
+	int rpos, dir, rid;
+
+	if (argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " reference_pos padded_coord\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+	
+	rpos = padded_to_reference_pos(ed->xx->io, ed->xx->cnum,
+				       atoi(argv[2]), &dir, &rid);
+
+	vTcl_SetResult(interp, "%d %d %d", rpos, dir, rid);
+    }
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));
