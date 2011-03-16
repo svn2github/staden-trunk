@@ -150,7 +150,7 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 
     case OBJ_GET_BRIEF:
 	sprintf(buf,
-		"Read pair: %c#%d@%d (mq %d) with %c#%d@%d (mq %d), len %d",
+		"Read pair: %c#%"PRIrec"@%d (mq %d) with %c#%"PRIrec"@%d (mq %d), len %d",
 		obj->c1 > 0 ? '+' : '-', obj->read1, obj->pos1, obj->mq1,
 		obj->c2 > 0 ? '+' : '-', obj->read2, obj->pos2, obj->mq2,
 		obj->length);

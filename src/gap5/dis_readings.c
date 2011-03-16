@@ -550,7 +550,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 
     vmessage("\n=== new contig ===");
     for (i = 0; i < npos; i++) {
-	vmessage("%d\tCtg %d\t%"PRIrec"..%d\tseq %"PRIrec"\n",
+	vmessage("%d\tCtg %"PRIrec"\t%d..%d\tseq %"PRIrec"\n",
 		 i, pos[i].contig, pos[i].start, pos[i].end, pos[i].rec);
     }
 
