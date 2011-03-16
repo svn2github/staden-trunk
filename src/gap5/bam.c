@@ -874,8 +874,18 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     /* qual */
     cp = cpf;
     //while (*cpf && *cpf != '\t')
-    while (*cpf > '\t')
-	*cpt++ = *cpf++ - '!';
+    if (cpf[0] == '*' && (cpf[1] == '\0' || cpf[1] == '\t')) {
+	/* no qual */
+	memset(cpt, '\0', bs->len);
+	cpt += bs->len;
+	cpf++;
+    } else {
+	while (*cpf > '\t')
+	    *cpt++ = *cpf++ - '!';
+    }
+
+    assert((char *)cpt == (char *)(bam_aux(bs)));
+
     if (!*cpf++ || b->no_aux) goto skip_aux;
 
     /* aux */
