@@ -1,3 +1,27 @@
+*	BUG: (hp3) CIGAR N operator isn't supported and produces error
+        messages.
+
+*	Fix Zs:Z and Zc:Z sam tags to be a list rather than 1 record
+        per tag type. (This will bring it inline with the revised SAM
+        spec.)
+
+*	BUG: Align sequences against their traces when displaying them
+        to ensure the two are kept in sync.
+
+*	(cs12): Unable to move/copy tags
+
+*	(cs12): No warning for significantly high mismatching joins
+        (gap4 had 20% and any higher it flagged it up wanting us to
+        double check we wanted the join made).
+
+*	Template display starts up with the depth plot both shifted
+        and apparently also missing data with a disjoint between pairs
+        and read-depth. See /nfs/sam_scratch/jkb/data/bug/b.0
+
+*	BUG: Hitting "join" in the join editor forces the cursor to be
+        visible, possibly moving the contigs with respect to one
+        another and making the join invalid.
+
 *	Join editor "differences" search buttons, and/or via search window.
 
 *	Disassemble readings doesn't shut down affected editors. This

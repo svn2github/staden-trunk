@@ -447,3 +447,87 @@ The above the operates as follows:
 	   write y
        decr ref count on y
        remove x from io_chld
+
+=============================================================================
+
+The on-disk format is a heap with multiple pools, with each pool
+covering a specific range of block sizes (much like many malloc
+libraries). We then have allocation and free functions to request new
+disk blocks or free them again. This is all in tgap/g-alloc.c.
+
+The tgap/g-alloc.c file can be built using -DHEAP_CHECKER as a
+standalone program; I call this "heap_check".
+
+The output then reports the pool starting coordinates followed by the
+data itself:
+
+$ heap_check RATTI500X.2.g5d
+
+-- heap check --
+ pool(1) = 1189439616 (24..31)
+ pool(2) = 3452155960 (32..39)
+ pool(3) = 2431612760 (40..47)
+ pool(4) = 33093944 (48..55)
+ pool(5) = 35870088 (56..63)
+ pool(6) = 2060493392 (64..71)
+...
+ pool(134) = 1988583264 (3064..5111)
+ pool(135) = 3494615288 (5112..9207)
+ pool(136) = 4004127192 (9208..17399)
+    1240+ 25312 used   6 Range          Zlib
+   26552+  9784 used   7 BTree          Zlib
+   36336+  1944 free prev=804187688 next=20526016d
+   38280+    32 used   5 Bin            Zlib
+   38312+  4576 used  24 AnnoEleBlock   Zlib
+   42888+  1136 used   6 Range          Zlib
+   44024+    32 used   5 Bin            Zlib
+   44056+    32 used   5 Bin            Zlib
+   44088+    32 used   5 Bin            Zlib
+   44120+    40 used   5 Bin            Zlib
+   44160+  1296 used   6 Range          Zlib
+   45456+   416 used   6 Range          Zlib
+   45872+   272 free prev=81580280 next=48265368d
+   46144+    24 used   5 Bin            Zlib
+   46168+  1168 used   6 Range          Zlib
+   47336+   312 used   6 Range          Zlib
+   47648+   352 free prev=77809192 next=79022400d
+   48000+  4584 used  24 AnnoEleBlock   Zlib
+   52584+  1512 used   6 Range          Zlib
+   54096+  1736 used   6 Range          Zlib
+   55832+   824 used   6 Range          Zlib
+   56656+    32 used   5 Bin            Zlib
+   56688+    32 used   5 Bin            Zlib
+   56720+    40 used   5 Bin            Zlib
+   56760+  3336 used  24 AnnoEleBlock   Zlib
+   60096+  1160 used   6 Range          Zlib
+   61256+  1328 used   6 Range          Zlib
+   62584+   776 used   6 Range          Zlib
+   63360+   568 used   6 Range          Zlib
+   63928+    32 used   5 Bin            Zlib
+   63960+    32 used   5 Bin            Zlib
+   63992+    32 used   5 Bin            Zlib
+   64024+   600 used   6 Range          Zlib
+   64624+    32 used   5 Bin            Zlib
+   64656+    32 used   5 Bin            Zlib
+   64688+    32 used   5 Bin            Zlib
+   64720+    24 used   5 Bin            Zlib
+   64744+    32 used   5 Bin            Zlib
+   64776+    24 used   5 Bin            Zlib
+   64800+    24 used   5 Bin            Zlib
+   64824+    32 used   5 Bin            Zlib
+   64856+ 52896 used  23 SeqBlock       Zlib
+  117752+  1760 used   6 Range          Zlib
+  119512+   680 used   6 Range          Zlib
+...
+
+The format here is position of data block, the size of the used block
+(not necessarily the exact size being used by gap5 as it's rounded to
+the next multiple of 8), the type of the block in both numeric and
+symbolic form (eg "6 Range") and the compression method used.
+
+For free blocks we decode the heap pointers to indicate the previous
+and next blocks for that pool. (These form a ring.)
+
+A useful command for summarising the heap output:
+
+tr '+' ' ' < /tmp/heap.out |awk '/free/ {type["free"]+=$2;tc["free"]++} /used/ {type[$5]+=$2;tc[$5]++} END {for (i in type) {printf("%10d  %6d  %s\n",type[i],tc[i],i); total+=type[i];totalc+=tc[i]};printf("%10d  %6d  TOTAL\n", total, totalc)}'|sort -n
