@@ -48,6 +48,7 @@
 
 #include "sam_index.h"
 #include "bam.h"
+#include "fasta.h"
 
 #ifdef VALGRIND
 #    include <valgrind/memcheck.h>
@@ -1621,6 +1622,8 @@ tcl_import_reads(ClientData clientData,
 	    return TCL_ERROR;
     }
 
+    /* Force final update of cached bin nseq */
+    bin_add_range(args.io, NULL, NULL, NULL, NULL, -1);
 
     /* Add to our sequence name B+Tree */
     if (args.a.tmp) {

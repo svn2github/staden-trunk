@@ -16,6 +16,7 @@
 #include "tg_gio.h"
 #include "tg_index_common.h"
 #include "zfio.h"
+#include "fasta.h"
 
 typedef struct {
     char *name;
@@ -104,12 +105,8 @@ fastq_entry_t *fasta_next(zfp *fp) {
 
 	    if (NULL == zfgets(line, BLK_SIZE, fp)) {
 		/* Assumed last entry */
-		if (*cp) {
-		    e->seq_len = cp-e->seq;
-		    *cp++ = 0;
-		} else {
-		    e->seq_len = 0;
-		}
+		e->seq_len = cp-e->seq;
+		*cp++ = 0;
 		return e;
 	    }
 
@@ -143,7 +140,7 @@ fastq_entry_t *fasta_next(zfp *fp) {
 	e->seq_len = cp-e->seq;
 	*cp++ = 0;
     } else { 
-	e->seq_len = 0;
+	return NULL;
     }
 
     return e;
