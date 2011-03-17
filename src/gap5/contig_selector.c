@@ -371,12 +371,12 @@ ReOrder(GapIO *io,
 	c_to = c_to - 1;
 	length = ABS(c_from - c_to);
 	memmove(&order[c_from], &order[c_from]+1,
-		length * sizeof(int));
+		length * sizeof(*order));
     }
     /* if shifting array elements down */
     else {
 	length = ABS(c_from - c_to);
-	memmove(&order[c_to]+1, &order[c_to], length * sizeof(int));
+	memmove(&order[c_to]+1, &order[c_to], length * sizeof(*order));
     }
     order[c_to] = tmp;
 #ifdef DEBUG
