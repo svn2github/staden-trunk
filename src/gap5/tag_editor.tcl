@@ -113,13 +113,11 @@ proc create_tag_editor {w c data} {
     # Button bar
     pack $w.bar -side top -fill both
     pack $w.bar.cancel -side left
-    if {$licence(type) != "v" || [info exists d(macro)]} {
-	pack $w.bar.save -side left
-    }
-    if {$licence(type) != "v" && ![info exists d(macro)]} {
-	pack $w.bar.move -side left
-	pack $w.bar.copy -side left
-    }
+    pack $w.bar.save -side left
+#    if {![info exists d(macro)]} {
+#	pack $w.bar.move -side left
+#	pack $w.bar.copy -side left
+#    }
     if {[info exists d(macro)]} {
 	pack $w.bar.delete -side left
     }
