@@ -131,47 +131,24 @@ static GToggle g_toggle_state(GTimeStamp time, AuxIndex *idx)
  * EXTERNAL ROUTINES
  */    
 
-
-GFile *g_open_file(char *fn, int read_only)
 /*
- * Open a file and its associated index
- * On Error:
- *	Returns NULL
- *      Sets xerrno
+ * Given an input filename 'fn' output to fndb[] and fnaux[].
+ * We also trim fn to be the root, removing any suffix.
+ *
+ * We support foo.0 + foo.0.aux as before, but also now handle
+ * foo.0.g5d and foo.0.g5x.
+ * Sorry this is so convoluted! It got shuffled around a lot and
+ * could probably be rewritten to be a simpler structure.
+ *
+ * Returns 0 on success
+ *        -1 on failure (no obvious derivations of fn found).
  */
-{
-    GFile *gfile;
-    char fnaux[1024], fndb[1024], fnorig[1024];
-    AuxIndex *idx_arr = NULL;
-    int64_t recsize;
+int find_db_files(char *fn, char *fndb, char *fnaux) {
+    char fnorig[1024];
     int try;
 
-    /* g_dump_file(fn); */
-
-    gfile = NULL;
-
-#define ABORT(E)\
-    {\
-         if (idx_arr) \
-             xfree(idx_arr); \
-	 g_free_gfile(gfile); \
-	 gfile = NULL; \
-	 (void)gerr_set(E); \
-	 return NULL; \
-    }
-
-    /* check file name isn't too long */
-    if ( strlen(fn) + strlen(G_AUX_SUFFIX) >= sizeof(fnaux) )
-	ABORT(GERR_NAME_TOO_LONG);
     strncpy(fnorig, fn, 1024);
 
-    /*
-     * Attempt to work alternative file names. We support
-     * foo.0 + foo.0.aux as before, but also now handle
-     * foo.0.g5d and foo.0.g5x.
-     * Sorry this is so convoluted! It got shuffled around a lot and
-     * could probably be rewritten to be a simpler structure.
-     */
     for (try = 0; try < 2; try++) {
 	char *cp;
 
@@ -195,16 +172,14 @@ GFile *g_open_file(char *fn, int read_only)
 	    if (file_exists(fndb) && file_exists(fnaux))
 		break;
 
-	    gerr_set(GERR_OPENING_FILE);
-	    return NULL;
+	    return -1;
 	}
 
 	/* Not root of new, but maybe we specified a full name */
 	if (!(cp = strrchr(fn, '.'))) {
 	    if (try == 0)
 		continue;
-	    gerr_set(GERR_OPENING_FILE);
-	    return NULL;
+	    return -1;
 	}
 
 	if (strcmp(cp, G_AUX_SUFFIX)     != 0 &&
@@ -214,11 +189,51 @@ GFile *g_open_file(char *fn, int read_only)
 	    if (try == 0)
 		continue;
 
-	    gerr_set(GERR_OPENING_FILE);
-	    return NULL;
+	    return -1;
 	}
 	
 	*cp = 0;
+    }
+
+    return 0;
+}
+
+
+GFile *g_open_file(char *fn, int read_only)
+/*
+ * Open a file and its associated index
+ * On Error:
+ *	Returns NULL
+ *      Sets xerrno
+ */
+{
+    GFile *gfile;
+    char fnaux[1024], fndb[1024];
+    AuxIndex *idx_arr = NULL;
+    int64_t recsize;
+
+    /* g_dump_file(fn); */
+
+    gfile = NULL;
+
+#define ABORT(E)\
+    {\
+         if (idx_arr) \
+             xfree(idx_arr); \
+	 g_free_gfile(gfile); \
+	 gfile = NULL; \
+	 (void)gerr_set(E); \
+	 return NULL; \
+    }
+
+    /* check file name isn't too long */
+    if ( strlen(fn) + strlen(G_AUX_SUFFIX) >= sizeof(fnaux) )
+	ABORT(GERR_NAME_TOO_LONG);
+
+    /* Attempt to work alternative file names. */
+    if (find_db_files(fn, fndb, fnaux) == -1) {
+	gerr_set(GERR_OPENING_FILE);
+	return NULL;
     }
 
     /*

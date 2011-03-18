@@ -21,6 +21,7 @@
 #include "misc.h"
 #include "actf.h"
 #include "text_output.h"
+#include "g-files.h"
 
 /* static error messages for use in actf_() */
 static char *actferrlist[] = {
@@ -58,8 +59,8 @@ static int numu_lock_files = 0;
  */
 
 /*
- * actf_lock(int mode, char *file, char *version)
- *    Creates the "file.version.BUSY" file.
+ * actf_lock(int mode, char *file)
+ *    Creates the "file.BUSY" file.
  *    read_only is 0 for read/write and 1 for read.
  *    Returns 0 for success or >0 for error (see above)
  */
@@ -104,13 +105,12 @@ int test_if_locked(char *fname) {
 }
 #endif
 
-int actf_lock(int read_only, char *file, char *version,int new) {
+int actf_lock(int read_only, char *file, int new) {
     char fname[2048];
     struct stat statbuf;
     int fd;
     char dir[1025];
-    char db_name[1025];
-    char *cp;
+    char *cp, *db_name;
     char db_path[2048];
     char aux_path[2048];
     char hostname[1024];
@@ -148,13 +148,15 @@ int actf_lock(int read_only, char *file, char *version,int new) {
 #endif
 
     if (cp = strrchr(file, '/')) {
-	sprintf(db_name, "%s.%s", cp+1, version);
+	db_name = cp+1;
     } else {
-	sprintf(db_name, "%s.%s", file, version);
+	db_name = file;
     }
-    sprintf(db_path,  "%s.%s",      file, version);
-    sprintf(aux_path, "%s.%s.aux",  file, version);
-    sprintf(fname,    "%s%s.%s.BUSY", dir, file, version);
+
+    if (0 != find_db_files(db_name, db_path, aux_path))
+	return 7;
+
+    sprintf(fname,    "%s%s.BUSY", dir, db_name);
 
 
     /* Check for existance of lock on the BUSY file (from older gap4s) */
@@ -254,13 +256,13 @@ int actf_lock(int read_only, char *file, char *version,int new) {
 }
 
 /*
- * actf_unlock(int readonly, char *file, char *version)
+ * actf_unlock(int readonly, char *file)
  *    Removes the busy file.
  *    Returns 0 for success or >0 for error (see above)
  */
-int actf_unlock(int read_only, char *file, char *version) {
+int actf_unlock(int read_only, char *file) {
     int i;
-    char db_name[1024], *cp;
+    char *db_name, *cp;
 
     /* Nothing to do for read only mode */
     if (read_only)
@@ -268,9 +270,9 @@ int actf_unlock(int read_only, char *file, char *version) {
 
     /* do the unlocking */
     if (cp = strrchr(file, '/')) {
-	sprintf(db_name, "%s.%s", cp+1, version);
+	db_name = cp+1;
     } else {
-	sprintf(db_name, "%s.%s", file, version);
+	db_name = file;
     }
     for (i = 0; i < numu_lock_files; i++) {
 	if (0 == strcmp(db_name, lock_files[i].db_name))

@@ -27,6 +27,19 @@
 GapIO *gio_open(char *fn, int ro, int create) {
     GapIO *io = (GapIO *)calloc(1, sizeof(*io));
     char *cp;
+    int lock_err;
+
+    /* Check locks */
+    lock_err = actf_lock(ro, fn, create);
+    if (!create && (lock_err == 3 || lock_err == 5)) {
+	vmessage("Opening database in read only mode instead.\n");
+	ro = 1;
+	lock_err = actf_lock(ro, fn, create);
+    }
+    if (lock_err != 0) {
+	vmessage("Unable to lock and/or open the database.\n");
+	return NULL;
+    }
 
     io->iface = get_iface_g();
     if (create) {
@@ -111,6 +124,8 @@ void gio_close(GapIO *io) {
 
     io->iface->commit(io->dbh);
     io->iface->disconnect(io->dbh);
+
+    actf_unlock(io->read_only, io->name);
 
     if (io->name)
 	free(io->name);
