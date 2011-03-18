@@ -751,6 +751,7 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
 	    b->ref[b->nref].len  = 0; /* Unknown value */
 	    b->ref[b->nref].name = malloc(cpf-cp+1);
 	    memcpy(b->ref[b->nref].name, cp, cpf-cp);
+	    b->ref[b->nref].name[cpf-cp] = 0;
 
 	    hd.i = b->nref;
 	    hi = HashTableAdd(b->ref_hash, b->ref[b->nref].name, 0, hd, NULL);
