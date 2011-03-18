@@ -153,8 +153,13 @@ int actf_lock(int read_only, char *file, int new) {
 	db_name = file;
     }
 
-    if (0 != find_db_files(db_name, db_path, aux_path))
-	return 7;
+    if (new) {
+	sprintf(db_path,  "%s.g5d", db_name);
+	sprintf(aux_path, "%s.g5x", db_name);
+    } else {
+	if (0 != find_db_files(db_name, db_path, aux_path))
+	    return 7;
+    }
 
     sprintf(fname,    "%s%s.BUSY", dir, db_name);
 
