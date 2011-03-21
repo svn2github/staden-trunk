@@ -1,3 +1,276 @@
+2011-03-21  jkbonfield
+
+	* gap5/depth.tcl, gap5/gap_range.c, gap5/gap_range.h: Improvements
+	  to the template display:
+	  
+	  1) It now deals better with contigs that do not start as base 1.
+	  
+	  2) The depth plot should no longer change Y values so
+	  drastically when zooming in and out. This still exists in part
+	  due to aliasing, but it's far better than it was.
+
+2011-03-18  jkbonfield
+
+	* gap5/actf.c: Fix to actf_lock(); don't complain of missing
+	  database files when we're attempting to create a new one.
+
+	* gap5/actf.c, gap5/actf.h, tgap/g-files.c, tgap/g-files.h,
+	  tgap/tg_gio.c: Added BUSY file locking for Gap5, as per Gap4.
+
+	* gap5/tag_editor.tcl: Temporarily removed the tag editor Move and
+	  Copy buttons as they haven't yet been implemented.
+
+	* gap5/bam.c: Removed buffer overrun in sam_next_seq() when
+	  processing SAM files with no @SQ lines. It wasn't null
+	  terminating the reference string.
+
+2011-03-17  jkbonfield
+
+	* gap5/fasta.c, gap5/fasta.h, gap5/newgap5_cmds.c: Fixed fasta
+	  import:
+	  
+	  It now correctly terminates the last reading. Previously it
+	  would produce a blank contig for the last sequence.
+	  
+	  It also now calls bin_add_range at the end to flush any cached
+	  nseq values, so contigs no longer claim to have zero sequences
+	  in them.
+
+	* gap5/contig_selector.c: Fixed a bug with reordering contigs. It
+	  could cause a contig to be duplicated and another to be
+	  overwritten when the user moved contigs around.
+
+2011-03-16  jkbonfield
+
+	* gap5/break_contig.c, gap5/consensus.c, gap5/contig_editor.tcl,
+	  gap5/contig_selector.tcl, gap5/editor_join.c,
+	  gap5/editor_search.c, gap5/editor_search.tcl,
+	  gap5/editor_view.c, gap5/gap5.tcl, gap5/gap5rc,
+	  gap5/gap5rc_menu_full, gap5/list_contigs.tcl,
+	  gap5/newgap5_cmds.c, gap5/sam_index.c, gap5/tg_index.c,
+	  gap5/tg_index.h, gap5/tkEditor.c, gap5/tkEditor.h,
+	  tgap/g-files.c, tgap/tg_anno.c, tgap/tg_bin.c, tgap/tg_bin.h,
+	  tgap/tg_contig.c, tgap/tg_contig.h, tgap/tg_iface_g.c,
+	  tgap/tg_struct.h, tgap/tg_tcl.c:
+
+	  Reference base coordinates are now tracked when the input is a
+	  SAM/BAM file. This required adjustments to the on-disc file
+	  formats for bins, although the code will still read the old
+	  format data too.
+	  
+	  In the editor window the position box in the bottom left now has
+	  a P or R label next to it. Clicking this toggles padded vs
+	  reference coordinates. It can be adjusted from the settings menu
+	  too. When in Reference mode the contig coordinate line also
+	  updates too.
+	  
+	  An editor search mode of "reference indel" has been added, to
+	  skip ahead to the next consensus insertion or deletion to the
+	  reference. Do not confuse these with pads - it's specifically
+	  where the data has been removed. Even when all the sequences
+	  have a D operator, if they have all had a * added then the
+	  consensus is the correct length and still has a 1:1 mapping to
+	  the reference, meaning there are no missing bases to find. A
+	  future useful addition though would be to add markers for
+	  consensus pads that align against a reference base
+	  (deletion of zero length maybe?) so we can search for these.
+	  
+	  We also need to decide how to fit unpadded coordinates into this
+	  system still.
+	  
+	  Implementation wise, a bin range now has an additional type
+	  REFPOS. A refpos object has no actual record, but instead uses
+	  these range fields to hold a mapping to the absolute reference
+	  ID and coordinate.
+	  
+	  Added nrefpos and nanno to the bin struct in addition to the
+	  existing nseqs field. Much like nseqs these count the number of
+	  objects in this bin and child bins in a recursive manner.
+	  
+	  Updated the contig iterators to use nseqs, nrefpos and nanno
+	  fields to short-cut the searches for next/previous
+	  item. Basically this is my "needle in a haystack" algorithm
+	  allowing us to rapidly skip forward to e.g. the next annotation
+	  simply by noting which bins have nanno == 0, and not requiring a
+	  linear read of every bin range.
+	  
+	  
+	  
+	  Other passenger updates that appeared in this large update: -
+	  Editor "stripe mode" or "fanfold mode" has reappeared. This is
+	  just a visual tweak to make visualising columns easier in deep
+	  repetitive data.
+	  
+	  - Fixed contig annotations in SAM to no longer claim to be on
+	  sequences.
+	  
+	  - Relaxed the SAM data out of order check as it's currently
+	  triggered by alignments starting with a deletion in the cigar
+	  string. We need a better check for this.
+	  
+	  - SAM/BAM reading code now automatically removes duplicates
+	  unless tg_index -D flag is specified.
+	  
+	  - Fixed a break contig bug where tags to the right of the break
+	  point are on readings that start to the left of the break point
+	  were not always moved to the left hand contig (when the tags
+	  happened to also fall into a new bin further to the right).
+
+	* gap5/dis_readings.c, gap5/readpair.c: Minor printf formatting
+	  tweaks - ensure we use PRIrec instead of %d.
+
+	* gap5/list_contigs.tcl: Minor change to report =number instead of
+	  #number for contig records.
+
+	* gap5/gap4_compat.c: Improved robustness when given incorrect
+	  inputs - eg contigs that don't exist, or a contig number to
+	  rnumtocnum().
+
+	* gap5/docs/IMPLEMENTATION, gap5/docs/TODO:
+
+	* gap5/dis_readings.c: Fixed algorithm for detecting empty bins.
+	  Previously a bin with no sequences but having annotations was
+	  labelled as empty and removed.
+
+	* gap5/bam.c: Fixed parsing of SAM files that have "*" as the
+	  quality string.
+
+2011-03-15  jkbonfield
+
+	* gap5/configure.tcl, gap5/tag_checklist.tcl,
+	  gap5/trace_display.tcl: Fix for SF bug 3213620:
+	  
+	  Saving settings now writes to ~/.gap5rc instead of .gaprc.
+
+2011-03-08  jkbonfield
+
+	* tk_utils/sheet.c, tk_utils/sheet.h, tk_utils/tkSheet_common.c,
+	  tk_utils/tkSheet_config.h, tk_utils/tkSheet_struct.h: Added more
+	  'sh_' highlight options: caret for deletion markers between
+	  characters; sh_indel for an alternative colouring scheme to
+	  highlight specific bases.
+	  
+	  The sh_underline highlight is now an extra pixel lower provided
+	  the font has sufficient descender room.
+
+2011-03-03  jkbonfield
+
+	* tgap/tg_contig.c: Correction to last fix - extra check in case of
+	  overlapping bins
+
+	* tgap/tg_contig.c: Fixed a major bug with contig_delete_base: it
+	  was no longer correctly moving the data in the right hand bin
+	  leftwards due to an earlier bug fix.
+
+2011-03-02  jkbonfield
+
+	* tgap/tg_cache.c: Fix to previous fix!
+	  
+	  Reverted back some of the incr/decr ref counting code. This
+	  still cures the original bug with join contigs (I believe), but
+	  doesn't now crash with assertion failures elsewhere.
+	  
+	  It *does* still have a reference count leak somewhere though
+	  which I was attempting to fix and clearly failed. Anyway -
+	  working with leak is clearly a big improvement over not working
+	  at all. More to come.
+
+	* gap5/bam.c, gap5/sam_pileup.c, gap5/sam_pileup.h: Improved
+	  handling of SAM files. We now properly deal with unpadded
+	  data correctly when it has no reference at all.
+	  
+	  We also cope with SAM files with missing @SQ records or even
+	  header lines at all. (Instead we just figure them out as we go.)
+
+	* gap5/consensus.c: Fixed use of consensus cache when contig start
+	  exactly matches the bin start. Previously it failed to copy out
+	  of the cached bin, leaving blanks in the consensus.
+
+2011-03-01  jkbonfield
+
+	* tgap/tg_cache.c: Fixed reference counting bug in cache_dup. It
+	  wasn't incrementing the ref count of the base object,
+	  potentially allowing it to go out of scope. This in turn meant
+	  that subsequent writes of that object from the child io could
+	  attempt to flush data back to the wrong record
+	  (if the view had been reused). This was fortunately caught via
+	  an assert, but is likely the cause of some early corruptions we
+	  saw.
+	  
+	  The reference counting in copy-on-write scenarios still isn't
+	  ideal and I think there's a reference count leak here, albeit
+	  small.  This is still preferable though than data corruption so
+	  I'm submitting the partial fix already.
+
+	* gap5/contig_editor.tcl, gap5/contig_id.tcl, gap5/gap_utils.tcl:
+	  Removed various minor reference count leaks.
+
+	* tgap/tg_bin.c: Fixed bin used size updating when being given
+	  length 1 sequences.
+
+2011-02-25  jkbonfield
+
+	* gap5/caf.c: Applied patch from Rob Davies to fix get_line(). The
+	  new version honours the \ continuation lines in CAF, making
+	  multi-line tags now work OK.
+
+	* gap5/tg_index_common.c: Bug fix to unescape_line when finding \
+	  on the end of lines.
+
+2011-02-24  jkbonfield
+
+	* gap5/bam.c, gap5/bam.h: Fixed binary mode on windows (need to
+	  check - unable at present).
+	  
+	  Added cigar_len field to the bam struct as a 32-bit int. This
+	  means we can now support sam files with cigar length > 64k,
+	  although bam by design still has this limitation.
+
+2011-02-23  jkbonfield
+
+	* gap5/tg_index.c: Fixed minor bug in memory allocation for
+	  argument parsing.
+
+2011-02-22  jkbonfield
+
+	* gap5/bam.c: Fixed issue in bam_more_output() (the decompression
+	  output, but on "input" side) when faced with truncated reads. We
+	  now keep going until either real eof or read enough.
+
+2011-02-21  jkbonfield
+
+	* gap4/tman_interface.c: Protection against a infinitely recursive
+	  loop. We observed this happening, apparently due to a sequence
+	  not being loaded into memory yet while scrolling off the end of
+	  it. (I cannot see how it is possible to bring up a trace for a
+	  sequence you haven't yet observed, but apparently some clever
+	  user discovered a way.)
+
+2011-02-18  jkbonfield
+
+	* incrTcl-3.3cvs: Header files are no longer needed given we do not
+	  depend on itcl any more.
+
+2011-02-15  jkbonfield
+
+	* ac_stubs/tcl.m4, staden.profile, system.mk.in: Improvements to
+	  help find libraries in <root>/lib/staden. The tcl.m4 already had
+	  code for --enable-rpath (default) and --disable-rpath, so we now
+	  expose these to the Makefile properly.
+
+2011-02-10  jkbonfield
+
+	* README.build: More MacOS X build hints
+
+	* Misc/os.h: ppc64 detection too
+
+2011-02-09  jkbonfield
+
+	* windows/wix/splash.bmp: Correct version number this time
+	  (2.0.0b8)
+
+	* windows/wix/splash.bmp: Version number change
+
 2011-02-08  jkbonfield
 
 	* README.build, gap5/gap5.tcl, gap5/tg_index.c, gap5/tg_view.c:

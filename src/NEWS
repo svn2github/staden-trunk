@@ -1,3 +1,87 @@
+Gap5 updates (21st Mar 2011)
+============
+
+*	We now keep track of original reference positions during a
+        SAM/BAM import. These can be displayed in the contig editor
+        and we can also go to coordinates by either padded (as before)
+        or reference base coordinates.
+
+*	The number of annotations is now tracked per bin, and hence
+        per contig, as per sequences. Using this we now also have a
+        far faster algorithm for searching through annotations when
+        very few exist. (The needle in haystack problem.)
+
+
+Staden 2.0.0b8p1,  21st Mar 2011 (SANGER)
+================================
+
+General changes
+---------------
+
+*	Various compilation improvements: PPC64 detection for MacOS X;
+        rpath support.
+
+
+Gap5 new features
+=================
+
+*	We no longer need headers (eg @SQ) when reading SAM
+        files.
+
+*	Improved contig number handling: #<record> now works in addition
+        to =<record>; List Contigs report improved.
+
+*	Tg_index now automatically removes duplicates marked in a
+        BAM/SAM file. Use tg_index -D to force these to be entered.
+
+
+Gap5 bug fixes
+--------------
+
+*	Major bug fix to moving contigs in the contig selector - it
+        can no longer duplicate contigs and in the process remove an
+        existing one.
+
+*	Fixed a bug in fasta import where the last sequence in a fasta
+        file often generated a blank contig.
+
+*	Truncated read system calls now handled in bam reading,
+        instead of interpreting these as EOF.
+
+*	Use of binary I/O modes on Windows (BAM).
+
+*	Added support for backslash \ continuation lines in CAF.
+
+*	Fix for 1bp long sequences and updating the bin ranges.
+
+*	Fixed a reference counting bug in the contig editor. This sometimes
+        showed up as crashes through assertion failures when saving or
+        making a join.
+
+*	The consensus cache can no longer return sections of blank N
+        data. This happened when a contig start precisely matched the
+        root bin start point.
+
+*	Saved settings in various dialogues now write to .gap5rc
+        instead of .gaprc.
+
+*	Breaking contigs could sometimes leave tags in the wrong
+        contig in certain circumstances. Now fixed.
+
+*	The template display now correctly starts up showing the start
+        of a contig when that contig does not start as base 1.
+
+*	The depth plot in the template display should more accurately
+        reflect the actual depth at a variety of zoom levels instead
+        of artificially increasing depth as we zoom out.
+
+
+Gap4 bug fixes
+--------------
+
+*	Fixed a (rare) infinite loop in the trace display code.
+
+
 Staden 2.0.0b8,  8th Feb 2011
 =============================
 
