@@ -7,7 +7,7 @@
 
 
 
-
+#include <math.h>
 #include <string.h>
 
 #include "gap_range.h"
@@ -215,13 +215,12 @@ int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double new
 int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv, 
     	    	int fwd_col, int rev_col, int single_col, int span_col, int inconsistent_col,
 		int force, int reads_only) {
-    
     if (is_filter_change(gr) || force) {
     	int i, j;
+	double max_height = 0;
     
     	update_filter(gr);
     	gr->ntl = 0;
-    	gr->max_height = 0;
 	memset(gr->depth, 0, gr->width * sizeof(gap_depth_t));
 	
 	for (i = 0; i < gr->nr; i++) {
@@ -252,9 +251,8 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 
 		for (j = r_sta; j <= r_end; j++) {
 		    gr->depth[j].s += inc;
- 		    if (gr->max_height < gr->depth[j].s)
-			gr->max_height = gr->depth[j].s;
-
+ 		    if (max_height < gr->depth[j].s)
+			max_height = gr->depth[j].s;
 		}
 	    }
 	    
@@ -361,8 +359,8 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		for (j = r_sta; j <= r_end; j++) {
 		    //gr->depth[j].t++;
 		    gr->depth[j].t += inc;
-		    if (gr->max_height < gr->depth[j].t)
-			gr->max_height = gr->depth[j].t;
+		    if (max_height < gr->depth[j].t)
+			max_height = gr->depth[j].t;
 		}
 	    }
 	    
@@ -414,8 +412,11 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 
 	    gr->ntl++;
 	}
+
+	gr->max_height = ceil(max_height);
+	gr->max_height++;
     }
-    
+
     return gr->ntl;
 }
 
