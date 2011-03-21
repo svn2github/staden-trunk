@@ -240,15 +240,20 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    
 	    /* depth plot setting (sequence) */
 	    if (!(mq < gr->new_filter.min_qual || mq > gr->new_filter.max_qual)) {
-		r_sta = (sta - bx_conv) * ax_conv; // world to raster conversion
+		double inc;
+
+		r_sta = (sta - bx_conv) * ax_conv; //world to raster conversion
 		r_end = (end - bx_conv) * ax_conv;
+
+		inc = ((end - sta) * ax_conv) / (r_end - r_sta + 1);
 
 		if (r_sta < 0)  	   r_sta = 0;
 		if (r_end >= gr->width) r_end = gr->width - 1;
 
 		for (j = r_sta; j <= r_end; j++) {
-	    	    gr->depth[j].s++;
- 		    if (gr->depth[j].s > gr->max_height) gr->max_height = gr->depth[j].s;
+		    gr->depth[j].s += inc;
+ 		    if (gr->max_height < gr->depth[j].s)
+			gr->max_height = gr->depth[j].s;
 
 		}
 	    }
@@ -343,15 +348,21 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 
 	    /* depth plot template pairs */
 	    if (!single && !span && col != inconsistent_col) {
+		double inc;
+
 	    	r_sta = (sta - bx_conv) * ax_conv; // world to raster conversion
 		r_end = (end - bx_conv) * ax_conv;
 		
+		inc = ((end - sta) * ax_conv) / (r_end - r_sta + 1);
+
 		if (r_sta < 0) r_sta = 0;
 		if (r_end >= gr->width) r_end = gr->width - 1;
-		
+	
 		for (j = r_sta; j <= r_end; j++) {
-		    gr->depth[j].t++;
-		    if (gr->depth[j].t > gr->max_height) gr->max_height = gr->depth[j].t;
+		    //gr->depth[j].t++;
+		    gr->depth[j].t += inc;
+		    if (gr->max_height < gr->depth[j].t)
+			gr->max_height = gr->depth[j].t;
 		}
 	    }
 	    

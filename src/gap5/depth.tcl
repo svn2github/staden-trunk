@@ -50,7 +50,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     # something to store the common x range information
     set ${w}(grange) [g5::range -io $io -cnum $cnum]
 
-    set ${w}(x1) 0
+    set ${w}(x1) [set ${w}(start)]
     set ${w}(x2) [expr {[set ${w}(x1)]+1000}]
     
     # starting tracks
@@ -86,8 +86,8 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
 	-repeatinterval 5 \
 	-orient horiz
     $w.xscroll set \
-	[expr {[set ${w}(x1)]/double([set ${w}(length)])}] \
-	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]
+	0 \
+	[expr {([set ${w}(x2)]-[set ${w}(start)])/double([set ${w}(length)])}]
 	
     grid $w.xscroll -column 1 -row 998 -sticky nsew
     grid rowconfigure $w 998 -weight 0
@@ -99,8 +99,8 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     label $w.label.l -textvariable ${w}(info)
     pack $w.label.l
 
-    bind $w <5> "zoom1.5 $w 0 1 1.1"
-    bind $w <4> "zoom1.5 $w 0 1 [expr {1/1.1}]"
+    bind $w <5> "zoom1.5 $w 1 0 1.3"
+    bind $w <4> "zoom1.5 $w 1 0 [expr {1/1.3}]"
 
     bind $w <Any-Configure> "after idle {resize1.5 $w}"
 
@@ -109,8 +109,6 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     set ${w}(xzoom) [expr {double([set ${w}(pwidth)]) / ([set ${w}(x2)]-[set ${w}(x1)]+1)}]
     
     track_settings $w 
-			   
-    
 
 
     # Contig registration
@@ -268,19 +266,18 @@ proc resize1.5 {w} {
 proc scrollx1.5 {w cmd args} {
     global $w
 
-    puts [info level [info level]]
-
     set sbar $w.xscroll
     set clen [set ${w}(length)]
 
     if {$cmd == "moveto"} {
-	set xpos [expr {int([lindex $args 0]*$clen)}]
+	set xpos [expr {int([lindex $args 0]*$clen + [set ${w}(start)])}]
     } elseif {$cmd == "set_xpos"} {
 	set xpos [lindex $args 0]
     } elseif {$cmd == "scroll"} {
-	set xpos [expr {[lindex [$sbar get] 0]*$clen}]
+	set xpos [expr {[lindex [$sbar get] 0]*$clen + [set ${w}(start)]}]
 	if {[lindex $args 1] == "pages"} {
 	    set wid [expr {[c2x $w [set ${w}(pwidth)]] - [c2x $w 0]}]
+	    puts =>wid=$wid,xpos=$xpos+[expr {$wid/2*[lindex $args 0]}]
 	    set xpos [expr {$xpos + $wid/2*[lindex $args 0]}]
 	} else {
 	    set wid [expr {[c2x $w [lindex $args 0]] - [c2x $w 0]}]
@@ -296,9 +293,9 @@ proc scrollx1.5 {w cmd args} {
 
     # Update scrollbar
     $sbar set \
-	[expr {[set ${w}(x1)]/double([set ${w}(length)])}] \
-	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]
-	
+	[expr {([set ${w}(x1)]-[set ${w}(start)])/double([set ${w}(length)])}] \
+	[expr {([set ${w}(x2)]-[set ${w}(start)])/double([set ${w}(length)])}]
+
     redraw_plot $w
 }
 
@@ -327,8 +324,8 @@ proc set_xzoom {w val} {
     set sbar $w.xscroll
 
     $sbar set \
-	[expr {[set ${w}(x1)]/double([set ${w}(length)])}] \
-	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]
+	[expr {([set ${w}(x1)]-[set ${w}(start)])/double([set ${w}(length)])}]\
+	[expr {([set ${w}(x2)]-[set ${w}(start)])/double([set ${w}(length)])}]
 
     redraw_plot $w
 }
@@ -337,7 +334,7 @@ proc set_xzoom {w val} {
 # x and y are booleans to govern whether we want to zoom in x, y or both.
 proc zoom1.5 {w x y z} {
     global $w
-    
+
     if {$y} {
 	set ${w}(yzoom) [expr {[set ${w}(yzoom)]/$z}]
     }
@@ -355,15 +352,15 @@ proc zoom1.5 {w x y z} {
 	set ${w}(x2) $x2
 
 	$w.xscroll set \
-	    [expr {$x1/double([set ${w}(length)])}] \
-	    [expr {$x2/double([set ${w}(length)])}]
+	    [expr {($x1-[set ${w}(start)])/double([set ${w}(length)])}] \
+	    [expr {($x2-[set ${w}(start)])/double([set ${w}(length)])}]
 
 	set ${w}(xorigin) [expr $x1]
 	set ${w}(xzoom)   [expr {($x2-$x1+1)/double([set ${w}(pwidth)])}]
 	
     }
 
-    redraw_plot $w seq_depth
+    redraw_plot $w
     return
 }
 
@@ -724,7 +721,7 @@ proc nice_num {v r p} {
 
 proc yscale_depth {w t height} {
     global $w $t
-    
+
     set ys [set ${t}(yscale)]
     yscale_resize $ys $height
     
@@ -789,7 +786,6 @@ proc yscale_depth {w t height} {
 
 proc yscroll_plot {w t cmd {opt1 {}} {opt2 {}}} {
     global $w $t
-    puts [info level [info level]]
     
     set td   [set ${t}(track)]
     foreach {top bottom} [set ${t}(tb)] break
@@ -854,7 +850,7 @@ proc yscroll_plot {w t cmd {opt1 {}} {opt2 {}}} {
 }
 
 proc yscroll_plot_set {w t args} {
-    puts [info level [info level]]
+    #puts [info level [info level]]
 }
 
 
@@ -1485,8 +1481,8 @@ proc end_drag_x {w t x y} {
 	# set the scroll bar
 	set sbar $w.xscroll
     	$sbar set \
-	[expr {[set ${w}(x1)]/double([set ${w}(length)])}] \
-	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]    
+	[expr {([set ${w}(x1)]-[set ${w}(start)])/double([set ${w}(length)])}]\
+	[expr {([set ${w}(x2)]-[set ${w}(start)])/double([set ${w}(length)])}]
     } else {
     	return
     }

@@ -30,8 +30,8 @@ typedef struct {
 } gap_filter_t;
 
 typedef struct {
-    int t;
-    int s;
+    double t;
+    double s;
 } gap_depth_t;
     
 
