@@ -278,8 +278,8 @@ int load_sam_header(bam_file_t *b) {
  * Returns 0 on success
  *        -1 on failure
  */
-static int parse_header(bam_file_t *b){
-    int i, j;
+static int parse_header(bam_file_t *b) {
+    int i, j, lno = 0;
     int ntabs;
     tag_list_t *tags;
 
@@ -296,16 +296,24 @@ static int parse_header(bam_file_t *b){
 	char *id = NULL;
 	int id_len;
 	HashData hd;
+	int i_start = i, i_len;
+
+	for (j = i; b->header[j] && j < b->header_len; j++)
+	    if (b->header[j] == '\n')
+		break;
+	i_len = j - i_start;
+	lno++;
 
 	if (b->header[i] != '@') {
-	    fprintf(stderr, "Malformed header line \"%.20s\"...\n",
-		    &b->header[i]);
-	    return -1;
+	    fprintf(stderr, "Header line does not start with '@' at line %d:\n"
+		    "\"%.*s\"\n",
+		    lno, i_len, &b->header[i_start]);
+            i = i_start + i_len;
+            continue;
 	}
 
 	if (b->header[i+1] != 'R' && b->header[i+2] != 'G') {
-	    while (i < b->header_len && b->header[i] != '\n')
-		i++;
+	    i = i_start + i_len;
 	    continue;
 	}
 
@@ -314,8 +322,12 @@ static int parse_header(bam_file_t *b){
 	    if (b->header[j] == '\t')
 		ntabs++;
 
-	if (ntabs == 0)
-	    return -1;
+	if (ntabs == 0) {
+	    fprintf(stderr, "Missing tab in header line %d:\n\"%.*s\"\n",
+		    lno, i_len, &b->header[i_start]);
+            i = i_start + i_len;
+            continue;
+	}
 
 	if (NULL == (tags = malloc((ntabs+1) * sizeof(*tags))))
 	    return -1;
@@ -333,8 +345,14 @@ static int parse_header(bam_file_t *b){
 		char *value;
 
 		if (!b->header[i+1] || !b->header[i+2] ||
-		    b->header[i+3] != ':')
-		    return -1; /* malformed key */
+		    b->header[i+3] != ':') {
+		    fprintf(stderr,
+			    "Malformed key:value pair in header line %d:\n"
+			    "\"%.*s\"\n",
+			    lno, i_len, &b->header[i_start]);
+		    i = i_start + i_len;
+		    continue;
+		}
 
 		key = (b->header[i+1]<<8) + b->header[i+2]; 
 		i+=4;
@@ -366,7 +384,7 @@ static int parse_header(bam_file_t *b){
 	    fprintf(stderr, "No ID record in @RG line\n");
 	}
 
-	{
+	if (0) {
 	    printf("RG ID=%.*s\n", id_len, id);
 	    tag_list_t *t = tags;
 	    while (t->value) {
