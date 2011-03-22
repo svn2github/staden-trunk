@@ -56,7 +56,7 @@ static int stdout_scroll = 1, stderr_scroll = 1;
 static int header_outputted = 0;
 static FILE *stdout_fp = NULL, *stderr_fp = NULL;
 static Tcl_Interp *_interp = NULL;
-static int noisy = 1;
+static int noisy = 0;
 
 static int info_win;
 static Tcl_DString message;
