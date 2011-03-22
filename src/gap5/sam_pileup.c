@@ -83,6 +83,7 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 		p->seq_offset++;
 		/* Fall through */
 	    case BAM_CDEL:
+	    case BAM_CREF_SKIP:
 		p->pos++;
 		p->cigar_len--;
 		break;
@@ -96,7 +97,6 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 		p->cigar_len = 0;
 		break;
 
-	    case BAM_CREF_SKIP:
 	    default:
 		fprintf(stderr, "Unhandled cigar_op %d\n", op);
 		return -1;
@@ -123,6 +123,7 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	case BAM_CBASE_MISMATCH:
 	case BAM_CSOFT_CLIP:
 	case BAM_CDEL:
+	case BAM_CREF_SKIP:
 	    goto at_nth; /* sorry, but it's fast! */
 
 	case BAM_CINS:
@@ -137,7 +138,6 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	    p->cigar_len = 0;
 	    break;
 
-	case BAM_CREF_SKIP:
 	default:
 	    fprintf(stderr, "Unhandled cigar_op %d\n", op);
 	    return -1;
@@ -146,6 +146,7 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
  at_nth:
 
     /* Fill out base & qual fields */
+    p->ref_skip = 0;
     if (p->nth < nth && op != BAM_CINS) {
 	//p->base = '-';
 	p->base = '*';
@@ -169,6 +170,14 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 		p->qual = (p->qual + p->b_qual[p->seq_offset+1])/2;
 	    break;
 
+	case BAM_CREF_SKIP:
+	    p->base = '.';
+	    p->qual = 0;
+	    /* end of fragment, but not sequence */
+	    p->eof = p->eof ? 2 : 3;
+	    p->ref_skip = 1;
+	    break;
+
 	default:
 	    p->qual = p->b_qual[p->seq_offset];
 	    /*
@@ -188,12 +197,23 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	}
     }
 
+    /* Handle moving out of N (skip) into sequence again */
+    if (p->eof && p->base != '.') {
+	p->start = 1;
+	p->ref_skip = 1;
+	p->eof = 0;
+    }
+
     /* Check if next op is an insertion of some sort */
     if (p->cigar_len == 0) {
 	if (p->cigar_ind < bam_cigar_len(b)) {
 	    op=p->cigar_op  = p->b_cigar[p->cigar_ind] & BAM_CIGAR_MASK;
 	    p->cigar_len = p->b_cigar[p->cigar_ind] >> BAM_CIGAR_SHIFT;
 	    p->cigar_ind++;
+	    if (op == BAM_CREF_SKIP) {
+		p->eof = 3;
+		p->ref_skip = 1;
+	    }
 	} else {
 	    p->eof = 1;
 	}
@@ -287,6 +307,12 @@ int pileup_loop(bam_file_t *fp,
 	    pos = col+1;
 	}
 
+	if (col > pos) {
+	    fprintf(stderr, "BAM/SAM file is not sorted by position. "
+		    "Aborting\n");
+	    return -1;
+	}
+
 	/* Process data between the last column and our latest addition */
 	while (col < pos && phead) {
 	    int v, ins, depth = 0;
@@ -295,7 +321,7 @@ int pileup_loop(bam_file_t *fp,
 	    is_insert = 0;
 	    for (p = phead; p; p = p->next) {
 		if (!get_next_base(p, col, nth, &ins))
-		    p->eof = 2;
+		    p->eof = 1;
 
 		if (is_insert < ins)
 		    is_insert = ins;
@@ -311,7 +337,7 @@ int pileup_loop(bam_file_t *fp,
 		next = p->next;
 		
 		p->start = 0;
-		if (p->eof) {
+		if (p->eof == 1) {
 		    if (last)
 			last->next = p->next;
 		    else

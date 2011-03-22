@@ -25,6 +25,7 @@ typedef struct pileup {
     int  qual;            // Current qual (for active seq only)
     char base;		  // Current base (for active seq only)
     char start;		  // True if this is a new sequence
+    char ref_skip;        // True if the cause of eof or start is cigar N
 } pileup_t;
 
 int pileup_loop(bam_file_t *fp,

@@ -220,7 +220,11 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
     //    printf("New seq %p / %p => %p,%p\n", p, s, s->seq, s->conf);
     
     /* left hand cutoff data */
-    if (p->seq_offset >= 0) {
+    if (p->ref_skip) {
+	/* 2nd or more portion of a sequence with 'N' cigar ops */
+	i = 0;
+	s->seq_len = 0;
+    } else if (p->seq_offset >= 0) {
 	unsigned char *seq  = (unsigned char *)bam_seq(p->b);
 	unsigned char *qual = (unsigned char *)bam_qual(p->b);
 	char *sp = s->seq;
@@ -257,12 +261,8 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
     } else if (p->seq_offset == 0) {
 	i = 0;
     } else {
-	fprintf(stderr, "Data is not sorted by position. "
-		"You will probably have incorrect alignments.\n");
-	//exit(1);
-
 	/*
-	 * Either the input data is unsorted (caught elsewhere?)
+	 * Either the input data is unsorted (caught elsewhere)
 	 * or the CIGAR string starts with a deletion.
 	 */
 	i = 0;
@@ -1312,7 +1312,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 
     /* Construct a seq_t struct */
     s.right = bs->seq_len;
-    if (p->seq_offset+1 < b->len) {
+    if (p->seq_offset+1 < b->len && p->ref_skip == 0) {
 	unsigned char *b_seq  = (unsigned char *)bam_seq(p->b);
 	unsigned char *b_qual = (unsigned char *)bam_qual(p->b);
 
@@ -1681,7 +1681,7 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
 	s->seq_len++;
 
 	/* Remove sequence */
-	if (p->eof) {
+	if (p->eof & 1) {
 	    //printf("End seq %s\n", bam_name(p->b));
 	    bio_del_seq(bio, p);
 	}
