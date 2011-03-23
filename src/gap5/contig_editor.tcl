@@ -181,17 +181,21 @@ proc io_undo_exec {w crec cmdu} {
 	    }
 
 	    T_DEL {
+		$w incr_contig
 		set tag [$io get_anno_ele $op1]
 		$tag remove
+		$w decr_contig
 	    }
 
 	    T_NEW {
+		$w decr_contig
 		array set d $op1
 		set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
 		set t [$io get_anno_ele $rec]
 		$t set_comment $d(anno)
 		$t set_type $d(type)
 		$t delete
+		$w incr_contig
 	    }
 
 	    T_MOVE {
@@ -1913,7 +1917,9 @@ proc U_tag_change {w rec new_a} {
 
     if {$new_a == ""} {
 	# Delete
+	$w decr_contig
 	$tag remove
+	$w incr_contig
 
 	store_undo $w \
 	    [list \
@@ -1924,11 +1930,13 @@ proc U_tag_change {w rec new_a} {
 
     } elseif {$rec == -1} {
 	# Create
+	$w decr_contig
 	set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
 	set t [$io get_anno_ele $rec]
 	$t set_comment $d(anno)
 	$t set_type $d(type)
 	$t delete
+	$w incr_contig
 	
 	store_undo $w \
 	    [list \
