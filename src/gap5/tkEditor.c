@@ -627,6 +627,12 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    }
 	}
 
+	/* Bounds checking */
+	if (offset < xx->contig->start - xx->displayWidth/2 + 1)
+	    offset = xx->contig->start - xx->displayWidth/2 + 1;
+	if (offset > xx->contig->end - xx->displayWidth/2)
+	    offset = xx->contig->end - xx->displayWidth/2;
+
 	set_displayPos(xx, offset);
 	break;
     }
