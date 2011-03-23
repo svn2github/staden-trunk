@@ -1461,7 +1461,7 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
 
     calculate_consensus(xx->io, xx->cnum, pos, pos+wid-1, xx->cachedConsensus);
     for (i = 0; i < wid; i++) {
-	xx->displayedConsensus[i] = "ACGT*N"[xx->cachedConsensus[i].call];
+	xx->displayedConsensus[i] = "ACGT*N "[xx->cachedConsensus[i].call];
     }
 
     memset(ink, 0, MAX_DISPLAY_WIDTH * sizeof(*ink));
@@ -2941,6 +2941,12 @@ void edSelectFrom(edview *xx, int pos) {
 	    pos = right+1;
 
 	cache_decr(xx->io, s);
+    } else {
+	/* Clip to contig extents */
+	if (pos < xx->contig->start)
+	    pos = xx->contig->start;
+	if (pos > xx->contig->end)
+	    pos = xx->contig->end;
     }
     xx->select_start = xx->select_end = pos;
 
@@ -2990,6 +2996,12 @@ void edSelectTo(edview *xx, int pos) {
 	    pos = right-1;
 
 	cache_decr(xx->io, s);
+    } else {
+	/* Clip to contig extents */
+	if (pos < xx->contig->start)
+	    pos = xx->contig->start;
+	if (pos > xx->contig->end)
+	    pos = xx->contig->end;
     }
     xx->select_end = pos;
 

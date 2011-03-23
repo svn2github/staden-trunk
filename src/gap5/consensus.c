@@ -643,13 +643,14 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
     int len = end - start + 1;
     double slx_overcall_prob  = 1.0/4350000, lover,  lomover;
     double slx_undercall_prob = 1.0/2800000, lunder, lomunder;
+    static int loop = 0;
 
     double (*cvec)[4]; /* cvec[0-3] = A,C,G,T */
     double (*pvec)[2]; /* pvec[0] = gap, pvec[1] = base */
     char *perfect; /* quality=100 bases */
-    int *depth;
+    int *depth, vst, ven;
     //cstat *cs;
- 
+
     /* log overcall, log one minus overcall, etc */
     lover    = log(slx_overcall_prob);
     lomover  = log(1-slx_overcall_prob);
@@ -785,6 +786,37 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
     }
 #endif
 
+    /* Determine valid ranges, if necessary */
+    if (depth[0] == 0 && loop == 0) {
+	/* Check left edge */
+	loop = 1;
+	consensus_valid_range(io, contig, &vst, NULL);
+	loop = 0;
+	if (vst > start) {
+	    vst -= start;
+	} else {
+	    vst = 0;
+	}
+    } else {
+	vst = 0;
+    }
+
+    if (depth[len-1] == 0 && loop == 0) {
+	/* Check right edge */
+	loop = 1;
+	consensus_valid_range(io, contig, NULL, &ven);
+	loop = 0;
+	if (ven > start) {
+	    ven -= start;
+	} else {
+	    ven = 0;
+	}
+    } else {
+	ven = len-1;
+    }
+
+    //    printf("range=%d..%d => i from %d..%d valid %d..%d\n",
+    //	   start, end, 0, len-1, vst, ven);
 
     /* and speculate */
     for (i = 0; i < len; i++) {
@@ -903,6 +935,8 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 	if (cons[i].scores[4] > 0) {
 	    cons[i].call = 4;
 	    max = cons[i].scores[4];
+	} else if (i < vst || i > ven) {
+	    cons[i].call = 6; /* no base */
 	} else {
 	    max = -4.7; /* Consensus cutoff */
 	    cons[i].call = 5; /* N */
