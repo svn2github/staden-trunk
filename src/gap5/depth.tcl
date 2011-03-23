@@ -134,7 +134,6 @@ proc 1.5plot_exit {w} {
 proc 1.5plot_contig_event {w type id cdata args} {
     global $w
 
-#    puts [info level [info level]]
     switch $type {
 	QUERY_NAME {
 	    return "Template Display"
@@ -277,7 +276,6 @@ proc scrollx1.5 {w cmd args} {
 	set xpos [expr {[lindex [$sbar get] 0]*$clen + [set ${w}(start)]}]
 	if {[lindex $args 1] == "pages"} {
 	    set wid [expr {[c2x $w [set ${w}(pwidth)]] - [c2x $w 0]}]
-	    puts =>wid=$wid,xpos=$xpos+[expr {$wid/2*[lindex $args 0]}]
 	    set xpos [expr {$xpos + $wid/2*[lindex $args 0]}]
 	} else {
 	    set wid [expr {[c2x $w [lindex $args 0]] - [c2x $w 0]}]
@@ -382,8 +380,6 @@ proc c2x {w pos} {
 # +ve = from that edge.
 # -ve = from opposite edge
 proc add_plot {w func height has_scroll has_scale args} {
-    puts [info level [info level]]
-
     global $w
     incr ${w}(ntracks)
     set tnum [set ${w}(ntracks)]
@@ -428,8 +424,6 @@ proc add_plot {w func height has_scroll has_scale args} {
 # TEMP testing 
 #
 proc add_separator {w height} {
-    puts [info level [info level]]
-    
     global $w
     incr ${w}(ntracks)
     set tnum [set ${w}(ntracks)]
@@ -969,7 +963,7 @@ proc redraw_plot_doit {w} {
 	set d [set ${t}(canvas)]
 	set y1 [set ${t}(y1)]
 	set y2 [expr {[set ${t}(y1)]+[winfo height [set ${t}(canvas)]]}]
-	puts [set ${t}(func)]:[time {[set ${t}(func)] $w $t $x1 $x2 $y1 $y2}]
+	[set ${t}(func)] $w $t $x1 $x2 $y1 $y2
     }
     
     $w configure -cursor {}
@@ -1149,8 +1143,6 @@ proc track_settings {w} {
 proc template_item_init {w t} {
     global $w $t
 
-    puts START:[info level [info level]]
-    
     set ${t}(YScale) 100
     set ${t}(OldYScale) [set ${t}(YScale)]
     set ${t}(MinYSize) 1024
@@ -1259,8 +1251,6 @@ proc template_item {w t x1 x2 y1 y2} {
 proc depth_item_init {w t} {
     global $w $t
 
-    puts START:[info level [info level]]
-    
     set ${t}(YScale) 100
     set ${t}(OldYScale) [set ${t}(YScale)]
     set ${t}(MinYSize) 1024

@@ -814,11 +814,8 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     if (tdi->ymode == 1) {
     	double xgap = 100;
     
-	puts("Sorting");
 	qsort(tdi->gr->tl, tdi->ntl, sizeof(tline), sort_tline_by_x);
-	puts("computing ypos");
 	compute_ypos(tdi, xgap, tdi->gr->tl, tdi->ntl);
-	puts("done");
     }
     
     /* 3) Plot the lines */
