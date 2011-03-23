@@ -2751,7 +2751,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 		"/w{setlinewidth}def\n"
 		"/f{\n"
 		"    /Times-Roman findfont\n"
-		"    exch 2 mul qscalefont\n"
+		"    exch 2 mul scalefont\n"
 		"    setfont\n"
 		"}def\n"
 		"5 f\n"
@@ -2830,13 +2830,13 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 
 	    if (r->flags & GRANGE_FLAG_UNUSED)
 		continue;
-
+	    
 	    fprintf(gv, "%g g ",
 		    (r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ
 		    ? 0 : 0.5);
 	    fprintf(gv, "%g %g m %g 0 L s\n",
 		    scale * MIN(start, end),
-		    level*(H+G)+3 + ((double)n/(ArrayMax(bin->rng)+1))*(H-6),
+		    level*(H+G)+3 + ((double)(n+1)/(ArrayMax(bin->rng)+1))*(H-6),
 		    scale * abs(end-start));
 	}
 	cache_decr(io, bin);
