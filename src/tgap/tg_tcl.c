@@ -138,6 +138,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"contig_order","num_contigs",  "seq_name2rec", "child",
 	"get_library", "db_version",   "name",         "read_only",
 	"new_contig",  "new_sequence", "new_anno_ele", "rec_exists",
+	"seq_name_iter","seq_name_next","seq_name_end", 
 	(char *)NULL,
     };
 
@@ -146,7 +147,8 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_CONTIG,    IO_SEQUENCE,    IO_DATABASE,    IO_ANNO_ELE,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
 	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
-	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,   IO_REC_EXISTS
+	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,   IO_REC_EXISTS,
+	SEQ_NAME_ITER,SEQ_NAME_NEXT,  SEQ_NAME_END
     };
 
     if (objc < 2) {
@@ -291,6 +293,34 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
     }
 	
+    case SEQ_NAME_ITER: {
+	char *name = Tcl_GetStringFromObj(objv[2], NULL);
+	io->seq_name_iter = sequence_index_iter(io, name);
+	break;
+    }
+
+    case SEQ_NAME_NEXT: {
+	BTRec rec;
+	char *key;
+	
+	if (io->seq_name_iter && (key = btree_next(io->seq_name_iter, &rec))) {
+	    Tcl_Obj *objv[2];
+	    objv[0] = Tcl_NewStringObj(key, -1);
+	    objv[1] = Tcl_NewLongObj(rec);
+	    Tcl_SetObjResult(interp, Tcl_NewListObj(2, objv));
+	} else {
+	    Tcl_ResetResult(interp);
+	}
+
+	break;
+    }
+
+    case SEQ_NAME_END:
+	if (io->seq_name_iter) {
+	    btree_iter_del(io->seq_name_iter);
+	    io->seq_name_iter = NULL;
+	}
+	break;
     }
 
     return TCL_OK;
@@ -305,6 +335,7 @@ static int contig_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
 typedef struct {
     GapIO *io;
     contig_t *contig;
+    btree_iter_t *iter;
 } tcl_contig;
 
 static Tcl_ObjType contig_obj_type = {
@@ -859,6 +890,8 @@ static void _cmd_delete(ClientData clientData) {
     tcl_contig *tc = (tcl_contig *)clientData;
     if (tc->contig)
 	cache_decr(tc->io, tc->contig);
+    if (tc->iter)
+	btree_iter_del(tc->iter);
 }
 
 static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
@@ -890,6 +923,7 @@ static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     tc->io = io;
     tc->contig = c;
+    tc->iter = NULL;
 
     if (NULL == (res = Tcl_NewObj()))
 	return TCL_ERROR;
@@ -938,6 +972,7 @@ static int sequence_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
 typedef struct {
     GapIO *io;
     seq_t *seq;
+    btree_iter_t *iter;
 } tcl_sequence;
 
 static Tcl_ObjType sequence_obj_type = {
@@ -1300,6 +1335,7 @@ static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     ts->io = io;
     ts->seq = s;
+    ts->iter = NULL;
 
     if (NULL == (res = Tcl_NewObj()))
 	return TCL_ERROR;
@@ -1329,6 +1365,7 @@ static int anno_ele_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
 typedef struct {
     GapIO *io;
     anno_ele_t *anno;
+    btree_iter_t *iter;
 } tcl_anno_ele;
 
 static Tcl_ObjType anno_ele_obj_type = {
@@ -1592,6 +1629,7 @@ static int tcl_anno_ele_read(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     te->io = io;
     te->anno = e;
+    te->iter = NULL;
 
     if (NULL == (res = Tcl_NewObj()))
 	return TCL_ERROR;
@@ -1621,6 +1659,7 @@ static int library_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
 typedef struct {
     GapIO *io;
     library_t *library;
+    btree_iter_t *iter;
 } tcl_library;
 
 static Tcl_ObjType library_obj_type = {
@@ -1804,6 +1843,7 @@ static int tcl_library_read(GapIO *io, Tcl_Interp *interp,
 	return TCL_ERROR;
     tl->io = io;
     tl->library = l;
+    tl->iter = NULL;
 
     if (NULL == (res = Tcl_NewObj()))
 	return TCL_ERROR;
@@ -2000,7 +2040,7 @@ static int tcl_open_database(ClientData clientData, Tcl_Interp *interp,
     /* Register the string form as a new command */
     if (NULL == Tcl_CreateObjCommand(interp, iobj->bytes, io_cmd,
 				     (ClientData)io,
-				     (Tcl_CmdDeleteProc *)_cmd_delete))
+				     (Tcl_CmdDeleteProc *)NULL))
 	return TCL_ERROR;
 
     Tcl_SetObjResult(interp, iobj);

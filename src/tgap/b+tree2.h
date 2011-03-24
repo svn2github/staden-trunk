@@ -63,4 +63,15 @@ extern void btree_node_del(void *cd, btree_node_t *n);
 extern void btree_inc_ref(void *cd, btree_node_t *n);
 extern void btree_dec_ref(void *cd, btree_node_t *n);
 
+/* Iterators */
+typedef struct {
+    btree_t *t;
+    btree_node_t *n;
+    int ind;
+} btree_iter_t;
+
+btree_iter_t *btree_iter_new(btree_t *t, char *str);
+void btree_iter_del(btree_iter_t *iter);
+char *btree_next(btree_iter_t *iter, BTRec *rec);
+
 #endif /* _BTREE2_H_ */

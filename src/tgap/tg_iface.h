@@ -2,6 +2,7 @@
 #define _TG_IO_LOW_H_
 
 #include "tg_cache_item.h"
+#include "b+tree2.h"
 
 /*
  * The iface concept is to provide a standardised interface for accessing
@@ -84,6 +85,7 @@ typedef struct {
 typedef struct {
     STANDARD_IFACE
     tg_rec (*index_query)(void *dbh, char *name, int prefix);
+    btree_iter_t *(*index_query_iter)(void *dbh, char *name);
     int  (*index_add)(void *dbh, char *name, tg_rec rec);
     int  (*index_del)(void *dbh, char *name);
 } io_contig;
@@ -91,6 +93,7 @@ typedef struct {
 typedef struct {
     STANDARD_IFACE
     tg_rec (*index_query)(void *dbh, char *name, int prefix);
+    btree_iter_t *(*index_query_iter)(void *dbh, char *name);
     tg_rec *(*index_query_all)(void *dbh, char *name, int prefix, int *nrecs);
     int  (*index_add)(void *dbh, char *name, tg_rec rec);
     int  (*index_del)(void *dbh, char *name);

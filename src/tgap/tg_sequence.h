@@ -56,6 +56,7 @@ tg_rec sequence_index_query(GapIO *io, char *name);
 tg_rec *sequence_index_query_all(GapIO *io, char *name, int prefix,
 				 int *nrecs);
 int sequence_index_update(GapIO *io, char *name, int name_len, tg_rec rec);
+btree_iter_t *sequence_index_iter(GapIO *io, char *name);
 
 int sequence_get_position(GapIO *io, tg_rec snum, tg_rec *contig,
 			  int *start, int *end, int *orient);

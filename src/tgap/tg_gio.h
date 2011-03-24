@@ -61,6 +61,10 @@ typedef struct GapIO {
 
     /* DB name */
     char *name;
+
+    /* Seq name and contig name iterators; for convenient use from tcl */
+    btree_iter_t *seq_name_iter;
+    btree_iter_t *contig_name_iter;
 } GapIO;
 
 GapIO *gio_open(char *fn, int ro, int create);

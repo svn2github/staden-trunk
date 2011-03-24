@@ -596,6 +596,10 @@ tg_rec *sequence_index_query_all(GapIO *io, char *name, int prefix,
     return io->iface->seq.index_query_all(io->dbh, name, prefix, nrecs);
 }
 
+btree_iter_t *sequence_index_iter(GapIO *io, char *name) {
+    return io->iface->seq.index_query_iter(io->dbh, name);
+}
+
 int sequence_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {
     char n2[1024];
     tg_rec r;

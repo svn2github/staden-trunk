@@ -1793,6 +1793,12 @@ static tg_rec io_contig_index_query(void *dbh, char *name, int prefix) {
     return btree_search(io->contig_name_tree, name, prefix);
 }
 
+static btree_iter_t *io_contig_index_query_iter(void *dbh, char *name) {
+    g_io *io = (g_io *)dbh;
+
+    return btree_iter_new(io->contig_name_tree, name);
+}
+
 static int io_contig_index_add(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
@@ -3804,6 +3810,12 @@ static tg_rec *io_seq_index_query_all(void *dbh, char *name, int prefix,
     return btree_search_all(io->seq_name_tree, name, prefix, nrecs);
 }
 
+static btree_iter_t *io_seq_index_query_iter(void *dbh, char *name) {
+    g_io *io = (g_io *)dbh;
+
+    return btree_iter_new(io->seq_name_tree, name);
+}
+
 static int io_seq_index_add(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
@@ -4887,6 +4899,7 @@ static iface iface_g = {
 	io_contig_write,
 	io_generic_info,
 	io_contig_index_query,
+	io_contig_index_query_iter,
 	io_contig_index_add,
 	io_contig_index_del,
     },
@@ -4929,6 +4942,7 @@ static iface iface_g = {
 	io_seq_write,
 	io_generic_info,
 	io_seq_index_query,
+	io_seq_index_query_iter,
 	io_seq_index_query_all,
 	io_seq_index_add,
 	io_seq_index_del,

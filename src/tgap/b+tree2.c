@@ -316,6 +316,66 @@ BTRec *btree_search_all(btree_t *t, char *str, int prefix, int *nhits) {
     return results;
 }
 
+/*
+ * Returns a new btree iterator, optionally starting with the first match
+ * on or after prefix 'str'. If str is NULL we start from the first node
+ * in the tree.
+ *
+ * Call btree_next() to fetch data and btree_iter_del() to destroy an
+ * iterator. Updating a btree will make operations on an active iterator
+ * undefined.
+ *
+ * Returns iterator on success
+ *         NULL on failure
+ */
+btree_iter_t *btree_iter_new(btree_t *t, char *str) {
+    btree_iter_t *iter = malloc(sizeof(*iter));
+    if (!iter)
+	return NULL;
+
+    iter->ind = 0;
+    iter->t = t;
+    iter->n = btree_find_recurse(t, str ? str : "", &iter->ind);
+    if (!iter->n || !iter->n->keys[iter->ind]) {
+	free(iter);
+	return NULL;
+    }
+
+    return iter;
+}
+
+void btree_iter_del(btree_iter_t *iter) {
+    if (iter)
+	free(iter);
+}
+
+/*
+ * Iterates through a btree return key,value pairs.
+ * Note: the key memory is only guaranteed to be valid until the next
+ * (tg_)cache query.
+ * 
+ * Returns the key and sets *rec on success.
+ *         NULL on failure (eot)
+ */
+char *btree_next(btree_iter_t *iter, BTRec *rec) {
+    if (!iter || !iter->n)
+	return NULL;
+
+    while (iter->ind >= iter->n->used) {
+	if (!iter->n->next)
+	    return NULL;
+
+	iter->n = btree_node_get(iter->t->cd, iter->n->next);
+	iter->ind = 0;
+    }
+
+    if (rec) {
+	*rec = iter->n->chld[iter->ind];
+    }
+
+    return iter->n->keys[iter->ind++];
+}
+
 /* Redistributes data between 'from' and 'to' evenly */
 static int redist(btree_t *t, btree_node_t *to, btree_node_t *from,
 		  int to_ind, int from_ind, int front) {
