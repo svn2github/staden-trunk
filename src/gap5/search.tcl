@@ -66,13 +66,15 @@ proc gap4_text_init {t} {
     set range [$w tag prevrange $tag current]
     set text [$w get [lindex $range 0] [lindex $range 1]]
 
-    if {[db_info get_read_num $io $text] <= 0} {
-	verror ERR_WARN "Reading '$text' not found in database"
-	bell
-	return
-    }
+#    if {[db_info get_read_num $io $text] <= 0} {
+#	verror ERR_WARN "Reading '$text' not found in database"
+#	bell
+#	return
+#    }
 
-    edit_contig -io $io -contig $text -reading $text -reuse 1
+    set crec [db_info get_contig_num $io $text]
+
+    edit_contig -io $io -contig $crec -reading $text -reuse 1
 }
 
 ;proc gap4_text_SEQID_popup {io w tag X Y} {
@@ -88,17 +90,19 @@ proc gap4_text_init {t} {
     if {[winfo exists $w.m]} {destroy $w.m}
     create_popup $w.m "Reading/Contig Commands ($text)"
 
+    set crec [db_info get_contig_num $io $text]
+
     $w.m add command -label "Edit contig" \
-	-command "edit_contig -io $io -contig $text -reading $text -reuse 1"
+	-command "edit_contig -io $io -contig $crec -reading $text -reuse 1"
 
     $w.m add command -label "Template display" \
-	-command "CreateTemplateDisplay $io $text"
+	-command "CreateTemplateDisplay $io $crec"
 
-    $w.m add command -label "List reading notes" \
-	-command "NoteSelector $io reading $text"
-
-    $w.m add command -label "List contig notes" \
-	-command "NoteSelector $io contig $text"
+#    $w.m add command -label "List reading notes" \
+#	-command "NoteSelector $io reading $text"
+#
+#    $w.m add command -label "List contig notes" \
+#	-command "NoteSelector $io contig $text"
 
     tk_popup $w.m [expr $X-20] [expr $Y-10]
 }
@@ -123,17 +127,19 @@ proc gap4_text_init {t} {
 ;proc gap4_text_TAGID_selected {io w tag} {
     foreach {is_read tnum id pos} [gap4_text_TAGID_parse $io $w $tag] {}
 
-    if {[db_info get_read_num $io $id] <= 0} {
-	verror ERR_WARN "Reading '$id' not found in database"
-	bell
-	return
-    }
+#    if {[db_info get_read_num $io $id] <= 0} {
+#	verror ERR_WARN "Reading '$id' not found in database"
+#	bell
+#	return
+#    }
+
+    set crec [db_info get_contig_num $io $id]
 
     # Invoke the editor
     if {$is_read} {
-	edit_contig -io $io -contig $id -reading $id -pos $pos -reuse 1
+	edit_contig -io $io -contig $crec -reading $id -pos $pos -reuse 1
     } else {
-	edit_contig -io $io -contig $id -pos $pos -reuse 1
+	edit_contig -io $io -contig $crec -pos $pos -reuse 1
     }
 }
 
@@ -174,7 +180,7 @@ proc gap4_text_init {t} {
 # Common search dialog
 
 ;proc SearchDialog {io type tag title help_node} {
-    global gap_defs
+    global gap5_defs
     
     set w .search_seq_$type
     if {[xtoplevel $w -resizable 0] == ""} return
@@ -184,29 +190,29 @@ proc gap4_text_init {t} {
     wm title $w $title
 
     entrybox $w.pattern \
-	-title "Sequence $type pattern"
+	-title "Prefix (case sensitive)"
 
-    yes_no $w.case \
-	-title "Case insensitive" \
-	-bd 0 \
-	-orient horizontal \
-	-default [keylget gap_defs SEARCH_CASE]
-
-    radiolist $w.ptype \
-	-title "Pattern type" \
-	-bd 0 \
-	-relief groove \
-	-orient horizontal \
-	-default [keylget gap_defs SEARCH_MODE] \
-	-buttons {
-	    {{regular expression}}
-	    {{wild-cards}}
-	    {{sub-string}}
-	}
+#    yes_no $w.case \
+#	-title "Case insensitive" \
+#	-bd 0 \
+#	-orient horizontal \
+#	-default [keylget gap5_defs SEARCH_CASE]
+#
+#    radiolist $w.ptype \
+#	-title "Pattern type" \
+#	-bd 0 \
+#	-relief groove \
+#	-orient horizontal \
+#	-default [keylget gap5_defs SEARCH_MODE] \
+#	-buttons {
+#	    {{regular expression}}
+#	    {{wild-cards}}
+#	    {{sub-string}}
+#	}
 
     entrybox $w.list \
 	-title "Save to list named" \
-	-default [keylget gap_defs SEARCH_LIST_[string toupper $type]]
+	-default [keylget gap5_defs SEARCH_LIST_[string toupper $type]]
 
     okcancelhelp $w.ok \
 	-ok_command "SearchDialog2 $io $type $w 1 $tag" \
@@ -215,7 +221,8 @@ proc gap4_text_init {t} {
 	-help_command "show_help gap5 [list $help_node]" \
 	-bd 2 -relief groove
 
-    pack $w.pattern $w.case $w.ptype $w.list $w.ok -side top -fill both
+#    pack $w.pattern $w.case $w.ptype $w.list $w.ok -side top -fill both
+    pack $w.pattern $w.list $w.ok -side top -fill both
 }
 
 ;proc SearchDialog2 {io type w destroy {tag {}}} {
@@ -223,63 +230,35 @@ proc gap4_text_init {t} {
 	return
     }
     set lpattern [string tolower $pattern]
-    set ptype [radiolist_get $w.ptype]
-    set case [yes_no_get $w.case]
+#    set ptype [radiolist_get $w.ptype]
+#    set case [yes_no_get $w.case]
     set lname [entrybox_get $w.list]
 
     if {$destroy} {
 	destroy $w
     }
 
-    set list [search_${type}_list $io]
+#    set list [search_${type}_list $io]
 
-    set db [io_read_database $io]
-    set nr [keylget db num_readings]
-
-    set l ""
-    if {$ptype == 1 && $case} {
-	foreach {id name} $list {
-	    if {[regexp -nocase ".*$pattern.*" $name]} {lappend l $id $name}
+    set list ""
+    $io seq_name_iter $pattern
+    while {[set n [$io seq_name_next]] != ""} {
+	if {[string match "$pattern*" [lindex $n 0]]} {
+	    lappend list [lindex $n 1] [lindex $n 0]
+	} else {
+	    break
 	}
-    } elseif {$ptype == 1} {
-	foreach {id name} $list {
-	    if {[regexp ".*$pattern.*" $name]} {lappend l $id $name}
-	}
-    } elseif {$ptype == 2 && $case} {
-	foreach {id name} $list {
-	    if {[string match -nocase "$pattern" $name]} {
-		lappend l $id $name
-	    }
-	}
-    } elseif {$ptype == 2} {
-	foreach {id name} $list {
-	    if {[string match "$pattern" $name]} {lappend l $id $name}
-	}
-    } elseif {$ptype == 3 && $case} {
-	foreach {id name} $list {
-	    if {[string first $lpattern [string tolower $name]] >= 0} {
-		lappend l $id $name
-	    }
-	}
-    } elseif {$ptype == 3} {
-	foreach {id name} $list {
-	    if {[string first $lpattern $name] >= 0} {
-		lappend l $id $name
-	    }
-	}
-    } else {
-	verror ERR_WARN "Unknown search pattern type: $ptype"
-	return
     }
+    $io seq_name_end
 
     if {$lname != ""} {
 	set l2 ""
 	if {[info commands search_${type}_format] != ""} {
-	    foreach {id name} $l {
+	    foreach {id name} $list {
 		lappend l2 [search_${type}_format $io $id $name]
 	    }
 	} else {
-	    foreach {id name} $l {
+	    foreach {id name} $list {
 		lappend l2 $name
 	    }
 	}
@@ -287,7 +266,7 @@ proc gap4_text_init {t} {
 	ListEdit $lname
     }
 
-    foreach {id name} $l {
+    foreach {id name} $list {
 	search_${type}_disp $io $id $name
     }
 }
