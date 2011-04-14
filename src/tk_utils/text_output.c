@@ -212,10 +212,19 @@ static void tout_update_stream(int fd, const char *buf, int header,
 
     /* Add to the text widget */
     if (win_init) {
-	Tcl_SetVar(_interp, "TEMP", buf, 0);
+	if (*buf == '\r') {
+	    Tcl_SetVar(_interp, "TEMP", buf+1, 0);
 
-	Tcl_VarEval(_interp, win, " insert end ", "\"$TEMP\" ",
-		    tag_list, NULL);
+	    Tcl_VarEval(_interp, win, " delete \"end -1 line\" end", NULL);
+
+	    Tcl_VarEval(_interp, win, " insert end ", "\"$TEMP\" ",
+			tag_list, NULL);
+	} else {
+	    Tcl_SetVar(_interp, "TEMP", buf, 0);
+
+	    Tcl_VarEval(_interp, win, " insert end ", "\"$TEMP\" ",
+			tag_list, NULL);
+	}
 
 	if (fd == 1 ? stdout_scroll : stderr_scroll) {
 	    /* scroll to bottom of output window */
@@ -793,7 +802,10 @@ int tcl_error_bell(ClientData clientData, Tcl_Interp *interp,
  */
 
 void UpdateTextOutput() {
-    while (Tcl_DoOneEvent(TCL_WINDOW_EVENTS | TCL_IDLE_EVENTS | TCL_DONT_WAIT)
+    //    while (Tcl_DoOneEvent(TCL_WINDOW_EVENTS | TCL_IDLE_EVENTS | TCL_DONT_WAIT)
+    //	   != 0)
+
+    while (Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT)
 	   != 0)
 	;
 }
