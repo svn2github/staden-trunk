@@ -144,18 +144,18 @@ static GToggle g_toggle_state(GTimeStamp time, AuxIndex *idx)
  *        -1 on failure (no obvious derivations of fn found).
  */
 int find_db_files(char *fn, char *fndb, char *fnaux) {
-    char fnorig[1024];
+    char fn2[1024];
     int try;
 
-    strncpy(fnorig, fn, 1024);
+    strncpy(fn2, fn, 1024);
 
     for (try = 0; try < 2; try++) {
 	char *cp;
 
 	/* Try new format first */
-	strcpy(fndb ,fn);
+	strcpy(fndb ,fn2);
 	strcat(fndb ,G5_DB_SUFFIX);
-	strcpy(fnaux,fn);
+	strcpy(fnaux,fn2);
 	strcat(fnaux,G5_AUX_SUFFIX);
 
 	if (file_exists(fndb) && file_exists(fnaux))
@@ -165,8 +165,8 @@ int find_db_files(char *fn, char *fndb, char *fnaux) {
 	if (try == 1) {
 	    /* Second pass of trying new format (with/without suffix */
 	    /* Fail back to old format instead then */
-	    strcpy(fndb ,fnorig);
-	    strcpy(fnaux,fnorig);
+	    strcpy(fndb ,fn);
+	    strcpy(fnaux,fn);
 	    strcat(fnaux,G_AUX_SUFFIX);
     
 	    if (file_exists(fndb) && file_exists(fnaux))
@@ -176,7 +176,7 @@ int find_db_files(char *fn, char *fndb, char *fnaux) {
 	}
 
 	/* Not root of new, but maybe we specified a full name */
-	if (!(cp = strrchr(fn, '.'))) {
+	if (!(cp = strrchr(fn2, '.'))) {
 	    if (try == 0)
 		continue;
 	    return -1;
