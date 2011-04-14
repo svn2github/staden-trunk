@@ -84,7 +84,12 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 	}
 
 	for (j = 0; j < en-st+1; j++) {
-	    if (q[j].scores[q[j].call] > Q_CUTOFF) {
+	    if (q[j].call == 6) {
+		if (con)
+		    con[i-start+j] = ' ';
+		if (qual)
+		    qual[i-start+j] = 0;
+	    } else if (q[j].scores[q[j].call] > Q_CUTOFF) {
 		if (con)
 		    con[i-start+j] = "ACGT*N"[q[j].call];
 		if (qual)
@@ -139,8 +144,6 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 
 	right = MIN(r[i].start-1, end);
 
-	printf("Bin %"PRIrec": %d..%d (%d)\n", r[i].rec, r[i].start, r[i].end,
-	       r[i].end - r[i].start);
 	bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
 
 	if (r[i].start > left) {
@@ -181,8 +184,6 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	    bend   = r[i].end - 1;
 
 	    if (cons_r && (bin->flags & BIN_CONS_VALID)) {
-		printf("Valid cached cons from %d..%d +%d\n",
-		       cons_r->start, cons_r->end, r[i].start);
 		//bstart = cons_r->start;
 		//bend   = cons_r->end;
 		s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
@@ -377,7 +378,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
     if (r) free(r);
 
     if (end > left) {
-	printf("Filling missing region %d..%d\n", left, end);
+	//printf("Filling missing region %d..%d\n", left, end);
 	calculate_consensus_simple2(io, contig, left, end,
 				    con  ? &con[left-start]  : NULL,
 				    qual ? &qual[left-start] : NULL); 
