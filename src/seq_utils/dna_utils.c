@@ -935,6 +935,57 @@ void depad_seq(char *str, int *len, int *depad_to_pad)
 }
 
 /*
+ * Depad the sequence (length len1) in string str1 storing the result in str2.
+ * Array depad_to_pad is filled with the padded location of each
+ * depadded base. depad_to_pad array may be NULL.
+ *
+ * Returns: Modified len2 and str2. Fills out depad_to_pad array.
+ */
+void copy_and_depad_seq(const char *str1, int len1,
+			char *str2, int *len2,
+			int *depad_to_pad)
+{
+    int i;
+    int curr_pos = 0;
+    int old_len = len1;
+    int new_len = len1;
+    int x = old_len;
+    char *a = str2;
+    const char *b = str1;
+
+    if (depad_to_pad) {
+	for (i = 0; i < old_len; i++) {
+	    if (*b != '*') {
+		*a++ = *b++;
+		depad_to_pad[curr_pos++] = i;
+	    } else {
+		new_len--;
+		b++;
+	    }
+	}
+
+	for (i = curr_pos; i < old_len; i++) {
+	    depad_to_pad[curr_pos++] = x++;
+	}
+    } else {
+	for (i = 0; i < old_len; i++) {
+	    if (*b != '*') {
+		*a++ = *b++;
+	    } else {
+		new_len--;
+		b++;
+	    }
+	}
+    }
+    
+    *len2 = new_len;
+
+    if (new_len < old_len) {
+	*a = 0;
+    }
+}
+
+/*
  * Given a combination of A, C, G or T, all of which are 0 for not present
  * and 1 for present, this returns an ambiguity code.
  */

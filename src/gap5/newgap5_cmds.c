@@ -1163,24 +1163,26 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
     int mode = 0, mask = 0;
 
     cli_args a[] = {
-	{"-io",		  ARG_IO,   1, NULL,      offsetof(fij_arg, io)},
-	{"-mask",	  ARG_STR,  1, "none",    offsetof(fij_arg, mask)},
+	{"-io",		  ARG_IO,   1, NULL,   offsetof(fij_arg, io)},
+	{"-mask",	  ARG_STR,  1, "none", offsetof(fij_arg, mask)},
 	{"-mode",	  ARG_STR,  1, "all_all", offsetof(fij_arg, mode)},
 	{"-min_overlap",  ARG_INT,  1, "20",   offsetof(fij_arg, min_overlap)},
-	{"-max_pmismatch",ARG_FLOAT,1, "30.0",    offsetof(fij_arg, max_mis)},
-	{"-word_length",  ARG_INT,  1, "4",	  offsetof(fij_arg, word_len)},
-	{"-max_prob",     ARG_FLOAT,  1, "1.0e-8",offsetof(fij_arg, max_prob)},
-	{"-min_match",    ARG_INT,  1, "20",	 offsetof(fij_arg, min_match)},
-	{"-band",         ARG_INT,  1, "10",     offsetof(fij_arg, band)},
-	{"-win_size",	  ARG_INT,  1, "0",       offsetof(fij_arg, win_size)},
-	{"-max_dashes",	  ARG_INT,  1, "0",       offsetof(fij_arg, dash)},
-	{"-min_conf",	  ARG_INT,  1, "8",       offsetof(fij_arg, min_conf)},
-	{"-tag_types",	  ARG_STR,  1, "",        offsetof(fij_arg, tag_list)},
-	{"-contigs",	  ARG_STR,  1, NULL,      offsetof(fij_arg, inlist)},
-	{"-use_conf",	  ARG_INT,  1, "1",	  offsetof(fij_arg, use_conf)},
-	{"-use_hidden",	  ARG_INT,  1, "1",	  offsetof(fij_arg, use_hidden)},
-	{"-max_display",  ARG_INT,  1, "0",       offsetof(fij_arg, max_display)},
-	{NULL,		  0,	    0, NULL,      0}
+	{"-max_pmismatch",ARG_FLOAT,1, "30.0", offsetof(fij_arg, max_mis)},
+	{"-word_length",  ARG_INT,  1, "4",    offsetof(fij_arg, word_len)},
+	{"-max_prob",     ARG_FLOAT,1, "1.0e-8",  offsetof(fij_arg, max_prob)},
+	{"-min_match",    ARG_INT,  1, "20",   offsetof(fij_arg, min_match)},
+	{"-band",         ARG_INT,  1, "10",   offsetof(fij_arg, band)},
+	{"-win_size",	  ARG_INT,  1, "0",    offsetof(fij_arg, win_size)},
+	{"-max_dashes",	  ARG_INT,  1, "0",    offsetof(fij_arg, dash)},
+	{"-min_conf",	  ARG_INT,  1, "8",    offsetof(fij_arg, min_conf)},
+	{"-tag_types",	  ARG_STR,  1, "",     offsetof(fij_arg, tag_list)},
+	{"-contigs",	  ARG_STR,  1, NULL,   offsetof(fij_arg, inlist)},
+	{"-use_conf",	  ARG_INT,  1, "1",    offsetof(fij_arg, use_conf)},
+	{"-use_hidden",	  ARG_INT,  1, "1",    offsetof(fij_arg, use_hidden)},
+	{"-max_display",  ARG_INT,  1, "0",    offsetof(fij_arg, max_display)},
+	{"-filter_words", ARG_FLOAT,1, "0",    offsetof(fij_arg,filter_words)},
+	{"-fast_mode",    ARG_INT,  1, "0",    offsetof(fij_arg, fast_mode)},
+	{NULL,		  0,	    0, NULL,   0}
     };
 
     vfuncheader("find internal joins");
@@ -1256,8 +1258,8 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
     if (fij(args.io, mask, mode, args.min_overlap, (double)args.max_mis,
 	    args.word_len, (double)args.max_prob, args.min_match, args.band,
 	    args.win_size, args.dash, args.min_conf, args.use_conf,
-	    args.use_hidden, args.max_display,
-	    num_contigs, contig_array) < 0 ) {
+	    args.use_hidden, args.max_display, args.fast_mode,
+	    args.filter_words, num_contigs, contig_array) < 0 ) {
 	verror(ERR_WARN, "Find internal joins", "Failure in Find Internal Joins");
 	SetActiveTags("");
 	return TCL_OK;
@@ -1711,7 +1713,6 @@ int tcl_iter_test(ClientData clientData,
     int rargc, i, j;
     contig_list_t *rargv;
     list2_arg args;
-    Tcl_Obj *res;
 
     cli_args a[] = {
 	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
@@ -1740,13 +1741,13 @@ int tcl_iter_test(ClientData clientData,
 	switch(j) {
 	case 0: type = GRANGE_FLAG_ISANNO;   break;
 	case 1: type = GRANGE_FLAG_ISREFPOS; break;
+	default:
 	case 2: type = GRANGE_FLAG_ISSEQ;    break;
 	}
 
 	printf("X: \nX: *** Iterator test with type = %d ***\n", type);
 
 	for (i = 0; i < rargc; i++) {
-	    Tcl_Obj *l = Tcl_NewListObj(0, NULL);
 	    tg_rec crec = rargv[i].contig;
 	    int start = rargv[i].start;
 	    int end = rargv[i].end;

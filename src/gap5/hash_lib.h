@@ -1,6 +1,7 @@
 #if !defined(HASH_H)
 #define HASH_H
 #include "align_lib.h"
+#include "consen.h"
 
 #define MINMAT 20
 
@@ -18,6 +19,7 @@ typedef struct block_match_ {
     int best_score;
     int prev_block;
     int next_block;
+    int contig1;
 } Block_Match;
 
 typedef struct diag_match_ {
@@ -44,6 +46,8 @@ typedef struct hash_ {
   int max_matches;
   int matches;
   int min_match;
+  int fast_mode;
+  int filter_words;
 } Hash;
 
 void set_hash8_lookupn(void);
@@ -88,6 +92,14 @@ int poisson_diagonals(int min_diag, int max_diag, int word_size,
 
 int best_intercept ( Hash *h, int *seq1_i, int *seq2_i );
 
+int compare_b_bulk(Hash *h,
+		   ALIGN_PARAMS *params, OVERLAP *overlap, int cnum,
+		   Contig_parms *contig_list, int number_of_contigs,
+		   void (*add_func)(OVERLAP *overlap,
+				    int cnum1,
+				    int cnum2,
+				    void *clientdata),
+		   void *add_data);
 int compare_b(Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap);
 int compare_a(Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap);
 

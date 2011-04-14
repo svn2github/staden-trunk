@@ -5,12 +5,18 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
+#include <assert.h>
+#include <time.h>
+
 #include "misc.h"
 #include "dna_utils.h"
 #include "hash_lib.h"
+#include "consen.h"
 
 #define MINMAT 20
 
+/* Size to divide the h->diag[] into for purposes of delayed initialisation */
+#define DSZ 0x800
 
 static int dna_hash8_lookup[256];
 
@@ -51,11 +57,15 @@ int init_hash8n (
     
     if ( ! (*h = (Hash *) xmalloc ( sizeof(Hash) ))) return -2;
 
-    if ( (word_length != 8) && (word_length != 4)) {
+    if (word_length < 8)
+	word_length = 4;
+    else if (word_length < 12)
+	word_length = 8;
+    else if (word_length < 14)
+	word_length = 12;
+    else
+	word_length = 14;
 
-	if (word_length < 4) word_length = 4;
-	if (word_length > 4) word_length = 8;
-    }
     size_hash = (int)pow(4.0, (float) word_length);
     
     if ( HASH_JOB_BLKS & job ) {
@@ -76,6 +86,8 @@ int init_hash8n (
     (*h)->matches = 0;
     (*h)->word_length = word_length;
     (*h)->size_hash = size_hash;
+    (*h)->fast_mode = 1;
+    (*h)->filter_words = 0;
     
     if ( ! ((*h)->values1 = (int *) xmalloc ( sizeof(int)*(max_seq) ))) 
 	return -2;
@@ -88,19 +100,21 @@ int init_hash8n (
      * 2) or we do a quick comparison and slow alignment
      * 3) or simply search for repeats or fortran sequence assembly
      * for 1 need
-     * HASH_JOB_DIAG 1
+     * HASH_JOB_DIAG   1
      * HASH_JOB_BLKS  16
-     * ie job = 17;
+     * ie job = 17
      * 
      * for 2 need
-     * HASH_JOB_DIAG 1
-     * HASH_JOB_HIST 2
-     * HASH_JOB_EXPD 4
-     * HASH_JOB_DMTCH 8
-     * HASH_JOB_DIAG 16
+     * HASH_JOB_DIAG   1
+     * HASH_JOB_HIST   2
+     * HASH_JOB_EXPD   4
+     * HASH_JOB_DMTCH  8
+     * HASH_JOB_BLKS  16
      * ie job = 31
      *
-     * for 3 need HASH_JOB_DIAG 1 only
+     * for 3 need
+     * HASH_JOB_DIAG   1
+     * ie job = 1
      */
 
     if( (job != 1) && (job != 17) && (job != 31) ) return -2;
@@ -162,10 +176,209 @@ void free_hash8n ( Hash *h ) {
   xfree ( h );
 }
 
-void print_h (Hash *h) {
-    printf("word_length %d size_hash %d seq1_len %d seq2_len %d\n",
-	   h->word_length,h->size_hash,h->seq1_len,h->seq2_len);
+/* ---------------------------------------------------------------------------
+ * WORD SIZE = 14
+ */
+
+int hash_word14n ( char *seq, int *start_base, int seq_len, int word_length,
+		unsigned int *uword) {
+    
+    /* 	given a sequence seq, return the hash value for the first word 
+     *  after start_base that does not contain an unknown char. Tell 
+     *  the caller where this is. If we reach the end of the seq set
+     *  start_base and return -1.
+     */
+    
+    
+    register int i;
+    register int end_base,base_index,lstart_base;
+    register unsigned int luword;
+    
+    lstart_base = *start_base;
+    end_base = lstart_base + word_length;
+    if ( seq_len < end_base ) return -1;
+    
+    for (i=lstart_base,luword=0,end_base=lstart_base+word_length;i<end_base;i++) {
+
+	base_index = dna_hash8_lookup[(unsigned)seq[i]];
+	if ( 4 == base_index ) {
+
+	    /*	weve hit an unknown char, so lets start again */
+
+	    lstart_base = i + 1;
+	    end_base = lstart_base + word_length;
+	    if ( seq_len < end_base ) {
+		*start_base = lstart_base;
+		return -1;
+	    }
+	    luword = 0;
+	    i = lstart_base - 1;
+	}
+	else {
+	    luword = ( luword <<2 ) | base_index;
+	}
+    }
+    *start_base = lstart_base;
+    *uword = luword & 0x7ffffff;
+    return 0;
 }
+
+
+int hash_seq14n ( char *seq, int *hash_values, int seq_len, int word_length) {
+
+    /* given a sequence seq, return an array of hash values
+       If we cannot find at least one word to hash on we return -1
+       otherwise we return 0.
+       */
+
+    register int i,j,k;
+    int start_base,prev_start_base,base_index;
+    unsigned int uword;
+
+    if ( seq_len < word_length ) return -1;
+
+    /*	Get the hash value for the first word that contains no unknowns */	
+    start_base = 0;
+    if (hash_word14n ( seq, &start_base, seq_len, word_length, &uword)) return -1;
+
+    for (i=0;i<start_base;i++) hash_values[i] = -1;
+
+    /*	Now do the rest of the sequence */
+
+    hash_values[start_base] = uword;
+    k = seq_len - word_length + 1;
+
+    for (i=start_base+1,j=start_base+word_length; i<k; i++,j++) {
+
+	base_index = dna_hash8_lookup[(unsigned)seq[j]];
+	if ( 4 == base_index ) {
+
+	    /*	weve hit an unknown char, so lets start again */
+
+	    prev_start_base = i;
+	    start_base = j + 1;
+	    if (hash_word14n ( seq, &start_base, seq_len, word_length, &uword)) {
+		for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
+		return 0;
+	    }
+
+	    for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
+	    hash_values[start_base] = uword;
+	    i = start_base;
+	    j = i + word_length - 1;
+
+	}
+	else {
+	    uword = ( uword <<2 ) | base_index;
+	    hash_values[i] = uword & 0x7ffffff;
+	}
+    }
+    return 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * WORD SIZE = 12
+ */
+
+static int hash_word12n ( char *seq, int *start_base, int seq_len,
+			  int word_length, unsigned int *uword) {
+    
+    /* 	given a sequence seq, return the hash value for the first word 
+     *  after start_base that does not contain an unknown char. Tell 
+     *  the caller where this is. If we reach the end of the seq set
+     *  start_base and return -1.
+     */
+    
+    
+    register int i;
+    register int end_base,base_index,lstart_base;
+    register unsigned int luword;
+    
+    lstart_base = *start_base;
+    end_base = lstart_base + word_length;
+    if ( seq_len < end_base ) return -1;
+    
+    for (i=lstart_base,luword=0,end_base=lstart_base+word_length;i<end_base;i++) {
+
+	base_index = dna_hash8_lookup[(unsigned)seq[i]];
+	if ( 4 == base_index ) {
+
+	    /*	weve hit an unknown char, so lets start again */
+
+	    lstart_base = i + 1;
+	    end_base = lstart_base + word_length;
+	    if ( seq_len < end_base ) {
+		*start_base = lstart_base;
+		return -1;
+	    }
+	    luword = 0;
+	    i = lstart_base - 1;
+	}
+	else {
+	    luword = ( luword <<2 ) | base_index;
+	}
+    }
+    *start_base = lstart_base;
+    *uword = luword & 0xffffff;
+    return 0;
+}
+
+
+static int hash_seq12n ( char *seq, int *hash_values, int seq_len, int word_length) {
+
+    /* given a sequence seq, return an array of hash values
+       If we cannot find at least one word to hash on we return -1
+       otherwise we return 0.
+       */
+
+    register int i,j,k;
+    int start_base,prev_start_base,base_index;
+    unsigned int uword;
+
+    if ( seq_len < word_length ) return -1;
+
+    /*	Get the hash value for the first word that contains no unknowns */	
+    start_base = 0;
+    if (hash_word12n ( seq, &start_base, seq_len, word_length, &uword)) return -1;
+
+    for (i=0;i<start_base;i++) hash_values[i] = -1;
+
+    /*	Now do the rest of the sequence */
+
+    hash_values[start_base] = uword;
+    k = seq_len - word_length + 1;
+
+    for (i=start_base+1,j=start_base+word_length; i<k; i++,j++) {
+	base_index = dna_hash8_lookup[(unsigned)seq[j]];
+	if ( 4 == base_index ) {
+
+	    /*	weve hit an unknown char, so lets start again */
+
+	    prev_start_base = i;
+	    start_base = j + 1;
+	    if (hash_word12n ( seq, &start_base, seq_len, word_length, &uword)) {
+		for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
+		return 0;
+	    }
+
+	    for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
+	    hash_values[start_base] = uword;
+	    i = start_base;
+	    j = i + word_length - 1;
+
+	}
+	else {
+	    uword = ( uword <<2 ) | base_index;
+	    hash_values[i] = uword & 0xffffff;
+	}
+    }
+    return 0;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * WORD SIZE = 8
+ */
 
 int hash_word8n ( char *seq, int *start_base, int seq_len, int word_length,
 		unsigned short *uword) {
@@ -263,6 +476,9 @@ int hash_seq8n ( char *seq, int *hash_values, int seq_len, int word_length) {
     return 0;
 }
 
+/* ---------------------------------------------------------------------------
+ * WORD SIZE = 4
+ */
 
 int hash_word4n ( char *seq, int *start_base, int seq_len, int word_length,
 		unsigned char *uword) {
@@ -360,6 +576,9 @@ int hash_seq4n ( char *seq, int *hash_values, int seq_len, int word_length) {
     return 0;
 }
 
+/* ---------------------------------------------------------------------------
+ */
+
 void store_hashn ( Hash *h ) {
 
     /*store the hash values in values: put number of occurrences of
@@ -375,24 +594,20 @@ void store_hashn ( Hash *h ) {
     int nw;
     register int i,j,n;
 
-    for ( i=0;i<h->size_hash;i++ ) {
+    for (i=0; i<h->size_hash; i++) {
 	h->counts[i] = 0;
 	h->last_word[i] = 0;
     }
     j = h->seq1_len - h->word_length + 1;
-    for ( i = 0; i < j; i++ ) {
+    for (i = 0; i < j; i++) {
 	n = h->values1[i];
-	if ( -1 != n ) {
+	if (-1 != n) {
 	    nw = h->counts[n];
-	    if ( 0 == nw ) {
-		h->last_word[n] = i;
-		h->counts[n] += 1;
-	    }
-	    else {
-		h->counts[n] += 1;
+	    if (nw != 0) {
 		h->values1[i] = h->last_word[n];
-		h->last_word[n] = i;
 	    }
+	    h->last_word[n] = i;
+	    h->counts[n]++;
 	}
     }
 }
@@ -657,17 +872,26 @@ int best_intercept ( Hash *h, int *seq1_i, int *seq2_i ) {
 	}
     }
     return 1;
-    }
+}
 
 int hash_seqn (Hash *h, int job) {
     if ( job == 1 ) {
-	if (h->word_length == 8 ) {
+	if (h->word_length == 14) {
+	    if ( hash_seq14n ( h->seq1, h->values1, 
+			    h->seq1_len, h->word_length ) != 0 ) {
+		return -1;
+	    }
+	} else if (h->word_length == 12) {
+	    if ( hash_seq12n ( h->seq1, h->values1, 
+			    h->seq1_len, h->word_length ) != 0 ) {
+		return -1;
+	    }
+	}  else if (h->word_length == 8 ) {
 	    if ( hash_seq8n ( h->seq1, h->values1, 
 			    h->seq1_len, h->word_length ) != 0 ) {
 		return -1;
 	    }
-	}
-	else {
+	} else {
 	    if ( hash_seq4n ( h->seq1, h->values1, 
 			    h->seq1_len, h->word_length ) != 0 ) {
 		return -1;
@@ -677,7 +901,17 @@ int hash_seqn (Hash *h, int job) {
 	return 0;
     }
     else if ( job == 2 ) {
-	if (h->word_length == 8 ) {
+	if (h->word_length == 14) {
+	    if ( hash_seq14n ( h->seq2, h->values2, 
+			    h->seq2_len, h->word_length ) != 0 ) {
+		return -1;
+	    }
+	} else if (h->word_length == 12) {
+	    if ( hash_seq12n ( h->seq2, h->values2, 
+			    h->seq2_len, h->word_length ) != 0 ) {
+		return -1;
+	    }
+	} else if (h->word_length == 8 ) {
 	    if ( hash_seq8n ( h->seq2, h->values2, 
 			    h->seq2_len, h->word_length ) != 0 ) {
 		return -1;
@@ -754,7 +988,17 @@ typedef struct Edit_pair {
 
 int update_edit_pair ( EDIT_PAIR *edit_pair, OVERLAP *overlap ) {
     int i,j;
-    /*printf("s1 %d s2 %d\n",overlap->s1_len,overlap->s2_len);*/
+
+    /*
+    printf(">update_edit_pair  s1 %d s2 %d\n",overlap->s1_len,overlap->s2_len);
+    printf("  S1: "); for(i=0; i<overlap->s1_len; i++)
+	printf(" %d", overlap->S1[i]);
+    printf("\n");
+    printf("  S2: "); for(i=0; i<overlap->s2_len; i++)
+	printf(" %d", overlap->S2[i]);
+    printf("\n");
+    */
+
     if ( overlap->s1_len ) {
 	if ( (edit_pair->size - edit_pair->next1) < overlap->s1_len ) return -1;
 	for (i=edit_pair->next1,j=0;j<overlap->s1_len;i++,j++) {
@@ -779,12 +1023,11 @@ int update_edit_pair ( EDIT_PAIR *edit_pair, OVERLAP *overlap ) {
 }
 
 int block_to_edit_pair ( EDIT_PAIR *edit_pair, int length ) {
-  /*printf("next %d %d %d\n",edit_pair->size,edit_pair->next1,edit_pair->next2);*/
-  if ( (edit_pair->size - edit_pair->next1) < 1 ) return -1;
-  edit_pair->S1[edit_pair->next1++] = length;
-  if ( (edit_pair->size - edit_pair->next2) < 1 ) return -1;
-  edit_pair->S2[edit_pair->next2++] = length;
-  return 0;
+    if ( (edit_pair->size - edit_pair->next1) < 1 ) return -1;
+    edit_pair->S1[edit_pair->next1++] = length;
+    if ( (edit_pair->size - edit_pair->next2) < 1 ) return -1;
+    edit_pair->S2[edit_pair->next2++] = length;
+    return 0;
 }
 
 int align_bit ( ALIGN_PARAMS *params, OVERLAP *overlap, EDIT_PAIR *edit_pair) {
@@ -793,26 +1036,44 @@ int align_bit ( ALIGN_PARAMS *params, OVERLAP *overlap, EDIT_PAIR *edit_pair) {
 
     l1 = overlap->seq1_len;
     l2 = overlap->seq2_len;
-    if ((l1 > 0) && (l2 > 0 )) {
+
+    /*
+    printf("seq1 len %d '%.*s'\n",
+	   overlap->seq1_len, overlap->seq1_len, overlap->seq1);
+    printf("seq2 len %d '%.*s'\n",
+	   overlap->seq2_len, overlap->seq2_len, overlap->seq2);
+    printf("l1=%d l2=%d band=%d\t",
+	   l1, l2, params->band);
+    fflush(stdout);
+    */
+
+    if (l1 == 1 && l2 == 1) {
+    	edit_pair->S1[edit_pair->next1++] = 1;
+    	edit_pair->S2[edit_pair->next2++] = 1;
+    } else if ((l1 > 0) && (l2 > 0 )) {
 	if (affine_align(overlap,params)) return -1;
 	if ( update_edit_pair ( edit_pair, overlap)) return -1;
-    }
-    else {
-	if (l1 > 0 ) {
-	    if ( edit_pair->next2 == edit_pair->size ) return -1;
-	    edit_pair->S2[edit_pair->next2++] = -l1;
+	/* printf("%f\n", overlap->score); */
+    } else if (l1 > 0 ) {
+	if ( edit_pair->next2 == edit_pair->size ) return -1;
+	edit_pair->S2[edit_pair->next2++] = -l1;
 
-	    if ( edit_pair->next1 == edit_pair->size ) return -1;
-	    edit_pair->S1[edit_pair->next1++] = l1;
-	}
-	if (l2 > 0 ) {
-	    if ( edit_pair->next1 == edit_pair->size ) return -1;
-	    edit_pair->S1[edit_pair->next1++] = -l2;
-
-	    if ( edit_pair->next2 == edit_pair->size ) return -1;
-	    edit_pair->S2[edit_pair->next2++] = l2;
-	}
+	if ( edit_pair->next1 == edit_pair->size ) return -1;
+	edit_pair->S1[edit_pair->next1++] = l1;
+	/* printf("no-score\n"); */
+    } else if (l2 > 0 ) {
+	if ( edit_pair->next1 == edit_pair->size ) return -1;
+	edit_pair->S1[edit_pair->next1++] = -l2;
+	
+	if ( edit_pair->next2 == edit_pair->size ) return -1;
+	edit_pair->S2[edit_pair->next2++] = l2;
+	/* printf("no-score\n"); */
+    } else if (l1 == 0 && l2 == 0) {
+	return 0;
+    } else {
+	printf("impossible alignment?\n");
     }
+
     return 0;
 }
 
@@ -854,7 +1115,361 @@ EDIT_PAIR *create_edit_pair(int size) {
  */
 int set_band_blocks(int seq1_len, int seq2_len) {
     return MIN(9990000.0/MIN(seq1_len,seq2_len),
-	       MAX(30,(MIN(seq1_len,seq2_len)*0.35)));
+    	       MAX(10,(MIN(seq1_len,seq2_len)*0.1)));
+
+    return MIN(9990000.0/MIN(seq1_len,seq2_len),
+    	       MAX(30,(MIN(seq1_len,seq2_len)*0.35)));
+}
+
+/* FAST MODE */
+int set_band_blocks_fast(int seq1_len, int seq2_len) {
+    return MIN(9990000.0/MIN(seq1_len,seq2_len),
+	       MAX(10,(MIN(seq1_len,seq2_len)*0.05)));
+
+}
+
+/*
+ * Given a bunch of hash hits we can work out what the best case scenario is
+ * for the alignment:
+ * +1 for every base in a matching block.
+ * +1 for every base in MIN(len1,len2) in the matrix between blocks.
+ * -1 for every base in ABS(len1-len2) in the matrix between blocks.
+ * -1 for every base in MIN(len1,len2)/(word_len-1) between blocks.
+ *
+ * Ie if we assume the sections that didn't match our hash of word_len 20
+ * were all {19 match, 1 mismatch}* segments then we can estimate the total
+ * alignment mismatch percentage.
+ * When we have very different sized axis between hashed blocks we know
+ * at best we'll have at least len1-len2 pads to insert, plus whatever
+ * differences the sequences have too.
+ *
+ * The intention here is to avoid performing alignments that we know we'll
+ * reject later on anyway.
+ */
+int min_mismatch(Hash *h, int *mis_p, int *mat_p) {
+    int i;
+    int p1 = 0, p2 = 0;
+    int match = 0, mismatch = 0, worst_mat=0, worst_mis=0;
+    int l1, l2;
+
+    if (h->matches == 0)
+	return 100;
+
+    /*
+    printf("=== STEP 0 === %d\n",h->matches);
+    for (i=0;i<h->matches;i++) {
+	printf("i %d %d %d %d %d %d %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block);
+    }
+    puts("");
+    */
+
+    /* First block start non-anchored while end is */
+    l1 = h->block_match[0].pos_seq1;
+    l2 = h->block_match[0].pos_seq2;
+    mismatch = MIN(l1, l2)/h->min_match + 1;
+    match =  MIN(l1, l2) - mismatch;
+    match += h->block_match[0].length;
+
+    worst_mat = h->block_match[0].length;
+    worst_mis = MIN(l1, l2);
+
+    p1 = h->block_match[0].pos_seq1 + h->block_match[0].length;
+    p2 = h->block_match[0].pos_seq2 + h->block_match[0].length;
+
+    /* Inbetween blocks => both ends anchored */
+    for (i = 1; i < h->matches; i++) {
+	/* Gap from p1 to [].pos_seq1 & p2 to [].pos_seq2 */
+	l1 = h->block_match[i].pos_seq1 - p1;
+	l2 = h->block_match[i].pos_seq2 - p2;
+	match += MIN(l1, l2) - MIN(l1, l2)/h->min_match;
+	mismatch += MAX(ABS(l1 - l2), MIN(l1, l2)/h->min_match+1);
+	match += h->block_match[i].length;
+
+	worst_mat += h->block_match[i].length;
+	worst_mis += MAX(l1, l2);
+
+	p1 = h->block_match[i].pos_seq1 + h->block_match[i].length;
+	p2 = h->block_match[i].pos_seq2 + h->block_match[i].length;
+    }
+
+    /* Last block, only anchored at start */
+    l1 = h->seq1_len - p1;
+    l2 = h->seq2_len - p2;
+
+    match += MIN(l1, l2) - (MIN(l1, l2)/h->word_length+1);
+    mismatch += MIN(l1, l2)/h->word_length + 1;
+
+    worst_mis += MIN(l1, l2);
+
+    /*
+    printf("len %d,%d match %d, mismatch %d, %5.1f%% worst %5.1f%%\n",
+	   h->seq1_len, h->seq2_len, match, mismatch,
+	   100.0*mismatch / (match + mismatch),
+	   100.0*worst_mis / (worst_mat + worst_mis));
+    */
+
+    if (mat_p)
+	*mat_p = match;
+    if (mis_p)
+	*mis_p = mismatch;
+
+    return 100 * mismatch / (match + mismatch);
+}
+
+/*
+ * Use the edit buffers to compute an overlap percentage mismatch
+ */
+void overlap_mismatch(Hash *h, EDIT_PAIR *edit_pair, OVERLAP *overlap,
+		      char **seq1_p, char **seq2_p,
+		      int *seq1_len_p, int *seq2_len_p,
+		      int **S1_p, int **S2_p, int *n1_p, int *n2_p) {
+    int i, j;
+    char *seq1, *seq2;
+    int seq1_len, seq2_len;
+    int *S1, *S2;
+    int n1, n2;
+    int mat, total;
+    int score;
+    int left1, left2, right1, right2;
+    int op1, op2;
+
+    seq1 = h->seq1;  seq1_len = h->seq1_len;
+    seq2 = h->seq2;  seq2_len = h->seq2_len;
+    S1 = edit_pair->S1;
+    S2 = edit_pair->S2;
+    n1 = edit_pair->next1;
+    n2 = edit_pair->next2;
+
+    /* Step 1: trim alignment edges */
+
+    /* AGGAGGT... S1
+     * ****GGT... S2
+     */
+    left1 = left2 = 0;
+    if (S2[0] < 0) {
+	int d = -S2[0];
+	S2++; n2--;
+	left2 = d;
+
+	/* Consume first 'd' characters in seq1 */
+	while (d > 0) {
+	    if (S1[0] > d) {
+		seq1 += d; seq1_len -= d;
+		S1[0] -= d;
+		d = 0;
+	    } else if (S1[0] == d) {
+		seq1 += d; seq1_len -= d;
+		S1++; n1--;
+		d = 0;
+	    } else if (S1[0] >= 0) {
+		seq1 += S1[0]; seq1_len -= S1[0];
+		d -= S1[0];
+		S1++; n1--;
+	    } else { /* S1 < 0, both padded */
+		d -= -S1[0];
+		S1++; n1--;
+	    }
+	}
+
+    /* ****GGT... S1
+     * AGGAGGT... S2
+     */
+    } else if (S1[0] < 0) {
+	int d = -S1[0];
+	S1++; n1--;
+	left1 = d;
+
+	/* Consume first 'd' characters in seq2 */
+	while (d > 0) {
+	    if (S2[0] > d) {
+		seq2 += d; seq2_len -= d;
+		S2[0] -= d;
+		d = 0;
+	    } else if (S2[0] == d) {
+		seq2 += d; seq2_len -= d;
+		S2++; n2--;
+		d = 0;
+	    } else if (S2[0] >= 0) {
+		seq2 += S2[0]; seq2_len -= S2[0]; left2 += S2[0];
+		d -= S2[0];
+		S2++; n2--;
+	    } else { /* S2 < 0 */
+		d -= -S2[0];
+		S2++; n2--;
+	    }
+	}
+    }
+
+    right1 = right2 = MAX(left1, left2);
+
+    /* ...GGTAGAC S1
+     * ...GGT**** S2
+     */
+    if (S2[n2-1] < 0) {
+	int d = -S2[n2-1];
+	n2--;
+	right1 += d;
+
+	/* Consume last 'd' characters in seq1 */
+	while (d > 0) { 
+	    if (S1[n1-1] > d) {
+		S1[n1-1] -= d;
+		seq1_len -= d;
+		d = 0;
+	    } else if (S1[n1-1] == d) {
+		seq1_len -= d;
+		d = 0;
+		n1--;
+	    } else if (S1[n1-1] >= 0) {
+		seq1_len -= S1[n1-1];
+		d -= S1[n1-1];
+		n1--;
+	    } else { /* S1 < 0 */
+		d -= -S1[n1-1];
+		n1--;
+	    }
+	}
+
+    /* ...GGTAGAC S1
+     * ...GGT**** S2
+     */
+    } else if (S1[n1-1] < 0) {
+	int d = -S1[n1-1];
+	n1--;
+	right2 += d;
+
+	/* Consume last 'd' characters in seq2 */
+	while (d > 0) { 
+	    if (S2[n2-1] > d) {
+		S2[n2-1] -= d;
+		seq2_len -= d;
+		d = 0;
+	    } else if (S2[n2-1] == d) {
+		seq2_len -= d;
+		d = 0;
+		n2--;
+	    } else if (S2[n2-1] >= 0) {
+		seq2_len -= S2[n2-1];
+		d -= S2[n2-1];
+		n2--;
+	    } else { /* S2 < 0 */
+		d -= -S2[n2-1];
+		n2--;
+	    }
+	}
+    }
+
+    if (seq1_p)     *seq1_p = seq1;
+    if (seq2_p)     *seq2_p = seq2;
+    if (seq1_len_p) *seq1_len_p = seq1_len;
+    if (seq2_len_p) *seq2_len_p = seq2_len;
+    if (S1_p)       *S1_p = S1;
+    if (S2_p)       *S2_p = S2;
+    if (n1_p)       *n1_p = n1;
+    if (n2_p)       *n2_p = n2;
+
+    /* i= print_alignment(seq1, seq2, seq1_len, seq2_len, S1, S2, n1, n2, 100, stdout); */
+
+    /* Now compute percent identity */
+    i = j = 0;
+    total = mat = score = 0;
+    op1 = op2 = 0;
+    while (i < seq1_len && j < seq2_len) {
+	char c1, c2;
+
+	while (op1 == 0) {
+	    op1 = *S1++;
+	}
+
+	if (op1 < 0) {
+	    c1 = '*';
+	    op1++;
+	} else if (op1 > 0) {
+	    c1 = seq1[i++];
+	    op1--;
+	}
+
+	while (op2 == 0) {
+	    op2 = *S2++;
+	}
+
+	if (op2 < 0) {
+	    c2 = '*';
+	    op2++;
+	} else if (op2 > 0) {
+	    c2 = seq2[j++];
+	    op2--;
+	}
+
+	right1++; right2++;
+	if (c1 == c2) {
+	    mat++;
+	    score++;
+	} else {
+	    score -= 4;
+	}
+	total++;
+    }
+    right1--; right2--;
+
+    overlap->percent = total ? 100.0 * mat/total : 0;
+    overlap->length = total;
+    overlap->qual = overlap->score = score;
+
+    overlap->left1  = left1;
+    overlap->right1 = right1;
+    overlap->left2  = left2;
+    overlap->right2 = right2;
+
+    overlap->left = MAX(left1, left2);
+    overlap->right = MIN(right1, right2);
+
+    /* Figure out other overlap fields: direction, lo and ro */
+    /* See seq_to_overlap() from align_lib.c */
+    if(overlap->left1 == overlap->left2)
+	overlap->direction = (overlap->right1 >= overlap->right2) ? 2 : 3;
+    else if(overlap->left1 < overlap->left2)
+	overlap->direction = (overlap->right1 >= overlap->right2) ? 2 : 0;
+    else
+	overlap->direction = (overlap->right1 <= overlap->right2) ? 3 : 1;
+
+    /*
+     * Calculate the offsets of the alignment. (i.e. the lengths of
+     * the overhangs at each end.)
+     *
+     * Currently, if the overlap goes from a to b, then
+     *    left_offset  = b.left  - a.left
+     *    right_offset = b.right - a.right
+     *
+     * so if a containment overlap will have +ve left_offset and
+     * -ve right_offset, and non-containment overlaps will have
+     * both +ve.
+     *
+     * N.B. 'a' is not necessarily seq1 and 'b' is not necessarily
+     * seq2, this depends on the direction of the overlap.
+     * FIXME - maybe they should be, so that overlap info need never
+     * be changed even if the readings are complemented.
+     */
+    switch(overlap->direction) {
+    case 0: case 2:
+	overlap->lo = overlap->left2 - overlap->left1;
+	overlap->ro = overlap->right2 - overlap->right1;
+	break;
+    case 1: case 3:
+	overlap->lo = overlap->left1 - overlap->left2;
+	overlap->ro = overlap->right1 - overlap->right2;
+	break;
+    default:
+	break;
+    }
+
+    assert(overlap->length == overlap->right - overlap->left + 1);
 }
 
 int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
@@ -867,6 +1482,20 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     int max_edit_pair;
     int max_seq;
     char NEW_PAD_SYM, OLD_PAD_SYM;
+    /* int mis, mat; */
+
+    /* Returned from overlap_mismatch */
+    char *seq1, *seq2;
+    int seq1_len, seq2_len;
+    int *S1, *S2;
+    int n1, n2;
+
+    /*
+    min_mismatch(h, &mis, &mat);
+    printf("mis/mat = %d/%d = %f\n", mis, mat, 1.0*mis/(mis+mat));
+    if (100.0*mis / (mis+mat) > 10)
+	return -1;
+    */
 
     NEW_PAD_SYM = params->new_pad_sym;
     OLD_PAD_SYM = params->old_pad_sym;
@@ -951,11 +1580,16 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     params->edge_mode = (edge_mode & ~BEST_EDGE_TRACE) | FULL_LENGTH_TRACE;
     params->edge_mode &= ~EDGE_GAPS_COUNT;
     params->edge_mode |=  EDGE_GAPS_ZERO;
-    if ( band_in) band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
+    if (band_in) {
+	if (h->fast_mode)
+	    band = set_band_blocks_fast(overlap->seq1_len,overlap->seq2_len);
+	else
+	    band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
+    }
     set_align_params (params, band, 0,0,0,0, s1, s2,0,0,1);
 
     if (align_bit ( params, overlap, edit_pair)) {
-	verror(ERR_WARN, "align_wrap", "failed in align_bit");
+ 	verror(ERR_WARN, "align_wrap", "failed in align_bit");
 	destroy_edit_pair(edit_pair);
 	destroy_overlap(overlap);
 	return -1;
@@ -981,15 +1615,16 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	overlap->seq2 = &(h->seq2[s2]);
 	len_seq = MAX(overlap->seq1_len,overlap->seq2_len);
 
-	/*
-	printf("Align pos %d+%d / %d+%d (%.10s... %.10s...)\n",
-	       s1, overlap->seq1_len, s2, overlap->seq2_len,
-	       overlap->seq1, overlap->seq2);
-	*/
-
 	if ( len_seq > 0 ) {
 
-	    if(band_in)band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
+	    if (band_in) {
+		if (h->fast_mode)
+		    band = set_band_blocks_fast(overlap->seq1_len,
+						overlap->seq2_len);
+		else
+		    band = set_band_blocks(overlap->seq1_len,
+					   overlap->seq2_len);
+	    }
 	    set_align_params (params, band, 0,0,0,0,0,0,0,0,1);
 
 	    if (align_bit ( params, overlap, edit_pair)) {
@@ -1017,15 +1652,15 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     overlap->seq1 = &(h->seq1[s1]);
     overlap->seq2 = &(h->seq2[s2]);
     
-    /*
-    printf(">Align pos %d+%d / %d+%d (%.10s... %.10s...)\n",
-	   s1, overlap->seq1_len, s2, overlap->seq2_len,
-	   overlap->seq1, overlap->seq2);
-    */
-
-    if(band_in)band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
+    if (band_in) {
+	if (h->fast_mode)
+	    band = set_band_blocks_fast(overlap->seq1_len,overlap->seq2_len);
+	else
+	    band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
+    }
     set_align_params (params, band, 0,0,0,0, 0,0,0,0,1);
     params->edge_mode = (edge_mode & ~EDGE_GAPS_ZERO) | EDGE_GAPS_COUNT;
+    params->edge_mode &= ~FULL_LENGTH_TRACE;
     params->edge_mode |= BEST_EDGE_TRACE;
     if (align_bit ( params, overlap, edit_pair)) {
 	verror(ERR_WARN, "align_wrap", "failed in align_bit");
@@ -1034,7 +1669,24 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	return -1;
     }
     destroy_overlap(overlap);
-    
+
+    /* Compute overlap percentage mismatch without allocating huge buffers */
+    if (!(params->job & RETURN_END_GAPS)) {
+	overlap_mismatch(h, edit_pair, overlap_out,
+			 &seq1, &seq2, &seq1_len, &seq2_len,
+			 &S1, &S2, &n1, &n2);
+	destroy_edit_pair(edit_pair);
+	return 0;
+    }
+
+    seq1 = h->seq1;  seq1_len = h->seq1_len;
+    seq2 = h->seq2;  seq2_len = h->seq2_len;
+    S1 = edit_pair->S1;
+    S2 = edit_pair->S2;
+    n1 = edit_pair->next1;
+    n2 = edit_pair->next2;
+
+
     /*
     for(i=0;i<edit_pair->next1;i++) printf("1 %d %d\n",i,edit_pair->S1[i]);
     for(i=0;i<edit_pair->next2;i++) printf("2 %d %d\n",i,edit_pair->S2[i]);
@@ -1050,9 +1702,11 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 		    100,
 		    stdout);
     */
+    
 
     /* now create the overlap from the edit buffers */
     max_seq = h->seq1_len + h->seq2_len + 1;
+
     /*printf("align_wrap malloc overlap_out %d\n",max_seq);*/
     if(!(overlap_out->seq1_out = (char *) xmalloc(sizeof(char) * 
 						      max_seq))) {
@@ -1067,32 +1721,27 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	return -1;
     }
 
-    seq_expand(h->seq1, overlap_out->seq1_out, &s1, edit_pair->S1, 
-	       edit_pair->next1, 3, NEW_PAD_SYM);
-
-    seq_expand(h->seq2, overlap_out->seq2_out, &s2, edit_pair->S2, 
-	       edit_pair->next2, 3, NEW_PAD_SYM);
+    seq_expand(seq1, overlap_out->seq1_out, &s1, S1, n1, 3, NEW_PAD_SYM);
+    seq_expand(seq2, overlap_out->seq2_out, &s2, S2, n2, 3, NEW_PAD_SYM);
 
     overlap_out->seq_out_len = s1;
 
     /* save edit_pairs in overlap_out FIXME if we need them*/
-    if(!(overlap_out->S1 = (int *) xmalloc(sizeof(int) * 
-						      edit_pair->next1))) {
+    if(!(overlap_out->S1 = (int *) xmalloc(sizeof(int) * n1))) {
 	verror(ERR_WARN, "align_wrap", "malloc failed for S1");
 	destroy_edit_pair(edit_pair);
 	return -1;
     }
-    if(!(overlap_out->S2 = (int *) xmalloc(sizeof(int) * 
-						      edit_pair->next2))) {
+    if(!(overlap_out->S2 = (int *) xmalloc(sizeof(int) * n2))) {
 	verror(ERR_WARN, "align_wrap", "malloc failed for S2");
 	destroy_edit_pair(edit_pair);
 	return -1;
     }
 
-    for (i=0;i<edit_pair->next1;i++) overlap_out->S1[i] = edit_pair->S1[i];
-    for (i=0;i<edit_pair->next2;i++) overlap_out->S2[i] = edit_pair->S2[i];
-    overlap_out->s1_len = edit_pair->next1;
-    overlap_out->s2_len = edit_pair->next2;
+    memcpy(overlap_out->S1, S1, n1*sizeof(*S1));
+    memcpy(overlap_out->S2, S2, n2*sizeof(*S2));
+    overlap_out->s1_len = n1;
+    overlap_out->s2_len = n2;
     destroy_edit_pair(edit_pair);
 
     /* when we enter seq_to_overlap from here the overlap score is not set */
@@ -1108,6 +1757,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     }
     /*overlap_out->score = overlap_out->percent; */
     overlap_out->qual  = overlap_out->percent;
+
     return 0;
 }
 
@@ -1135,6 +1785,18 @@ int sort_blocks ( Block_Match *block_match, int matches ) {
     return 0;
 }
 
+static int sort_pos1_func(const void *p1, const void *p2) {
+    Block_Match *c1 = (Block_Match *)p1;
+    Block_Match *c2 = (Block_Match *)p2;
+
+    return c1->pos_seq1 - c2->pos_seq1;
+}
+
+int sort_pos1_blocks ( Block_Match *block_match, int matches ) {
+    qsort ((void *) block_match, matches, sizeof(Block_Match), sort_pos1_func);
+    return 0;
+}
+
 static int sort_len_func(const void *p1, const void *p2) {
     int x1,x2;
     Block_Match *c1 = (Block_Match *)p1;
@@ -1150,8 +1812,25 @@ int sort_len_blocks ( Block_Match *block_match, int matches ) {
     return 0;
 }
 
+static int sort_by_end_pos(const void *p1, const void *p2) {
+    int x1,y1,x2,y2,l1,l2;
+    Block_Match *c1 = (Block_Match *)p1;
+    Block_Match *c2 = (Block_Match *)p2;
+
+    x1 = c1->pos_seq1;
+    y1 = c1->pos_seq2;
+    l1 = c1->length;
+
+    x2 = c2->pos_seq1;
+    y2 = c2->pos_seq2;
+    l2 = c2->length;
+
+    return (x1+y1+l1) - (x2+y2+l2);
+}
+
+/* Returns 1 on success, <= 0 on failure */
 int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
-    int i,j,l,gap_pen,diag_shift,best_score,best_prev,t,tt;
+    int i,j,k,gap_pen,diag_shift,best_score,best_prev,t,tt;
     int good_blocks;
     int *index_ptr = NULL;
     double best_percent;
@@ -1161,24 +1840,39 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     best_score = -1000000;
     best_prev = -1;
 
+    //UpdateTextOutput();
+
+    /*
+    printf("=== STEP 0 === %d\n",h->matches);
+    for (i=0;i<h->matches;i++) {
+	printf("i %d %d %d %d %d %d %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block);
+    }
+    */
+
     if ( h->matches < 1 ) return 0;
 
+#if 0
     /* sort the blocks on length and then shrink the list
      * so that the sum of lengths is length of sequences
      */
-
     i = sort_len_blocks(h->block_match, h->matches);
     l = MIN(h->seq1_len,h->seq2_len);
-    for(i=0,j=0;i<h->matches;i++) {
+    for (i=0,j=0; i<h->matches; i++) {
 	j+=h->block_match[i].length;
-	if(j>l) {
+	if (j>l) {
 	    h->matches = i+1;
 	    break;
 	}
     }
+#endif
 
     /* sort the blocks on distance from starts of sequences */
-
     i = sort_blocks(h->block_match, h->matches);
 
     /* set each blocks score to its distance from the nearest edge
@@ -1216,12 +1910,35 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
      * predecessor. This is given by: best_score + length - diag_shift
      * note the best score and block number as we proceed
      */
+    qsort(h->block_match, h->matches, sizeof(Block_Match), sort_by_end_pos);
+    best_score = INT_MIN;
+    for (i=0;i<h->matches;i++) {
+        if((t=h->block_match[i].length + gap_pen) > best_score) {
+	    best_score = t;
+	    best_prev = i;
+	}
+    }
+
+    /*
+    printf("=== STEP 1.5 === %d\n",h->matches);
+    for (i=0;i<h->matches;i++) {
+	printf("i %d %d %d %d %d %d %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block);
+    }
+    */
 
     for (i=1;i<h->matches;i++) {
-	for(j=i-1;j>-1;j--) {
+	k = 10;
+	for(j=i-1;j>-1 && k;j--) {
+	    int ovr;
 
 	    /*
-	     * This code aims to only stitching together of blocks that
+	     * This code aims to only stitch together blocks that
 	     * overlap by <= MAX_BLOCK_OVERLAP.
 	     * Fundamentallty it's the wrong thing to do though. If we limit
 	     * this anywhere it should be in the computed diag_shift
@@ -1246,15 +1963,23 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 				 h->block_match[j].diag);
 
 		/* Reduce effective length when blocks overlap */
+		ovr = 0;
 		dist = h->block_match[j].pos_seq1 + h->block_match[j].length -
 		    h->block_match[i].pos_seq1;
-		if (dist > 0)
+		if (dist > 0) {
+		    ovr = 1;
 		    len -= dist;
+		}
 
 		dist = h->block_match[j].pos_seq2 + h->block_match[j].length -
 		    h->block_match[i].pos_seq2;
-		if (dist > 0)
+		if (dist > 0) {
+		    ovr = 1;
 		    len -= dist;
+		}
+
+		if (!ovr)
+		    k--;
 
 		/* best score does not include current match */
 		if ( (t = h->block_match[j].best_score +
@@ -1275,7 +2000,7 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     }
 
     /*
-    printf("=== STEP 2 === %d\n",h->matches);
+    printf("=== STEP 2 === %d, best_prev=%d\n",h->matches, best_prev);
     for (i=0;i<h->matches;i++) {
 	printf("i %d %d %d %d %d %d %d\n",i,
 	       h->block_match[i].pos_seq1,
@@ -1407,10 +2132,87 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     h->matches = good_blocks;
     /*printf("returned %d matches with best score %d\n",h->matches,best_score);*/
 
-    /*
     tt = 0;
     for (i=0;i<h->matches;i++) {
 	tt += h->block_match[i].length;
+    }
+
+    i = h->matches/2;
+    i = h->block_match[i].diag;
+    j = diagonal_length(h->seq1_len, h->seq2_len, i);
+
+    best_percent = 100.0 * tt / j;
+
+    overlap->seq1 = h->seq1;
+    overlap->seq2 = h->seq2;
+    overlap->seq1_len = h->seq1_len;
+    overlap->seq2_len = h->seq2_len;
+
+    /* FAST MODE; Check for diagonals too far apart */
+    if (h->fast_mode) {
+	for (i = 0; i < h->matches-1; i++) {
+	    if (ABS(h->block_match[i].diag - h->block_match[i+1].diag) > 50)
+		return 0;
+	}
+    }
+
+#define MAX_G 1000
+    /* FAST MODE; no more than MAX_G bp without a hash match */
+    if (h->fast_mode) {
+	int b_st1, b_en1, b_st2, b_en2;
+
+	for (i = 0; i < h->matches-1; i++) {
+	    b_st1 = h->block_match[i+1].pos_seq1;
+	    b_en1 = h->block_match[i].pos_seq1 + h->block_match[i].length;
+	    if (b_st1 - b_en1 > MAX_G)
+		return 0;
+
+	    b_st2 = h->block_match[i+1].pos_seq2;
+	    b_en2 = h->block_match[i].pos_seq2 + h->block_match[i].length;
+
+	    if (b_st2 - b_en2 > MAX_G)
+		return 0;
+	}
+
+	b_st1 = h->block_match[0].pos_seq1;
+	b_st2 = h->block_match[0].pos_seq2;
+	if (MIN(b_st1, b_st2) > MAX_G)
+	    return 0;
+
+	b_en1 = h->block_match[h->matches-1].pos_seq1 +
+	    h->block_match[h->matches-1].length;
+	b_en2 = h->block_match[h->matches-1].pos_seq2 +
+	    h->block_match[h->matches-1].length;
+	if (MIN(h->seq1_len - b_en1, h->seq2_len - b_en2) > MAX_G)
+	    return 0;
+    }
+
+
+    /* FAST MODE */
+    if ((h->fast_mode && best_percent > 30.0) || best_percent > 10.0) {
+	if (align_wrap (h,params,overlap) < 0)
+	    return -1;
+
+	return 1;
+    }
+
+    return 0;
+}
+
+int align_blocks_bulk(Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap,
+		      int cnum,
+		      Contig_parms *contig_list, int number_of_contigs,
+		      void (*add_func)(OVERLAP *overlap,
+				       int cnum1,
+				       int cnum2,
+				       void *clientdata),
+		      void *add_data) {
+    int i,j,k;
+    int max_mat = 0;
+
+    /*
+    printf("=== STEP -1 === %d\n",h->matches);
+    for (i=0;i<h->matches;i++) {
 	printf("i %d %d %d %d %d %d %d\n",i,
 	       h->block_match[i].pos_seq1,
 	       h->block_match[i].pos_seq2,
@@ -1420,47 +2222,109 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	       h->block_match[i].prev_block);
     }
     */
-    
-	   /*
-	      could set 2 scores:
-	      the % of the diagonal which is covered by blocks
-	      the % of the region between and including the two
-	      outermost blocks ( ie a local or repeat score)
-	      local is best score + distance to first block
-	      global is best score - distance to right edge
-	      */
 
-    i = h->matches/2;
-    i = h->block_match[i].diag;
-    j = diagonal_length(h->seq1_len, h->seq2_len, i);
-    best_percent = 
-	   100.0*(double)(best_score - h->block_match[0].best_score) /
-	   (double)j;
+    if ( h->matches < 1 ) return 0;
+
     /*
-    printf("local %d global %d %f\n",
-	   best_score - h->block_match[0].best_score,
-	   best_score - 
-	   MIN( (h->seq1_len - (h->block_match[h->matches-1].pos_seq1 +
-		 h->block_match[h->matches-1].length)),
-	        (h->seq2_len - (h->block_match[h->matches-1].pos_seq2 +
-		 h->block_match[h->matches-1].length))),best_percent);
-		 */
+     * Sort the blocks by position and collate into contigs
+     */
+    sort_pos1_blocks(h->block_match, h->matches);
 
-    overlap->seq1 = h->seq1;
-    overlap->seq2 = h->seq2;
-    overlap->seq1_len = h->seq1_len;
-    overlap->seq2_len = h->seq2_len;
+    for (i = j = 0; i < h->matches; i++) {
+	while (h->block_match[i].pos_seq1 > contig_list[j].contig_end_offset)
+	    j++;
+	h->block_match[i].contig1 = j;
+    }
 
-    if (best_percent > 10.0) {             
-      /* changed from 20.0 on 10.01.02 to accommodate highly padded assemblies */
-	i = align_wrap (h,params,overlap);
-	if (i) return i;
-	/*if (!i) print_overlap(overlap,stdout);*/
+    /*
+    printf("=== STEP 0.1 === %d\n",h->matches);
+    for (i=0;i<h->matches;i++) {
+	printf("i %d %d %d %d %d %d %d   contig %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block,
+	       h->block_match[i].contig1);
+	if (i+1 == h->matches ||
+	    h->block_match[i+1].contig1 != h->block_match[i].contig1) {
+	    printf("--%d--\n", h->block_match[i].contig1);
+	}
     }
-    else {
-	return 0;
+    */
+
+    /* Create a hash & overlap struct for matches from just one contig */
+    max_mat = h->block_match[0].length;
+    for (j=i=0;i<h->matches;i++) {
+	if (i+1 == h->matches ||
+	    h->block_match[i+1].contig1 != h->block_match[i].contig1) {
+	    Hash h1;
+	    OVERLAP o1;
+	    int c = h->block_match[i].contig1;
+
+	    if (max_mat < h->min_match) {
+		goto next;
+	    }
+
+	    memcpy(&h1, h, sizeof(h1));
+	    memcpy(&o1, overlap, sizeof(o1));
+
+	    h1.seq1 = &h->seq1[contig_list[c].contig_start_offset];
+	    h1.seq1_len = contig_list[c].contig_end_offset -
+		contig_list[c].contig_start_offset + 1;
+
+	    h1.matches = i+1-j;
+	    /*
+	    h1.block_match = malloc(h1.matches * sizeof(*h1.block_match));
+	    for (k = 0; k < h1.matches; k++) {
+		h1.block_match[k] = h->block_match[k+j];
+		h1.block_match[k].pos_seq1 -= contig_list[c].contig_start_offset;
+		h1.block_match[k].diag =
+		    h1.seq1_len -
+		    h1.block_match[k].pos_seq1 +
+		    h1.block_match[k].pos_seq2 - 1;
+		    
+	    }
+	    */
+
+	    h1.block_match = &h->block_match[j];
+	    for (k = 0; k < h1.matches; k++) {
+		h1.block_match[k].pos_seq1 -= contig_list[c].contig_start_offset;
+		h1.block_match[k].diag =
+		    h1.seq1_len -
+		    h1.block_match[k].pos_seq1 +
+		    h1.block_match[k].pos_seq2 - 1;
+		    
+	    }
+	    
+
+	    o1.seq1 = h1.seq1;
+	    o1.seq2 = h1.seq2;
+	    o1.seq1_len = h1.seq1_len;
+	    o1.seq2_len = h1.seq2_len;
+
+	    /* Call align_blocks as if we were doing only a pair-wise search */
+	    /*
+	    printf("Comparing rec %"PRIrec" vs %"PRIrec"\n",
+		   contig_list[c].contig_number,
+		   contig_list[cnum].contig_number);
+	    */
+	    if (align_blocks(&h1, params, &o1)) {
+		add_func(&o1, c, cnum, add_data);
+	    }
+
+	next:
+
+	    j = i+1;
+	    max_mat = 0;
+	}
+
+	if (max_mat < h->block_match[i].length)
+	    max_mat = h->block_match[i].length;
     }
-    return 1;
+
+    return 0;
 }
 
 int compare_seqs(Hash *h, int *seq1_match_pos, int *seq2_match_pos,
@@ -1590,7 +2454,6 @@ int compare_a(Hash *h,
 					       sizeof(Diag_Match) *
 					       h->max_matches);
 		    if (NULL == h->diag_match) {
-			printf("too many matches %d\n",h->max_matches);
 			return -5;
 		    }
 		}
@@ -1628,6 +2491,196 @@ int compare_a(Hash *h,
     return 0;
 }
 
+/*
+static int fast_match_len(int w,
+			  const char *s1, int p1, int l1,
+			  const char *s2, int p2, int l2) {
+    int l = w;
+
+    p1 += w;
+    p2 += w;
+    if (l1-p1 < l2-p2) {
+	while (p1 < l1 && s1[p1++] == s2[p2++]) {
+	    l++;
+	}
+    } else {
+	while (p2 < l2 && s1[p1++] == s2[p2++]) {
+	    l++;
+	}
+    }
+
+    return l;
+}
+*/
+
+/*
+ * Returns match length and *bck as the distance backwards to travel.
+ */
+static int match_fwd_back(int word_len,
+			  const char *s1, int p1, int l1,
+			  const char *s2, int p2, int l2,
+			  int *bck) {
+    int l, i1, i2;
+
+    /* Backwards */
+    i1 = p1-1;
+    i2 = p2-1;
+    if (i1 < i2) {
+	while (i1 >= 0 && s1[i1] == s2[i2]) {
+	    i1--;
+	    i2--;
+	}
+    } else {
+	while (i2 >= 0 && s1[i1] == s2[i2]) {
+	    i1--;
+	    i2--;
+	}
+    }
+    l = p1-1 - i1;
+    *bck = l;
+
+    /* Fwds */
+    i1 = p1 + word_len;
+    i2 = p2 + word_len;
+    if (l1-i1 < l2-i2) {
+	while (i1 < l1 && s1[i1] == s2[i2])
+	    i1++,i2++;
+    } else {
+	while (i2 < l2 && s1[i1] == s2[i2])
+	    i1++,i2++;
+    }
+    l += i1 - p1;
+
+    return l;
+}
+
+/*
+ * Returns match length and *bck as the distance backwards to travel.
+ *
+ * As per match_fwd_back, but we allow single bp mismatches provided they're
+ * followed by 2 bases of match. The reason is that we'll *probably* end up
+ * going along this diagonal in the dynamic programming step anyway.
+ *
+ * I say probably: in the case of overlapping blocks on close diagonals we'd
+ * need to trim one. Eg:
+ *
+ *              /                 /                     /
+ *             /                 / 	               / 
+ *        /   /	            /    	              /	 
+ *       /   /    =>       /         or	             /   
+ *      /   	          /   	 	        /   	 
+ *     /                 /         	       /         
+ *
+ * Both are equally optimal alignments, but if one of our diagonals went
+ * through a mismatch then we may make the wrong choice. It's faster though
+ * so we're testing this for efficiencies sake.
+ *
+ * NOTE: this forces more alignments too as previously 2 20mers with a
+ * mismatch would be filtered on a minmatch=25 param, whereas now we get a
+ * 41mer which is accepted.
+ */
+#if 0 /* UNUSED currently */
+static int match_fwd_back_mm(int word_len,
+			     const char *s1, int p1, int l1,
+			     const char *s2, int p2, int l2,
+			     int *bck, int *exact) {
+    int l, i1, i2;
+    int mm = word_len, max_mm = word_len;
+
+    /* Backwards */
+    i1 = p1-1;
+    i2 = p2-1;
+    if (i1 < i2) {
+	while (i1 >= 0) {
+	    if (s1[i1] == s2[i2]) {
+		i1--;
+		i2--;
+		mm++;
+	    } else {
+		if (i1 >= 2 && s1[i1-1] == s2[i2-1] && s1[i1-2] == s2[i2-2]) {
+		    if (max_mm < mm)
+			max_mm = mm;
+		    mm = 0;
+		    i1 -= 3;
+		    i2 -= 3;
+		} else {
+		    break;
+		}
+	    }
+	}
+    } else {
+	while (i2 >= 0) {
+	    if (s1[i1] == s2[i2]) {
+		i1--;
+		i2--;
+		mm++;
+	    } else {
+		if (i2 >= 2 && s1[i1-1] == s2[i2-1] && s1[i1-2] == s2[i2-2]) {
+		    i1 -= 3;
+		    i2 -= 3;
+		    if (max_mm < mm)
+			max_mm = mm;
+		    mm = 0;
+		} else {
+		    break;
+		}
+	    }
+	}
+    }
+    l = p1-1 - i1;
+    *bck = l;
+
+    if (max_mm < mm)
+	max_mm = mm;
+
+    /* Fwds */
+    i1 = p1 + word_len;
+    i2 = p2 + word_len;
+    if (l1-i1 < l2-i2) {
+	while (i1 < l1) {
+	    if (s1[i1] == s2[i2]) {
+		i1++,i2++;
+		mm++;
+	    } else {
+		if (i1+2 < l1 && s1[i1+1]==s2[i2+1] && s1[i1+2]==s2[i2+2]) {
+		    i1 += 3;
+		    i2 += 3;
+		    if (max_mm < mm)
+			max_mm = mm;
+		    mm = 0;
+		} else {
+		    break;
+		}
+	    }
+	}
+    } else {
+	while (i2 < l2) {
+	    if (s1[i1] == s2[i2]) {
+		i1++,i2++;
+		mm++;
+	    } else {
+		if (i2+2 < l2 && s1[i1+1]==s2[i2+1] && s1[i1+2]==s2[i2+2]) {
+		    i1 += 3;
+		    i2 += 3;
+		    if (max_mm < mm)
+			max_mm = mm;
+		    mm = 0;
+		} else {
+		    break;
+		}
+	    }
+	}
+    }
+    l += i1 - p1;
+
+    if (max_mm < mm)
+	max_mm = mm;
+
+    *exact = max_mm;
+
+    return l;
+}
+#endif
 
 /*
  * NOTE - test sorting step in here.
@@ -1644,67 +2697,239 @@ int compare_a(Hash *h,
  * consecutive subject words and we have a longer match.
  */
 int compare_b(Hash *h,
-	    ALIGN_PARAMS *params, OVERLAP *overlap) {
+	      ALIGN_PARAMS *params, OVERLAP *overlap) {
     
     int	       	ncw, nrw, word, pw1, pw2, i, j, match_size;
     int	       	diag_pos, size_hist;
     int job_in;
+    int pw_inc;
 
-    if(h->seq1_len < h->min_match) return -4; 
-    if(h->seq2_len < h->min_match) return -4; 
+    if(h->seq1_len < h->min_match) return 0; 
+    if(h->seq2_len < h->min_match) return 0; 
 
     size_hist = h->seq1_len + h->seq2_len - 1;
     for(i = 0; i < size_hist; i++) h->diag[i] = -(h->word_length);
     
     nrw = h->seq2_len - h->word_length + 1;
     
-    /* 	loop for all (nrw) complete words in values2 */
-
+    /* 	loop for all (nrw) complete words in values2 ... */
     h->matches = -1;
-    for (pw2=0;pw2<nrw;pw2++) {
- 	word = h->values2[pw2];
-	if ( -1 != word ) {
-	    if ( 0 != (ncw = h->counts[word]) ) {
-		//printf("pw2=%d, word=%x, firsthit=%d\n", pw2, word, h->last_word[word]);
-		for (j=0,pw1=h->last_word[word];j<ncw;j++) {
-		    diag_pos = h->seq1_len - pw1 + pw2 - 1;
-		    if ( h->diag[diag_pos] < pw2 ) {
-			if ((match_size = match_len ( 
-						       h->seq1, pw1, h->seq1_len,
-						       h->seq2, pw2, h->seq2_len))
-			    >= h->min_match ) {
-			    h->matches++;
-			    if(h->max_matches == h->matches) {
-				h->max_matches *= 2;
-				h->block_match = (Block_Match *)
-				    xrealloc(h->block_match,
-					     sizeof(Block_Match) *
-					     h->max_matches);
-				if (NULL == h->block_match)
-				    return -5;
-			    }
 
-			    h->block_match[h->matches].pos_seq1 = pw1;
-			    h->block_match[h->matches].pos_seq2 = pw2;
-			    h->block_match[h->matches].length = match_size;
-			    h->block_match[h->matches].diag = diag_pos;
-			}
-			h->diag[diag_pos] = pw2 + match_size;
-		    }
-		    pw1 = h->values1[pw1];
+    /*
+     * TODO: Try pw2+=min_match_len-word_len as we know it'll have to have
+     * at least one word hitting then.
+     *
+     * If we do this, we also need to adjust match_len to search backwards
+     * as well as forwards.
+     */
+
+    pw_inc = h->min_match - h->word_length + 1;
+    for (pw2=0; pw2<nrw; pw2+=pw_inc) {
+ 	if (-1 == (word = h->values2[pw2]))
+	    continue;
+
+	/* ... and look them up on values1, extrapolating to find length */
+	
+	if (0 == (ncw = h->counts[word]))
+	    continue;
+
+	for (j=0,pw1=h->last_word[word]; j<ncw; j++, pw1=h->values1[pw1]) {
+	    int bck;
+
+	    diag_pos = h->seq1_len - pw1 + pw2 - 1;
+
+	    if (h->diag[diag_pos] >= pw2)
+		continue;
+
+	    /*
+	    if ((match_size = fast_match_len(h->word_length,
+					     h->seq1, pw1,
+					     h->seq1_len,
+					     h->seq2, pw2,
+					     h->seq2_len)) >= h->min_match) {
+	    */
+	    if ((match_size = match_fwd_back(h->word_length,
+					     h->seq1, pw1,
+					     h->seq1_len,
+					     h->seq2, pw2,
+					     h->seq2_len,
+					     &bck)) >= h->min_match) {
+		h->matches++;
+		if(h->max_matches == h->matches) {
+		    h->max_matches *= 2;
+		    h->block_match = (Block_Match *)
+			xrealloc(h->block_match,
+				 sizeof(Block_Match) *
+				 h->max_matches);
+		    if (NULL == h->block_match)
+			return -5;
 		}
+
+		h->block_match[h->matches].pos_seq1 = pw1-bck;
+		h->block_match[h->matches].pos_seq2 = pw2-bck;
+		h->block_match[h->matches].length = match_size;
+		h->block_match[h->matches].diag = diag_pos;
 	    }
+	    h->diag[diag_pos] = pw2-bck + match_size;
 	}
     }
     h->matches += 1;
     if ( h->matches < 1 ) return 0;
+
     job_in = params->job;
-    params->job = 3; /* force return of edit buffers */
-    pw2 = align_blocks ( h, params, overlap );
+    /* Force old-style return with end-gaps in alignment */
+    params->job = RETURN_SEQ | RETURN_EDIT_BUFFERS | RETURN_END_GAPS;
+    pw2 = align_blocks(h, params, overlap);
     params->job = job_in;
 
     return pw2;
 }
+
+
+/*
+ * As per compare_b() but we're aligning seq2 against many seq1 choices
+ * contatenated together. We need to collate hits by the contig they're in
+ * so we can then do alignments on each in turn.
+ */
+int compare_b_bulk(Hash *h,
+		   ALIGN_PARAMS *params, OVERLAP *overlap, int cnum,
+		   Contig_parms *contig_list, int number_of_contigs,
+		   void (*add_func)(OVERLAP *overlap,
+				    int cnum1,
+				    int cnum2,
+				    void *clientdata),
+		   void *add_data) {
+    
+    int ncw, nrw, word, pw1, pw2, pw2_last, j, match_size;
+    int diag_pos;
+    int job_in;
+    int pw_inc;
+    int size_div = 1;
+    char *diag_init;
+
+    if(h->seq1_len < h->min_match) return 0; 
+    if(h->seq2_len < h->min_match) return 0; 
+
+    size_div = (int)(1 + (h->seq1_len + h->seq2_len - 1)/DSZ);
+    diag_init = calloc(size_div, sizeof(char));
+
+    nrw = h->seq2_len - h->word_length + 1;
+    
+    /* 	loop for all (nrw) complete words in values2 ... */
+    h->matches = -1;
+
+    pw_inc = h->min_match - h->word_length + 1;
+    pw2_last = 0;
+    for (pw2=0; pw2<nrw; pw2+=pw_inc) {
+ 	if (-1 == (word = h->values2[pw2])) {
+	    /*
+	     * Illegal word means we may have missed a real match by
+	     * jumping forward in steps of pw_inc. In this case back up one
+	     * and try again, until we hit the last valid word place we
+	     * checked.
+	     */
+	    if (pw2 > pw2_last) {
+		pw2++;
+		pw2 -= pw_inc;
+		continue;
+	    }
+	    continue;
+	}
+
+	pw2_last = pw2;
+
+	/* ... and look them up on values1, extrapolating to find length */
+	
+	if (0 == (ncw = h->counts[word]))
+	    continue;
+
+	if (h->filter_words && ncw > h->filter_words)
+	    continue;
+
+	for (j=0,pw1=h->last_word[word]; j<ncw; j++, pw1=h->values1[pw1]) {
+	    int bck;
+
+	    /* Remove matches to earlier and/or self contigs */
+	    if (pw1 <= contig_list[cnum].contig_end_offset)
+		continue;
+
+	    diag_pos = h->seq1_len - pw1 + pw2 - 1;
+
+	    if (!diag_init[diag_pos / DSZ]) {
+		int p, q;
+		diag_init[diag_pos / DSZ] = 1;
+		q = (int)(diag_pos / DSZ) * DSZ;
+		for (p = 0; p < DSZ; p++, q++) {
+		    h->diag[q] = -h->word_length;
+		}
+	    }
+	    if (h->diag[diag_pos] >= pw2) continue;
+
+	    /*
+	    match_size = fast_match_len(h->word_length,
+					h->seq1, pw1,
+					h->seq1_len,
+					h->seq2, pw2,
+					h->seq2_len);
+	    */
+	    match_size = match_fwd_back(h->word_length,
+					h->seq1, pw1,
+					h->seq1_len,
+					h->seq2, pw2,
+					h->seq2_len,
+					&bck);
+	    /*
+	    match_size = match_fwd_back_mm(h->word_length,
+					h->seq1, pw1,
+					h->seq1_len,
+					h->seq2, pw2,
+					h->seq2_len,
+					&bck, &exact);
+	    if (exact >= h->min_match) {
+	    */
+
+	    if (match_size >= h->min_match) {
+	    //if (match_size >= h->min_match || ncw < 3) {
+		h->matches++;
+		if(h->max_matches == h->matches) {
+		    h->max_matches *= 2;
+		    h->block_match = (Block_Match *)
+			xrealloc(h->block_match,
+				 sizeof(Block_Match) *
+				 h->max_matches);
+		    if (NULL == h->block_match)
+			return -5;
+		}
+
+		h->block_match[h->matches].pos_seq1 = pw1-bck;
+		h->block_match[h->matches].pos_seq2 = pw2-bck;
+		h->block_match[h->matches].length = match_size;
+		h->block_match[h->matches].diag = diag_pos;
+	    }
+
+	    h->diag[diag_pos] = pw2-bck + match_size;
+	}
+    }
+
+    free(diag_init);
+
+    h->matches += 1;
+    if ( h->matches < 1 ) return 0;
+
+    /* printf("Matches = %d\n", h->matches); */
+
+    //UpdateTextOutput();
+
+    job_in = params->job;
+    params->job = 3; /* force return of edit buffers */
+    pw2 = align_blocks_bulk ( h, params, overlap, cnum,
+			      contig_list, number_of_contigs,
+			      add_func, add_data);
+    params->job = job_in;
+
+    return pw2;
+}
+
 
 int
 gap_realloc_matches (int **seq1_match, 
@@ -1743,9 +2968,10 @@ int reps(Hash *h,
 	 int offset,
 	 char sense) {
     
-    int	       	ncw, nrw, word, pw1, pw2, i, j, match_size;
-    int	       	diag_pos, size_hist;
-    
+    int ncw, nrw, word, pw1, pw2, pw2_last, i, j, match_size;
+    int diag_pos, size_hist;
+    int pw_inc, bck;
+    /* clock_t t1, t2; */
 
     if(h->seq1_len < h->min_match) return -4; 
     if(h->seq2_len < h->min_match) return -4; 
@@ -1759,47 +2985,71 @@ int reps(Hash *h,
     
     nrw = h->seq2_len - h->word_length + 1;
     
-    /* 	loop for all (nrw) complete words in values2 */
+    /* t1 = clock(); */
 
+    /* 	loop for all (nrw) complete words in values2 */
     h->matches = -1;
-    for (pw2=0;pw2<nrw;pw2++) {
- 	word = h->values2[pw2];
-	if ( -1 != word ) {
-	    if ( 0 != (ncw = h->counts[word]) ) {
-		for (j=0,pw1=h->last_word[word];j<ncw;j++) {
-		    diag_pos = h->seq1_len - pw1 + pw2 - 1;
-		    if ( h->diag[diag_pos] < pw2 ) {
-			if ((match_size = match_len ( 
-						       h->seq1, pw1, h->seq1_len,
-						       h->seq2, pw2, h->seq2_len))
-			    >= h->min_match ) {
-			    h->matches++;
-#ifdef DEBUG
-			    printf("max %d matches %d\n", h->max_matches, h->matches);
-#endif
-			    if(h->max_matches == h->matches+offset) {
-				
-				if (-1 == (gap_realloc_matches(seq1_match_pos,
-							       seq2_match_pos,
-							       match_length, 
-							       &h->max_matches))) {
-				    return -1;
-				    /* return -5; */
-				    
-				}
-			    }
-			    (*seq1_match_pos)[h->matches+offset] = pw1+1;
-			    (*seq2_match_pos)[h->matches+offset] = pw2+1;
-			    (*match_length)[h->matches+offset] = match_size;
-			}
-			h->diag[diag_pos] = pw2 + match_size;
-		    }
-		    pw1 = h->values1[pw1];
-		}
+    pw_inc = h->min_match - h->word_length + 1;
+    pw2_last = 0;
+    for (pw2=0;pw2<nrw;pw2+=pw_inc) {
+ 	if (-1 == (word = h->values2[pw2])) {
+	    if (pw2 > pw2_last) {
+		pw2++;
+		pw2 -= pw_inc;
+		continue;
 	    }
+	    continue;
+	}
+
+	pw2_last = pw2;
+
+	if (0 == (ncw = h->counts[word]))
+	    continue;
+
+	for (j=0,pw1=h->last_word[word];j<ncw;j++) {
+	    diag_pos = h->seq1_len - pw1 + pw2 - 1;
+
+	    /* Remove self match */
+	    if (sense == 'f' && pw1 < pw2) {
+		pw1 = h->values1[pw1];
+		continue;
+	    }
+
+	    if ( h->diag[diag_pos] < pw2 ) {
+		if ((match_size = match_fwd_back(h->word_length,
+						 h->seq1, pw1, h->seq1_len,
+						 h->seq2, pw2, h->seq2_len,
+						 &bck)) >= h->min_match) {
+		    h->matches++;
+		    if(h->max_matches == h->matches+offset) {
+			
+			if (-1 == (gap_realloc_matches(seq1_match_pos,
+						       seq2_match_pos,
+						       match_length, 
+						       &h->max_matches))) {
+			    return -1;
+			    /* return -5; */
+				    
+			}
+		    }
+		    (*seq1_match_pos)[h->matches+offset] = pw1+1-bck;
+		    (*seq2_match_pos)[h->matches+offset] = pw2+1-bck;
+		    (*match_length)[h->matches+offset] = match_size;
+		}
+		h->diag[diag_pos] = pw2-bck + match_size;
+	    }
+	    pw1 = h->values1[pw1];
 	}
     }
     h->matches += 1;
+
+    /*
+    t2 = clock();
+
+    printf("Time = %f, nmatches = %d\n",
+	   (double)(t2-t1) / CLOCKS_PER_SEC,
+	   h->matches);
+    */
 
     if ( h->matches ) {
 	if ( sense == 'r' ) {
@@ -1809,5 +3059,6 @@ int reps(Hash *h,
 	(void) remdup ( seq1_match_pos, seq2_match_pos, match_length, offset, 
 			&h->matches );
     }
+
     return h->matches;
 }

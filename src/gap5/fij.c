@@ -321,6 +321,8 @@ fij(GapIO *io,
     int use_conf,
     int use_hidden,
     int max_alignment,
+    int fast_mode,
+    double filter_words,
     int num_contigs,
     contig_list_t *contig_array)
 {
@@ -404,7 +406,8 @@ fij(GapIO *io,
 		     word_len,
 		     min_overlap, max_percent_mismatch, compare_mode,
 		     band, gap_open, gap_extend, max_prob, min_match,
-		     max_alignment, contig_list, number_of_contigs ) ) {
+		     max_alignment, fast_mode, filter_words,
+		     contig_list, number_of_contigs ) ) {
 
 	xfree(FIJMatch->match);
 	xfree(FIJMatch);

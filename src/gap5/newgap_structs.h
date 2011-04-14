@@ -138,6 +138,8 @@ typedef struct {
     int use_conf;
     int use_hidden;
     int max_display;
+    int fast_mode;
+    float filter_words;
     char *tag_list;
     char *inlist;
 } fij_arg;

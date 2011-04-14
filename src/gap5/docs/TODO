@@ -1,3 +1,9 @@
+*	BUG: complementing a contig via the contig list does nothing.
+
+*	BUG: (hp3) A contig with data from 1.0mill to 1.01mill shows a
+        contig from 0 to .01 mill in the template display, making it
+        very hard to find the region to draw.
+
 *	BUG: (hp3) CIGAR N operator isn't supported and produces error
         messages.
 
@@ -8,7 +14,7 @@
 *	BUG: Align sequences against their traces when displaying them
         to ensure the two are kept in sync.
 
-*	(cs12): Unable to move/copy tags
+*	(cs12): Unable to move/copy tags. (Commented out for now)
 
 *	(cs12): No warning for significantly high mismatching joins
         (gap4 had 20% and any higher it flagged it up wanting us to

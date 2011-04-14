@@ -47,7 +47,8 @@ proc FIJDialog { f io } {
 	    -from [keylget mm MIN] \
 	    -default [keylget mm VALUE] \
 	    -width 5 \
-	    -type CheckInt
+	    -type CheckInt \
+	    -variable $f.MinMatch
 
     set mm [keylget gap5_defs FIJ.MAXDIAG]
     entrybox $f.match.s.max_diag \
@@ -83,6 +84,18 @@ proc FIJDialog { f io } {
 	    -width 5 \
 	    -type CheckFloat
 
+    set mm [keylget gap5_defs FIJ.USEFILTERWORDS]
+    yes_no $f.match.f.use_filter \
+	-title [keylget mm NAME] \
+	-orient horizontal \
+	-bd 0 \
+	-default [keylget mm VALUE]
+
+    set mm [keylget gap5_defs FIJ.FILTERWORDS]
+    xentry $f.match.f.filter_cutoff \
+	-label [keylget mm NAME] \
+	-default [keylget mm VALUE]
+
 
     ###########################################################################
     #select word length
@@ -90,6 +103,7 @@ proc FIJDialog { f io } {
     set st [keylget gap5_defs FIJ.WORDLENGTH]
     set b1 [keylget st BUTTON.1]
     set b2 [keylget st BUTTON.2]
+    set b3 [keylget st BUTTON.3]
 
     radiolist $f.match.word_length \
 	    -title [keylget st NAME]\
@@ -97,8 +111,8 @@ proc FIJDialog { f io } {
 	    -relief groove \
 	    -orient horizontal \
 	    -default [keylget st VALUE] \
-	    -buttons [format { {%s} {%s} } \
-	    [list $b1] [list $b2] ]
+	    -buttons [format { {%s} {%s} {%s} } \
+			  [list $b1] [list $b2] [list $b3]]
 
     frame $f.match.padding -relief groove -bd 2 -height 2
 
@@ -111,16 +125,32 @@ proc FIJDialog { f io } {
 	-orient horizontal \
 	-default [keylget gap5_defs FIJ.ALIGN_MODE]\
 	-buttons [format { \
+            {fastest   -command {scalebox_configure %s -state disabled; \
+				 entrybox_configure %s -state disabled;
+				 scalebox_configure %s -state normal;
+		                 yes_no_configure %s -state normal;
+		                 yes_no_configure %s -state normal;
+		                 %s configure -state normal;
+		                 set %s.MinMatch 25}} \
             {quick     -command {scalebox_configure %s -state disabled; \
 				 entrybox_configure %s -state disabled;
 				 scalebox_configure %s -state normal;
-				 yes_no_configure %s -state normal}} \
+				 yes_no_configure %s -state normal;
+		                 yes_no_configure %s -state normal;
+		                 %s configure -state normal;
+	                         set %s.MinMatch 20}} \
             {sensitive -command {scalebox_configure %s -state normal; \
 				 entrybox_configure %s -state normal;
 				 scalebox_configure %s -state disabled;
-				 yes_no_configure %s -state disabled}}} \
+		                 yes_no_configure %s -state disabled;
+		                 yes_no_configure %s -state disabled;
+		                 %s configure -state disabled}}} \
             $ff.s.band_size $ff.s.max_diag $ff.f.min_match $ff.f.use_band \
-            $ff.s.band_size $ff.s.max_diag $ff.f.min_match $ff.f.use_band]
+		      $ff.f.use_filter $ff.f.filter_cutoff $f \
+            $ff.s.band_size $ff.s.max_diag $ff.f.min_match $ff.f.use_band \
+		      $ff.f.use_filter $ff.f.filter_cutoff $f \
+            $ff.s.band_size $ff.s.max_diag $ff.f.min_match $ff.f.use_band \
+		      $ff.f.use_filter $ff.f.filter_cutoff]
 
     pack $f.match.word_length -fill x
     pack $f.match.min_overlap -fill x
@@ -135,8 +165,10 @@ proc FIJDialog { f io } {
 
     pack $f.match.f -fill both -expand 1
     pack $f.match.f.label -anchor w -padx 50
-    pack $f.match.f.min_match -fill x
     pack $f.match.f.use_band -fill x
+    pack $f.match.f.min_match -fill x
+    pack $f.match.f.use_filter -fill x
+    pack $f.match.f.filter_cutoff -fill x
 
     ###########################################################################
     #contig identifier widget
@@ -229,7 +261,8 @@ proc FIJDialog { f io } {
 	    $f.match.blocks $f.match.min_overlap $f.match.word_length\
 	    $f.match.f.min_match $f.match.f.use_band $f.match.s.max_diag\
 	    $f.match.s.band_size $f.match.max_mis \
-	    $f.sc $f.hidden.yn $f.sel_mode.rl $f.ops $f.align_length" \
+	    $f.sc $f.hidden.yn $f.sel_mode.rl $f.ops $f.align_length \
+            $f.match.f.use_filter $f.match.f.filter_cutoff" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap5 {FIJ-Dialogue}" \
 	    -bd 2 \
@@ -249,8 +282,9 @@ proc FIJDialog { f io } {
 
 ###########################################################################
 proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
-		    min_match use_band max_diag band_size max_mis sc \
-		    yn sel_mode hidden_ops align_length} {
+			  min_match use_band max_diag band_size max_mis sc \
+			  yn sel_mode hidden_ops align_length \
+			  use_filter filter_cutoff} {
     
     global CurContig
     global LREG
@@ -273,7 +307,12 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
     } else {
 	# Single against all
 	set mode "segment"
-	set list [linsert $list 0 [contig_id_gel $sc]]
+	set first [contig_id_gel $sc]
+	set pos [lsearch -exact $list $first]
+	if {$pos != -1} {
+	    set list [lreplace $list $pos $pos]
+	}
+	set list [linsert $list 0 $first]
 	SetContigGlobals $io [contig_id_gel $sc]
     }
 
@@ -299,21 +338,30 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
     }
 
 
-    set word_length [lindex {? 8 4} [radiolist_get $word_length]]
+    set word_length [lindex {? 12 8 4} [radiolist_get $word_length]]
     
     set max_prob [entrybox_get $max_diag]
     set max_align_length [entrybox_get $align_length]
 
-    if {[radiolist_get $blocks] == 1} {
+    set fast_mode 0
+    if {[radiolist_get $blocks] <= 2} {
         # Quick method
 	set min_match [scalebox_get $min_match]
 	set band_size [yes_no_get $use_band]
+
+	if {[radiolist_get $blocks] == 1} {
+	    set fast_mode 1
+	}
     } else {
 	# Sensitive method
 	set min_match 0
 	set band_size [scalebox_get $band_size]
     }
 
+    set filter_words [yes_no_get $use_filter]
+    if {$filter_words != 0} {
+	set filter_words [$filter_cutoff get]
+    }
 
     set min_overlap [scalebox_get $min_overlap]
     set max_mis [scalebox_get $max_mis]
@@ -344,6 +392,8 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 	    -use_hidden $use_hidden \
 	    -tag_types $active_tags \
 	    -max_display $max_align_length \
+	    -fast_mode $fast_mode \
+	    -filter_words $filter_words \
 	    -contigs $list
     ClearBusy
 }

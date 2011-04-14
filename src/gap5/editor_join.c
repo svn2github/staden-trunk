@@ -76,7 +76,7 @@ int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
     band = 1;
     gap_open = 12;
     gap_extend = 4;
-    job = RETURN_SEQ | RETURN_NEW_PADS;
+    job = RETURN_SEQ | RETURN_NEW_PADS | RETURN_END_GAPS;
 
     edge_mode  = fixed_left  ? EDGE_GAPS_COUNT   : EDGE_GAPS_ZERO;
     edge_mode |= fixed_right ? FULL_LENGTH_TRACE : BEST_EDGE_TRACE;

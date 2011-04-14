@@ -323,6 +323,7 @@ typedef struct Overlap {
 #define RETURN_EDIT_BUFFERS 2
 #define RETURN_EDIT_BUFFER  4
 #define RETURN_NEW_PADS 8
+#define RETURN_END_GAPS 16
 
 /* Score gaps at the start of seqs */
 #define EDGE_GAPS_COUNT   1

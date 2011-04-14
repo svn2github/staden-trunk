@@ -153,8 +153,9 @@ int repeat_search (
     seq2_len = seq1_len;
     seq2 = NULL;
 
-    if ( init_hash8n ( seq1_len, seq2_len, 
-		      8, max_mat, min_match, 1, &h )) {
+    if ( init_hash8n ( seq1_len, seq2_len,
+		       min_match >= 12 ? 12 : 8,
+		       max_mat, min_match, 1, &h )) {
 	free_hash8n(h);
 	xfree(depadded_seq);
 	xfree(depad_to_pad);
@@ -172,26 +173,17 @@ int repeat_search (
     }
     (void) store_hashn ( h );
 
-    if ( ! (seq2 = (char *) xmalloc ( sizeof(char)*(seq1_len) ))) {
-	free_hash8n ( h );
-	xfree(depadded_seq);
-	xfree(depad_to_pad);
-	return -1;
-    }
-    
-    (void) copy_seq ( seq2, seq1, seq1_len );
-    
-    h->seq2 = seq2;
-    h->seq2_len = seq2_len;
     *num_f_matches = 0;
     nres = 0;
     n_matches = 0;
     if ( mode & 1 ) {
 
+	h->seq2 = seq1;
+	h->seq2_len = seq1_len;
+
 	if ( hash_seqn ( h, 2)) {
 	    verror(ERR_WARN, "hash_seqn", "sequence too short");
 	    free_hash8n ( h );
-	    if (seq2) xfree(seq2);
 	    xfree(depadded_seq);
 	    xfree(depad_to_pad);
 	    return -1;
@@ -201,12 +193,25 @@ int repeat_search (
 	*num_f_matches = n_matches;
 	nres += n_matches;
 
+	h->seq2 = NULL;
+
     }
 
     *num_r_matches = 0;
     if ( mode & 2 )  {
 
+	if ( ! (seq2 = (char *) xmalloc ( sizeof(char)*(seq1_len) ))) {
+	    free_hash8n ( h );
+	    xfree(depadded_seq);
+	    xfree(depad_to_pad);
+	    return -1;
+	}
+
+	(void) copy_seq ( seq2, seq1, seq1_len );
 	(void) complement_seq(seq2, seq2_len);
+    
+	h->seq2 = seq2;
+	h->seq2_len = seq2_len;
 
 	if ( hash_seqn ( h, 2)) {
 	    verror(ERR_WARN, "hash_seqn", "sequence too short");

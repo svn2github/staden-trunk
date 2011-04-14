@@ -140,6 +140,9 @@ int rotate_seq ( char *seq, int seq_len, int origin );
  * Returns: Modified len and str. Fills out depad_to_pad array.
  */
 void depad_seq(char *str, int *len, int *depad_to_pad);
+void copy_and_depad_seq(const char *str1, int len1,
+			char *str2, int *len2,
+			int *depad_to_pad);
 
 /*
  * Given a combination of A, C, G or T, all of which are 0 for not present
