@@ -22,6 +22,8 @@
 #include "gap4_compat.h"
 #include "gap_cli_arg.h"
 
+#include "io_lib/hash_table.h"
+
 /* FIXME - we'll only allow one CSPlot currently */
 /* It'll be initialised as NULL anyway due to it's static global nature */
 HTablePtr csplot_hash[HASHMODULUS] = {0};
@@ -55,19 +57,35 @@ PlotRepeats(GapIO *io,
     /* int max_x = 0; */
     int sense1 = 1;
     int sense2 = 1;
-    int inum;
+    int inum = 0;
     char *colour = repeat->colour;
     int width = repeat->linewidth;
     char *tag_id = repeat->tagname;
     obj_match new_match;
     int cs_id;
     obj_cs *cs;
+    int64_t cur_pos = 0;
+    tg_rec *order = ArrayBase(tg_rec, io->contig_order);
+    HashTable *cstart;
+    HashItem *hi;
+
+    /* Build lookup table for fast contig+pos to abs_pos conversion */
+    cstart = HashTableCreate(64, HASH_POOL_ITEMS | HASH_DYNAMIC_SIZE);
+    for (i = 0; i < NumContigs(io); i++) {
+	HashData hd;
+
+	//printf("Rec %"PRIrec" pos %"PRId64"\n", order[i], cur_pos);
+	hd.i = cur_pos;
+	HashTableAdd(cstart, (char *)&order[i], sizeof(order[i]), hd, 0);
+	cur_pos += io_clength(io, order[i]);
+    }
 
     cs_id = type_to_result(io, REG_TYPE_CONTIGSEL, 0);
     cs = result_data(io, cs_id);
 
     for (i = 0; i < repeat->num_match; i++){
 	obj_match *match = (obj_match *)&repeat->match[i];
+	tg_rec rec;
 
 	/* Check if shown */
 	if (match->flags & OBJ_FLAG_HIDDEN)
@@ -77,14 +95,24 @@ PlotRepeats(GapIO *io,
 	new_match = *match;
 	DoClipping(io, &new_match);
 	/*
-	* printf("new pos1 %d pos2 %d length %d\n",
-	* new_match.pos1,  new_match.pos2, new_match.length);
+	 * printf("new pos1 %d pos2 %d length %d\n",
+	 * new_match.pos1,  new_match.pos2, new_match.length);
+	 *
+	 * printf("match pos1 %d pos2 %d length %d \n",
+	 * match->pos1, match->pos2, match->length);
+	 */
+	//pos1 = find_position_in_DB(io, ABS(new_match.c1), new_match.pos1);
+	//pos2 = find_position_in_DB(io, ABS(new_match.c2), new_match.pos2);
 
-	* printf("match pos1 %d pos2 %d length %d \n",
-	* match->pos1, match->pos2, match->length);
-	*/
-	pos1 = find_position_in_DB(io, ABS(new_match.c1), new_match.pos1);
-	pos2 = find_position_in_DB(io, ABS(new_match.c2), new_match.pos2);
+	rec = ABS(new_match.c1);
+	hi = HashTableSearch(cstart, (char *)&rec, sizeof(rec));
+	if (!hi) return;
+	pos1 = hi->data.i + new_match.pos1;
+
+	rec = ABS(new_match.c2);
+	hi = HashTableSearch(cstart, (char *)&rec, sizeof(rec));
+	if (!hi) return;
+	pos2 = hi->data.i + new_match.pos2;
 
 	/* convert contig code back to sense ie -ve contig number means
 	 * match on opposite strand
@@ -132,10 +160,11 @@ PlotRepeats(GapIO *io,
 	*/
 	if (pos1 > pos2){
 	    sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
-		    " %"PRId64" -width %d -capstyle round "
-		    "-tags {num_%"PRIrec" num_%"PRIrec" %s S} -fill %s",
-		    cs->window, x1, y1, x2, y2, width, ABS(new_match.c1),
-		    ABS(new_match.c2), tag_id, colour);
+		    " %"PRId64" -width %d -capstyle round -fill %s "
+		    "-tags {num_%"PRIrec" num_%"PRIrec" %s S}",
+		    cs->window, x1, y1, x2, y2, width, colour,
+		    ABS(new_match.c1), ABS(new_match.c2), tag_id);
+	    
 	} else {
 	    sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
 		    " %"PRId64" -width %d -capstyle round "
@@ -155,6 +184,8 @@ PlotRepeats(GapIO *io,
     /* scale new matches */
     scaleSingleCanvas(GetInterp(), cs->world, cs->canvas, cs->window, 'b',
 		      tag_id);
+
+    HashTableDestroy(cstart, 0);
 }
 
 /* draw the contig lines of the contig selector */
