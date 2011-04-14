@@ -51,6 +51,7 @@ proc scalebox_configure {path args} {
     set default ""
     set resolution ""
     set digits ""
+    set varg ""
 
     #set default type to be CheckInt
     set entry_($path,type) $type
@@ -84,6 +85,8 @@ proc scalebox_configure {path args} {
 	     } elseif {$option == "-width"} {
 		set width "-width $i"
 		set earg 1
+	     } elseif {$option == "-variable"} {
+		 set varg $i
 	     } elseif {$option == "-command"} {
 		 #add new command before original command
 		 set comm [lindex [$path.scale configure -command] 4]
@@ -113,6 +116,9 @@ proc scalebox_configure {path args} {
     }
     if {$earg} {
 	eval $path.entry configure $width
+    }
+    if {$varg != ""} {
+	eval $path.entry configure -textvariable $varg
     }
     if {$default != ""} {
 	eval $path.scale set $default
