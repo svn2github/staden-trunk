@@ -240,9 +240,9 @@ static int TagEdCommand(ClientData clientData, Tcl_Interp *interp,
 	    openUndo(DBI(te->xx));
 	}
 	TagEdSave(interp, te);
-	TagEdDestroy(interp, te);
 	if (xx != te->xx)
 	    closeUndo(te->xx, DBI(te->xx));
+	TagEdDestroy(interp, te);
 
 	closeUndo(xx, DBI(xx));
     }
