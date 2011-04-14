@@ -863,7 +863,6 @@ OVERLAP *create_overlap(void) {
 	return NULL;
     }
 
-
     overlap->S = NULL;
     overlap->S1 = NULL;
     overlap->S2 = NULL;
@@ -1606,12 +1605,22 @@ void print_overlap_struct(OVERLAP *overlap) {
     printf("overlap->percent %f\n",overlap->percent);
     printf("overlap->score %f\n",overlap->score);
     printf("overlap->qual %f\n",overlap->qual);
-    if(overlap->seq1)printf("overlap->seq1 %p\n",overlap->seq1);
-    if(overlap->seq2)printf("overlap->seq2 %p\n",overlap->seq2);
-    if(overlap->seq1_out)printf("overlap->seq1_out %p\n",overlap->seq1_out);
-    if(overlap->seq2_out)printf("overlap->seq2_out %p\n",overlap->seq2_out);
-    if(overlap->S1)printf("overlap->S1 %p\n",(void *)overlap->S1);
-    if(overlap->S2)printf("overlap->S2 %p\n",(void *)overlap->S2);
+    if(overlap->seq1)printf("overlap->seq1 %p len %d %.*s...\n",
+			    overlap->seq1, overlap->seq1_len,
+			    MIN(6, overlap->seq1_len), overlap->seq1);
+    if(overlap->seq2)printf("overlap->seq2 %p len %d %.*s...\n",
+			    overlap->seq2, overlap->seq2_len,
+			    MIN(6, overlap->seq2_len), overlap->seq2);
+    if(overlap->seq1_out)printf("overlap->seq1_out %p len %d %.*s...\n",
+				overlap->seq1_out, overlap->seq_out_len,
+				MIN(6,overlap->seq_out_len),overlap->seq1_out);
+    if(overlap->seq2_out)printf("overlap->seq2_out %p len %d %.*s...\n",
+				overlap->seq2_out, overlap->seq_out_len,
+				MIN(6,overlap->seq_out_len),overlap->seq2_out);
+    if(overlap->S1)printf("overlap->S1 %p len %d [%d...]\n",
+			  (void *)overlap->S1, overlap->s1_len, *overlap->S1);
+    if(overlap->S2)printf("overlap->S2 %p len %d [%d...]\n",
+			  (void *)overlap->S2, overlap->s2_len, *overlap->S2);
 }
 
 int seq_to_edit ( char *seq, int seq_len, int **S_out, int *S_len,
