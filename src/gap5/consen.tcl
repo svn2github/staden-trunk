@@ -549,7 +549,6 @@ proc Strip_Pads {cons qual new_cons_var new_qual_var} {
     upvar $new_cons_var new_cons
     upvar $new_qual_var new_qual
 
-    puts "Stripping pads"
     set new_cons ""
     set new_qual ""
     set pos 0
