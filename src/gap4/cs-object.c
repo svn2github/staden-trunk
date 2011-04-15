@@ -101,7 +101,7 @@ void DeleteRepeats(Tcl_Interp *interp, mobj_repeat *r, char *csplot_name,
     int i;
 
     /* Loop through each item removing from the hash table */
-    for (i = 0; i < r->num_match; i++) {
+    for (i = r->num_match-1; i >= 0; i--) {
 	HashDelete(T, r->match[i].inum);
     }
 
