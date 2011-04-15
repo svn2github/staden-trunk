@@ -213,7 +213,7 @@ typedef struct mobj_checkass_t {
  * Hashing for translation of tk canvas IDs to generic objects
  * ============================================================================
  */
-#define HASHMODULUS 100
+#define HASHMODULUS 256
 
 typedef void *HItemType;
 
