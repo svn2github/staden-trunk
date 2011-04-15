@@ -337,7 +337,8 @@ int do_it_fij ( char seq[], int seq_len,
      * back to comparing individual contigs rather than a contig against
      * the entire combined consensus.
      */
-    one_by_one = (compare_method != 17) ? 1 : 0;
+    one_by_one = (compare_method != 17 || compare_mode == COMPARE_SINGLE)
+	? 1 : 0;
     add_fij_cd.one_by_one = one_by_one;
 
     if (one_by_one) {
@@ -561,9 +562,9 @@ int do_it_fij ( char seq[], int seq_len,
 		}
 	    }
 	    free_overlap(overlap);
-
-	    if ( compare_mode == COMPARE_SINGLE ) break;
 	}
+
+	if ( compare_mode == COMPARE_SINGLE ) break;
     }
 
     xfree(depad_seq1);
