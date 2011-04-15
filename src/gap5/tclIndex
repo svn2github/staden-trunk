@@ -273,5 +273,6 @@ set auto_index(ListLibraries) [list source [file join $dir libraries.tcl]]
 
 set auto_index(MapReads_bwa_aln) [list source [file join $dir map_reads.tcl]]
 set auto_index(MapReads_bwa_dbwtsw) [list source [file join $dir map_reads.tcl]]
+set auto_index(generate_fastq) [list source [file join $dir map_reads.tcl]]
 
 set auto_index(ImportGFF) [list source [file join $dir import_gff.tcl]]

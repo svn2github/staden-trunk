@@ -18,18 +18,16 @@ proc AssemblySingle {io} {
 
     frame $w.sep -height 2 -bd 1 -relief groove
 
+    # Input format
+    radiolist $w.format \
+	-title "Input readings from" \
+	-orient horizontal \
+	-buttons {fofn fasta fastq} \
+	-default [keylget gap5_defs ASSEMBLE_SINGLE.FORMAT]
+
     # fasta/q input file name
     getFname $w.file "File name" load
     
-    # Input format
-    radiolist $w.format \
-	-title "Format" \
-	-bd 0 \
-	-relief groove \
-	-orient horizontal \
-	-default [keylget gap5_defs ASSEMBLE_SINGLE.FORMAT] \
-	-buttons {Fasta Fastq}
-
     okcancelhelp $w.ok \
 	-ok_command "AssemblySingle2 $io $w" \
 	-cancel_command "destroy $w" \
@@ -37,7 +35,7 @@ proc AssemblySingle {io} {
 
     pack $w.label -side top -fill both -expand 1
     pack $w.sep -side top -fill both -expand 1 -padx 10 -pady 10
-    pack $w.file $w.format $w.ok -side top -fill both -expand 1
+    pack $w.format $w.file $w.ok -side top -fill both -expand 1
     
 }
 
@@ -48,10 +46,16 @@ proc AssemblySingle2 {io w} {
 	return
     }
 
-    set format [lindex {- F Q} [radiolist_get $w.format]]
+    set prefix [tmpnam]
 
-    puts fn=$fn,format=$format
-    
+    if {[radiolist_get $w.format] == 1} {
+	generate_fastq $fn $prefix.fastq
+	set fn $prefix.fastq
+	set format Q
+    } else {
+	set format [lindex {- - F Q} [radiolist_get $w.format]]
+    }
+
     # Import
     if {![quit_displays -io $io -msg "assemble_fasta"]} {
 	# Someone's too busy to shutdown?
@@ -71,6 +75,8 @@ proc AssemblySingle2 {io w} {
 
     ContigSelector $io
     ContigInitReg $io
+
+    catch {glob file delete $prefix.fastq}
 
     ClearBusy
 }

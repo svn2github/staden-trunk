@@ -54,6 +54,7 @@ OBJS = \
 	element_canvas.o\
 	container.o\
 	container_ruler.o\
+	tcl_io_lib.o\
 	$(TKUTILS_EXTRAS)
 
 # Spin2 only objects, which currently isn't compiled and has compilation

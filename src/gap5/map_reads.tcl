@@ -42,11 +42,25 @@
 }
 
 proc MapReads_tidyup {prefix} {
+    return 1
+
     foreach fn [glob $prefix.*] {
 	file delete $fn
     }
 
     return 1
+}
+
+# Creates a fastq file from a fofn
+proc generate_fastq {f out} {
+    set fd [open $f r]
+    set fq [open $out w]
+    while {[gets $fd line] != -1} {
+	foreach {s q} [read_seq_trace $line] break
+	puts $fq "@$line\n$s\n+\n$q"
+    }
+    close $fd
+    close $fq
 }
 
 #-----------------------------------------------------------------------------
@@ -69,8 +83,20 @@ proc MapReads_bwa_aln {io} {
 	
 
     # fasta input file name, or something to generate a sam file from
-    getFname $w.fwd "Forward read fastq file" load
-    getFname $w.rev "Reverse read fastq (optional)" load_optional
+    radiolist $w.format \
+	-title "Input readings from" \
+	-orient horizontal \
+	-buttons {fofn fasta fastq} \
+	-default 3
+
+    xentry $w.fwd \
+	-label "Forward read file" \
+	-checkcommand "check_fileinput"
+    xentry $w.rev \
+	-label "Reverse read file (optional)" \
+	-checkcommand "check_fileinput 1"
+
+    frame $w.sep1 -bd 2 -relief groove -height 2
 
     #save failures as file or list
 #    lorf_out $w.fails [keylget gap5_defs AUTO_ASSEMBLE.FAILS] \
@@ -92,11 +118,14 @@ proc MapReads_bwa_aln {io} {
 	    -bd 2 \
 	    -relief groove
 
-    pack $w.contigs $w.id $w.index_names $w.fwd $w.rev \
-	$w.aln_opt $w.sampe_opt $w.ok_cancel -side top -fill both
+    pack $w.contigs $w.id $w.format $w.fwd $w.rev $w.sep1 \
+	$w.index_names $w.aln_opt $w.sampe_opt $w.ok_cancel \
+	-side top -fill both
 }
 
 proc MapReads_bwa_aln2 {io w} {
+    set fq_tmp ""
+
     # Contigs to map against
     if {[lorf_in_get $w.contigs] == 4} {
 	set gel_name [contig_id_gel $w.id]
@@ -113,13 +142,20 @@ proc MapReads_bwa_aln2 {io w} {
 
     set no_tree [$w.index_names get]
 
+    set prefix [tmpnam]
+
     # and its input sequences
-    set fwd [entrybox_get $w.fwd.entry]
-    if {$fwd == ""} { 
-	bell
-	return
+    if {[radiolist_get $w.format] == 1} {
+	set fwd $prefix.fq_in
+	generate_fastq [$w.fwd get] $fwd
+    } else {
+	set fwd [$w.fwd get]
+	if {$fwd == ""} { 
+	    bell
+	    return
+	}
     }
-    set rev [entrybox_get $w.rev.entry]
+    set rev [$w.rev get]
 
     # options for various stages
     set aln_opt   [entrybox_get $w.aln_opt]
@@ -130,7 +166,6 @@ proc MapReads_bwa_aln2 {io w} {
 
     # Do the work
     vfuncheader "Map Reads - bwa"
-    set prefix [tmpnam]
 
     # Calculate and save the consensus as fastq
     get_consensus -io $io \
@@ -219,9 +254,18 @@ proc MapReads_bwa_dbwtsw {io} {
 	 {contig_id_configure $w.id -state disabled}\
 	 {contig_id_configure $w.id -state normal}" -bd 2 -relief groove
 	
-
     # fasta input file name, or something to generate a sam file from
-    getFname $w.fwd "Input fastq file" load
+    radiolist $w.format \
+	-title "Input readings from" \
+	-orient horizontal \
+	-buttons {fofn fasta fastq} \
+	-default 3
+
+    xentry $w.fwd \
+	-label "Sequence file or fofn" \
+	-checkcommand "check_fileinput"
+
+    frame $w.sep1 -bd 2 -relief groove -height 2
 
     #save failures as file or list
 #    lorf_out $w.fails [keylget gap5_defs AUTO_ASSEMBLE.FAILS] \
@@ -242,11 +286,13 @@ proc MapReads_bwa_dbwtsw {io} {
 	    -bd 2 \
 	    -relief groove
 
-    pack $w.contigs $w.id $w.index_names $w.fwd $w.dbwtsw_opt $w.ok_cancel \
-	-side top -fill both
+    pack $w.contigs $w.id $w.format $w.fwd $w.sep1 $w.index_names \
+	$w.dbwtsw_opt $w.ok_cancel -side top -fill both
 }
 
 proc MapReads_bwa_dbwtsw2 {io w} {
+    set prefix [tmpnam]
+
     # Contigs to map against
     if {[lorf_in_get $w.contigs] == 4} {
 	set gel_name [contig_id_gel $w.id]
@@ -264,10 +310,15 @@ proc MapReads_bwa_dbwtsw2 {io w} {
     set no_tree [$w.index_names get]
 
     # and its input sequences
-    set fwd [entrybox_get $w.fwd.entry]
-    if {$fwd == ""} { 
-	bell
-	return
+    if {[radiolist_get $w.format] == 1} {
+	set fwd $prefix.fq_in
+	generate_fastq [$w.fwd get] $fwd
+    } else {
+	set fwd [$w.fwd get]
+	if {$fwd == ""} { 
+	    bell
+	    return
+	}
     }
 
     # options for various stages
@@ -278,7 +329,6 @@ proc MapReads_bwa_dbwtsw2 {io w} {
 
     # Do the work
     vfuncheader "Map Reads - bwa"
-    set prefix [tmpnam]
 
     # Calculate and save the consensus as fastq
     get_consensus -io $io \

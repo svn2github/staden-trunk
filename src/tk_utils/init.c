@@ -5,6 +5,7 @@
 #include "user_defaults.h"
 #include "tclXkeylist.h"
 #include "tclCanvGraph.h"
+#include "tcl_io_lib.h"
 /* #include "tkCanvGraph.h" */
 
 extern int TclXKeylist_Init(Tcl_Interp *);
@@ -54,6 +55,11 @@ int Tk_utils_Init(Tcl_Interp *interp) {
     TextOutput_Init(interp);
     Trace_Init(interp);
     Sheet_Init(interp);
+
+    /* Other ancillary commands */
+    Tcl_CreateObjCommand(interp, "read_seq_trace", tcl_read_seq_trace,
+			 (ClientData) NULL,
+			 NULL);
 
     /* Used only by spin2; not currently supported */
     /*
