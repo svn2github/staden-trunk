@@ -1043,6 +1043,21 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 	    &n->conf[sequence_conf_size(n)*pos],
 	    extra_len - ((char *)&n->conf[sequence_conf_size(n)*(pos)]+1
 			 - (char *)&n->data));
+
+    /* Compute conf if needed */
+    if (n->format == SEQ_FORMAT_CNF1) {
+	if (conf == -1) {
+	    /* Min of surrounding bases */
+	    if (pos > 0 && pos+1 < ABS(n->len))
+		conf = MIN(n->conf[pos-1], n->conf[pos+1]);
+	    else if (pos > 0)
+		conf = n->conf[pos-1];
+	    else if (pos+1 < ABS(n->len))
+		conf = n->conf[pos+1];
+	    else
+		conf = 0;
+	}
+    }
 	    
     /* Set */
     n->seq[pos] = comp ? complementary_base[(unsigned char)base] : base;

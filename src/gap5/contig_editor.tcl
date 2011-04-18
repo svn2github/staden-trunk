@@ -1529,7 +1529,7 @@ proc editor_insert_gap {w where} {
     foreach {type rec pos} $where break;
     if {$type == 18} {
 	set seq [$io get_sequence $rec]
-	$seq insert_base $pos * 20
+	$seq insert_base $pos * -1
 	$seq delete
 
 	store_undo $w \

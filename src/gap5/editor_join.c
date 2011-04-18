@@ -16,13 +16,13 @@
 /* Add 'num' pads into the consensus for editor 'xx' at position 'pos'. */
 static void add_pads(edview *xx, int pos, int num)
 {
-    int i, conf = 0;
+    int i;
 
     if (num < 0)
 	return;
 
     for (i = 0; i < num; i++)
-	contig_insert_base(xx->io, &xx->contig, pos, '*', conf);
+	contig_insert_base(xx->io, &xx->contig, pos, '*', -1);
 }
 
 /*

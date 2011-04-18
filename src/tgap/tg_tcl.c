@@ -666,18 +666,20 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	return tcl_read_depth(tc, interp, objc-1, objv+1);
 
     case INSERT_BASE: {
-	int pos, qual = 20;
+	int pos, qual = -1;
 	char base = '*';
-	if (objc != 3 && objc != 5) {
+	if (objc < 3 || objc > 5) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
-			   "\"%s insert_base position ?base qual ...?\"\n",
+			   "\"%s insert_base position ?base ?qual??\"\n",
 			   Tcl_GetStringFromObj(objv[0], NULL));
 	    return TCL_ERROR;
 	}
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
-	if (objc == 5) {
+	if (objc >= 4) {
 	    base = *Tcl_GetStringFromObj(objv[3], NULL);
+	}
+	if (objc == 5) {
 	    Tcl_GetIntFromObj(interp, objv[4], &qual);
 	}
 	contig_insert_base(tc->io, &tc->contig, pos, base, qual);
