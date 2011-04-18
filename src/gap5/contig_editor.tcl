@@ -791,13 +791,6 @@ proc editor_join {w} {
     upvar \#0 $w opt
 
     # Gather location information about the join
-    foreach ed $opt(all_editors) {
-	if {[$ed save] != 0} {
-	    bell
-	    return
-	}
-    }
-
     set ed [lindex $opt(all_editors) 0]
 
     if {[catch {foreach {len mis} [$ed join_mismatch] break}]} {
@@ -820,6 +813,14 @@ proc editor_join {w} {
     if {$ret == "cancel"} return
 
     if {$ret == "yes"} {
+	foreach ed $opt(all_editors) {
+	    if {[$ed save] != 0} {
+		bell
+		return
+	    }
+	}
+	set ed [lindex $opt(all_editors) 0]
+
 	$ed join
     }
 
