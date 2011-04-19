@@ -785,6 +785,7 @@ clip.o: $(SRCROOT)/tk_utils/tkTrace.h
 clones.o: $(SRCROOT)/Misc/array.h
 clones.o: $(SRCROOT)/Misc/bitmap.h
 clones.o: $(SRCROOT)/Misc/dstring.h
+clones.o: $(SRCROOT)/Misc/misc.h
 clones.o: $(SRCROOT)/Misc/os.h
 clones.o: $(SRCROOT)/Misc/xalloc.h
 clones.o: $(SRCROOT)/Misc/xerror.h
@@ -1419,6 +1420,7 @@ edCommands.o: $(SRCROOT)/tk_utils/tkTrace.h
 edExtend.o: $(SRCROOT)/Misc/array.h
 edExtend.o: $(SRCROOT)/Misc/bitmap.h
 edExtend.o: $(SRCROOT)/Misc/dstring.h
+edExtend.o: $(SRCROOT)/Misc/misc.h
 edExtend.o: $(SRCROOT)/Misc/os.h
 edExtend.o: $(SRCROOT)/Misc/xalloc.h
 edExtend.o: $(SRCROOT)/Misc/xerror.h
@@ -1872,7 +1874,9 @@ find_repeats.o: $(SRCROOT)/tk_utils/tkTrace.h
 gap-create.o: $(SRCROOT)/Misc/FtoC.h
 gap-create.o: $(SRCROOT)/Misc/array.h
 gap-create.o: $(SRCROOT)/Misc/bitmap.h
+gap-create.o: $(SRCROOT)/Misc/misc.h
 gap-create.o: $(SRCROOT)/Misc/os.h
+gap-create.o: $(SRCROOT)/Misc/xalloc.h
 gap-create.o: $(SRCROOT)/Misc/xerror.h
 gap-create.o: $(PWD)/staden_config.h
 gap-create.o: $(SRCROOT)/g/freetree.h
@@ -1932,6 +1936,7 @@ gap-init.o: $(SRCROOT)/gap4/gap-if.h
 gap-init.o: $(SRCROOT)/gap4/gap-init.h
 gap-init.o: $(SRCROOT)/gap4/gap-io.h
 gap-io.o: $(SRCROOT)/Misc/array.h
+gap-io.o: $(SRCROOT)/Misc/misc.h
 gap-io.o: $(SRCROOT)/Misc/os.h
 gap-io.o: $(SRCROOT)/Misc/xalloc.h
 gap-io.o: $(SRCROOT)/Misc/xerror.h
@@ -1977,6 +1982,7 @@ gap-remote.o: $(SRCROOT)/gap4/gap-remote.h
 gap-tcl.o: $(SRCROOT)/Misc/array.h
 gap-tcl.o: $(SRCROOT)/Misc/bitmap.h
 gap-tcl.o: $(SRCROOT)/Misc/dstring.h
+gap-tcl.o: $(SRCROOT)/Misc/misc.h
 gap-tcl.o: $(SRCROOT)/Misc/os.h
 gap-tcl.o: $(SRCROOT)/Misc/xalloc.h
 gap-tcl.o: $(SRCROOT)/Misc/xerror.h
@@ -2024,6 +2030,10 @@ gap-tcl.o: $(SRCROOT)/tk_utils/tkSheet.h
 gap-tcl.o: $(SRCROOT)/tk_utils/tkSheet_common.h
 gap-tcl.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 gap-tcl.o: $(SRCROOT)/tk_utils/tkTrace.h
+gap_array.o: $(SRCROOT)/Misc/misc.h
+gap_array.o: $(SRCROOT)/Misc/os.h
+gap_array.o: $(SRCROOT)/Misc/xalloc.h
+gap_array.o: $(PWD)/staden_config.h
 gap_array.o: $(SRCROOT)/gap4/active_tags.h
 gap_array.o: $(SRCROOT)/gap4/gap_array.h
 gap_array.o: $(SRCROOT)/gap4/tagdb.h
@@ -2031,7 +2041,9 @@ gap_array.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 gap_array.o: $(SRCROOT)/tk_utils/tcl_utils.h
 gap_canvas_box.o: $(SRCROOT)/Misc/array.h
 gap_canvas_box.o: $(SRCROOT)/Misc/bitmap.h
+gap_canvas_box.o: $(SRCROOT)/Misc/misc.h
 gap_canvas_box.o: $(SRCROOT)/Misc/os.h
+gap_canvas_box.o: $(SRCROOT)/Misc/xalloc.h
 gap_canvas_box.o: $(SRCROOT)/Misc/xerror.h
 gap_canvas_box.o: $(PWD)/staden_config.h
 gap_canvas_box.o: $(SRCROOT)/g/freetree.h
@@ -2136,6 +2148,7 @@ hash_lib.o: $(SRCROOT)/seq_utils/dna_utils.h
 init.o: $(SRCROOT)/Misc/array.h
 init.o: $(SRCROOT)/Misc/bitmap.h
 init.o: $(SRCROOT)/Misc/dstring.h
+init.o: $(SRCROOT)/Misc/misc.h
 init.o: $(SRCROOT)/Misc/os.h
 init.o: $(SRCROOT)/Misc/xalloc.h
 init.o: $(SRCROOT)/Misc/xerror.h
@@ -2349,6 +2362,10 @@ list_proc.o: $(SRCROOT)/gap4/io_utils.h
 list_proc.o: $(SRCROOT)/gap4/list.h
 list_proc.o: $(SRCROOT)/gap4/newgap_cmds.h
 list_proc.o: $(SRCROOT)/tk_utils/tcl_utils.h
+mess.o: $(SRCROOT)/Misc/misc.h
+mess.o: $(SRCROOT)/Misc/os.h
+mess.o: $(SRCROOT)/Misc/xalloc.h
+mess.o: $(PWD)/staden_config.h
 mess.o: $(SRCROOT)/tk_utils/text_output.h
 newgap_cmds.o: $(SRCROOT)/Misc/array.h
 newgap_cmds.o: $(SRCROOT)/Misc/bitmap.h
@@ -2470,6 +2487,7 @@ notedb.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 notes.o: $(SRCROOT)/Misc/array.h
 notes.o: $(SRCROOT)/Misc/bitmap.h
 notes.o: $(SRCROOT)/Misc/dstring.h
+notes.o: $(SRCROOT)/Misc/misc.h
 notes.o: $(SRCROOT)/Misc/os.h
 notes.o: $(SRCROOT)/Misc/xalloc.h
 notes.o: $(SRCROOT)/Misc/xerror.h
@@ -2664,7 +2682,9 @@ preass.o: $(SRCROOT)/tk_utils/tkSheet.h
 preass.o: $(SRCROOT)/tk_utils/tkSheet_common.h
 preass.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 preass.o: $(SRCROOT)/tk_utils/tkTrace.h
+primlib.o: $(SRCROOT)/Misc/misc.h
 primlib.o: $(SRCROOT)/Misc/os.h
+primlib.o: $(SRCROOT)/Misc/xalloc.h
 primlib.o: $(PWD)/staden_config.h
 primlib.o: $(SRCROOT)/gap4/gap_globals.h
 primlib.o: $(SRCROOT)/gap4/primlib.h
@@ -3644,6 +3664,7 @@ tk-io-reg.o: $(SRCROOT)/tk_utils/tcl_utils.h
 tkEdNames.o: $(SRCROOT)/Misc/array.h
 tkEdNames.o: $(SRCROOT)/Misc/bitmap.h
 tkEdNames.o: $(SRCROOT)/Misc/dstring.h
+tkEdNames.o: $(SRCROOT)/Misc/misc.h
 tkEdNames.o: $(SRCROOT)/Misc/os.h
 tkEdNames.o: $(SRCROOT)/Misc/xalloc.h
 tkEdNames.o: $(SRCROOT)/Misc/xerror.h
@@ -3741,6 +3762,7 @@ tkEdUtils.o: $(SRCROOT)/tk_utils/tkTrace.h
 tkEditor.o: $(SRCROOT)/Misc/array.h
 tkEditor.o: $(SRCROOT)/Misc/bitmap.h
 tkEditor.o: $(SRCROOT)/Misc/dstring.h
+tkEditor.o: $(SRCROOT)/Misc/misc.h
 tkEditor.o: $(SRCROOT)/Misc/os.h
 tkEditor.o: $(SRCROOT)/Misc/xalloc.h
 tkEditor.o: $(SRCROOT)/Misc/xerror.h
@@ -3987,6 +4009,7 @@ tman_interface.o: $(SRCROOT)/tk_utils/tkTrace.h
 undo.o: $(SRCROOT)/Misc/array.h
 undo.o: $(SRCROOT)/Misc/bitmap.h
 undo.o: $(SRCROOT)/Misc/dstring.h
+undo.o: $(SRCROOT)/Misc/misc.h
 undo.o: $(SRCROOT)/Misc/os.h
 undo.o: $(SRCROOT)/Misc/xalloc.h
 undo.o: $(SRCROOT)/Misc/xerror.h

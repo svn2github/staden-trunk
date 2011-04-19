@@ -44,3 +44,8 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+text_output_stubs.o: $(SRCROOT)/Misc/misc.h
+text_output_stubs.o: $(SRCROOT)/Misc/os.h
+text_output_stubs.o: $(SRCROOT)/Misc/xalloc.h
+text_output_stubs.o: $(PWD)/staden_config.h
+text_output_stubs.o: $(SRCROOT)/text_utils/text_output.h

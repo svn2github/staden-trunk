@@ -30,5 +30,7 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+get_scf_field.o: $(SRCROOT)/Misc/misc.h
 get_scf_field.o: $(SRCROOT)/Misc/os.h
+get_scf_field.o: $(SRCROOT)/Misc/xalloc.h
 get_scf_field.o: $(PWD)/staden_config.h

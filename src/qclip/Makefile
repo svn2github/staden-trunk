@@ -38,11 +38,14 @@ consen.o: $(SRCROOT)/Misc/os.h
 consen.o: $(SRCROOT)/Misc/xalloc.h
 consen.o: $(PWD)/staden_config.h
 consen.o: $(SRCROOT)/qclip/consen.h
+qclip.o: $(SRCROOT)/Misc/misc.h
 qclip.o: $(SRCROOT)/Misc/os.h
 qclip.o: $(SRCROOT)/Misc/xalloc.h
 qclip.o: $(PWD)/staden_config.h
 qclip.o: $(SRCROOT)/qclip/consen.h
 qclip.o: $(SRCROOT)/qclip/seqInfo.h
+seqInfo.o: $(SRCROOT)/Misc/misc.h
 seqInfo.o: $(SRCROOT)/Misc/os.h
+seqInfo.o: $(SRCROOT)/Misc/xalloc.h
 seqInfo.o: $(PWD)/staden_config.h
 seqInfo.o: $(SRCROOT)/qclip/seqInfo.h

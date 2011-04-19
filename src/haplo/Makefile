@@ -49,6 +49,7 @@ DEPEND_OBJ = $(OBJS)
 haplo_cons.o: $(SRCROOT)/Misc/array.h
 haplo_cons.o: $(SRCROOT)/Misc/bitmap.h
 haplo_cons.o: $(SRCROOT)/Misc/dstring.h
+haplo_cons.o: $(SRCROOT)/Misc/misc.h
 haplo_cons.o: $(SRCROOT)/Misc/os.h
 haplo_cons.o: $(SRCROOT)/Misc/xalloc.h
 haplo_cons.o: $(SRCROOT)/Misc/xerror.h
@@ -98,6 +99,7 @@ haplo_snps.o: $(SRCROOT)/tk_utils/tcl_utils.h
 haplo_split.o: $(SRCROOT)/Misc/array.h
 haplo_split.o: $(SRCROOT)/Misc/bitmap.h
 haplo_split.o: $(SRCROOT)/Misc/dstring.h
+haplo_split.o: $(SRCROOT)/Misc/misc.h
 haplo_split.o: $(SRCROOT)/Misc/os.h
 haplo_split.o: $(SRCROOT)/Misc/xalloc.h
 haplo_split.o: $(SRCROOT)/Misc/xerror.h
@@ -117,6 +119,7 @@ haplo_split.o: $(SRCROOT)/haplo/haplo.h
 haplo_tcl.o: $(SRCROOT)/Misc/array.h
 haplo_tcl.o: $(SRCROOT)/Misc/bitmap.h
 haplo_tcl.o: $(SRCROOT)/Misc/dstring.h
+haplo_tcl.o: $(SRCROOT)/Misc/misc.h
 haplo_tcl.o: $(SRCROOT)/Misc/os.h
 haplo_tcl.o: $(SRCROOT)/Misc/xalloc.h
 haplo_tcl.o: $(SRCROOT)/Misc/xerror.h

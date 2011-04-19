@@ -38,11 +38,13 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it
 
+polyA_clip.o: $(SRCROOT)/Misc/misc.h
 polyA_clip.o: $(SRCROOT)/Misc/os.h
 polyA_clip.o: $(SRCROOT)/Misc/xalloc.h
 polyA_clip.o: $(PWD)/staden_config.h
 polyA_clip.o: $(SRCROOT)/polyA_clip/seqInfo.h
 polyA_clip.o: $(SRCROOT)/seq_utils/dna_utils.h
+seqInfo.o: $(SRCROOT)/Misc/misc.h
 seqInfo.o: $(SRCROOT)/Misc/os.h
 seqInfo.o: $(SRCROOT)/Misc/xalloc.h
 seqInfo.o: $(PWD)/staden_config.h
