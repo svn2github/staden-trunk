@@ -86,7 +86,7 @@ int init_hash8n (
     (*h)->matches = 0;
     (*h)->word_length = word_length;
     (*h)->size_hash = size_hash;
-    (*h)->fast_mode = 1;
+    (*h)->fast_mode = 0;
     (*h)->filter_words = 0;
     
     if ( ! ((*h)->values1 = (int *) xmalloc ( sizeof(int)*(max_seq) ))) 
