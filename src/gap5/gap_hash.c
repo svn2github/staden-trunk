@@ -160,7 +160,8 @@ int repeat_search (
 
     if ( init_hash8n ( seq1_len, seq2_len,
 		       min_match >= 12 ? 12 : 8,
-		       max_mat, min_match, 1, &h )) {
+		       max_mat, min_match,
+		       HASH_JOB_DIAG | HASH_JOB_COUNTLESS, &h )) {
 	free_hash8n(h);
 	xfree(depadded_seq);
 	xfree(depad_to_pad);
@@ -176,7 +177,7 @@ int repeat_search (
 	xfree(depad_to_pad);
 	return -1;
     }
-    (void) store_hashn ( h );
+    (void) store_hashn_nocount ( h );
 
     *num_f_matches = 0;
     nres = 0;
@@ -194,7 +195,7 @@ int repeat_search (
 	    return -1;
 	}
 	sense = 'f';
-	n_matches = reps ( h, seq1_match, seq2_match, len_match, 0, sense);
+	n_matches = reps_nocount ( h, seq1_match, seq2_match, len_match, 0, sense);
 	*num_f_matches = n_matches;
 	nres += n_matches;
 
@@ -228,7 +229,7 @@ int repeat_search (
 	}
 
 	sense = 'r';
-	n_matches = reps ( h, seq1_match, seq2_match, len_match, nres, sense);
+	n_matches = reps_nocount ( h, seq1_match, seq2_match, len_match, nres, sense);
 	*num_r_matches = n_matches;
 	n_matches += nres;
     }

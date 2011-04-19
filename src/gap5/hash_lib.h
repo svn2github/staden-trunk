@@ -5,11 +5,12 @@
 
 #define MINMAT 20
 
-#define HASH_JOB_DIAG 1
-#define HASH_JOB_HIST 2
-#define HASH_JOB_EXPD 4
-#define HASH_JOB_DMTCH 8
-#define HASH_JOB_BLKS  16
+#define HASH_JOB_DIAG       1
+#define HASH_JOB_HIST       2
+#define HASH_JOB_EXPD       4
+#define HASH_JOB_DMTCH      8
+#define HASH_JOB_BLKS      16
+#define HASH_JOB_COUNTLESS 32
 
 typedef struct block_match_ {
     int pos_seq1;

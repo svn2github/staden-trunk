@@ -117,13 +117,15 @@ int init_hash8n (
      * ie job = 1
      */
 
-    if( (job != 1) && (job != 17) && (job != 31) ) return -2;
+    if( (job != 1) && (job != 17) && (job != 31) && (job != 33)) return -2;
 
-  if ( ! ((*h)->counts = (int *) xcalloc ((*h)->size_hash,sizeof(int) ))) 
-      return -2;
+    if (!(job & HASH_JOB_COUNTLESS)) {
+	if ( ! ((*h)->counts = (int *) xcalloc ((*h)->size_hash,sizeof(int) )))
+	    return -2;
+    }
   
-  if ( ! ((*h)->last_word = (int *) xcalloc ( (*h)->size_hash,sizeof(int) ))) 
-      return -2;    
+    if ( ! ((*h)->last_word = (int *) xcalloc ( (*h)->size_hash,sizeof(int) )))
+	return -2;    
 
     if ( HASH_JOB_DIAG & job ) {
 
@@ -609,6 +611,25 @@ void store_hashn ( Hash *h ) {
 	    h->last_word[n] = i;
 	    h->counts[n]++;
 	}
+    }
+}
+
+/* As per store_hashn() but no h->counts[] array. Terminate list on -1 */
+void store_hashn_nocount ( Hash *h ) {
+    int nw;
+    register int i,j,n;
+
+    for (i=0; i<h->size_hash; i++) {
+	h->last_word[i] = -1;
+    }
+    j = h->seq1_len - h->word_length + 1;
+    for (i = 0; i < j; i++) {
+	n = h->values1[i];
+	if (n == -1)
+	    continue;
+	
+	h->values1[i] = h->last_word[n];
+	h->last_word[n] = i;
     }
 }
 
@@ -3039,6 +3060,103 @@ int reps(Hash *h,
 		h->diag[diag_pos] = pw2-bck + match_size;
 	    }
 	    pw1 = h->values1[pw1];
+	}
+    }
+    h->matches += 1;
+
+    /*
+    t2 = clock();
+
+    printf("Time = %f, nmatches = %d\n",
+	   (double)(t2-t1) / CLOCKS_PER_SEC,
+	   h->matches);
+    */
+
+    if ( h->matches ) {
+	if ( sense == 'r' ) {
+	    (void) make_reverse ( seq2_match_pos, match_length,
+				 h->matches, h->seq2_len, offset); 	
+	}
+	(void) remdup ( seq1_match_pos, seq2_match_pos, match_length, offset, 
+			&h->matches );
+    }
+
+    return h->matches;
+}
+
+int reps_nocount(Hash *h, 
+	 int **seq1_match_pos, 
+	 int **seq2_match_pos,
+	 int **match_length, 
+	 int offset,
+	 char sense) {
+    
+    int nrw, word, pw1, pw2, pw2_last, i, j, match_size;
+    int diag_pos, size_hist;
+    int pw_inc, bck;
+    /* clock_t t1, t2; */
+
+    if(h->seq1_len < h->min_match) return -4; 
+    if(h->seq2_len < h->min_match) return -4; 
+
+    size_hist = h->seq1_len + h->seq2_len - 1;
+    for(i = 0; i < size_hist; i++) h->diag[i] = -(h->word_length);
+
+    /* if forward repeats make sure we do not bother with the main diagonal */
+
+    if ( 'f' == sense ) h->diag[h->seq1_len-1] = h->seq1_len;
+    
+    nrw = h->seq2_len - h->word_length + 1;
+    
+    /* t1 = clock(); */
+
+    /* 	loop for all (nrw) complete words in values2 */
+    h->matches = -1;
+    pw_inc = h->min_match - h->word_length + 1;
+    pw2_last = 0;
+    for (pw2=0;pw2<nrw;pw2+=pw_inc) {
+ 	if (-1 == (word = h->values2[pw2])) {
+	    if (pw2 > pw2_last) {
+		pw2++;
+		pw2 -= pw_inc;
+		continue;
+	    }
+	    continue;
+	}
+
+	pw2_last = pw2;
+
+	for (pw1=h->last_word[word]; pw1 != -1; pw1 = h->values1[pw1]) {
+	    diag_pos = h->seq1_len - pw1 + pw2 - 1;
+
+	    /* Remove self match */
+	    if (sense == 'f' && pw1 < pw2) {
+		continue;
+	    }
+
+	    if ( h->diag[diag_pos] < pw2 ) {
+		if ((match_size = match_fwd_back(h->word_length,
+						 h->seq1, pw1, h->seq1_len,
+						 h->seq2, pw2, h->seq2_len,
+						 &bck)) >= h->min_match) {
+		    h->matches++;
+		    if(h->max_matches == h->matches+offset) {
+			
+			if (-1 == (gap_realloc_matches(seq1_match_pos,
+						       seq2_match_pos,
+						       match_length, 
+						       &h->max_matches))) {
+			    return -1;
+			    /* return -5; */
+				    
+			}
+		    }
+		    (*seq1_match_pos)[h->matches+offset] = pw1+1-bck;
+		    (*seq2_match_pos)[h->matches+offset] = pw2+1-bck;
+		    (*match_length)[h->matches+offset] = match_size;
+		}
+		h->diag[diag_pos] = pw2-bck + match_size;
+	    }
 	}
     }
     h->matches += 1;
