@@ -967,52 +967,86 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 
 
 /*
- * Finds the portion of a contig that has non-clipped data.
- * This is a somewhat crude method by just computing consensus at the ends
- * and trimming back the zero-depth regions.
- *
- * Specify start and end as pointers for the results. Passing over NULL
- * indicates that you are not interested in that end.
+ * Returns the visible non-clipped portion of a contig. We use iterators
+ * on the contig to find the first used and last used bases and return
+ * these in start and end. Passing over NULL indicates that you are
+ * uninterested in that end.
  *
  * Returns 0 for success
  *        -1 for failure.
  */
-#define CONS_SZ 1024
 int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
-    consensus_t cons[CONS_SZ];
-    signed int pos, i;
-    contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
-    if (!c)
-	return -1;
+    contig_iterator *ci;
+    rangec_t *r;
 
     if (start) {
-	pos = contig_get_start(&c);
-	do {
-	    if (-1 == calculate_consensus_bit(io, contig,
-					      pos, pos+CONS_SZ-1, cons))
-		return -1;
-	    for (i = 0; i < CONS_SZ; i++, pos++) {
-		if (cons[i].depth)
-		    break;
-	    }
-	} while (i == CONS_SZ && pos <= c->end);
+	int best = INT_MAX;
 
-	*start = pos;
+	ci = contig_iter_new(io, contig, 0, CITER_FIRST | CITER_ISTART,
+			     CITER_CSTART, CITER_CEND);
+	
+	while ((r = contig_iter_next(io, ci))) {
+	    seq_t *s;
+	    int left;
+
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
+		continue;
+
+	    if (r->start > best)
+		break;
+
+	    s = cache_search(io, GT_Seq, r->rec);
+
+	    if ((s->len < 0) ^ r->comp) {
+		left = r->start + ABS(s->len) - (s->right-1) - 1;
+	    } else {
+		left = r->start + s->left - 1;
+	    }
+
+	    //printf("Rec %"PRIrec" start %d clipped %d\n",
+	    //       r->rec, r->start, left);
+
+	    if (best > left)
+		best = left;
+	}
+
+	contig_iter_del(ci);
+	*start = best;
     }
 
     if (end) {
-	pos = contig_get_end(&c);
-	do {
-	    if (-1 == calculate_consensus_bit(io, contig,
-					      pos-(CONS_SZ-1), pos, cons))
-		return -1;
-	    for (i = CONS_SZ-1; i >= 0; i--, pos--) {
-		if (cons[i].depth)
-		    break;
-	    }
-	} while (i == -1 && pos >= c->start);
+	int best = INT_MIN;
 
-	*end = pos;
+	ci = contig_iter_new(io, contig, 0, CITER_LAST | CITER_IEND,
+			     CITER_CSTART, CITER_CEND);
+	
+	while ((r = contig_iter_prev(io, ci))) {
+	    seq_t *s;
+	    int right;
+
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
+		continue;
+
+	    if (r->end < best)
+		break;
+
+	    s = cache_search(io, GT_Seq, r->rec);
+
+	    if ((s->len < 0) ^ r->comp) {
+		right = r->start + ABS(s->len) - (s->left-1) - 1;
+	    } else {
+		right = r->start + s->right - 1;
+	    }
+
+	    //printf("Rec %"PRIrec" right %d clipped %d\n",
+	    //r->rec, r->end, right);
+
+	    if (best < right)
+		best = right;
+	}
+
+	contig_iter_del(ci);
+	*end = best;
     }
 
     return 0;
