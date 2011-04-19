@@ -71,7 +71,6 @@ TG_INDEX=\
 GAP5=\
 	newgap5_cmds.o \
 	gap4_compat.o \
-        actf.o \
 	gap_hash.o\
 	hash_lib.o \
 	qual.o \
@@ -192,6 +191,7 @@ ace.o: $(SRCROOT)/gap5/ace.h
 ace.o: $(SRCROOT)/gap5/tg_index.h
 ace.o: $(SRCROOT)/gap5/tg_index_common.h
 ace.o: $(SRCROOT)/seq_utils/dna_utils.h
+ace.o: $(SRCROOT)/tgap/b+tree2.h
 ace.o: $(SRCROOT)/tgap/g-alloc.h
 ace.o: $(SRCROOT)/tgap/g-connect.h
 ace.o: $(SRCROOT)/tgap/g-db.h
@@ -219,48 +219,6 @@ ace.o: $(SRCROOT)/tgap/tg_tcl.h
 ace.o: $(SRCROOT)/tgap/tg_track.h
 ace.o: $(SRCROOT)/tgap/tg_utils.h
 ace.o: $(SRCROOT)/tgap/zfio.h
-actf.o: $(SRCROOT)/Misc/array.h
-actf.o: $(SRCROOT)/Misc/bitmap.h
-actf.o: $(SRCROOT)/Misc/misc.h
-actf.o: $(SRCROOT)/Misc/os.h
-actf.o: $(SRCROOT)/Misc/tree.h
-actf.o: $(SRCROOT)/Misc/xalloc.h
-actf.o: $(SRCROOT)/Misc/xerror.h
-actf.o: $(PWD)/staden_config.h
-actf.o: $(SRCROOT)/gap5/IO.h
-actf.o: $(SRCROOT)/gap5/actf.h
-actf.o: $(SRCROOT)/gap5/fort.h
-actf.o: $(SRCROOT)/gap5/gap-dbstruct.h
-actf.o: $(SRCROOT)/gap5/gap-if.h
-actf.o: $(SRCROOT)/gap5/io_handle.h
-actf.o: $(SRCROOT)/gap5/io_utils.h
-actf.o: $(SRCROOT)/tgap/g-alloc.h
-actf.o: $(SRCROOT)/tgap/g-connect.h
-actf.o: $(SRCROOT)/tgap/g-db.h
-actf.o: $(SRCROOT)/tgap/g-defs.h
-actf.o: $(SRCROOT)/tgap/g-error.h
-actf.o: $(SRCROOT)/tgap/g-filedefs.h
-actf.o: $(SRCROOT)/tgap/g-io.h
-actf.o: $(SRCROOT)/tgap/g-misc.h
-actf.o: $(SRCROOT)/tgap/g-os.h
-actf.o: $(SRCROOT)/tgap/g-request.h
-actf.o: $(SRCROOT)/tgap/g-struct.h
-actf.o: $(SRCROOT)/tgap/g.h
-actf.o: $(SRCROOT)/tgap/hache_table.h
-actf.o: $(SRCROOT)/tgap/tg_anno.h
-actf.o: $(SRCROOT)/tgap/tg_bin.h
-actf.o: $(SRCROOT)/tgap/tg_cache_item.h
-actf.o: $(SRCROOT)/tgap/tg_contig.h
-actf.o: $(SRCROOT)/tgap/tg_gio.h
-actf.o: $(SRCROOT)/tgap/tg_iface.h
-actf.o: $(SRCROOT)/tgap/tg_library.h
-actf.o: $(SRCROOT)/tgap/tg_register.h
-actf.o: $(SRCROOT)/tgap/tg_sequence.h
-actf.o: $(SRCROOT)/tgap/tg_struct.h
-actf.o: $(SRCROOT)/tgap/tg_tcl.h
-actf.o: $(SRCROOT)/tgap/tg_track.h
-actf.o: $(SRCROOT)/tgap/tg_utils.h
-actf.o: $(SRCROOT)/tk_utils/text_output.h
 active_tags.o: $(SRCROOT)/Misc/array.h
 active_tags.o: $(SRCROOT)/Misc/bitmap.h
 active_tags.o: $(SRCROOT)/Misc/misc.h
@@ -276,6 +234,7 @@ active_tags.o: $(SRCROOT)/gap5/io_handle.h
 active_tags.o: $(SRCROOT)/gap5/io_utils.h
 active_tags.o: $(SRCROOT)/gap5/list_proc.h
 active_tags.o: $(SRCROOT)/gap5/tagdb.h
+active_tags.o: $(SRCROOT)/tgap/b+tree2.h
 active_tags.o: $(SRCROOT)/tgap/g-alloc.h
 active_tags.o: $(SRCROOT)/tgap/g-connect.h
 active_tags.o: $(SRCROOT)/tgap/g-db.h
@@ -314,6 +273,7 @@ baf.o: $(PWD)/staden_config.h
 baf.o: $(SRCROOT)/gap5/baf.h
 baf.o: $(SRCROOT)/gap5/tg_index.h
 baf.o: $(SRCROOT)/gap5/tg_index_common.h
+baf.o: $(SRCROOT)/tgap/b+tree2.h
 baf.o: $(SRCROOT)/tgap/g-alloc.h
 baf.o: $(SRCROOT)/tgap/g-connect.h
 baf.o: $(SRCROOT)/tgap/g-db.h
@@ -341,6 +301,7 @@ baf.o: $(SRCROOT)/tgap/tg_tcl.h
 baf.o: $(SRCROOT)/tgap/tg_track.h
 baf.o: $(SRCROOT)/tgap/tg_utils.h
 baf.o: $(SRCROOT)/tgap/zfio.h
+bam.o: $(SRCROOT)/Misc/os.h
 bam.o: $(PWD)/staden_config.h
 bam.o: $(SRCROOT)/gap5/bam.h
 break_contig.o: $(SRCROOT)/Misc/array.h
@@ -352,6 +313,7 @@ break_contig.o: $(SRCROOT)/Misc/xerror.h
 break_contig.o: $(PWD)/staden_config.h
 break_contig.o: $(SRCROOT)/gap5/break_contig.h
 break_contig.o: $(SRCROOT)/gap5/dis_readings.h
+break_contig.o: $(SRCROOT)/tgap/b+tree2.h
 break_contig.o: $(SRCROOT)/tgap/g-alloc.h
 break_contig.o: $(SRCROOT)/tgap/g-connect.h
 break_contig.o: $(SRCROOT)/tgap/g-db.h
@@ -389,6 +351,7 @@ caf.o: $(PWD)/staden_config.h
 caf.o: $(SRCROOT)/gap5/caf.h
 caf.o: $(SRCROOT)/gap5/tg_index.h
 caf.o: $(SRCROOT)/gap5/tg_index_common.h
+caf.o: $(SRCROOT)/tgap/b+tree2.h
 caf.o: $(SRCROOT)/tgap/g-alloc.h
 caf.o: $(SRCROOT)/tgap/g-connect.h
 caf.o: $(SRCROOT)/tgap/g-db.h
@@ -437,6 +400,7 @@ consen.o: $(SRCROOT)/gap5/list_proc.h
 consen.o: $(SRCROOT)/gap5/qual.h
 consen.o: $(SRCROOT)/seq_utils/align_lib.h
 consen.o: $(SRCROOT)/seq_utils/dna_utils.h
+consen.o: $(SRCROOT)/tgap/b+tree2.h
 consen.o: $(SRCROOT)/tgap/g-alloc.h
 consen.o: $(SRCROOT)/tgap/g-connect.h
 consen.o: $(SRCROOT)/tgap/g-db.h
@@ -472,6 +436,7 @@ consensus.o: $(SRCROOT)/Misc/xalloc.h
 consensus.o: $(SRCROOT)/Misc/xerror.h
 consensus.o: $(PWD)/staden_config.h
 consensus.o: $(SRCROOT)/gap5/consensus.h
+consensus.o: $(SRCROOT)/tgap/b+tree2.h
 consensus.o: $(SRCROOT)/tgap/g-alloc.h
 consensus.o: $(SRCROOT)/tgap/g-connect.h
 consensus.o: $(SRCROOT)/tgap/g-db.h
@@ -520,6 +485,7 @@ contig_selector.o: $(SRCROOT)/gap5/io_utils.h
 contig_selector.o: $(SRCROOT)/gap5/list.h
 contig_selector.o: $(SRCROOT)/gap5/newgap_cmds.h
 contig_selector.o: $(SRCROOT)/gap5/tagdb.h
+contig_selector.o: $(SRCROOT)/tgap/b+tree2.h
 contig_selector.o: $(SRCROOT)/tgap/g-alloc.h
 contig_selector.o: $(SRCROOT)/tgap/g-connect.h
 contig_selector.o: $(SRCROOT)/tgap/g-db.h
@@ -574,6 +540,7 @@ cs-object.o: $(SRCROOT)/gap5/io_utils.h
 cs-object.o: $(SRCROOT)/gap5/list.h
 cs-object.o: $(SRCROOT)/gap5/newgap_cmds.h
 cs-object.o: $(SRCROOT)/gap5/tk-io-reg.h
+cs-object.o: $(SRCROOT)/tgap/b+tree2.h
 cs-object.o: $(SRCROOT)/tgap/g-alloc.h
 cs-object.o: $(SRCROOT)/tgap/g-connect.h
 cs-object.o: $(SRCROOT)/tgap/g-db.h
@@ -612,6 +579,7 @@ depad_seq_tree.o: $(SRCROOT)/Misc/xerror.h
 depad_seq_tree.o: $(PWD)/staden_config.h
 depad_seq_tree.o: $(SRCROOT)/gap5/consensus.h
 depad_seq_tree.o: $(SRCROOT)/gap5/depad_seq_tree.h
+depad_seq_tree.o: $(SRCROOT)/tgap/b+tree2.h
 depad_seq_tree.o: $(SRCROOT)/tgap/g-alloc.h
 depad_seq_tree.o: $(SRCROOT)/tgap/g-connect.h
 depad_seq_tree.o: $(SRCROOT)/tgap/g-db.h
@@ -647,6 +615,7 @@ depth_track.o: $(SRCROOT)/Misc/xerror.h
 depth_track.o: $(PWD)/staden_config.h
 depth_track.o: $(SRCROOT)/gap5/depth_track.h
 depth_track.o: $(SRCROOT)/gap5/gap_range.h
+depth_track.o: $(SRCROOT)/tgap/b+tree2.h
 depth_track.o: $(SRCROOT)/tgap/g-alloc.h
 depth_track.o: $(SRCROOT)/tgap/g-connect.h
 depth_track.o: $(SRCROOT)/tgap/g-db.h
@@ -682,6 +651,7 @@ dis_readings.o: $(SRCROOT)/Misc/xerror.h
 dis_readings.o: $(PWD)/staden_config.h
 dis_readings.o: $(SRCROOT)/gap5/break_contig.h
 dis_readings.o: $(SRCROOT)/gap5/dis_readings.h
+dis_readings.o: $(SRCROOT)/tgap/b+tree2.h
 dis_readings.o: $(SRCROOT)/tgap/g-alloc.h
 dis_readings.o: $(SRCROOT)/tgap/g-connect.h
 dis_readings.o: $(SRCROOT)/tgap/g-db.h
@@ -726,6 +696,7 @@ do_fij.o: $(SRCROOT)/gap5/io_handle.h
 do_fij.o: $(SRCROOT)/gap5/io_utils.h
 do_fij.o: $(SRCROOT)/seq_utils/align_lib.h
 do_fij.o: $(SRCROOT)/seq_utils/dna_utils.h
+do_fij.o: $(SRCROOT)/tgap/b+tree2.h
 do_fij.o: $(SRCROOT)/tgap/g-alloc.h
 do_fij.o: $(SRCROOT)/tgap/g-connect.h
 do_fij.o: $(SRCROOT)/tgap/g-db.h
@@ -753,21 +724,29 @@ do_fij.o: $(SRCROOT)/tgap/tg_tcl.h
 do_fij.o: $(SRCROOT)/tgap/tg_track.h
 do_fij.o: $(SRCROOT)/tgap/tg_utils.h
 editor_join.o: $(SRCROOT)/Misc/array.h
+editor_join.o: $(SRCROOT)/Misc/bitmap.h
 editor_join.o: $(SRCROOT)/Misc/misc.h
 editor_join.o: $(SRCROOT)/Misc/os.h
 editor_join.o: $(SRCROOT)/Misc/tree.h
 editor_join.o: $(SRCROOT)/Misc/xalloc.h
 editor_join.o: $(SRCROOT)/Misc/xerror.h
 editor_join.o: $(PWD)/staden_config.h
+editor_join.o: $(SRCROOT)/gap5/IO.h
+editor_join.o: $(SRCROOT)/gap5/consen.h
 editor_join.o: $(SRCROOT)/gap5/consensus.h
 editor_join.o: $(SRCROOT)/gap5/editor_view.h
+editor_join.o: $(SRCROOT)/gap5/gap-dbstruct.h
+editor_join.o: $(SRCROOT)/gap5/gap-if.h
 editor_join.o: $(SRCROOT)/gap5/hash_lib.h
+editor_join.o: $(SRCROOT)/gap5/io_handle.h
+editor_join.o: $(SRCROOT)/gap5/io_utils.h
 editor_join.o: $(SRCROOT)/gap5/tkEdNames.h
 editor_join.o: $(SRCROOT)/gap5/tkEditor.h
 editor_join.o: $(SRCROOT)/seq_utils/align.h
 editor_join.o: $(SRCROOT)/seq_utils/align_lib.h
 editor_join.o: $(SRCROOT)/seq_utils/align_lib_old.h
 editor_join.o: $(SRCROOT)/seq_utils/dna_utils.h
+editor_join.o: $(SRCROOT)/tgap/b+tree2.h
 editor_join.o: $(SRCROOT)/tgap/g-alloc.h
 editor_join.o: $(SRCROOT)/tgap/g-connect.h
 editor_join.o: $(SRCROOT)/tgap/g-db.h
@@ -815,6 +794,7 @@ editor_oligo.o: $(SRCROOT)/gap5/tkEditor.h
 editor_oligo.o: $(SRCROOT)/primer3/src/dpal.h
 editor_oligo.o: $(SRCROOT)/primer3/src/primer3.h
 editor_oligo.o: $(SRCROOT)/seq_utils/dna_utils.h
+editor_oligo.o: $(SRCROOT)/tgap/b+tree2.h
 editor_oligo.o: $(SRCROOT)/tgap/g-alloc.h
 editor_oligo.o: $(SRCROOT)/tgap/g-connect.h
 editor_oligo.o: $(SRCROOT)/tgap/g-db.h
@@ -860,6 +840,7 @@ editor_search.o: $(SRCROOT)/gap5/tkEdNames.h
 editor_search.o: $(SRCROOT)/gap5/tkEditor.h
 editor_search.o: $(SRCROOT)/seq_utils/dna_utils.h
 editor_search.o: $(SRCROOT)/seq_utils/search_utils.h
+editor_search.o: $(SRCROOT)/tgap/b+tree2.h
 editor_search.o: $(SRCROOT)/tgap/g-alloc.h
 editor_search.o: $(SRCROOT)/tgap/g-connect.h
 editor_search.o: $(SRCROOT)/tgap/g-db.h
@@ -916,6 +897,7 @@ editor_view.o: $(SRCROOT)/gap5/tkEdNames.h
 editor_view.o: $(SRCROOT)/gap5/tkEditor.h
 editor_view.o: $(SRCROOT)/gap5/tman_display.h
 editor_view.o: $(SRCROOT)/gap5/tman_interface.h
+editor_view.o: $(SRCROOT)/tgap/b+tree2.h
 editor_view.o: $(SRCROOT)/tgap/g-alloc.h
 editor_view.o: $(SRCROOT)/tgap/g-connect.h
 editor_view.o: $(SRCROOT)/tgap/g-db.h
@@ -972,6 +954,7 @@ export_contigs.o: $(SRCROOT)/gap5/newgap_structs.h
 export_contigs.o: $(SRCROOT)/gap5/sam_index.h
 export_contigs.o: $(SRCROOT)/gap5/tg_index.h
 export_contigs.o: $(SRCROOT)/seq_utils/dna_utils.h
+export_contigs.o: $(SRCROOT)/tgap/b+tree2.h
 export_contigs.o: $(SRCROOT)/tgap/g-alloc.h
 export_contigs.o: $(SRCROOT)/tgap/g-connect.h
 export_contigs.o: $(SRCROOT)/tgap/g-db.h
@@ -999,6 +982,45 @@ export_contigs.o: $(SRCROOT)/tgap/tg_struct.h
 export_contigs.o: $(SRCROOT)/tgap/tg_tcl.h
 export_contigs.o: $(SRCROOT)/tgap/tg_track.h
 export_contigs.o: $(SRCROOT)/tgap/tg_utils.h
+fasta.o: $(SRCROOT)/Misc/array.h
+fasta.o: $(SRCROOT)/Misc/misc.h
+fasta.o: $(SRCROOT)/Misc/os.h
+fasta.o: $(SRCROOT)/Misc/string_alloc.h
+fasta.o: $(SRCROOT)/Misc/tree.h
+fasta.o: $(SRCROOT)/Misc/xalloc.h
+fasta.o: $(SRCROOT)/Misc/xerror.h
+fasta.o: $(PWD)/staden_config.h
+fasta.o: $(SRCROOT)/gap5/fasta.h
+fasta.o: $(SRCROOT)/gap5/tg_index.h
+fasta.o: $(SRCROOT)/gap5/tg_index_common.h
+fasta.o: $(SRCROOT)/tgap/b+tree2.h
+fasta.o: $(SRCROOT)/tgap/g-alloc.h
+fasta.o: $(SRCROOT)/tgap/g-connect.h
+fasta.o: $(SRCROOT)/tgap/g-db.h
+fasta.o: $(SRCROOT)/tgap/g-defs.h
+fasta.o: $(SRCROOT)/tgap/g-error.h
+fasta.o: $(SRCROOT)/tgap/g-filedefs.h
+fasta.o: $(SRCROOT)/tgap/g-io.h
+fasta.o: $(SRCROOT)/tgap/g-misc.h
+fasta.o: $(SRCROOT)/tgap/g-os.h
+fasta.o: $(SRCROOT)/tgap/g-request.h
+fasta.o: $(SRCROOT)/tgap/g-struct.h
+fasta.o: $(SRCROOT)/tgap/g.h
+fasta.o: $(SRCROOT)/tgap/hache_table.h
+fasta.o: $(SRCROOT)/tgap/tg_anno.h
+fasta.o: $(SRCROOT)/tgap/tg_bin.h
+fasta.o: $(SRCROOT)/tgap/tg_cache_item.h
+fasta.o: $(SRCROOT)/tgap/tg_contig.h
+fasta.o: $(SRCROOT)/tgap/tg_gio.h
+fasta.o: $(SRCROOT)/tgap/tg_iface.h
+fasta.o: $(SRCROOT)/tgap/tg_library.h
+fasta.o: $(SRCROOT)/tgap/tg_register.h
+fasta.o: $(SRCROOT)/tgap/tg_sequence.h
+fasta.o: $(SRCROOT)/tgap/tg_struct.h
+fasta.o: $(SRCROOT)/tgap/tg_tcl.h
+fasta.o: $(SRCROOT)/tgap/tg_track.h
+fasta.o: $(SRCROOT)/tgap/tg_utils.h
+fasta.o: $(SRCROOT)/tgap/zfio.h
 fij.o: $(SRCROOT)/Misc/array.h
 fij.o: $(SRCROOT)/Misc/bitmap.h
 fij.o: $(SRCROOT)/Misc/misc.h
@@ -1014,7 +1036,6 @@ fij.o: $(SRCROOT)/gap5/contig_selector.h
 fij.o: $(SRCROOT)/gap5/cs-object.h
 fij.o: $(SRCROOT)/gap5/editor_view.h
 fij.o: $(SRCROOT)/gap5/fij.h
-fij.o: $(SRCROOT)/gap5/fort.h
 fij.o: $(SRCROOT)/gap5/gap-dbstruct.h
 fij.o: $(SRCROOT)/gap5/gap-if.h
 fij.o: $(SRCROOT)/gap5/gap4_compat.h
@@ -1029,6 +1050,7 @@ fij.o: $(SRCROOT)/gap5/tk-io-reg.h
 fij.o: $(SRCROOT)/gap5/tkEdNames.h
 fij.o: $(SRCROOT)/gap5/tkEditor.h
 fij.o: $(SRCROOT)/seq_utils/align_lib.h
+fij.o: $(SRCROOT)/tgap/b+tree2.h
 fij.o: $(SRCROOT)/tgap/g-alloc.h
 fij.o: $(SRCROOT)/tgap/g-connect.h
 fij.o: $(SRCROOT)/tgap/g-db.h
@@ -1092,6 +1114,7 @@ find_oligo.o: $(SRCROOT)/gap5/tkEditor.h
 find_oligo.o: $(SRCROOT)/seq_utils/dna_utils.h
 find_oligo.o: $(SRCROOT)/seq_utils/search_utils.h
 find_oligo.o: $(SRCROOT)/seq_utils/sequence_formats.h
+find_oligo.o: $(SRCROOT)/tgap/b+tree2.h
 find_oligo.o: $(SRCROOT)/tgap/g-alloc.h
 find_oligo.o: $(SRCROOT)/tgap/g-connect.h
 find_oligo.o: $(SRCROOT)/tgap/g-db.h
@@ -1142,7 +1165,6 @@ find_repeats.o: $(SRCROOT)/gap5/contig_selector.h
 find_repeats.o: $(SRCROOT)/gap5/cs-object.h
 find_repeats.o: $(SRCROOT)/gap5/editor_view.h
 find_repeats.o: $(SRCROOT)/gap5/find_repeats.h
-find_repeats.o: $(SRCROOT)/gap5/fort.h
 find_repeats.o: $(SRCROOT)/gap5/gap-dbstruct.h
 find_repeats.o: $(SRCROOT)/gap5/gap-if.h
 find_repeats.o: $(SRCROOT)/gap5/gap4_compat.h
@@ -1154,6 +1176,7 @@ find_repeats.o: $(SRCROOT)/gap5/io_utils.h
 find_repeats.o: $(SRCROOT)/gap5/tk-io-reg.h
 find_repeats.o: $(SRCROOT)/gap5/tkEdNames.h
 find_repeats.o: $(SRCROOT)/gap5/tkEditor.h
+find_repeats.o: $(SRCROOT)/tgap/b+tree2.h
 find_repeats.o: $(SRCROOT)/tgap/g-alloc.h
 find_repeats.o: $(SRCROOT)/tgap/g-connect.h
 find_repeats.o: $(SRCROOT)/tgap/g-db.h
@@ -1214,6 +1237,7 @@ gap4_compat.o: $(SRCROOT)/gap5/gap-if.h
 gap4_compat.o: $(SRCROOT)/gap5/gap4_compat.h
 gap4_compat.o: $(SRCROOT)/gap5/io_handle.h
 gap4_compat.o: $(SRCROOT)/gap5/io_utils.h
+gap4_compat.o: $(SRCROOT)/tgap/b+tree2.h
 gap4_compat.o: $(SRCROOT)/tgap/g-alloc.h
 gap4_compat.o: $(SRCROOT)/tgap/g-connect.h
 gap4_compat.o: $(SRCROOT)/tgap/g-db.h
@@ -1250,7 +1274,6 @@ gap_globals.o: $(SRCROOT)/Misc/xerror.h
 gap_globals.o: $(PWD)/staden_config.h
 gap_globals.o: $(SRCROOT)/gap5/IO.h
 gap_globals.o: $(SRCROOT)/gap5/consen.h
-gap_globals.o: $(SRCROOT)/gap5/fort.h
 gap_globals.o: $(SRCROOT)/gap5/gap-dbstruct.h
 gap_globals.o: $(SRCROOT)/gap5/gap-if.h
 gap_globals.o: $(SRCROOT)/gap5/gap_globals.h
@@ -1264,6 +1287,7 @@ gap_globals.o: $(SRCROOT)/seq_utils/align_lib_old.h
 gap_globals.o: $(SRCROOT)/seq_utils/dna_utils.h
 gap_globals.o: $(SRCROOT)/seq_utils/genetic_code.h
 gap_globals.o: $(SRCROOT)/seq_utils/read_matrix.h
+gap_globals.o: $(SRCROOT)/tgap/b+tree2.h
 gap_globals.o: $(SRCROOT)/tgap/g-alloc.h
 gap_globals.o: $(SRCROOT)/tgap/g-connect.h
 gap_globals.o: $(SRCROOT)/tgap/g-db.h
@@ -1302,7 +1326,7 @@ gap_hash.o: $(SRCROOT)/Misc/xalloc.h
 gap_hash.o: $(SRCROOT)/Misc/xerror.h
 gap_hash.o: $(PWD)/staden_config.h
 gap_hash.o: $(SRCROOT)/gap5/IO.h
-gap_hash.o: $(SRCROOT)/gap5/fort.h
+gap_hash.o: $(SRCROOT)/gap5/consen.h
 gap_hash.o: $(SRCROOT)/gap5/gap-dbstruct.h
 gap_hash.o: $(SRCROOT)/gap5/gap-if.h
 gap_hash.o: $(SRCROOT)/gap5/gap_hash.h
@@ -1311,6 +1335,7 @@ gap_hash.o: $(SRCROOT)/gap5/io_handle.h
 gap_hash.o: $(SRCROOT)/gap5/io_utils.h
 gap_hash.o: $(SRCROOT)/seq_utils/align_lib.h
 gap_hash.o: $(SRCROOT)/seq_utils/dna_utils.h
+gap_hash.o: $(SRCROOT)/tgap/b+tree2.h
 gap_hash.o: $(SRCROOT)/tgap/g-alloc.h
 gap_hash.o: $(SRCROOT)/tgap/g-connect.h
 gap_hash.o: $(SRCROOT)/tgap/g-db.h
@@ -1345,6 +1370,7 @@ gap_range.o: $(SRCROOT)/Misc/xalloc.h
 gap_range.o: $(SRCROOT)/Misc/xerror.h
 gap_range.o: $(PWD)/staden_config.h
 gap_range.o: $(SRCROOT)/gap5/gap_range.h
+gap_range.o: $(SRCROOT)/tgap/b+tree2.h
 gap_range.o: $(SRCROOT)/tgap/g-alloc.h
 gap_range.o: $(SRCROOT)/tgap/g-connect.h
 gap_range.o: $(SRCROOT)/tgap/g-db.h
@@ -1372,13 +1398,50 @@ gap_range.o: $(SRCROOT)/tgap/tg_struct.h
 gap_range.o: $(SRCROOT)/tgap/tg_tcl.h
 gap_range.o: $(SRCROOT)/tgap/tg_track.h
 gap_range.o: $(SRCROOT)/tgap/tg_utils.h
+hash_lib.o: $(SRCROOT)/Misc/array.h
+hash_lib.o: $(SRCROOT)/Misc/bitmap.h
 hash_lib.o: $(SRCROOT)/Misc/misc.h
 hash_lib.o: $(SRCROOT)/Misc/os.h
+hash_lib.o: $(SRCROOT)/Misc/tree.h
 hash_lib.o: $(SRCROOT)/Misc/xalloc.h
+hash_lib.o: $(SRCROOT)/Misc/xerror.h
 hash_lib.o: $(PWD)/staden_config.h
+hash_lib.o: $(SRCROOT)/gap5/IO.h
+hash_lib.o: $(SRCROOT)/gap5/consen.h
+hash_lib.o: $(SRCROOT)/gap5/gap-dbstruct.h
+hash_lib.o: $(SRCROOT)/gap5/gap-if.h
 hash_lib.o: $(SRCROOT)/gap5/hash_lib.h
+hash_lib.o: $(SRCROOT)/gap5/io_handle.h
+hash_lib.o: $(SRCROOT)/gap5/io_utils.h
 hash_lib.o: $(SRCROOT)/seq_utils/align_lib.h
 hash_lib.o: $(SRCROOT)/seq_utils/dna_utils.h
+hash_lib.o: $(SRCROOT)/tgap/b+tree2.h
+hash_lib.o: $(SRCROOT)/tgap/g-alloc.h
+hash_lib.o: $(SRCROOT)/tgap/g-connect.h
+hash_lib.o: $(SRCROOT)/tgap/g-db.h
+hash_lib.o: $(SRCROOT)/tgap/g-defs.h
+hash_lib.o: $(SRCROOT)/tgap/g-error.h
+hash_lib.o: $(SRCROOT)/tgap/g-filedefs.h
+hash_lib.o: $(SRCROOT)/tgap/g-io.h
+hash_lib.o: $(SRCROOT)/tgap/g-misc.h
+hash_lib.o: $(SRCROOT)/tgap/g-os.h
+hash_lib.o: $(SRCROOT)/tgap/g-request.h
+hash_lib.o: $(SRCROOT)/tgap/g-struct.h
+hash_lib.o: $(SRCROOT)/tgap/g.h
+hash_lib.o: $(SRCROOT)/tgap/hache_table.h
+hash_lib.o: $(SRCROOT)/tgap/tg_anno.h
+hash_lib.o: $(SRCROOT)/tgap/tg_bin.h
+hash_lib.o: $(SRCROOT)/tgap/tg_cache_item.h
+hash_lib.o: $(SRCROOT)/tgap/tg_contig.h
+hash_lib.o: $(SRCROOT)/tgap/tg_gio.h
+hash_lib.o: $(SRCROOT)/tgap/tg_iface.h
+hash_lib.o: $(SRCROOT)/tgap/tg_library.h
+hash_lib.o: $(SRCROOT)/tgap/tg_register.h
+hash_lib.o: $(SRCROOT)/tgap/tg_sequence.h
+hash_lib.o: $(SRCROOT)/tgap/tg_struct.h
+hash_lib.o: $(SRCROOT)/tgap/tg_tcl.h
+hash_lib.o: $(SRCROOT)/tgap/tg_track.h
+hash_lib.o: $(SRCROOT)/tgap/tg_utils.h
 import_gff.o: $(SRCROOT)/Misc/array.h
 import_gff.o: $(SRCROOT)/Misc/misc.h
 import_gff.o: $(SRCROOT)/Misc/os.h
@@ -1388,6 +1451,7 @@ import_gff.o: $(SRCROOT)/Misc/xerror.h
 import_gff.o: $(PWD)/staden_config.h
 import_gff.o: $(SRCROOT)/gap5/consensus.h
 import_gff.o: $(SRCROOT)/gap5/import_gff.h
+import_gff.o: $(SRCROOT)/tgap/b+tree2.h
 import_gff.o: $(SRCROOT)/tgap/g-alloc.h
 import_gff.o: $(SRCROOT)/tgap/g-connect.h
 import_gff.o: $(SRCROOT)/tgap/g-db.h
@@ -1435,6 +1499,7 @@ init.o: $(SRCROOT)/gap5/io_utils.h
 init.o: $(SRCROOT)/gap5/list.h
 init.o: $(SRCROOT)/gap5/newgap_cmds.h
 init.o: $(SRCROOT)/gap5/tagdb.h
+init.o: $(SRCROOT)/tgap/b+tree2.h
 init.o: $(SRCROOT)/tgap/g-alloc.h
 init.o: $(SRCROOT)/tgap/g-connect.h
 init.o: $(SRCROOT)/tgap/g-db.h
@@ -1480,6 +1545,7 @@ list_proc.o: $(SRCROOT)/gap5/io_handle.h
 list_proc.o: $(SRCROOT)/gap5/io_utils.h
 list_proc.o: $(SRCROOT)/gap5/list.h
 list_proc.o: $(SRCROOT)/gap5/newgap_cmds.h
+list_proc.o: $(SRCROOT)/tgap/b+tree2.h
 list_proc.o: $(SRCROOT)/tgap/g-alloc.h
 list_proc.o: $(SRCROOT)/tgap/g-connect.h
 list_proc.o: $(SRCROOT)/tgap/g-db.h
@@ -1519,6 +1585,7 @@ maq.o: $(SRCROOT)/gap5/maq.h
 maq.o: $(SRCROOT)/gap5/maqmap.h
 maq.o: $(SRCROOT)/gap5/tg_index.h
 maq.o: $(SRCROOT)/gap5/tg_index_common.h
+maq.o: $(SRCROOT)/tgap/b+tree2.h
 maq.o: $(SRCROOT)/tgap/g-alloc.h
 maq.o: $(SRCROOT)/tgap/g-connect.h
 maq.o: $(SRCROOT)/tgap/g-db.h
@@ -1569,6 +1636,7 @@ newgap5_cmds.o: $(SRCROOT)/gap5/depth_track.h
 newgap5_cmds.o: $(SRCROOT)/gap5/dis_readings.h
 newgap5_cmds.o: $(SRCROOT)/gap5/editor_view.h
 newgap5_cmds.o: $(SRCROOT)/gap5/export_contigs.h
+newgap5_cmds.o: $(SRCROOT)/gap5/fasta.h
 newgap5_cmds.o: $(SRCROOT)/gap5/fij.h
 newgap5_cmds.o: $(SRCROOT)/gap5/find_oligo.h
 newgap5_cmds.o: $(SRCROOT)/gap5/find_repeats.h
@@ -1604,6 +1672,7 @@ newgap5_cmds.o: $(SRCROOT)/seq_utils/align_lib.h
 newgap5_cmds.o: $(SRCROOT)/seq_utils/align_lib_old.h
 newgap5_cmds.o: $(SRCROOT)/seq_utils/genetic_code.h
 newgap5_cmds.o: $(SRCROOT)/seq_utils/read_matrix.h
+newgap5_cmds.o: $(SRCROOT)/tgap/b+tree2.h
 newgap5_cmds.o: $(SRCROOT)/tgap/g-alloc.h
 newgap5_cmds.o: $(SRCROOT)/tgap/g-connect.h
 newgap5_cmds.o: $(SRCROOT)/tgap/g-db.h
@@ -1646,7 +1715,9 @@ notedb.o: $(SRCROOT)/Misc/xalloc.h
 notedb.o: $(PWD)/staden_config.h
 notedb.o: $(SRCROOT)/gap5/notedb.h
 notedb.o: $(SRCROOT)/tk_utils/intrinsic_type.h
+primlib.o: $(SRCROOT)/Misc/misc.h
 primlib.o: $(SRCROOT)/Misc/os.h
+primlib.o: $(SRCROOT)/Misc/xalloc.h
 primlib.o: $(PWD)/staden_config.h
 primlib.o: $(SRCROOT)/gap5/gap_globals.h
 primlib.o: $(SRCROOT)/gap5/primlib.h
@@ -1665,6 +1736,7 @@ qual.o: $(SRCROOT)/gap5/consensus.h
 qual.o: $(SRCROOT)/gap5/gap_globals.h
 qual.o: $(SRCROOT)/gap5/qual.h
 qual.o: $(SRCROOT)/gap5/qualP.h
+qual.o: $(SRCROOT)/tgap/b+tree2.h
 qual.o: $(SRCROOT)/tgap/g-alloc.h
 qual.o: $(SRCROOT)/tgap/g-connect.h
 qual.o: $(SRCROOT)/tgap/g-db.h
@@ -1710,6 +1782,7 @@ qualIO.o: $(SRCROOT)/gap5/io_handle.h
 qualIO.o: $(SRCROOT)/gap5/io_utils.h
 qualIO.o: $(SRCROOT)/gap5/qual.h
 qualIO.o: $(SRCROOT)/gap5/qualP.h
+qualIO.o: $(SRCROOT)/tgap/b+tree2.h
 qualIO.o: $(SRCROOT)/tgap/g-alloc.h
 qualIO.o: $(SRCROOT)/tgap/g-connect.h
 qualIO.o: $(SRCROOT)/tgap/g-db.h
@@ -1745,6 +1818,7 @@ read_depth.o: $(SRCROOT)/Misc/xalloc.h
 read_depth.o: $(SRCROOT)/Misc/xerror.h
 read_depth.o: $(PWD)/staden_config.h
 read_depth.o: $(SRCROOT)/gap5/read_depth.h
+read_depth.o: $(SRCROOT)/tgap/b+tree2.h
 read_depth.o: $(SRCROOT)/tgap/g-alloc.h
 read_depth.o: $(SRCROOT)/tgap/g-connect.h
 read_depth.o: $(SRCROOT)/tgap/g-db.h
@@ -1797,6 +1871,7 @@ readpair.o: $(SRCROOT)/gap5/readpair.h
 readpair.o: $(SRCROOT)/gap5/tk-io-reg.h
 readpair.o: $(SRCROOT)/gap5/tkEdNames.h
 readpair.o: $(SRCROOT)/gap5/tkEditor.h
+readpair.o: $(SRCROOT)/tgap/b+tree2.h
 readpair.o: $(SRCROOT)/tgap/g-alloc.h
 readpair.o: $(SRCROOT)/tgap/g-connect.h
 readpair.o: $(SRCROOT)/tgap/g-db.h
@@ -1846,6 +1921,7 @@ sam_index.o: $(SRCROOT)/gap5/sam_index.h
 sam_index.o: $(SRCROOT)/gap5/sam_pileup.h
 sam_index.o: $(SRCROOT)/gap5/tg_index.h
 sam_index.o: $(SRCROOT)/gap5/tg_index_common.h
+sam_index.o: $(SRCROOT)/tgap/b+tree2.h
 sam_index.o: $(SRCROOT)/tgap/g-alloc.h
 sam_index.o: $(SRCROOT)/tgap/g-connect.h
 sam_index.o: $(SRCROOT)/tgap/g-db.h
@@ -1902,6 +1978,7 @@ template_display.o: $(PWD)/staden_config.h
 template_display.o: $(SRCROOT)/gap5/gap_range.h
 template_display.o: $(SRCROOT)/gap5/template_display.h
 template_display.o: $(SRCROOT)/gap5/template_draw.h
+template_display.o: $(SRCROOT)/tgap/b+tree2.h
 template_display.o: $(SRCROOT)/tgap/g-alloc.h
 template_display.o: $(SRCROOT)/tgap/g-connect.h
 template_display.o: $(SRCROOT)/tgap/g-db.h
@@ -1946,6 +2023,7 @@ tg_index.o: $(SRCROOT)/gap5/maqmap.h
 tg_index.o: $(SRCROOT)/gap5/sam_index.h
 tg_index.o: $(SRCROOT)/gap5/tg_index.h
 tg_index.o: $(SRCROOT)/gap5/tg_index_common.h
+tg_index.o: $(SRCROOT)/tgap/b+tree2.h
 tg_index.o: $(SRCROOT)/tgap/g-alloc.h
 tg_index.o: $(SRCROOT)/tgap/g-connect.h
 tg_index.o: $(SRCROOT)/tgap/g-db.h
@@ -1983,6 +2061,7 @@ tg_index_common.o: $(SRCROOT)/Misc/xerror.h
 tg_index_common.o: $(PWD)/staden_config.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_index.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_index_common.h
+tg_index_common.o: $(SRCROOT)/tgap/b+tree2.h
 tg_index_common.o: $(SRCROOT)/tgap/g-alloc.h
 tg_index_common.o: $(SRCROOT)/tgap/g-connect.h
 tg_index_common.o: $(SRCROOT)/tgap/g-db.h
@@ -2017,6 +2096,7 @@ tg_view.o: $(SRCROOT)/Misc/tree.h
 tg_view.o: $(SRCROOT)/Misc/xalloc.h
 tg_view.o: $(SRCROOT)/Misc/xerror.h
 tg_view.o: $(PWD)/staden_config.h
+tg_view.o: $(SRCROOT)/tgap/b+tree2.h
 tg_view.o: $(SRCROOT)/tgap/g-alloc.h
 tg_view.o: $(SRCROOT)/tgap/g-connect.h
 tg_view.o: $(SRCROOT)/tgap/g-db.h
@@ -2063,6 +2143,7 @@ tk-io-reg.o: $(SRCROOT)/gap5/list.h
 tk-io-reg.o: $(SRCROOT)/gap5/newgap_cmds.h
 tk-io-reg.o: $(SRCROOT)/gap5/newgap_structs.h
 tk-io-reg.o: $(SRCROOT)/gap5/tk-io-reg.h
+tk-io-reg.o: $(SRCROOT)/tgap/b+tree2.h
 tk-io-reg.o: $(SRCROOT)/tgap/g-alloc.h
 tk-io-reg.o: $(SRCROOT)/tgap/g-connect.h
 tk-io-reg.o: $(SRCROOT)/tgap/g-db.h
@@ -2110,6 +2191,7 @@ tkAppInit.o: $(SRCROOT)/gap5/io_handle.h
 tkAppInit.o: $(SRCROOT)/gap5/io_utils.h
 tkAppInit.o: $(SRCROOT)/gap5/list.h
 tkAppInit.o: $(SRCROOT)/gap5/newgap_cmds.h
+tkAppInit.o: $(SRCROOT)/tgap/b+tree2.h
 tkAppInit.o: $(SRCROOT)/tgap/g-alloc.h
 tkAppInit.o: $(SRCROOT)/tgap/g-connect.h
 tkAppInit.o: $(SRCROOT)/tgap/g-db.h
@@ -2148,6 +2230,7 @@ tkEdNames.o: $(SRCROOT)/gap5/consensus.h
 tkEdNames.o: $(SRCROOT)/gap5/editor_view.h
 tkEdNames.o: $(SRCROOT)/gap5/tkEdNames.h
 tkEdNames.o: $(SRCROOT)/gap5/tkEditor.h
+tkEdNames.o: $(SRCROOT)/tgap/b+tree2.h
 tkEdNames.o: $(SRCROOT)/tgap/g-alloc.h
 tkEdNames.o: $(SRCROOT)/tgap/g-connect.h
 tkEdNames.o: $(SRCROOT)/tgap/g-db.h
@@ -2201,6 +2284,7 @@ tkEditor.o: $(SRCROOT)/gap5/tkEdNames.h
 tkEditor.o: $(SRCROOT)/gap5/tkEditor.h
 tkEditor.o: $(SRCROOT)/gap5/tman_display.h
 tkEditor.o: $(SRCROOT)/gap5/tman_interface.h
+tkEditor.o: $(SRCROOT)/tgap/b+tree2.h
 tkEditor.o: $(SRCROOT)/tgap/g-alloc.h
 tkEditor.o: $(SRCROOT)/tgap/g-connect.h
 tkEditor.o: $(SRCROOT)/tgap/g-db.h
@@ -2253,6 +2337,7 @@ tman_display.o: $(SRCROOT)/gap5/tkEdNames.h
 tman_display.o: $(SRCROOT)/gap5/tkEditor.h
 tman_display.o: $(SRCROOT)/gap5/tman_display.h
 tman_display.o: $(SRCROOT)/gap5/tman_interface.h
+tman_display.o: $(SRCROOT)/tgap/b+tree2.h
 tman_display.o: $(SRCROOT)/tgap/g-alloc.h
 tman_display.o: $(SRCROOT)/tgap/g-connect.h
 tman_display.o: $(SRCROOT)/tgap/g-db.h
@@ -2303,6 +2388,7 @@ tman_interface.o: $(SRCROOT)/gap5/tkEdNames.h
 tman_interface.o: $(SRCROOT)/gap5/tkEditor.h
 tman_interface.o: $(SRCROOT)/gap5/tman_display.h
 tman_interface.o: $(SRCROOT)/gap5/tman_interface.h
+tman_interface.o: $(SRCROOT)/tgap/b+tree2.h
 tman_interface.o: $(SRCROOT)/tgap/g-alloc.h
 tman_interface.o: $(SRCROOT)/tgap/g-connect.h
 tman_interface.o: $(SRCROOT)/tgap/g-db.h

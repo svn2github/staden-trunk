@@ -16,7 +16,6 @@
 #include "dna_utils.h"
 #include "align.h"
 #include "consen.h"
-#include "fort.h"
 #include "align_lib.h"
 #include "hash_lib.h"
 #include "notedb.h"

@@ -69,6 +69,7 @@ TG_IO = \
 	tg_tracks.o \
 	tg_anno.o \
 	tg_library.o \
+        actf.o \
 	zfio.o
 
 TGSH_OBJ = \
@@ -96,6 +97,20 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+actf.o: $(SRCROOT)/Misc/array.h
+actf.o: $(SRCROOT)/Misc/misc.h
+actf.o: $(SRCROOT)/Misc/os.h
+actf.o: $(SRCROOT)/Misc/xalloc.h
+actf.o: $(SRCROOT)/Misc/xerror.h
+actf.o: $(PWD)/staden_config.h
+actf.o: $(SRCROOT)/tgap/actf.h
+actf.o: $(SRCROOT)/tgap/g-alloc.h
+actf.o: $(SRCROOT)/tgap/g-filedefs.h
+actf.o: $(SRCROOT)/tgap/g-files.h
+actf.o: $(SRCROOT)/tgap/g-os.h
+actf.o: $(SRCROOT)/tgap/g-struct.h
+actf.o: $(SRCROOT)/tgap/hache_table.h
+actf.o: $(SRCROOT)/tk_utils/text_output.h
 b+tree2.o: $(SRCROOT)/Misc/array.h
 b+tree2.o: $(SRCROOT)/Misc/os.h
 b+tree2.o: $(SRCROOT)/Misc/xerror.h
@@ -151,6 +166,7 @@ g-error.o: $(SRCROOT)/Misc/xerror.h
 g-error.o: $(SRCROOT)/tgap/g-error.h
 g-error.o: $(SRCROOT)/tgap/g-misc.h
 g-files.o: $(SRCROOT)/Misc/array.h
+g-files.o: $(SRCROOT)/Misc/misc.h
 g-files.o: $(SRCROOT)/Misc/os.h
 g-files.o: $(SRCROOT)/Misc/xalloc.h
 g-files.o: $(SRCROOT)/Misc/xerror.h
@@ -211,6 +227,7 @@ gap_cli_arg.o: $(SRCROOT)/Misc/tree.h
 gap_cli_arg.o: $(SRCROOT)/Misc/xalloc.h
 gap_cli_arg.o: $(SRCROOT)/Misc/xerror.h
 gap_cli_arg.o: $(PWD)/staden_config.h
+gap_cli_arg.o: $(SRCROOT)/tgap/b+tree2.h
 gap_cli_arg.o: $(SRCROOT)/tgap/g-alloc.h
 gap_cli_arg.o: $(SRCROOT)/tgap/g-connect.h
 gap_cli_arg.o: $(SRCROOT)/tgap/g-db.h
@@ -248,6 +265,7 @@ tg_anno.o: $(SRCROOT)/Misc/tree.h
 tg_anno.o: $(SRCROOT)/Misc/xalloc.h
 tg_anno.o: $(SRCROOT)/Misc/xerror.h
 tg_anno.o: $(PWD)/staden_config.h
+tg_anno.o: $(SRCROOT)/tgap/b+tree2.h
 tg_anno.o: $(SRCROOT)/tgap/g-alloc.h
 tg_anno.o: $(SRCROOT)/tgap/g-connect.h
 tg_anno.o: $(SRCROOT)/tgap/g-db.h
@@ -281,6 +299,7 @@ tg_bin.o: $(SRCROOT)/Misc/tree.h
 tg_bin.o: $(SRCROOT)/Misc/xalloc.h
 tg_bin.o: $(SRCROOT)/Misc/xerror.h
 tg_bin.o: $(PWD)/staden_config.h
+tg_bin.o: $(SRCROOT)/tgap/b+tree2.h
 tg_bin.o: $(SRCROOT)/tgap/g-alloc.h
 tg_bin.o: $(SRCROOT)/tgap/g-connect.h
 tg_bin.o: $(SRCROOT)/tgap/g-db.h
@@ -315,6 +334,7 @@ tg_cache.o: $(SRCROOT)/Misc/tree.h
 tg_cache.o: $(SRCROOT)/Misc/xalloc.h
 tg_cache.o: $(SRCROOT)/Misc/xerror.h
 tg_cache.o: $(PWD)/staden_config.h
+tg_cache.o: $(SRCROOT)/tgap/b+tree2.h
 tg_cache.o: $(SRCROOT)/tgap/g-alloc.h
 tg_cache.o: $(SRCROOT)/tgap/g-connect.h
 tg_cache.o: $(SRCROOT)/tgap/g-db.h
@@ -348,6 +368,7 @@ tg_contig.o: $(SRCROOT)/Misc/tree.h
 tg_contig.o: $(SRCROOT)/Misc/xalloc.h
 tg_contig.o: $(SRCROOT)/Misc/xerror.h
 tg_contig.o: $(PWD)/staden_config.h
+tg_contig.o: $(SRCROOT)/tgap/b+tree2.h
 tg_contig.o: $(SRCROOT)/tgap/g-alloc.h
 tg_contig.o: $(SRCROOT)/tgap/g-connect.h
 tg_contig.o: $(SRCROOT)/tgap/g-db.h
@@ -381,6 +402,7 @@ tg_gio.o: $(SRCROOT)/Misc/tree.h
 tg_gio.o: $(SRCROOT)/Misc/xalloc.h
 tg_gio.o: $(SRCROOT)/Misc/xerror.h
 tg_gio.o: $(PWD)/staden_config.h
+tg_gio.o: $(SRCROOT)/tgap/b+tree2.h
 tg_gio.o: $(SRCROOT)/tgap/g-alloc.h
 tg_gio.o: $(SRCROOT)/tgap/g-connect.h
 tg_gio.o: $(SRCROOT)/tgap/g-db.h
@@ -451,6 +473,7 @@ tg_library.o: $(SRCROOT)/Misc/tree.h
 tg_library.o: $(SRCROOT)/Misc/xalloc.h
 tg_library.o: $(SRCROOT)/Misc/xerror.h
 tg_library.o: $(PWD)/staden_config.h
+tg_library.o: $(SRCROOT)/tgap/b+tree2.h
 tg_library.o: $(SRCROOT)/tgap/g-alloc.h
 tg_library.o: $(SRCROOT)/tgap/g-connect.h
 tg_library.o: $(SRCROOT)/tgap/g-db.h
@@ -484,6 +507,7 @@ tg_register.o: $(SRCROOT)/Misc/tree.h
 tg_register.o: $(SRCROOT)/Misc/xalloc.h
 tg_register.o: $(SRCROOT)/Misc/xerror.h
 tg_register.o: $(PWD)/staden_config.h
+tg_register.o: $(SRCROOT)/tgap/b+tree2.h
 tg_register.o: $(SRCROOT)/tgap/g-alloc.h
 tg_register.o: $(SRCROOT)/tgap/g-connect.h
 tg_register.o: $(SRCROOT)/tgap/g-db.h
@@ -518,6 +542,7 @@ tg_sequence.o: $(SRCROOT)/Misc/tree.h
 tg_sequence.o: $(SRCROOT)/Misc/xalloc.h
 tg_sequence.o: $(SRCROOT)/Misc/xerror.h
 tg_sequence.o: $(PWD)/staden_config.h
+tg_sequence.o: $(SRCROOT)/tgap/b+tree2.h
 tg_sequence.o: $(SRCROOT)/tgap/g-alloc.h
 tg_sequence.o: $(SRCROOT)/tgap/g-connect.h
 tg_sequence.o: $(SRCROOT)/tgap/g-db.h
@@ -551,6 +576,7 @@ tg_tcl.o: $(SRCROOT)/Misc/tree.h
 tg_tcl.o: $(SRCROOT)/Misc/xalloc.h
 tg_tcl.o: $(SRCROOT)/Misc/xerror.h
 tg_tcl.o: $(PWD)/staden_config.h
+tg_tcl.o: $(SRCROOT)/tgap/b+tree2.h
 tg_tcl.o: $(SRCROOT)/tgap/g-alloc.h
 tg_tcl.o: $(SRCROOT)/tgap/g-connect.h
 tg_tcl.o: $(SRCROOT)/tgap/g-db.h
@@ -586,6 +612,7 @@ tg_track.o: $(SRCROOT)/Misc/tree.h
 tg_track.o: $(SRCROOT)/Misc/xalloc.h
 tg_track.o: $(SRCROOT)/Misc/xerror.h
 tg_track.o: $(PWD)/staden_config.h
+tg_track.o: $(SRCROOT)/tgap/b+tree2.h
 tg_track.o: $(SRCROOT)/tgap/g-alloc.h
 tg_track.o: $(SRCROOT)/tgap/g-connect.h
 tg_track.o: $(SRCROOT)/tgap/g-db.h
@@ -619,6 +646,7 @@ tg_tracks.o: $(SRCROOT)/Misc/tree.h
 tg_tracks.o: $(SRCROOT)/Misc/xalloc.h
 tg_tracks.o: $(SRCROOT)/Misc/xerror.h
 tg_tracks.o: $(PWD)/staden_config.h
+tg_tracks.o: $(SRCROOT)/tgap/b+tree2.h
 tg_tracks.o: $(SRCROOT)/tgap/g-alloc.h
 tg_tracks.o: $(SRCROOT)/tgap/g-connect.h
 tg_tracks.o: $(SRCROOT)/tgap/g-db.h
@@ -653,6 +681,7 @@ tg_utils.o: $(SRCROOT)/Misc/tree.h
 tg_utils.o: $(SRCROOT)/Misc/xalloc.h
 tg_utils.o: $(SRCROOT)/Misc/xerror.h
 tg_utils.o: $(PWD)/staden_config.h
+tg_utils.o: $(SRCROOT)/tgap/b+tree2.h
 tg_utils.o: $(SRCROOT)/tgap/g-alloc.h
 tg_utils.o: $(SRCROOT)/tgap/g-connect.h
 tg_utils.o: $(SRCROOT)/tgap/g-db.h
@@ -679,5 +708,6 @@ tg_utils.o: $(SRCROOT)/tgap/tg_struct.h
 tg_utils.o: $(SRCROOT)/tgap/tg_tcl.h
 tg_utils.o: $(SRCROOT)/tgap/tg_track.h
 tg_utils.o: $(SRCROOT)/tgap/tg_utils.h
+zfio.o: $(SRCROOT)/Misc/os.h
 zfio.o: $(PWD)/staden_config.h
 zfio.o: $(SRCROOT)/tgap/zfio.h

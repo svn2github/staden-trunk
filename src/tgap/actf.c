@@ -16,7 +16,6 @@
 #undef ERROR
 #endif
 
-#include "fort.h"
 #include "xalloc.h"
 #include "misc.h"
 #include "actf.h"

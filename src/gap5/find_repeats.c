@@ -4,7 +4,6 @@
 #include "cs-object.h"
 #include "contig_selector.h"
 #include "text_output.h"
-#include "fort.h"
 #include "tcl_utils.h"
 #include "tclXkeylist.h"
 #include "find_repeats.h"

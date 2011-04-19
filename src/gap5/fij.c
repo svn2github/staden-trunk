@@ -1,7 +1,6 @@
 #include <tk.h>
 
 #include "io_utils.h"
-#include "fort.h"
 #include "IO.h"
 #include "gap_globals.h"
 #include "fij.h"

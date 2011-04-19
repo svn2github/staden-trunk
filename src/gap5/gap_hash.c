@@ -3,12 +3,13 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include "fort.h"
 #include "misc.h"
 #include "xalloc.h"
 #include "dna_utils.h"
 #include "gap_hash.h"
 #include "hash_lib.h"
+
+#include <time.h>
 
 int cmpseq_ (
 		   int   *job,		/* the task to perform */
@@ -136,6 +137,10 @@ int repeat_search (
     int *depad_to_pad;
     int i;
 
+    clock_t t1, t2;
+
+    t1 = clock();
+
     /* Depad sequence */
     if (NULL == (depad_to_pad = (int *)xmalloc(sizeof(int) * seq1_len)))
 	return -1;
@@ -249,6 +254,12 @@ int repeat_search (
     if (seq2) xfree(seq2);
     xfree(depadded_seq);
     xfree(depad_to_pad);
+
+    t2 = clock();
+
+    printf("Time = %f, nmatches = %d\n",
+	   (double)(t2-t1) / CLOCKS_PER_SEC,
+	   h->matches);
 
     return n_matches;
 }
