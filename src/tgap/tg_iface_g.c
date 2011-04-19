@@ -49,6 +49,7 @@ typedef struct {
     HacheTable *contig_name_hash;
     btree_t *contig_name_tree;
     int comp_mode;
+    int db_vers;
 } g_io;
 
 
@@ -1326,6 +1327,8 @@ static void *io_database_connect(char *dbname, int ro) {
     io->contig_name_tree = NULL;
     io->comp_mode = COMP_MODE_ZLIB;
 
+    io->db_vers = 0;
+
     return io;
 }
 
@@ -1506,6 +1509,9 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 	    db->contig_name_index = 0;
 	}
     }
+
+    io->db_vers = db->version;
+    printf("Database version=%d\n", io->db_vers);
 
     return ci;
 
@@ -2868,7 +2874,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	char *cp, fmt[2];
 	int sz;
 	GIOVec vec[2];
-	int fmt2 = 2;
+	int fmt2 = io->db_vers >= 2 ? 2 : 1;
 
 	fmt[0] = GT_Range;
 	fmt[1] = fmt2 | (io->comp_mode << 6);
@@ -3020,11 +3026,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (g.flags & BIN_CONS_VALID)   bflag |= BIN_CONS_VALID_;
 
 	*cp++ = GT_Bin;
-	vers = 2;
-//	if (g.rng_free != -1)
-//	    vers = 1;
-//	if (g.nrefpos > 0 || g.nanno > 0)
-//	    vers = 2;
+	vers = io->db_vers >= 2 ? 2 : 1;
 	*cp++ = vers; /* Format */
 
 	cp += int2u7(bflag, cp);
