@@ -228,12 +228,27 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
 
 int edview_search_name(edview *xx, int dir, int strand, char *value)
 {
-    tg_rec rec, *rp, cnum, best_rec;
+    tg_rec rec, *rp, cnum = -1, best_rec;
     int best_pos;
     int nr, i;
     rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
     int start, end;
     contig_iterator *iter;
+
+    /* Check for #num where num is a sequence record in this contig */
+    if (*value == '#') {
+	char *endp;
+	int64_t v = strtol64(value+1, &endp, 10);
+	rec = v;
+
+	if (*endp == '\0' && cache_exists(xx->io, GT_Seq, rec)) {
+	    sequence_get_position(xx->io, rec, &cnum, NULL, NULL, NULL);
+	    if (cnum == xx->cnum) {
+		edSetCursorPos(xx, GT_Seq, rec, 0, 1);
+		return 0;
+	    }
+	}
+    }
 
     /* Find all hits matching this name */
     rp = sequence_index_query_all(xx->io, value, 1, &nr);
