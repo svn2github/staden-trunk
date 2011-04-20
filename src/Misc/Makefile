@@ -43,6 +43,7 @@ OBJS = \
 	parse_db.o\
 	dstring.o \
 	string_alloc.o\
+	strtol64.o\
 	$(WIN_FUNCS)
 
 #

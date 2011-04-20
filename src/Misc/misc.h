@@ -152,4 +152,9 @@ int strcasecmp(const char *s3, const char *s2);
 size_t strnlen(const char *buf, size_t n);
 #endif
 
+int32_t strtol32(const char *nptr, char **endptr, int base);
+int64_t strtol64(const char *nptr, char **endptr, int base);
+int32_t atoi32(const char *nptr);
+int32_t atoi64(const char *nptr);
+
 #endif /*_misc_h*/
