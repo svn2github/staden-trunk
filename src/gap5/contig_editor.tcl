@@ -2735,7 +2735,6 @@ bind EdNames <<menu>> {
 	    }
 
 	    $s delete
-	    $sc delete
 	}
     }
 
