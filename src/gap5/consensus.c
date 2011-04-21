@@ -1011,7 +1011,7 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 	}
 
 	contig_iter_del(ci);
-	*start = best;
+	*start = best != INT_MAX ? best : 0;
     }
 
     if (end) {
@@ -1039,14 +1039,14 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 	    }
 
 	    //printf("Rec %"PRIrec" right %d clipped %d\n",
-	    //r->rec, r->end, right);
+	    //	   r->rec, r->end, right);
 
 	    if (best < right)
 		best = right;
 	}
 
 	contig_iter_del(ci);
-	*end = best;
+	*end = best != INT_MIN ? best : 0;
     }
 
     return 0;
