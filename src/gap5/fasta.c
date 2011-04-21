@@ -23,9 +23,9 @@ typedef struct {
     char *seq;
     char *qual;
     int  max_name_len;
-    int  max_seq_len;
-    int  max_qual_len;
-    int  seq_len;
+    size_t  max_seq_len;
+    size_t  max_qual_len;
+    size_t  seq_len;
 } fastq_entry_t;
 
 

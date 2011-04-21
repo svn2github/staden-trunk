@@ -1304,7 +1304,7 @@ int cache_exists(GapIO *io, int type, int rec) {
  */
 static int cache_item_init_seq(GapIO *io, void *from, tg_rec rec) {
     seq_t *s, *f = (seq_t *)from;
-    int slen = sizeof(seq_t) + sequence_extra_len(f);
+    size_t slen = sizeof(seq_t) + sequence_extra_len(f);
     cached_item *ci = cache_new(GT_Seq, 0, 0, NULL, slen);
     tg_rec brec, sub_rec;
     seq_block_t *b;

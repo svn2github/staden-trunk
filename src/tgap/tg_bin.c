@@ -88,7 +88,7 @@ static bin_index_t *contig_extend_bins_right(GapIO *io, contig_t **c) {
     tg_rec old_root_id = contig_get_bin(c);
     bin_index_t *oroot = get_bin(io, old_root_id), *nroot;
     tg_rec root_id;
-    int sz = oroot->size;
+    size_t sz = oroot->size;
 
     cache_incr(io, oroot);
     if (!(oroot = cache_rw(io, oroot))) {
@@ -97,7 +97,10 @@ static bin_index_t *contig_extend_bins_right(GapIO *io, contig_t **c) {
     }
 
     /* Create a new root */
-    root_id = bin_new(io, oroot->pos, sz*2, oroot->parent, oroot->parent_type);
+    sz *= 2;
+    if (sz > INT_MAX)
+	sz = INT_MAX;
+    root_id = bin_new(io, oroot->pos, sz, oroot->parent, oroot->parent_type);
     nroot = get_bin(io, root_id);
     cache_incr(io, nroot);
     if (!(nroot = cache_rw(io, nroot))) {
