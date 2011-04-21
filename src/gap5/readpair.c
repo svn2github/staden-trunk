@@ -616,9 +616,6 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 		return NULL;
 	}
 
-	printf("r1 flags = 0x%x\n", r1->flags);
-	printf("r2 flags = 0x%x\n", r2->flags);
-
 	/*
 	  r1 flags = 0x61 (1+20+40) => paired +!comp1 + comp2 + 1fwd + 2rev
 	  r2 flags = 0x15 (1+4+10)  => paired + comp1 +!comp2 + 1rev + 2fwd
@@ -630,8 +627,6 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	dir[1] = (!!(r2->flags & GRANGE_FLAG_COMP1) ==
 		  ((r2->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD))
 	    ^ r2->comp ? -1 : 1;
-
-	printf("=> dir[0] = %d, dir[1] = %d\n", dir[0], dir[1]);
 
 	pairs[npairs].rec[0] = rec1;
 	pairs[npairs].rec[1] = rec2;
