@@ -136,6 +136,7 @@ int repeat_search (
     int depadded_len;
     int *depad_to_pad;
     int i;
+    int word_size;
 
     clock_t t1, t2;
 
@@ -158,8 +159,14 @@ int repeat_search (
     seq2_len = seq1_len;
     seq2 = NULL;
 
-    if ( init_hash8n ( seq1_len, seq2_len,
-		       min_match >= 12 ? 12 : 8,
+    word_size = min_match >= 12 ? 12 : 8;
+    if (seq1_len > 100000000) {
+	word_size = 14;
+	if (min_match < 14)
+	    min_match = 14;
+    }
+
+    if ( init_hash8n ( seq1_len, seq2_len, word_size,
 		       max_mat, min_match,
 		       HASH_JOB_DIAG | HASH_JOB_COUNTLESS, &h )) {
 	free_hash8n(h);
