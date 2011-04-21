@@ -596,8 +596,12 @@ proc contig_editor {w args} {
 	set opt(contig2) $opt(-contig2)
 	set opt(io2) [io_child $opt(-io) $opt(-contig2)]
 	if {[info exists opt(-reading2)]} {
-	    set opt(-reading2) [$opt(io) seq_name2rec $opt(-reading2)]
-	    if {$opt(-reading2) == -1} { set opt(-reading2) 0 }
+	    if {[regexp {^\#([0-9]+)$} $opt(-reading2) _dummy rec]} {
+		set opt(-reading2) $rec
+	    } else {
+		set opt(-reading2) [$opt(io) seq_name2rec $opt(-reading2)]
+		if {$opt(-reading2) == -1} { set opt(-reading2) 0 }
+	    }
 	} else {
 	    set opt(-reading2) 0
 	}

@@ -51,8 +51,8 @@ int join_contig(GapIO *io, tg_rec cnum[2], tg_rec rnum[2], int pos[2]) {
     char cmd[1024];
     int ret;
 
-    sprintf(cmd, "join_contig -io %s -contig %"PRIrec" -reading %"PRIrec
-	    " -pos %d -contig2 %"PRIrec" -reading2 %"PRIrec" -pos2 %d",
+    sprintf(cmd, "join_contig -io %s -contig %"PRIrec" -reading #%"PRIrec
+	    " -pos %d -contig2 %"PRIrec" -reading2 #%"PRIrec" -pos2 %d",
 	    io_obj_as_string(io),
 	    cnum[0], rnum[0], pos[0],
 	    cnum[1], rnum[1], pos[1]);

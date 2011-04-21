@@ -133,8 +133,23 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 			    return NULL;
 		}
 
-		pos[0] = 1;
-		pos[1] = 1;
+		llino[0] = obj->read1;
+		llino[1] = obj->read2;
+
+		if (sequence_get_orient(template->io, obj->read1)) {
+		    pos[0] = 0;
+		} else {
+		    seq_t *s = cache_search(template->io, GT_Seq, obj->read1);
+		    pos[0] = ABS(s->len)-1;
+		}
+
+		if (sequence_get_orient(template->io, obj->read2)) {
+		    pos[1] = 0;
+		} else {
+		    seq_t *s = cache_search(template->io, GT_Seq, obj->read2);
+		    pos[1] = ABS(s->len)-1;
+		}
+
 		join_contig(template->io, cnum, llino, pos);
 
 		break;
@@ -554,6 +569,7 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     while ((hi = HashTableIterNext(h, iter))) {
 	tg_rec rec1, rec2;
 	rangec_t *r1 = (rangec_t *)hi->data.p, *r2, r2_tmp;
+	int dir[2];
 
 	rec1 = r1->rec;
 	rec2 = r1->pair_rec;
@@ -600,10 +616,27 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 		return NULL;
 	}
 
+	printf("r1 flags = 0x%x\n", r1->flags);
+	printf("r2 flags = 0x%x\n", r2->flags);
+
+	/*
+	  r1 flags = 0x61 (1+20+40) => paired +!comp1 + comp2 + 1fwd + 2rev
+	  r2 flags = 0x15 (1+4+10)  => paired + comp1 +!comp2 + 1rev + 2fwd
+	 */
+
+	dir[0] = (!!(r1->flags & GRANGE_FLAG_COMP1) ==
+		  ((r1->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD))
+	    ^ r1->comp ? -1 : 1;
+	dir[1] = (!!(r2->flags & GRANGE_FLAG_COMP1) ==
+		  ((r2->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD))
+	    ^ r2->comp ? -1 : 1;
+
+	printf("=> dir[0] = %d, dir[1] = %d\n", dir[0], dir[1]);
+
 	pairs[npairs].rec[0] = rec1;
 	pairs[npairs].rec[1] = rec2;
-	pairs[npairs].contig[0] = r1->orig_rec;
-	pairs[npairs].contig[1] = r2->orig_rec;
+	pairs[npairs].contig[0] = dir[0] * r1->orig_rec;
+	pairs[npairs].contig[1] = dir[1] * r2->orig_rec;
 	pairs[npairs].start[0] = r1->start;
 	pairs[npairs].start[1] = r2->start;
 	pairs[npairs].end[0] = r1->end;
