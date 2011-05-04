@@ -33,6 +33,37 @@ static iface iface_g;
  * exported function listed in tg_iface_g.h.
  */
 
+#if 0
+/*
+ * Very noddy checksum code, used only as a way of producing a value that
+ * depends on the entire buffer contents so we can test for uninitialised
+ * data with valgrind.
+ */
+static int chksum(unsigned char *data, size_t len) {
+    int v = 0;
+    size_t i;
+
+    for (i = 0; i < len; i++) {
+	v ^= data[i];
+    }
+
+    return v;
+}
+
+int lchksum(unsigned char *data, size_t *len, int nlen) {
+    int v = 0;
+    size_t i, tlen;
+
+    for (tlen = 0, i = 0; i < nlen; i++)
+	tlen += len[i];
+
+    for (i = 0; i < tlen; i++) {
+	v ^= data[i];
+    }
+
+    return v;
+}
+#endif
 
 #define DATABASE_RECORD 0
 
@@ -430,6 +461,8 @@ static char *zlib_mem_inflate(char *cdata, size_t csize, size_t *size) {
 
 static char *mem_deflate(int mode,
 			 char *data, size_t size, size_t *cdata_size) {
+    // printf("chksum=%d\n", chksum(data, size));
+
     switch (mode) {
     case COMP_MODE_NONE:
 	return nul_mem_deflate (data, size, cdata_size);
@@ -447,6 +480,8 @@ static char *mem_deflate(int mode,
 static char *mem_deflate_parts(int mode, char *data,
 			       size_t *part_size, int nparts,
 			       size_t *cdata_size) {
+    // printf("chksum=%d\n", lchksum(data, part_size, nparts));
+
     switch (mode) {
     case COMP_MODE_NONE:
 	return nul_mem_deflate_parts (data, part_size, nparts, cdata_size);
@@ -464,6 +499,8 @@ static char *mem_deflate_parts(int mode, char *data,
 static char *mem_deflate_lparts(int mode, char *data,
 				size_t *part_size, int *level, int nparts,
 				size_t *cdata_size) {
+    // printf("chksum=%d\n", lchksum(data, part_size, nparts));
+
     switch (mode) {
     case COMP_MODE_NONE:
 	return nul_mem_deflate_lparts (data, part_size, level, nparts, cdata_size);
