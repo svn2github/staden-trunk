@@ -23,11 +23,11 @@
  */
 typedef struct cached_item_s {
     GView view;
+    int8_t lock_mode;
+    uint8_t updated;
+    uint8_t forgetme;
+    int8_t type;
     tg_rec rec;
-    int lock_mode:7;
-    unsigned int updated:1;
-    unsigned int forgetme:1;
-    int type:6;
     HacheItem *hi;
     size_t data_size;
     void *data;

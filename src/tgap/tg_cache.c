@@ -443,12 +443,10 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
  * Ensure key is initialised correctly, making sure that it is blank
  * in the gaps between structure elements and the padding at the end.
  */
-cache_key_t construct_key(tg_rec rec, int type) {
-    cache_key_t k;
-    memset(&k, 0, sizeof(k));
-    k.rec = rec;
-    k.type = type;
-    return k;
+static void construct_key(tg_rec rec, int type, cache_key_t *k) {
+    memset(k, 0, sizeof(*k));
+    k->rec = rec;
+    k->type = type;
 }
 
 /* Callback from Hache */
@@ -469,7 +467,7 @@ static void cache_unload(void *clientdata, HacheData hd) {
 	HacheItem *hi_base;
 	cache_key_t k;
 
-	k = construct_key(ci->rec, ci->type);
+	construct_key(ci->rec, ci->type, &k);
 	hi_base = HacheTableQuery(io->base->cache, (char *)&k, sizeof(k));
 
 	if (hi_base)
@@ -661,10 +659,13 @@ int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
  *        NULL for failure.
  */
 void *cache_lock(GapIO *io, int type, tg_rec rec, int mode) {
-    cache_key_t key = construct_key(rec, type);
+    cache_key_t key;
     cached_item *ci;
     HacheTable *h = io->cache;
-    HacheItem *hi = HacheTableSearch(h, (char *)&key, sizeof(key));
+    HacheItem *hi;
+
+    construct_key(rec, type, &key);    
+    hi = HacheTableSearch(h, (char *)&key, sizeof(key));
     
     if (!hi)
 	return NULL;
@@ -1175,7 +1176,7 @@ void *cache_search(GapIO *io, int type, tg_rec rec) {
 	break;
     }
 
-    k = construct_key(rec, type);
+    construct_key(rec, type, &k);
     hi = HacheTableQuery(io->cache, (char *)&k, sizeof(k));
 
     /* Pass one layer up if we're an overlay on top of another GapIO */
@@ -1253,7 +1254,7 @@ void *cache_search_no_load(GapIO *io, int type, tg_rec rec) {
 	break;
     }
 
-    k = construct_key(rec, type);
+    construct_key(rec, type, &k);
     hi = HacheTableQuery(io->cache, (char *)&k, sizeof(k));
 
     if (!hi && io->base)
