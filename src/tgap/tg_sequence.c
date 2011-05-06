@@ -1051,7 +1051,7 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 
     if ((int)(extra_len - ((char *)&n->conf[sequence_conf_size(n)*(pos)]+1
 			   - (char *)&n->data)) < 0) {
-	fprintf(stderrr, "Attempted to write past allocated memory in "
+	fprintf(stderr, "Attempted to write past allocated memory in "
 		"sequence_insert_base()\n");
 	return 0;
     }
