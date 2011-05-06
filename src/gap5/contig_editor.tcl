@@ -1542,9 +1542,11 @@ proc editor_insert_gap {w where} {
 		 [list C_SET $type $rec $pos] \
 		 [list B_DEL $rec $pos] ] {}
     } else {
+	$w decr_contig
 	set contig [$io get_contig $rec]
 	$contig insert_base $pos
 	$contig delete
+	$w incr_contig
 
 	store_undo $w \
 	    [list \
@@ -1609,6 +1611,7 @@ proc editor_delete_base {w where {powerup 0}} {
 		     [list B_INS $rec $pos $old_base $old_conf]] {}
 	}
     } else {
+	$w decr_contig
 	set contig [$io get_contig $rec]
 
 	set cons [calc_consensus -io $io -contigs "{=$rec $pos $pos}"]
@@ -1623,6 +1626,7 @@ proc editor_delete_base {w where {powerup 0}} {
 
 	$contig delete_base $pos
 	$contig delete
+	$w incr_contig
 
 	store_undo $w \
 	    [list \
@@ -2710,14 +2714,33 @@ bind EdNames <<menu>> {
     # Create the goto... menu
     #%W.m add cascade -label "Goto..." -menu %W.m.goto
     #menu %W.m.goto
+
     set other_end [$ed get_template_seqs $rec]
     if {[llength $other_end] >= 1} {
+	# Compute distance from this sequence to the end of this contig.
+	set s [[$ed io] get_seq $rec]
+	set sc [$s get_contig]
+	set c [[$ed io] get_contig $sc]
+	set pos [$s get_position]
+	set lsize [expr {$pos-[$c get_start]}]
+	set rsize [expr {[$c get_end] - ($pos+abs([$s get_length])-1)}]
+	set dist [expr {$lsize < $rsize ? $lsize : $rsize}]
+	$c delete
+	$s delete
+
 	%W.m add separator
 	foreach rec $other_end {
 	    set s [[$ed io] get_seq $rec]
 	    set pos [$s get_position]
 
+	    # Get distance of other sequence from the end of its contig
 	    set sc [$s get_contig]
+	    set c [[$ed io] get_contig $sc]
+	    puts [$c get_start]..[$c get_end]
+	    set lsize [expr {$pos-[$c get_start]}]
+	    set rsize [expr {[$c get_end] - ($pos+abs([$s get_length])-1)}]
+	    puts lsize=$lsize,rsize=$rsize
+	    incr dist [expr {$lsize < $rsize ? $lsize : $rsize}]
 
 	    # Get the base contig IO
 	    set crec [$ed contig_rec]
@@ -2729,16 +2752,15 @@ bind EdNames <<menu>> {
 		    -label "Goto [$s get_name] (@ $pos)" \
 		    -command "$ed set_cursor 18 $rec 0"
 	    } else {
-		set c [[$ed io] get_contig $sc]
 		set cname [$c get_name]
-		$c delete
 
 		%W.m add command \
-		    -label "Goto [$s get_name] (Contig '$cname' @ $pos)" \
+		    -label "Goto [$s get_name] (Contig '$cname' @ $pos, size ~ $dist)" \
 		    -command "create_or_move_editor $base_io $sc $rec 0"
 	    }
 
 	    $s delete
+	    $c delete
 	}
     }
 
