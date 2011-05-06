@@ -74,13 +74,19 @@ proc ListLibraries {io} {
 
     # Canvas
     canvas $t.c
+    scrollbar $t.x -orient horiz -command "$t.c xview"
+    scrollbar $t.y -orient vert  -command "$t.c yview"
+    $t.c configure -xscrollcommand "$t.x set"
+    $t.c configure -yscrollcommand "$t.y set"
+    
 
     # Layout
     grid columnconfigure $t 0 -weight 1
     grid rowconfigure $t 0 -weight 1
     grid rowconfigure $t 1 -weight 1
     grid $t.list $t.yscroll -sticky nsew
-    grid $t.c -sticky nsew -columnspan 2
+    grid $t.c $t.y -sticky nsew
+    grid $t.x -sticky nsew
 
     # Add some bindings
 #    bind [$t.list bodypath] <<use>> "+ListLibrariesDetailed $io %W $t.list %x %y"
@@ -179,13 +185,22 @@ proc ListLibraries {io} {
     set s [::Plotchart::createXYPlot $c \
 	       [list $xn $maxx $xi] \
 	       [list 0 $maxy $yi]]
+    $s xtext "Insert size"
+    $s ytext "Count"
 
     # Plot it
     for {set j 0} {$j < 3} {incr j} {
+	$s dataconfig lib_${rec}_$j \
+	    -colour [lindex {red blue magenta} $j]
+	$s legend lib_${rec}_$j \
+	    [lindex {"-->  <--" "<--  -->" "-> -> / <- <-"} $j]
 	foreach {x y} [set l_$j] {
 	    $s plot lib_${rec}_$j $x [expr {$y*$bsize}]
 	}
     }
+
+    $c itemconfigure data -width 2
+    $c configure -scrollregion [$c bbox all]
 
     $lib delete
 }
