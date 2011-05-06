@@ -1136,12 +1136,12 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
     s.parent_rec = 0;
     if (bio->a->data_type & DATA_NAME) {
 	s.name_len = name_len;
-	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
+	s.name = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, name);
     } else {
 	char *n = "";
 	s.name_len = 0;
-	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
+	s.name = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, n);
     }
     s.trace_name = s.name + s.name_len + 1;
@@ -1361,12 +1361,12 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     s.parent_rec = 0;
     if (bio->a->data_type & DATA_NAME) {
 	s.name_len = name_len;
-	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
+	s.name = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, name);
     } else {
 	char *n = "";
 	s.name_len = 0;
-	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
+	s.name = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, n);
     }
     s.trace_name = s.name + s.name_len + 1;

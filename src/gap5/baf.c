@@ -370,10 +370,10 @@ int construct_seq_from_block(tg_args *a,seq_t *s, baf_block *b, char **tname) {
     s->trace_name_len = strlen(trace_name);
     s->alignment_len = strlen(alignment);
 
-    s->name = s->data = (char *)malloc(s->name_len+1 +
-				       s->trace_name_len+1 +
-				       s->alignment_len+1 +
-				       len+qb*len);
+    s->name = (char *)malloc(s->name_len+1 +
+			     s->trace_name_len+1 +
+			     s->alignment_len+1 +
+			     len+qb*len);
     strcpy(s->name, name);
 
     s->trace_name = s->name + s->name_len + 1;

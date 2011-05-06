@@ -257,7 +257,7 @@ typedef struct {
     struct seq_block *block; /* seq_block_t pointer and index into it */
     int idx;
 
-    char *data;       /* packed memory struct; names/al/seq/conf are here */
+    char data[1];     /* packed memory struct; names/al/seq/conf are here */
 } seq_t;
 
 /* Maximum size of a block, actual size maybe less if long sequences */
@@ -295,7 +295,7 @@ typedef struct {
     tg_rec bin;
     tg_rec anno_rec; /* FIXME */
     char *name;
-    char *data;
+    char data[1];
 } contig_t;
 
 
@@ -438,7 +438,7 @@ typedef struct {
     tg_rec anno_rec; /* link to anno_t record below */
     struct anno_ele_block *block;
     int idx; 
-    char *data;      /* location of packed comment */
+    char data[1];    /* location of packed comment */
 } anno_ele_t;
 
 #define ANNO_ELE_BLOCK_BITS 10
@@ -501,7 +501,7 @@ typedef struct {
     int size_hist[3][LIB_BINS+1];
 
     char *name;
-    char *data;
+    char data[1];
 } library_t;
 
 #endif /* _TG_STRUCT_H_ */

@@ -499,8 +499,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    seq.right = ai->rd.nbases;
 	    seq.flags = af[seq_count].dir == 0 ? 0 : SEQ_COMPLEMENTED;
 	    seq.name_len = strlen(ai->rd.rname);
-	    seq.data = (char *)malloc(seq.name_len+1+2*ai->rd.nbases);
-	    seq.name = seq.data;
+	    seq.name = (char *)malloc(seq.name_len+1+2*ai->rd.nbases);
 	    strcpy(seq.name, ai->rd.rname);
 	    seq.seq = seq.data + seq.name_len + 1;
 	    seq.trace_name = NULL;

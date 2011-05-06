@@ -1737,7 +1737,7 @@ static cached_item *io_contig_read(void *dbh, tg_rec rec) {
     cp += u72int(cp, &nlen);
 
     /* Generate in-memory data structure */
-    slen = sizeof(*c) + sizeof(char *) + nlen + 1;
+    slen = sizeof(*c) + nlen + 1;
     if (!(ci = cache_new(GT_Contig, rec, v, NULL, slen)))
 	return NULL;
 

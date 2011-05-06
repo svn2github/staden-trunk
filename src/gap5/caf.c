@@ -1149,10 +1149,10 @@ static int read_data(zfp *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	}
 	
 	// seq.data freed by save_range_sequence
-	seq.name = seq.data = (char *) calloc(seq.name_len + 1 +
-	    	    	    	    	      seq.trace_name_len + 1 +
-					      1 +
-					      2 * sq.s_len, sizeof(char));
+	seq.name = (char *) calloc(seq.name_len + 1 +
+				   seq.trace_name_len + 1 +
+				   1 +
+				   2 * sq.s_len, sizeof(char));
 					      
 	strcpy(seq.name, name);
 

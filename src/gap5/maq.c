@@ -34,12 +34,12 @@ static int parse_maqmap_aux(tg_args *a,
     s->parent_rec = 0;
     if (a->data_type & DATA_NAME) {
 	s->name_len = strlen(m->name);
-	s->name = s->data = (char*)malloc(s->name_len + 3+ 2*m->size);
+	s->name = (char*)malloc(s->name_len + 3+ 2*m->size);
 	strcpy(s->name, m->name);
     } else {
 	char *n = "";
 	s->name_len = strlen(n);
-	s->name = s->data = (char *)malloc(s->name_len + 3 + 2*m->size);
+	s->name = (char *)malloc(s->name_len + 3 + 2*m->size);
 	strcpy(s->name, n);
     }
     s->trace_name = s->name + s->name_len + 1;
