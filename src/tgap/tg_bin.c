@@ -292,7 +292,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 		if (offset_r)
 		    *offset_r = last_offset;
 		if (comp_r)
-		    *comp_r = complement;
+		    *comp_r = last_complement;
 		return last_bin;
 	    }
 
@@ -806,6 +806,29 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 	*orient = comp;
 
     return 0;
+}
+
+/*
+ * Computes the bin orientation with respect to the contig.
+ * Returns 1 for complemented
+ *         0 for uncomplemented.
+ */
+int bin_get_orient(GapIO *io, tg_rec rec) {
+    bin_index_t *bin = NULL;
+    int comp = 0;
+
+    /* Bubble up bins until we hit the root */
+    while (rec) {
+	bin = (bin_index_t *)cache_search(io, GT_Bin, rec);
+	if (bin->flags & BIN_COMPLEMENTED)
+	    comp ^= 1;
+	if (bin->parent_type != GT_Bin)
+	    break;
+	rec = bin->parent;
+    }
+
+    assert(bin && bin->parent_type == GT_Contig);
+    return comp;
 }
 
 /*

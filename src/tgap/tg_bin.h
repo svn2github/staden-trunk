@@ -132,6 +132,13 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 			  tg_rec *bin, range_t *r_out, void **i_out);
 
 /*
+ * Computes the bin orientation with respect to the contig.
+ * Returns 1 for complemented
+ *         0 for uncomplemented.
+ */
+int bin_get_orient(GapIO *io, tg_rec rec);
+
+/*
  * Adds 'n' to the nseq counter for a bin and all parent bins chaining up
  * to the root node. 'n' may be negative too.
  *
