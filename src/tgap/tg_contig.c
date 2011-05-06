@@ -9,6 +9,10 @@
 #include "misc.h"
 #include "tree.h"
 
+#define NORM(x) (f_a * (x) + f_b)
+#define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
+#define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
+
 /*
  * Sets the contig start position
  *
@@ -153,6 +157,7 @@ static int contig_insert_base2(GapIO *io, tg_rec bnum,
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
 		(r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
+		assert(ABS(r->end - r->start) + 1 == ABS(s->len));
 		sequence_insert_base(io, &s, pos - MIN(r->start, r->end),
 				     base, conf, 0);
 	    }
@@ -213,6 +218,145 @@ static int contig_insert_base2(GapIO *io, tg_rec bnum,
     return 0;
 }
 
+#ifdef UNUSED
+/*
+ * This is a variant of contig_insert_base2() above, but using a similar
+ * orientation tracking mechanism as the *_in_range functions rather than its
+ * own whacky method. Disabled for now though as the reason for writing it
+ * turned out to be wrong - the bug I assumed was in the original was infact
+ * elsewhere.
+ *
+ * Leaving it here for at least one SVN check-in so I have a backup of the
+ * revised code should I ever need or wish to switch to it.
+ */
+
+/*
+ * Inserts 'len' bases at position 'pos' in the contig.
+ * This edits all sequences stacked up above pos and also updates the bin
+ * structure accordingly.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+static int contig_insert_base2_(GapIO *io, tg_rec bin_num,
+			       int pos, int offset, int complement,
+			       char base, int conf) {
+    int i, f_a, f_b;
+    bin_index_t *bin;
+
+    bin = get_bin(io, bin_num);
+    cache_incr(io, bin);
+    if (bin->flags & BIN_COMPLEMENTED) {
+	complement ^= 1;
+    }
+
+    if (!(bin = cache_rw(io, bin)))
+	return -1;
+
+    /* Normalise pos for complemented bins */
+    if (complement) {
+	f_a = -1;
+	f_b = offset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = offset;
+    }
+
+    /* FIXME: add end_used (or start_used if complemented?) check here,
+     * so we can shortcut looping through the bin if we're inserting beyond
+     * any of the bin contents.
+     */
+
+    /* Perform the insert into objects first */
+    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	range_t *r = arrp(range_t, bin->rng, i);
+
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	//printf("Rec=%"PRIrec", pos=%d, read from %d..%d\n",
+	//       r->rec, pos, NMIN(r->start, r->end), NMAX(r->start, r->end));
+
+	if (pos <= NMAX(r->start, r->end) && pos > NMIN(r->start, r->end)) {
+	    /*
+	     * FIXME: This should be a callback function so we can
+	     * perform insertion in any bin system - to sequences in contigs,
+	     * contigs in super-contigs, or tags in a sequence/consensus.
+	     */
+
+	    //puts("In seq, edit");
+
+	    /* Insert */
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
+		(r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+		seq_t *s = cache_search(io, GT_Seq, r->rec);
+		if (complement)
+		    sequence_insert_base(io, &s, NMAX(r->start, r->end)-pos+1,
+					 base, conf, 0);
+		else 
+		    sequence_insert_base(io, &s, pos - NMIN(r->start, r->end),
+					 base, conf, 0);
+	    }
+	    
+	    r->end++;
+	    bin->flags |= BIN_RANGE_UPDATED;
+
+	} else if (( complement && pos >= NMAX(r->start, r->end)) ||
+		   (!complement && pos <= NMIN(r->start, r->end))) {
+	    //printf("Left of seq => move\n");
+	    /* Move */
+	    r->start++;
+	    r->end++;
+	    bin->flags |= BIN_RANGE_UPDATED;
+	}
+    }
+
+    /* Adjust the bin dimensions */
+    bin->size++;
+    if (bin->rng) {
+	if (pos <= bin->start_used)
+	    bin->start_used++;
+	if (pos <= bin->end_used)
+	    bin->end_used++;
+    }
+    bin->flags |= BIN_BIN_UPDATED;
+
+    /* Recurse */
+    if (bin->child[0] || bin->child[1]) {
+	bin_index_t *ch = NULL;
+
+	/* Find the correct child node */
+       	for (i = 0; i < 2; i++) {
+	    if (!bin->child[i])
+		continue;
+
+	    ch = get_bin(io, bin->child[i]);
+
+	    if (pos >= NMIN(ch->pos, ch->pos + ch->size-1) &&
+		pos <= NMAX(ch->pos, ch->pos + ch->size-1)) {
+		contig_insert_base2_(io, bin->child[i], pos,
+				    NMIN(ch->pos, ch->pos + ch->size-1),
+				    complement, base, conf);
+		/* Children to the right of this one need pos updating too */
+	    } else if (pos < NMIN(ch->pos, ch->pos + ch->size-1)) {
+		ch = get_bin(io, bin->child[i]);
+		if (!(ch = cache_rw(io, ch))) {
+		    cache_decr(io, bin);
+		    return -1;
+		}
+
+		ch->pos++;
+		ch->flags |= BIN_BIN_UPDATED;
+	    }
+	}
+    }
+
+    cache_decr(io, bin);
+
+    return 0;
+}
+#endif
+
 int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
     contig_t *n;
     int rpos, add_indel = 1;
@@ -227,6 +371,8 @@ int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
 	return -1;
     *c = n;
 
+    //contig_insert_base2_(io, contig_get_bin(c), pos, contig_offset(io, c),
+    //			 0, base, conf);
     contig_insert_base2(io, contig_get_bin(c), pos, contig_offset(io, c),
 			base, conf);
 
@@ -1230,9 +1376,6 @@ static int compute_ypos_tags(rangec_t *r, int nr) {
     return 0;
 }
 
-#define NORM(x) (f_a * (x) + f_b)
-#define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
-#define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
 				 int start, int end, int offset,
 				 rangec_t **results, int *alloc, int used,

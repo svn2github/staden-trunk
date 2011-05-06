@@ -552,7 +552,7 @@ void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf) {
 }
 
 seq_t *dup_seq(seq_t *s) {
-    size_t len = sizeof(seq_t) - sizeof(char *) + sequence_extra_len(s);
+    size_t len = sizeof(seq_t) + sequence_extra_len(s);
     seq_t *d = (seq_t *)calloc(1, len);
 
 
@@ -726,6 +726,8 @@ tg_rec sequence_get_pair(GapIO *io, seq_t *s) {
     /* Jump over to pair */
     r = arrp(range_t, b->rng, s->bin_index);
     assert(r->rec == s->rec);
+    assert(ABS(r->end - r->start) + 1 == ABS(s->len));
+
     return r->pair_rec;
 }
 
@@ -1026,6 +1028,13 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 	    : pos;
     }
 
+    if (pos > ABS(n->len) || pos < 0) {
+	fprintf(stderr, "Attempted to write to position %d in seq #%"
+		PRIrec" of length ABS(%d).\n", pos, n->rec, n->len);
+	return -1;
+
+    }
+
     /* Reset internal pointers assuming new length */
     if (n->len < 0)
 	n->len--;
@@ -1039,6 +1048,14 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 	    extra_len - ((char *)&n->seq[pos] - (char *)&n->data));
 
     c_old++;
+
+    if ((int)(extra_len - ((char *)&n->conf[sequence_conf_size(n)*(pos)]+1
+			   - (char *)&n->data)) < 0) {
+	fprintf(stderrr, "Attempted to write past allocated memory in "
+		"sequence_insert_base()\n");
+	return 0;
+    }
+
     memmove(&c_old[sequence_conf_size(n)*pos]+1,
 	    &n->conf[sequence_conf_size(n)*pos],
 	    extra_len - ((char *)&n->conf[sequence_conf_size(n)*(pos)]+1
