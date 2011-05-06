@@ -1,3 +1,9 @@
+*	BUG: cut and paste from a complemented sequence can get the
+        original orientation seq instead.
+
+*	BUG: Control-<left>/<right> arrows to move the sequence
+        left/right can reverse complement a sequence too!
+
 *	BUG: complementing a contig via the contig list does nothing.
 
 *	BUG: (hp3) A contig with data from 1.0mill to 1.01mill shows a
