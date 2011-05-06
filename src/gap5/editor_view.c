@@ -3075,8 +3075,9 @@ int edGetSelection(ClientData clientData, int offset, char *buffer,
     if (len && xx->select_seq) {
 	if (xx->select_seq != xx->cnum) {
 	    seq_t *s, *sorig;
+
 	    sorig = s = get_seq(xx->io, xx->select_seq);
-	    if (s->len < 0) {
+	    if (sequence_get_orient(xx->io, xx->select_seq)) {
 		s = dup_seq(s);
 		complement_seq_t(s);
 	    }
