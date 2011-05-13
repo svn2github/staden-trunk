@@ -20,23 +20,16 @@
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
-/*
- * Empirically derived constants for various sequencing technologies, with
- * caveats from local alignment artifacts and gap penalties:
- *
- * Solexa overcall:  1/43406
- * Solexa undercall: 1/28135
- * Solexa subst:     1/28.74 (96.5% accurate)
- */
-
-
 static unsigned char lookup[256], lookup_done = 0;
 
 static double logodds2log[256];
 static double *lo2l = logodds2log+128;
 
-static double logodds2remainder[256];
-static double *lo2r = logodds2remainder+128;
+static double logodds2remainder3[256];
+static double *lo2r3 = logodds2remainder3+128;
+
+static double logodds2remainder1[256];
+static double *lo2r1 = logodds2remainder1+128;
 
 static unsigned char logodds2phred[256];
 static unsigned char *lo2ph = logodds2phred+128;
@@ -681,8 +674,9 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 	/* Log odds value to log(P) */
 	for (i = -128; i < 128; i++) {
 	    double p = 1 / (1 + pow(10, -i / 10.0));
-	    lo2l[i] = log(p);
-	    lo2r[i] = log((1-p)/3);
+	    lo2l[i]  = log(p);
+	    lo2r3[i] = log((1-p)/3);
+	    lo2r1[i] = log((1-p));
 	    lo2ph[i] = 10*log(1+pow(10, i/10.0))/LOG10+0.4999;
 	}
     }
@@ -744,36 +738,67 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 
 	for (j = left-1; j < right; j++) {
 	    char base, base_l;
-	    double q[4];
+	    int qual;
 
 	    if (sp+j > end)
 		continue;
-	    
-	    sequence_get_base4(io, &s, j+off, &base, q, NULL, 0);
+
+	    sequence_get_base(io, &s, j+off, &base, &qual, NULL, 0);
 
 	    base_l = lookup[base];
-	    if (base_l < 4 && q[base_l] == 0)
+	    if (base_l < 5 && qual == 100)
 		perfect[sp-start+j] |= (1<<base_l);
+	    
+	    /* Quality 0 should never be permitted as it breaks the math */
+	    if (qual < 1)
+		qual = 1;
 
 	    switch (base_l) {
-	    case 0: case 1: case 2: case 3: /* ACGT */
-		cvec[sp-start+j][0] += q[0];
-		cvec[sp-start+j][1] += q[1];
-		cvec[sp-start+j][2] += q[2];
-		cvec[sp-start+j][3] += q[3];
+	    case 0:
+		cvec[sp-start+j][0] += lo2l [qual];
+		cvec[sp-start+j][1] += lo2r3[qual];
+		cvec[sp-start+j][2] += lo2r3[qual];
+		cvec[sp-start+j][3] += lo2r3[qual];
+		pvec[sp-start+j][0] += lo2r1[qual];
+		pvec[sp-start+j][1] += lo2l [qual];
+		break;
 
-		/* Small boost for called base to resolve ties */
-		cvec[sp-start+j][base_l] += 1e-5;
+	    case 1:
+		cvec[sp-start+j][0] += lo2r3[qual];
+		cvec[sp-start+j][1] += lo2l [qual];
+		cvec[sp-start+j][2] += lo2r3[qual];
+		cvec[sp-start+j][3] += lo2r3[qual];
+		pvec[sp-start+j][0] += lo2r1[qual];
+		pvec[sp-start+j][1] += lo2l [qual];
+		break;
 
-		/* Fall through */
-	    default: /* N */
-		pvec[sp-start+j][0] += lover;
-		pvec[sp-start+j][1] += lomover;
+	    case 2:
+		cvec[sp-start+j][0] += lo2r3[qual];
+		cvec[sp-start+j][1] += lo2r3[qual];
+		cvec[sp-start+j][2] += lo2l [qual];
+		cvec[sp-start+j][3] += lo2r3[qual];
+		pvec[sp-start+j][0] += lo2r1[qual];
+		pvec[sp-start+j][1] += lo2l [qual];
+		break;
+
+	    case 3:
+		cvec[sp-start+j][0] += lo2r3[qual];
+		cvec[sp-start+j][1] += lo2r3[qual];
+		cvec[sp-start+j][2] += lo2r3[qual];
+		cvec[sp-start+j][3] += lo2l [qual];
+		pvec[sp-start+j][0] += lo2r1[qual];
+		pvec[sp-start+j][1] += lo2l [qual];
+		break;
+
+	    case 5: /* N => no idea what base, but it is a base still */
+		/* Is this a valid thing to do? */
+		pvec[sp-start+j][0] += lo2r1[qual];
+		pvec[sp-start+j][1] += lo2l [qual];
 		break;
 
 	    case 4: /* gap */
-		pvec[sp-start+j][0] += lomunder;
-		pvec[sp-start+j][1] += lunder;
+		pvec[sp-start+j][0] += lo2l [qual];
+		pvec[sp-start+j][1] += lo2r1[qual];
 		break;
 	    }
 
@@ -847,6 +872,9 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 		break;
 	    case 1<<3:
 		cons[i].call = 3;
+		break;
+	    case 1<<4:
+		cons[i].call = 4;
 		break;
 
 	    default:
