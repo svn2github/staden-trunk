@@ -720,6 +720,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	b = cache_search(tc->io, GT_Bin, s->bin);
 	r = arrp(range_t, b->rng, s->bin_index);
 	assert(r->rec == s->rec);
+	assert(ABS(r->end - r->start) + 1 == ABS(s->len));
 
 	vTcl_SetResult(interp, "%"PRIrec" %d", r->pair_rec, r->flags);
 
@@ -781,8 +782,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL, 0);
 	if (s->bin != bin->rec) {
-	    int new_comp, old_comp;
-	    tg_rec old_bin = s->bin;
+	    int old_comp = bin_get_orient(tc->io, s->bin);
+	    int new_comp = bin_get_orient(tc->io, bin->rec);
 
 	    //printf("New seq bin %d->%d\n", s->bin, bin->rec);
 
@@ -792,10 +793,6 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	    s->bin_index = r_out - ArrayBase(range_t, bin->rng);
 
 	    /* Check if the new bin has a different complemented status too */
-	    new_comp = bin->flags & BIN_COMPLEMENTED;
-	    bin = cache_search(tc->io, GT_Bin, old_bin);
-	    old_comp = bin->flags & BIN_COMPLEMENTED;
-
 	    if (new_comp != old_comp) {
 		int tmp;
 		s->len *= -1;
