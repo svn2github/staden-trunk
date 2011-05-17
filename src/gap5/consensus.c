@@ -37,6 +37,9 @@ static unsigned char *lo2ph = logodds2phred+128;
 static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 				   int start, int end,
 				   consensus_t *cons);
+static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
+				       int start, int end,
+				       consensus_t *cons);
 
 
 
@@ -66,7 +69,7 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 	if (en > end)
 	    en = end;
 
-	if (0 != calculate_consensus_bit(io, contig, st, en, q)) {
+	if (0 != calculate_consensus_bit_het(io, contig, st, en, q)) {
 	    for (j = 0; j < en-st; j++) {
 		if (con)
 		    con[i-start+j] = 'N';
@@ -408,7 +411,7 @@ int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 	if (en > end)
 	    en = end;
 
-	if (0 != calculate_consensus_bit(io, contig, st, en, &cons[i-start]))
+	if (0 != calculate_consensus_bit_het(io, contig, st, en, &cons[i-start]))
 	    return -1;
     }
 
@@ -422,200 +425,6 @@ typedef struct {
     int depth;
 } cstat;
 
-#if 0
-/*
- * Like contig_seqs_in_range, but we also sum the values into the cvec array
- * at the same time.
- *
- * The purpose of this is to allow partial or complete caching of the
- * consensus data, meaning we only need to load bin tracks instead of
- * all the sequences themselves.
- */
-static int contig_consensus_in_range2(GapIO *io, tg_rec brec,
-				      int start, int end,
-				      int offset, cstat *cv, int complement) {
-    double slx_overcall_prob  = 1.0/4350000, lover,  lomover;
-    double slx_undercall_prob = 1.0/2800000, lunder, lomunder;
-    int i, n, f_a, f_b;
-    bin_index_t *bin = get_bin(io, brec);
-    range_t *l;
-
-    /* log overcall, log one minus overcall, etc */
-    lover    = log(slx_overcall_prob);
-    lomover  = log(1-slx_overcall_prob);
-    lunder   = log(slx_undercall_prob);
-    lomunder = log(1-slx_undercall_prob);
-
-    cache_incr(io, bin);
-    if (bin->flags & BIN_COMPLEMENTED) {
-	complement ^= 1;
-    }
-
-    if (complement) {
-	f_a = -1;
-	f_b = offset + bin->size-1;
-    } else {
-	f_a = +1;
-	f_b = offset;
-    }
-
-    /*
-    printf("BIN #%d %d + %d..%d (%d..%d)\n",
-	   brec, offset, bin->pos, bin->pos + bin->size,
-	   bin->start_used, bin->end_used);
-    */
-    if (!(end < NMIN(bin->start_used, bin->end_used) ||
-	  start > NMAX(bin->start_used, bin->end_used))
-	&& bin->rng) {
-	track_t *tr = NULL;
-	cstat *loc;
-
-	tr = bin_get_track(io, bin, TRACK_CONS_ARR);
-
-	if (tr) {
-	    loc = arrp(cstat, tr->data, 0);
-	} else {
-	    tr = bin_create_track(io, bin, TRACK_CONS_ARR);
-	    //tr = track_create_fake(TRACK_CONS_ARR, 0);
-	    tr->nitems    = bin->end_used - bin->start_used + 1;
-	    tr->item_size = sizeof(cstat);
-	    tr->data      = ArrayCreate(tr->item_size, tr->nitems);
-	    //tr->flag     |= TRACK_FLAG_FREEME;
-
-	    bin_add_track(io, &bin, tr);
-    
-	    loc = arrp(cstat, tr->data, 0);
-	    memset(&loc[0], 0, (bin->end_used - bin->start_used + 1) *
-		   sizeof(*loc));
-
-	    for (n = 0; n < ArrayMax(bin->rng); n++) {
-		l = arrp(range_t, bin->rng, n);
-
-		if (l->flags & (GRANGE_FLAG_UNUSED | GRANGE_FLAG_ISANNO))
-		    continue;
-
-		if (1 || (NMAX(l->start, l->end) >= start
-			  && NMIN(l->start, l->end) <= end)) {
-#if 0
-		    seq_t *s = (seq_t *)cache_search(io, GT_Seq, l->rec);
-		    seq_t *sorig = s;
-		    int p;
-
-		    if ((s->len < 0)) {
-			s = dup_seq(s);
-			complement_seq_t(s);
-		    }
-
-		    /*
-		      printf("Seq %c%d %d..%d\n",
-		      s == sorig ? '>' : '<',
-		      l->rec, s->left, s->right);
-		    */
-		    for (p = s->left-1; p < s->right; p++) {
-			char base;
-			double q[4];
-			int j, k;
-
-			sequence_get_base4(io, &s, p, &base, q, NULL, 0);
-			/*
-			  printf("  %5d+%3d %2d %c %f %f %f %f\n",
-			  offset, p + l->start, p,
-			  base, q[0], q[1], q[2], q[3]);
-			*/
-		    
-			k = p + l->start - bin->start_used;
-			if (k < 0 || k >= bin->end_used - bin->start_used + 1) {
-			    printf("Error: start/end used summary is invalid\n");
-			}
-			assert(k >= 0 &&  k < bin->end_used - bin->start_used + 1);
-
-			switch (lookup[base]) {
-			case 0: case 1: case 2: case 3: /* ACGT */
-			    loc[k].base_qual[0] += q[0];
-			    loc[k].base_qual[1] += q[1];
-			    loc[k].base_qual[2] += q[2];
-			    loc[k].base_qual[3] += q[3];
-
-			    /* Small boost for called base to resolve ties */
-			    loc[k].base_qual[lookup[base]] += 1e-5;
-
-			    /* Fall through */
-			default: /* N */
-			    loc[k].gap  += lover;
-			    loc[k].base += lomover;
-			    break;
-
-			case 4: /* gap */
-			    loc[k].gap  += lomunder;
-			    loc[k].base += lunder;
-			    break;
-			}
-
-			loc[k].depth++;
-		    }
-
-		    if (s != sorig)
-			free(s);
-#endif
-		}
-	    }
-	}
-	
-
-	/*
-	printf("Bin %d summary\n", brec);
-	for (i = 0; i <= bin->end_used - bin->start_used; i++) {
-	    printf("    %4d %4d %2d %f %f %f %f\n",
-		   i + bin->start_used,
-		   loc[i].depth,
-		   loc[i].base_qual[0],
-		   loc[i].base_qual[1],
-		   loc[i].base_qual[2],
-		   loc[i].base_qual[3]);
-	}
-	*/
-	
-	for (i = 0; i <= bin->end_used - bin->start_used; i++) {
-	    int j = NORM(i + bin->start_used);
-	    if (j >= start && j <= end) {
-		int k = j-start;
-		cv[k].base_qual[0] += loc[i].base_qual[0];
-		cv[k].base_qual[1] += loc[i].base_qual[1];
-		cv[k].base_qual[2] += loc[i].base_qual[2];
-		cv[k].base_qual[3] += loc[i].base_qual[3];
-		cv[k].gap          += loc[i].gap;
-		cv[k].base         += loc[i].base;
-		cv[k].depth        += loc[i].depth;
-	    }
-	}
-	
-	//free(loc);
-    }
-
-    /* Recurse down bins */
-    for (i = 0; i < 2; i++) {
-	bin_index_t *ch;
-	if (!bin->child[i])
-	    continue;
-	ch = get_bin(io, bin->child[i]);
-	if (end   >= NMIN(ch->pos, ch->pos + ch->size-1) &&
-	    start <= NMAX(ch->pos, ch->pos + ch->size-1)) {
-	    contig_consensus_in_range2(io, bin->child[i], start, end,
-				       NMIN(ch->pos, ch->pos + ch->size-1),
-				       cv, complement);
-	}
-    }
-
-    cache_decr(io, bin);
-    return 0;
-}
-
-int contig_consensus_in_range(GapIO *io, contig_t **c, int start, int end,
-			      cstat *cv) {
-    return contig_consensus_in_range2(io, contig_get_bin(c), start, end,
-				      contig_offset(io, c), cv, 0);
-}
-#endif
 
 /*
  * The core of the consensus algorithm.
@@ -635,8 +444,6 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
     rangec_t *r = NULL;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
     int len = end - start + 1;
-    double slx_overcall_prob  = 1.0/4350000, lover,  lomover;
-    double slx_undercall_prob = 1.0/2800000, lunder, lomunder;
     static int loop = 0;
 
     double (*cvec)[4]; /* cvec[0-3] = A,C,G,T */
@@ -644,12 +451,6 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
     char *perfect; /* quality=100 bases */
     int *depth, vst, ven;
     //cstat *cs;
-
-    /* log overcall, log one minus overcall, etc */
-    lover    = log(slx_overcall_prob);
-    lomover  = log(1-slx_overcall_prob);
-    lunder   = log(slx_undercall_prob);
-    lomunder = log(1-slx_undercall_prob);
 
     /* Initialise */
     if (NULL == (cvec = (double (*)[4])calloc(len, 4 * sizeof(double))))
@@ -992,6 +793,426 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 
     return 0;
 }
+
+
+#define P_HET 1e-6
+//#define P_HET 0.0
+
+static double prior[25];     /* Sum to 1.0 */
+static double lprior15[15];  /* 15 combinations of {ACGT*} */
+static double acc_prior[25]; /* Cumulative values up to 32768 */
+
+/* Precomputed matrices for the consensus algorithm */
+static double pMM[101], p__[101], p_M[101];
+
+static void consensus_init(double p_het) {
+    int i;
+    double acc = 0;
+
+    memset(lookup, 5, 256*sizeof(lookup[0]));
+    lookup['A'] = lookup['a'] = 0;
+    lookup['C'] = lookup['c'] = 1;
+    lookup['G'] = lookup['g'] = 2;
+    lookup['T'] = lookup['t'] = 3;
+    lookup['*'] =               4;
+
+    for (i = 0; i < 25; i++)
+	prior[i] = p_het / 20;
+    prior[0] = prior[6] = prior[12] = prior[18] = prior[24] = (1-p_het)/5;
+
+    lprior15[0]  = log(prior[0]);
+    lprior15[1]  = log(prior[1]*2);
+    lprior15[2]  = log(prior[2]*2);
+    lprior15[3]  = log(prior[3]*2);
+    lprior15[4]  = log(prior[4]*2);
+    lprior15[5]  = log(prior[6]);
+    lprior15[6]  = log(prior[7]*2);
+    lprior15[7]  = log(prior[8]*2);
+    lprior15[8]  = log(prior[9]*2);
+    lprior15[9]  = log(prior[12]);
+    lprior15[10] = log(prior[13]*2);
+    lprior15[11] = log(prior[14]*2);
+    lprior15[12] = log(prior[18]);
+    lprior15[13] = log(prior[19]*2);
+    lprior15[14] = log(prior[24]);
+
+    for (i = 0; i < 25; i++) {
+	acc += prior[i];
+	acc_prior[i] = acc * (0xffffff+1);
+    }
+
+    for (i = 1; i < 101; i++) {
+	double prob = 1 - pow(10, -i / 10.0);
+	 
+	pMM[i] = log(prob/5);
+	p__[i] = log((1-prob)/20);
+	p_M[i] = log(prob/10 + (1-prob)/40);
+    }
+    pMM[0] = pMM[1];
+    p__[0] = p__[1];
+    p_M[0] = p_M[1];
+}
+
+/*
+ * As above, but allowing for the possibility of the data being
+ * heterozygous.
+ */
+static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
+				       int start, int end,
+				       consensus_t *cons) {
+    int i, j, nr;
+    rangec_t *r = NULL;
+    contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
+    int len = end - start + 1;
+    static int loop = 0;
+    static int init_done =0;
+    double min_e_exp = DBL_MIN_EXP * log(2) + 1;
+
+    double (*scores)[15];
+    char *perfect; /* quality=100 bases */
+    int *depth, vst, ven;
+
+    /* Map the 15 possible combinations to 1-base or 2-base encodings */
+    static int map_sing[15] = {0, 5, 5, 5, 5,
+			          1, 5, 5, 5,
+			             2, 5, 5,
+			                3, 5,
+			                   4};
+    static int map_het[15] = {0,  1,  2,  3,  4,
+			          6,  7,  8,  9,
+			             12, 13, 14,
+			                 18, 19,
+			                     24};
+
+    if (!init_done) {
+	consensus_init(P_HET);
+	init_done = 1;
+    }
+
+    /* Initialise */
+    if (NULL == (scores = (double (*)[15])calloc(len, 15 * sizeof(double))))
+	return -1;
+
+    if (NULL == (depth = (int *)calloc(len, sizeof(int))))
+	return -1;
+    if (NULL == (perfect = (char *)calloc(len, sizeof(char))))
+	return -1;
+
+    /* Find sequences visible */
+    r = contig_seqs_in_range(io, &c, start, end, 0, &nr);
+
+    for (i = 0; i < nr; i++) {
+	int sp = r[i].start;
+	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r[i].rec);
+	seq_t *sorig = s;
+	int l = s->len > 0 ? s->len : -s->len;
+	int left, right;
+	int off = 0;
+
+	//cache_incr(io, sorig);
+
+	/* Complement data on-the-fly */
+	if ((s->len < 0) ^ r[i].comp) {
+	    s = dup_seq(s);
+	    complement_seq_t(s);
+	}
+
+	left = s->left;
+	right = s->right;
+	
+	if (sp < start) {
+	    off    = start - sp;
+	    l     -= start - sp;
+	    left  -= start - sp;
+	    right -= start - sp;
+	    sp = start;
+	}
+	if (l > end - sp + 1)
+	    l = end - sp + 1;
+	if (left < 1)
+	    left = 1;
+
+	for (j = left-1; j < right; j++) {
+	    char base, base_l;
+	    int qual;
+	    double *S, MM, __, _M;
+
+	    if (sp+j > end)
+		continue;
+
+	    sequence_get_base(io, &s, j+off, &base, &qual, NULL, 0);
+
+	    base_l = lookup[base];
+	    if (base_l < 5 && qual == 100)
+		perfect[sp-start+j] |= (1<<base_l);
+	    
+	    /* Quality 0 should never be permitted as it breaks the math */
+	    if (qual < 1)
+		qual = 1;
+	    if (qual > 100)
+		qual = 100;
+
+	    S = scores[sp-start+j];
+	    __ = p__[qual];
+	    MM = pMM[qual];
+	    _M = p_M[qual];
+
+	    switch (base_l) {
+	    case 0:
+		S[0] += MM; S[1 ]+= _M; S[2 ]+= _M; S[3 ]+= _M; S[4 ]+= _M;
+		            S[5 ]+= __; S[6 ]+= __; S[7 ]+= __; S[8 ]+= __;
+			                S[9 ]+= __; S[10]+= __; S[11]+= __; 
+					            S[12]+= __; S[13]+= __; 
+						                S[14]+= __;
+		break;
+
+	    case 1:
+		S[0] += __; S[1 ]+= _M; S[2 ]+= __; S[3 ]+= __; S[4 ]+= __;
+		            S[5 ]+= MM; S[6 ]+= _M; S[7 ]+= _M; S[8 ]+= _M;
+			                S[9 ]+= __; S[10]+= __; S[11]+= __; 
+					            S[12]+= __; S[13]+= __; 
+						                S[14]+= __;
+		break;
+
+	    case 2:
+		S[0] += __; S[1 ]+= __; S[2 ]+= _M; S[3 ]+= __; S[4 ]+= __;
+		            S[5 ]+= __; S[6 ]+= _M; S[7 ]+= __; S[8 ]+= __;
+			                S[9 ]+= MM; S[10]+= _M; S[11]+= _M; 
+					            S[12]+= __; S[13]+= __; 
+						                S[14]+= __;
+		break;
+
+	    case 3:
+		S[0] += __; S[1 ]+= __; S[2 ]+= __; S[3 ]+= _M; S[4 ]+= __;
+		            S[5 ]+= __; S[6 ]+= __; S[7 ]+= _M; S[8 ]+= __;
+			                S[9 ]+= __; S[10]+= _M; S[11]+= __; 
+					            S[12]+= MM; S[13]+= _M; 
+						                S[14]+= __;
+		break;
+
+	    case 4:
+		S[0] += __; S[1 ]+= __; S[2 ]+= __; S[3 ]+= __; S[4 ]+= _M;
+		            S[5 ]+= __; S[6 ]+= __; S[7 ]+= __; S[8 ]+= _M;
+			                S[9 ]+= __; S[10]+= __; S[11]+= _M; 
+					            S[12]+= __; S[13]+= _M; 
+						                S[14]+= MM;
+		break;
+
+	    case 5: /* N => should so something to non-pad vs pad scores */
+		break;
+	    }
+
+	    depth[sp-start+j]++;
+	}
+
+	//cache_decr(io, sorig);
+
+	if (s != sorig)
+	    free(s);
+    }
+
+    /* Determine valid ranges, if necessary */
+    if (depth[0] == 0 && loop == 0) {
+	/* Check left edge */
+	loop = 1;
+	consensus_valid_range(io, contig, &vst, NULL);
+	loop = 0;
+	if (vst > start) {
+	    vst -= start;
+	} else {
+	    vst = 0;
+	}
+    } else {
+	vst = 0;
+    }
+
+    if (depth[len-1] == 0 && loop == 0) {
+	/* Check right edge */
+	loop = 1;
+	consensus_valid_range(io, contig, NULL, &ven);
+	loop = 0;
+	if (ven > start) {
+	    ven -= start;
+	} else {
+	    ven = 0;
+	}
+    } else {
+	ven = len-1;
+    }
+
+    /* and speculate */
+    for (i = 0; i < len; i++) {
+	double shift, max, max_het, *S, norm[15];
+	int call, het_call, ph;
+	double tot1, tot2;
+
+	/* Perfect => manual edit at 100% */
+	if (perfect[i]) {
+	    cons[i].scores[0] = -127;
+	    cons[i].scores[1] = -127;
+	    cons[i].scores[2] = -127;
+	    cons[i].scores[3] = -127;
+	    cons[i].scores[4] = -127;
+	    cons[i].scores[5] = 0; /* N */
+
+	    cons[i].phred = 255;
+
+	    switch (perfect[i]) {
+	    case 1<<0:
+		cons[i].call = 0;
+		break;
+	    case 1<<1:
+		cons[i].call = 1;
+		break;
+	    case 1<<2:
+		cons[i].call = 2;
+		break;
+	    case 1<<3:
+		cons[i].call = 3;
+		break;
+	    case 1<<4:
+		cons[i].call = 4;
+		break;
+
+	    default:
+		/* Multiple bases marked with max quality */
+		cons[i].call  = 5;
+		cons[i].phred = 0;
+		break;
+	    }
+
+	    cons[i].scores[cons[i].call] = cons[i].phred;
+	    cons[i].depth = depth[i];
+
+	    continue;
+	}
+
+	/*
+	 * Scale numbers so the maximum score is 0. This shift is essentially 
+	 * a multiplication in non-log scale to both numerator and denominator,
+	 * so it cancels out. We do this to avoid calling exp(-large_num) and
+	 * ending up with norm == 0 and hence a 0/0 error.
+	 *
+	 * Can also generate the base-call here too.
+	 */
+	S = scores[i];
+	shift = -DBL_MAX;
+	max = -DBL_MAX;
+	max_het = -DBL_MAX;
+	for (j = 0; j < 15; j++) {
+	    S[j] += lprior15[j];
+	    if (shift < S[j]) {
+		shift = S[j];
+		//het_call = j;
+	    }
+
+	    /* Only call pure AA, CC, GG, TT, ** for now */
+	    if (j != 0 && j != 5 && j != 9 && j != 12 && j != 14) {
+		if (max_het < S[j]) {
+		    max_het = S[j];
+		    het_call = j;
+		}
+		continue;
+	    }
+
+	    if (max < S[j]) {
+		max = S[j];
+		call = j;
+	    }
+	}
+
+	/*
+	 * Shift and normalise.
+	 * If call is, say, b we want p = b/(a+b+c+...+n), but then we do
+	 * p/(1-p) later on and this has exceptions when p is very close
+	 * to 1.
+	 *
+	 * Hence we compute b/(a+b+c+...+n - b) and
+	 * rearrange (p/norm) / (1 - (p/norm)) to be p/norm2.
+	 */
+	for (j = 0; j < 15; j++) {
+	    S[j] -= shift;
+	    if (S[j] > min_e_exp) {
+		S[j] = exp(S[j]);
+	    } else {
+		S[j] = DBL_MIN;
+	    }
+	    norm[j] = 0;
+	}
+
+	tot1 = tot2 = 0;
+	for (j = 0; j < 15; j++) {
+	    norm[j]    += tot1;
+	    norm[14-j] += tot2;
+	    tot1 += S[j];
+	    tot2 += S[14-j];
+	}
+
+	for (j = 0; j < 15; j++) {
+	    if (norm[j] == 0)
+		norm[j] = DBL_MIN;
+	}
+
+	/* And store result */
+	if (depth[i]) {
+	    cons[i].depth = depth[i];
+
+	    cons[i].call     = map_sing[call];
+	    ph = -TENOVERLOG10 * log(norm[call]) + .5;
+	    cons[i].phred = ph > 255 ? 255 : (ph < 0 ? 0 : ph);
+
+	    cons[i].het_call = map_het[het_call];
+	    ph = TENOVERLOG10 * (log(S[het_call]) - log(norm[het_call])) + .5;
+	    cons[i].scores[6] = ph;
+
+	    /* AA */
+	    ph = TENOVERLOG10 * (log(S[0]) - log(norm[0])) + .5;
+	    cons[i].scores[0] = ph;
+
+	    /* CC */
+	    ph = TENOVERLOG10 * (log(S[5]) - log(norm[5])) + .5;
+	    cons[i].scores[1] = ph;
+
+	    /* GG */
+	    ph = TENOVERLOG10 * (log(S[9]) - log(norm[9])) + .5;
+	    cons[i].scores[2] = ph;
+
+	    /* TT */
+	    ph = TENOVERLOG10 * (log(S[12]) - log(norm[12])) + .5;
+	    cons[i].scores[3] = ph;
+
+	    /* ** */
+	    ph = TENOVERLOG10 * (log(S[14]) - log(norm[14])) + .5;
+	    cons[i].scores[4] = ph;
+
+	    /* N */
+	    cons[i].scores[5] = 0; /* N */
+	} else {
+	    if (i < vst || i > ven)
+		cons[i].call = 6; /* No base */
+	    else
+		cons[i].call = 5; /* N */
+	    cons[i].het_call = 0;
+	    cons[i].scores[0] = 0;
+	    cons[i].scores[1] = 0;
+	    cons[i].scores[2] = 0;
+	    cons[i].scores[3] = 0;
+	    cons[i].scores[4] = 0;
+	    cons[i].scores[5] = 0;
+	    cons[i].scores[6] = 0;
+	    cons[i].phred = 0;
+	    cons[i].depth = 0;
+	}
+    }
+
+    if (r) free(r);
+    free(scores);
+    free(depth);
+    free(perfect);
+
+    return 0;
+}
+
 
 
 /*

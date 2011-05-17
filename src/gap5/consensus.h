@@ -8,8 +8,13 @@ typedef struct {
     /* A=0, C=1, G=2, T=3, *=4 */
     int call;
 
+    /* The most likely heterozygous base call */
+    /* Use "ACGT*"[het / 5] vs "ACGT*"[het % 5] for the combination */
+    int het_call;
+
     /* Log-odds values for A, C, G and T and gap. 5th is N, with 0 prob */
-    float scores[6];
+    /* scores[6] is score for het_call above */
+    float scores[7];
 
     /* Single phred style call */
     unsigned char phred;

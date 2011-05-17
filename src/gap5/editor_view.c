@@ -620,6 +620,8 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
  * %C   C confidence log-odds (raw for probability value)
  * %G   G confidence log-odds (raw for probability value)
  * %T   T confidence log-odds (raw for probability value)
+ * %H   Het confidence log-odds
+ * %h	Het call
  * %*   * (gap) confidence
  *
  * Additionally specifying %<number><format> forces AT MOST that many
@@ -799,6 +801,37 @@ char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format) {
 		} else {
 		    add_double(status_buf, &j, l1, l2, q);
 		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'H':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		double q = xx->cachedConsensus[p].scores[6];
+		if (raw) {
+		    add_double(status_buf, &j, l1, l2,
+			       pow(10, q/10.0) / (1 + pow(10, q/10.0)));
+		} else {
+		    add_double(status_buf, &j, l1, l2, q);
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'h':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		int h = xx->cachedConsensus[p].het_call;
+		char str[3];
+		str[0] = "ACGT*"[h/5];
+		str[1] = "ACGT*"[h%5];
+		str[2] = 0;
+		add_string(status_buf, &j, l1, l2, str);
 	    } else {
 		add_string(status_buf, &j, l1, l2, "-");
 	    }

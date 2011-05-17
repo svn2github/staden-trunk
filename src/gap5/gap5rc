@@ -92,7 +92,7 @@ set_def BASE_BRIEF_FORMAT1  \
 	{ Base %b confidence:%4.1c (Prob. %Rc, raw %4.1A %4.1C %4.1G %4.1T)   Position %Rp  %n}
 
 set_def BASE_BRIEF_FORMAT2  \
-	{Base confidence:%4.1c (Prob. %Rc)  A=%4.1A C=%4.1C G=%4.1G T=%4.1T *=%4.1*  Position %p (%r ref)}
+	{Base confidence:%4.1c (Prob. %Rc)  A=%4.1A C=%4.1C G=%4.1G T=%4.1T *=%4.1* / %h=%4.1H  Position %p (%r ref)}
 
 set_def CONTIG_EDITOR.AUTO_FOCUS		0
 set_def CONTIG_EDITOR.LIST_CONFIDENCE.ONLY_NUM_ERRS 0
