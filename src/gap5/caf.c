@@ -16,7 +16,6 @@
 #include "tg_gio.h"
 #include "tg_index_common.h"
 #include "hache_table.h"
-#include "zfio.h"
 #include "string_alloc.h"
 #include "caf.h"
 
@@ -214,63 +213,6 @@ static int find_name(char *in_line, char **name) {
 }
 #endif
 
-
-/* an alternative to the Gnu specific getline */
-static long get_line(char **line, long *length, zfp *fp, int continuation) {
-    char *in_line;
-    long len;
-    long offset = 0;
-    long in_chars;
-
-    if (line == NULL || fp == NULL || length == NULL) {
-    	return -1;
-    }
-    
-    if (*line == NULL || *length <= 0) {
-    	if ((*line = malloc(256 * sizeof(char))) == NULL) {
-	    return -1;
-	}
-	
-	*length = 256;
-    }
-    
-    in_line = *line;
-    len     = *length;
-    
-    while ((zfgets((in_line + offset), (len - offset), fp))) {
-    	char *tmp = NULL;
-	
-    	in_chars = strlen(in_line + offset);
-	
-    	offset += in_chars;
-	
-	// see if we have our full line
-	if (*(in_line + offset - 1) == '\n') {
-	    long bs_count = 0;
-	    if (continuation) {
-	      while (offset - bs_count - 1 > 0
-		     && in_line[offset - bs_count - 2] == '\\') bs_count++;
-	    }
-	    if ((bs_count & 1) == 0) break;
-	    if (bs_count > 0) in_line[offset -= 2] = '\0';
-	}
-    	
-    	len += len;
-	tmp = realloc(in_line, len * sizeof(char));
-	    
-    	if (tmp) {
-	    in_line = tmp;
-	} else {
-	    fprintf(stderr, "Memory error in get_line\n");
-	    return -1;
-	}
-    }
-    
-    *line = in_line;
-    *length = len;
-    
-    return offset;
-}
 
 
 // following fuctions are part of the Patricia Tree/Trie implementation
@@ -630,7 +572,7 @@ static void clear_index(caf_index *index) {
 /*
     index a caf file on Sequence Reads, Sequence Contigs, DNA and BaseQuality
 */
-static int index_caf(zfp *fp, pools *pool, caf_node *caf, caf_index *contig_entry) {
+static int index_caf(FILE *fp, pools *pool, caf_node *caf, caf_index *contig_entry) {
 		
     char *line = NULL;
     long size = 0;
@@ -644,14 +586,14 @@ static int index_caf(zfp *fp, pools *pool, caf_node *caf, caf_index *contig_entr
     int dna_no    = 0;
     int qual_no   = 0;
     
-    while (!err && get_line(&line, &size, fp, 0) > 0) {
+    while (!err && tg_get_line(&line, &size, fp) > 0) {
 	line_num++;
 	char *name = NULL;
 	
 	if ((line_size = strlen(line))) {
 	    if ((name = get_value("Sequence :", line))) {
 		if (name) {
-		    if (get_line(&line, &size, fp, 0) == -1) {
+		    if (tg_get_line(&line, &size, fp) == -1) {
 		    	err = 1;
 			continue;
 		    }
@@ -678,7 +620,7 @@ static int index_caf(zfp *fp, pools *pool, caf_node *caf, caf_index *contig_entr
 	    	    
 	}
 
-    	pos = zftello(fp);
+    	pos = ftell(fp);
     }
     
     if (err) {
@@ -747,7 +689,7 @@ static int parse_annotation(anno_type **annotation, int *anno_count, int *anno_s
 }
 
 
-static int read_contig_section(zfp *fp, GapIO *io, contig_t **contig, tg_args *a, long pos, caf_index *reads) {
+static int read_contig_section(FILE *fp, GapIO *io, contig_t **contig, tg_args *a, long pos, caf_index *reads) {
     char *line = NULL;
     long size = 0;
     anno_type *annotation = NULL;
@@ -755,10 +697,12 @@ static int read_contig_section(zfp *fp, GapIO *io, contig_t **contig, tg_args *a
     int anno_size = 0;
     int i;
     char *value;
+    int testv;
     
-    zfseeko(fp, pos, SEEK_SET);
- 
-    while (get_line(&line, &size, fp, 1) > 0) {
+    fseek(fp, pos, SEEK_SET);
+    
+    while ((testv = tg_get_line(&line, &size, fp)) > 0) {
+    
     	if (isspace(line[0])) break; // blank line at end of section
 	
     	// grab the read name and data from the assembly part of the section
@@ -784,7 +728,6 @@ static int read_contig_section(zfp *fp, GapIO *io, contig_t **contig, tg_args *a
 	    }
 	}
     }
-    
     
     // handle annotations (tags), if we have them 
     
@@ -840,7 +783,7 @@ static int read_contig_section(zfp *fp, GapIO *io, contig_t **contig, tg_args *a
     DNA and BaseQuality data can be split over several lines, join them together
     in one long string.
 */
-static long read_section_as_line(zfp *fp, long pos, char **line, int is_seq) {
+static long read_section_as_line(FILE *fp, long pos, char **line, int is_seq) {
     char *line_in = NULL;
     long size  = 0;
     long length = 0;
@@ -849,11 +792,11 @@ static long read_section_as_line(zfp *fp, long pos, char **line, int is_seq) {
     long offset = 0;
 
 
-    zfseeko(fp, pos, SEEK_SET);
+    fseek(fp, pos, SEEK_SET);
     
-    get_line(&line_in, &size, fp, 0); // skip over the header
+    tg_get_line(&line_in, &size, fp); // skip over the header
 
-    while ((length = get_line(&line_in, &size, fp, 0)) > 0) {
+    while ((length = tg_get_line(&line_in, &size, fp)) > 0) {
     	if (isspace(line_in[0])) break; // blank line at end of section
 	
 	if (is_seq) {
@@ -883,7 +826,7 @@ static long read_section_as_line(zfp *fp, long pos, char **line, int is_seq) {
 /*
     read in sequence bases as a single line
 */
-static long sequence_data(zfp *fp, seq_qual *seq, long pos) {
+static long sequence_data(FILE *fp, seq_qual *seq, long pos) {
     long length = 0;
     char *seq_line = NULL;
     
@@ -903,7 +846,7 @@ static long sequence_data(zfp *fp, seq_qual *seq, long pos) {
 /*
     read in quality as a single line and convert to be held as a single char per value
 */
-static int quality_data(zfp *fp, seq_qual *qual, long pos) {
+static int quality_data(FILE *fp, seq_qual *qual, long pos) {
     char *qual_line = NULL;
     long length = 0;
     int err = 1;
@@ -940,7 +883,7 @@ static int quality_data(zfp *fp, seq_qual *qual, long pos) {
     read in sequence data, bases and quality plus any annotations and enter them into
     the gap5 db
 */
-static int read_data(zfp *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
+static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 		     tg_pair_t *pair, pools *pool, caf_node *caf,
 		     HacheTable *lig_hash, char *name, char *align) {
 			
@@ -1040,11 +983,11 @@ static int read_data(zfp *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	    memset(sq.qual, 0, sq.s_len);
 	}
 
-	zfseeko(fp, pos, SEEK_SET);
+	fseek(fp, pos, SEEK_SET);
 	
-    	get_line(&line_in, &size, fp, 0); // skip over the header
+    	tg_get_line(&line_in, &size, fp); // skip over the header
 	
-	while (get_line(&line_in, &size, fp, 1) > 0) {
+	while (tg_get_line(&line_in, &size, fp) > 0) {
 	    char *value;
 	    
 	    if (isspace(line_in[0])) break; // blank line at end of section
@@ -1260,7 +1203,7 @@ static int read_data(zfp *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 }
 	
 
-static int import_caf(zfp *fp, char *fn, GapIO *io, tg_args *a,
+static int import_caf(FILE *fp, char *fn, GapIO *io, tg_args *a,
 		      tg_pair_t *pair, pools *pool, caf_node *caf,
 		      caf_index *contig_entry) {
     contig_t *c = NULL;
@@ -1293,7 +1236,7 @@ static int import_caf(zfp *fp, char *fn, GapIO *io, tg_args *a,
 	    err = read_data(fp, fn, io, a, &c, pair, pool, caf, lig_hash,
 			    contig_reads.entry[j].name,
 			    contig_reads.entry[j].data);
-
+			    
 	    if (err) {
 	    	fprintf(stderr, "Unable to import data for read %s on contig %s",
 		    contig_reads.entry[j].name, contig_entry->entry[i].name);
@@ -1333,7 +1276,7 @@ static int import_caf(zfp *fp, char *fn, GapIO *io, tg_args *a,
 
 
 int parse_caf(GapIO *io, char *fn, tg_args *a) {
-    zfp *fp;
+    FILE *fp;
     struct stat sb;
     tg_pair_t *pair = NULL;
     int err = 0;
@@ -1348,7 +1291,7 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     printf("Loading %s...\n", fn);
 
     if (-1 == stat(fn, &sb) ||
-	NULL == (fp = zfopen(fn, "r"))) {
+	NULL == (fp = fopen(fn, "r"))) {
 	perror(fn);
 	return -1;
     }
@@ -1402,7 +1345,7 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     }
     
     cache_flush(io);
-    zfclose(fp);
+    fclose(fp);
  
     if (pair) delete_pair(pair);
 
