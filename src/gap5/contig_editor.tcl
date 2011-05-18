@@ -2739,17 +2739,16 @@ bind EdNames <<menu>> {
 	$s delete
 
 	%W.m add separator
-	foreach rec $other_end {
-	    set s [[$ed io] get_seq $rec]
+	set to_join {}
+	foreach orec $other_end {
+	    set s [[$ed io] get_seq $orec]
 	    set pos [$s get_position]
 
 	    # Get distance of other sequence from the end of its contig
 	    set sc [$s get_contig]
 	    set c [[$ed io] get_contig $sc]
-	    puts [$c get_start]..[$c get_end]
 	    set lsize [expr {$pos-[$c get_start]}]
 	    set rsize [expr {[$c get_end] - ($pos+abs([$s get_length])-1)}]
-	    puts lsize=$lsize,rsize=$rsize
 	    incr dist [expr {$lsize < $rsize ? $lsize : $rsize}]
 
 	    # Get the base contig IO
@@ -2760,17 +2759,35 @@ bind EdNames <<menu>> {
 	    if {$sc == [$ed contig_rec]} {
 		%W.m add command \
 		    -label "Goto [$s get_name] (@ $pos)" \
-		    -command "$ed set_cursor 18 $rec 0"
+		    -command "$ed set_cursor 18 $orec 0"
 	    } else {
 		set cname [$c get_name]
 
 		%W.m add command \
 		    -label "Goto [$s get_name] (Contig '$cname' @ $pos, size ~ $dist)" \
-		    -command "create_or_move_editor $base_io $sc $rec 0"
+		    -command "create_or_move_editor $base_io $sc $orec 0"
+
+		lappend to_join [list %W.m add command \
+		    -label "Join to [$s get_name] (Contig '$cname' @ $pos)" \
+		    -command "join_contig \
+                                  -io $base_io \
+                                  -contig   [$ed contig_rec] \
+                                  -reading  \#$rec \
+                                  -pos      0 \
+                                  -contig2  $sc \
+                                  -reading2 \#$orec \
+                                  -pos2     0"]
 	    }
 
 	    $s delete
 	    $c delete
+	}
+
+	if {[llength $to_join] != 0} {
+	    %W.m add separator
+	    foreach j $to_join {
+		eval $j
+	    }
 	}
     }
 
