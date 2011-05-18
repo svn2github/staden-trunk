@@ -116,9 +116,9 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 	    consensus_valid_range(fij->io, cnum[1], &cl[1], NULL);
 	    pos[0] = obj->pos1 + cl[0]-1;
 	    pos[1] = obj->pos2 + cl[1]-1;
-
-	    llino[0] = io_clnbr(fij->io, cnum[0]);
-	    llino[1] = io_clnbr(fij->io, cnum[1]);
+	    
+	    llino[0] = cnum[0];
+	    llino[1] = cnum[1];
 
 	    join_contig(fij->io, cnum, llino, pos);
 	    break;
@@ -139,7 +139,7 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 	    edit_contig(fij->io, cnum, llino, pos);
 
 	    cnum  = ABS(obj->c2);
-	    llino = io_clnbr(fij->io, cnum);
+	    llino = cnum;
 	    pos   = obj->pos2;
 	    edit_contig(fij->io, cnum, llino, pos);
 	    break;

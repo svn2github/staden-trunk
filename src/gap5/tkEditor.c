@@ -479,7 +479,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"select",	 "edit_annotation",  "clear_visibility_cache",
 	"cursor_id",     "get_cursor",	  "search",      "get_xy",
 	"decr_contig",   "incr_contig",   "select_oligo","show_cursor",
-	"reference_pos", NULL
+	"reference_pos", "next_difference", "prev_difference", NULL
     };
     enum options {
 	_CONFIGURE,      _INIT,          _IO,            _REDRAW,
@@ -493,7 +493,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_SELECT,	 _EDIT_ANNOTATION,  _CLEAR_VISIBILITY_CACHE,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	 _GET_XY,
 	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO,  _SHOW_CURSOR,
-	_REFERENCE_POS,
+	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE,
     };
 
     if (argc < 2) {
@@ -1222,7 +1222,16 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 				       atoi(argv[2]), &dir, &rid);
 
 	vTcl_SetResult(interp, "%d %d %d", rpos, dir, rid);
+	break;
     }
+
+    case _NEXT_DIFFERENCE:
+	edNextDifference(ed->xx);
+	break;
+
+    case _PREV_DIFFERENCE:
+	edPrevDifference(ed->xx);
+	break;
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));

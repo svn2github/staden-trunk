@@ -280,4 +280,13 @@ int edGetXY(edview *xx, int rec_type, tg_rec rec, int pos, int *x, int *y);
 /* In editor_join.c */
 int edJoinMismatch(edview *xx, int *len, int *mismatch);
 
+/*
+ * Finds the next/previous difference between a pair of join editors.
+ *
+ * Returns 0 on sucess
+ *        -1 on failure
+ */
+int edNextDifference(edview *xx);
+int edPrevDifference(edview *xx);
+
 #endif /* _EDITOR_VIEW_H_ */

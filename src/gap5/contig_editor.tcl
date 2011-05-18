@@ -705,7 +705,7 @@ proc contig_editor {w args} {
 
     # Difference bar for the join editor
     if {$join} {
-	set diffs [diff_pane $w.diffs]
+	set diffs [diff_pane $w]
 	$e link_to $opt(editor2) $diffs.pane.seq.sheet
     }
 
@@ -1101,14 +1101,24 @@ proc editor_pane {top w above ind arg_array} {
 
 # The "differences" bar that separates a pair of join editors
 proc diff_pane {w} {
+    upvar \#0 $w opt
+    set ed $opt(curr_editor)
+
+    set w $w.diffs
     frame $w -bd 0 -padx 3
     set p [panedwindow $w.pane -orient horiz -bd 2 -relief sunken \
 	      -showhandle 1 -sashrelief raised]
     pack $p -fill both -expand 1
 
     frame $p.name -bd 0 -highlightthickness 0
-    label $p.name.diff -text "Differences"
-    pack $p.name.diff
+    label $p.name.diff -text "Differences" -anchor w
+    button $p.name.dleft  -text "<" -pady 0 -padx 2 -highlightthickness 0 \
+	-command "$ed prev_difference"
+    button $p.name.dright -text ">" -pady 0 -padx 2 -highlightthickness 0 \
+	-command "$ed next_difference"
+    pack $p.name.dleft -side left
+    pack $p.name.dright -side right
+    pack $p.name.diff -expand 1 -side left
 
     frame $p.seq -bd 0 -highlightthickness 0
     sheet $p.seq.sheet

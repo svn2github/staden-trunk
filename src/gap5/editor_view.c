@@ -3125,3 +3125,99 @@ int edGetSelection(ClientData clientData, int offset, char *buffer,
 
     return len;
 }
+
+/*
+ * Finds the next/previous difference between a pair of join editors.
+ *
+ * Returns 0 on sucess
+ *        -1 on failure
+ */
+int edNextDifference(edview *xx) {
+    int pos0, pos1;
+
+    if (!xx->link)
+	return -1;
+
+    /* Find the positions, anchored from top contig incase they differ */
+    pos1 = xx->link->xx[1]->cursor_apos + 1;
+    pos0 = pos1 - xx->link->lockOffset;
+
+    while (pos0 <= xx->link->xx[0]->contig->end && 
+	   pos1 <= xx->link->xx[1]->contig->end) {
+	int len = 1023, i;
+	char cons0[1024], cons1[1024];
+
+	if (pos0 + len > xx->link->xx[0]->contig->end)
+	    len = xx->link->xx[0]->contig->end - pos0 + 1;
+	if (pos1 + len > xx->link->xx[1]->contig->end)
+	    len = xx->link->xx[1]->contig->end - pos1 + 1;
+
+	/* Compute consensus fragments and compare */
+	calculate_consensus_simple(xx->link->xx[0]->io, xx->link->xx[0]->cnum,
+				   pos0, pos0+len-1, cons0, NULL);
+	calculate_consensus_simple(xx->link->xx[1]->io, xx->link->xx[1]->cnum,
+				   pos1, pos1+len-1, cons1, NULL);
+
+	for (i = 0; i < len; i++) {
+	    if (cons0[i] != cons1[i])
+		break;
+	}
+
+	pos0 += i;
+	pos1 += i;
+
+	if (i != len)
+	    break;
+    }
+
+    /* Found a difference, or at the end of the contig */
+    edSetCursorPos(xx->link->xx[0], GT_Contig, xx->link->xx[0]->cnum, pos0, 1);
+    edSetCursorPos(xx->link->xx[1], GT_Contig, xx->link->xx[1]->cnum, pos1, 1);
+
+    return 0;
+}
+
+int edPrevDifference(edview *xx) {
+    int pos0, pos1;
+
+    if (!xx->link)
+	return -1;
+
+    /* Find the positions, anchored from top contig incase they differ */
+    pos1 = xx->link->xx[1]->cursor_apos - 1;
+    pos0 = pos1 - xx->link->lockOffset;
+
+    while (pos0 >= xx->link->xx[0]->contig->start && 
+	   pos1 >= xx->link->xx[1]->contig->start) {
+	int len = 1023, i;
+	char cons0[1024], cons1[1024];
+
+	if (pos0 - len < xx->link->xx[0]->contig->start)
+	    len = pos0 - xx->link->xx[0]->contig->start + 1;
+	if (pos1 - len < xx->link->xx[1]->contig->start)
+	    len = pos1 - xx->link->xx[1]->contig->start + 1;
+
+	/* Compute consensus fragments and compare */
+	calculate_consensus_simple(xx->link->xx[0]->io, xx->link->xx[0]->cnum,
+				   pos0-(len-1), pos0, cons0, NULL);
+	calculate_consensus_simple(xx->link->xx[1]->io, xx->link->xx[1]->cnum,
+				   pos1-(len-1), pos1, cons1, NULL);
+
+	for (i = len-1; i >= 0; i--) {
+	    if (cons0[i] != cons1[i])
+		break;
+	}
+
+	pos0 -= (len-i-1);
+	pos1 -= (len-i-1);
+
+	if (i != 0)
+	    break;
+    }
+
+    /* Found a difference, or at the end of the contig */
+    edSetCursorPos(xx->link->xx[0], GT_Contig, xx->link->xx[0]->cnum, pos0, 1);
+    edSetCursorPos(xx->link->xx[1], GT_Contig, xx->link->xx[1]->cnum, pos1, 1);
+
+    return 0;
+}
