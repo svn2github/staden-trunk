@@ -43,6 +43,7 @@
 
 #include "sam_index.h"
 #include "bam.h"
+#include "afg.h"
 
 
 void usage(void) {
@@ -58,6 +59,7 @@ void usage(void) {
     fprintf(stderr, "      -F                   Input is FASTQ format\n");
     fprintf(stderr, "      -b                   Input is BAM format\n");
     fprintf(stderr, "      -s                   Input is SAM format (with @SQ headers)\n");
+/*    fprintf(stderr, "      -V                   Input is AFG (Velvet)format\n"); */
     fprintf(stderr, "\n");
     fprintf(stderr, "      -u                   Also store unmapped reads           (SAM/BAM only)\n");
     fprintf(stderr, "      -x                   Also store auxillary records        (SAM/BAM only)\n");
@@ -136,7 +138,7 @@ int main(int argc, char **argv) {
     //mallopt(M_MMAP_MAX, 0);
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBCsbtThAmMo:pPq:nz:fd:c:gux123456789rRD")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCsVbtThAmMo:pPq:nz:fd:c:gux123456789rRD")) != -1) {
 	switch(opt) {
 	case 'g':
 	    a.repad = 1;
@@ -163,6 +165,7 @@ int main(int argc, char **argv) {
 	case 's':
 	case 'b':
 	case 'C':
+	case 'V':
 	    a.fmt = opt;
 	    break;
 
@@ -349,6 +352,11 @@ int main(int argc, char **argv) {
 	case 'Q':
 	    printf("Processing FASTQ file %s\n", argv[optind]);
 	    err = parse_fasta_or_fastq(io, argv[optind++], &a, 'q') ? 1 : 0;
+	    break;
+
+	case 'V':
+	    printf("Processing AFG file %s\n", argv[optind]);
+	    err = parse_afg(io, argv[optind++], &a) ? 1 : 0;
 	    break;
 
 	default:
