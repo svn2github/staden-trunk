@@ -56,7 +56,6 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
  * Returns 0 on success,
  *        -1 on failure
  */
-#define Q_CUTOFF -4 
 int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 				char *con, float *qual) {
     int i, j;
@@ -85,16 +84,11 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 		    con[i-start+j] = ' ';
 		if (qual)
 		    qual[i-start+j] = 0;
-	    } else if (q[j].scores[q[j].call] > Q_CUTOFF) {
+	    } else {
 		if (con)
 		    con[i-start+j] = "ACGT*N"[q[j].call];
 		if (qual)
 		    qual[i-start+j] = q[j].scores[q[j].call];
-	    } else {
-		if (con)
-		    con[i-start+j] = 'N';
-		if (qual)
-		    qual[i-start+j] = 0;
 	    }
 	}
     }
