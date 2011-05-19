@@ -307,3 +307,27 @@ int anno_get_position(GapIO *io, tg_rec anum, tg_rec *contig,
 				 NULL, NULL);
 }
 
+
+#if 0
+/*
+ * Returns the relative orientation of this annotation vs the contig.
+ */
+int anno_get_orient(GapIO *io, tg_rec anum) {
+    bin_index_t *bin = NULL;
+    tg_rec bnum;
+    anno_ele_t *a = cache_search(io, GT_AnnoEle, anum);
+    int comp = a->orient;
+
+    /* Bubble up bins until we hit the root */
+    for (bnum = a->bin; bnum; bnum = bin->parent) {
+	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
+	if (bin->flags & BIN_COMPLEMENTED)
+	    comp ^= 1;
+	if (bin->parent_type != GT_Bin)
+	    break;
+    }
+
+    assert(bin && bin->parent_type == GT_Contig);
+    return comp;
+}
+#endif
