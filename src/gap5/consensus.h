@@ -21,6 +21,9 @@ typedef struct {
 
     /* Sequence depth */
     int depth;
+
+    /* Discrepancy search score */
+    float discrep;
 } consensus_t;
 
 /*

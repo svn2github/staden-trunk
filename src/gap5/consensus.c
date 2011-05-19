@@ -790,7 +790,6 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 
 
 #define P_HET 1e-6
-//#define P_HET 0.0
 
 static double prior[25];     /* Sum to 1.0 */
 static double lprior15[15];  /* 15 combinations of {ACGT*} */
@@ -860,9 +859,11 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
     int len = end - start + 1;
     static int loop = 0;
     static int init_done =0;
+    static double q2p[101];
     double min_e_exp = DBL_MIN_EXP * log(2) + 1;
 
     double (*scores)[15];
+    double (*sumsC)[6], *sumsE;
     char *perfect; /* quality=100 bases */
     int *depth, vst, ven;
 
@@ -879,12 +880,20 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 			                     24};
 
     if (!init_done) {
-	consensus_init(P_HET);
 	init_done = 1;
+	consensus_init(P_HET);
+
+	for (i = 0; i <= 100; i++) {
+	    q2p[i] = pow(10, -i/10.0);
+	}
     }
 
     /* Initialise */
     if (NULL == (scores = (double (*)[15])calloc(len, 15 * sizeof(double))))
+	return -1;
+    if (NULL == (sumsC = (double (*)[6])calloc(len, 6 * sizeof(double))))
+	return -1;
+    if (NULL == (sumsE = (double *)calloc(len, sizeof(double))))
 	return -1;
 
     if (NULL == (depth = (int *)calloc(len, sizeof(int))))
@@ -929,7 +938,7 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	for (j = left-1; j < right; j++) {
 	    char base, base_l;
 	    int qual;
-	    double *S, MM, __, _M;
+	    double *S, MM, __, _M, qe;
 
 	    if (sp+j > end)
 		continue;
@@ -950,6 +959,10 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	    __ = p__[qual];
 	    MM = pMM[qual];
 	    _M = p_M[qual];
+
+	    qe = q2p[qual];
+	    sumsE[sp-start+j] += qe;
+	    sumsC[sp-start+j][base_l] += 1 - qe;
 
 	    switch (base_l) {
 	    case 0:
@@ -1149,6 +1162,8 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 
 	/* And store result */
 	if (depth[i]) {
+	    double m;
+
 	    cons[i].depth = depth[i];
 
 	    cons[i].call     = map_sing[call];
@@ -1181,6 +1196,11 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 
 	    /* N */
 	    cons[i].scores[5] = 0; /* N */
+
+	    /* Compute discrepancy score */
+	    m = sumsC[i][0]+sumsC[i][1]+sumsC[i][2]+sumsC[i][3]+sumsC[i][4]
+		- sumsC[i][cons[i].call];
+	    cons[i].discrep = (m-sumsE[i])/sqrt(m+sumsE[i]);
 	} else {
 	    if (i < vst || i > ven)
 		cons[i].call = 6; /* No base */
@@ -1196,6 +1216,7 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	    cons[i].scores[6] = 0;
 	    cons[i].phred = 0;
 	    cons[i].depth = 0;
+	    cons[i].discrep = 0;
 	}
     }
 

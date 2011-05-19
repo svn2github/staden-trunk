@@ -6,6 +6,7 @@
 #include <tg_gio.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "dna_utils.h"
 #include "search_utils.h"
@@ -191,6 +192,137 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
 	} else {
 	    for (i = WIN_WIDTH-1; i; i--) {
 		if (qual[i] < qval) {
+		    found = 1;
+		    break;
+		}
+	    }
+	}
+
+	if (found) {
+	    fpos = start + i;
+	    break;
+	}
+
+	/* Next search region - overlapping by patlen+pads */
+	if (dir) {
+	    start += WIN_WIDTH;
+	    end   += WIN_WIDTH;
+
+	    if (start > xx->contig->end)
+		at_end = 1;
+	} else {
+	    start -= WIN_WIDTH;
+	    end   -= WIN_WIDTH;
+
+	    if (end < xx->contig->start)
+		at_end = 1;
+	}
+    } while (!at_end);
+
+    if (found) {
+	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos, 1);
+	return 0;
+    }
+
+    return -1;
+}
+
+int edview_search_cons_het(edview *xx, int dir, int strand, char *value) {
+    int start, end;
+    int found = 0, at_end = 0;
+    int fpos, i, qval = atoi(value);
+    consensus_t cons[WIN_WIDTH+1];
+
+    /* Set initial start positions */
+    if (dir) {
+	start = xx->cursor_apos + (dir ? 1 : -1);
+	end   = start + (WIN_WIDTH-1);
+    } else {
+	end   = xx->cursor_apos + (dir ? 1 : -1);
+	start = end - (WIN_WIDTH-1);
+    }
+    fpos = xx->cursor_apos;
+
+    /* Loop WIN_WIDTH block at a time */
+    do {
+	calculate_consensus(xx->io, xx->cnum, start, end, cons);
+
+	if (dir) {
+	    for (i = 0; i < WIN_WIDTH; i++) {
+		if (cons[i].scores[6] >= qval) {
+		    found = 1;
+		    break;
+		}
+	    }
+	} else {
+	    for (i = WIN_WIDTH-1; i; i--) {
+		if (cons[i].scores[6] >= qval) {
+		    found = 1;
+		    break;
+		}
+	    }
+	}
+
+	if (found) {
+	    fpos = start + i;
+	    break;
+	}
+
+	/* Next search region - overlapping by patlen+pads */
+	if (dir) {
+	    start += WIN_WIDTH;
+	    end   += WIN_WIDTH;
+
+	    if (start > xx->contig->end)
+		at_end = 1;
+	} else {
+	    start -= WIN_WIDTH;
+	    end   -= WIN_WIDTH;
+
+	    if (end < xx->contig->start)
+		at_end = 1;
+	}
+    } while (!at_end);
+
+    if (found) {
+	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos, 1);
+	return 0;
+    }
+
+    return -1;
+}
+
+int edview_search_cons_discrep(edview *xx, int dir, int strand, char *value) {
+    int start, end;
+    int found = 0, at_end = 0;
+    int fpos, i;
+    double qval = atof(value);
+    consensus_t cons[WIN_WIDTH+1];
+
+    /* Set initial start positions */
+    if (dir) {
+	start = xx->cursor_apos + (dir ? 1 : -1);
+	end   = start + (WIN_WIDTH-1);
+    } else {
+	end   = xx->cursor_apos + (dir ? 1 : -1);
+	start = end - (WIN_WIDTH-1);
+    }
+    fpos = xx->cursor_apos;
+
+    /* Loop WIN_WIDTH block at a time */
+    do {
+	calculate_consensus(xx->io, xx->cnum, start, end, cons);
+
+	if (dir) {
+	    for (i = 0; i < WIN_WIDTH; i++) {
+		if (cons[i].discrep >= qval) {
+		    found = 1;
+		    break;
+		}
+	    }
+	} else {
+	    for (i = WIN_WIDTH-1; i; i--) {
+		if (cons[i].discrep >= qval) {
 		    found = 1;
 		    break;
 		}
@@ -523,6 +655,8 @@ int edview_search(edview *xx, int dir, int strand,
 	{"tag",          edview_search_tag_type},
 	{"annotation",   edview_search_tag_anno},
 	{"indel",        edview_search_tag_indel},
+	{"conshet",      edview_search_cons_het},
+	{"consdiscrep",  edview_search_cons_discrep},
     };
     int i;
 

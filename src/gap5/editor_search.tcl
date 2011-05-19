@@ -24,7 +24,8 @@ set search_setup(edit)			"0 0 0 0"
 set search_setup(verifyand)		"0 0 0 0"
 set search_setup(verifyor)		"0 0 0 0"
 set search_setup(discrepancy)		"0 0 0 0 value"
-set search_setup(consdiscrepancy)	"0 0 0 0 value"
+set search_setup(conshet) 		"0 0 0 0 value"
+set search_setup(consdiscrep) 		"0 0 0 0 value"
 set search_setup(tag)			"0 0 1 0"
 set search_setup(difference)		"0 0 0 0"
 set search_setup(indel)			"0 0 0 0"
@@ -141,8 +142,9 @@ proc create_search_win {w com {dir 0} {raise 1}} {
 #	{r {evidence for edits (1)}  verifyand}
 #	{r {evidence for edits (2)}  verifyor}
 #	{r discrepancies             discrepancy}
-#	{r {consensus discrepancies} consdiscrepancy}
 	{r {reference indel}         indel}
+	{l {heterozygosity}          conshet}
+	{r {consensus discrepancy}   consdiscrep}
     }
 
     # Type frame
@@ -320,7 +322,8 @@ proc do_search {w com args} {
 	    || $type == "name" \
 	    || $type == "consquality" \
 	    || $type == "discrepancy"
-	    || $type == "consdiscrepancy"} {
+	    || $type == "conshet"
+            || $type == "consdiscrep"} {
         set r [eval $com $dir $strand $type [list $value1]]
     } elseif {$type == "uposition"} {
 	set r [eval $com $dir $strand position [list u$value1]]
