@@ -1099,6 +1099,13 @@ proc editor_pane {top w above ind arg_array} {
     return $ed
 }
 
+# Returns the current active editor for a join editor
+proc curr_ed {e} {
+    upvar \#0 $e ea
+    upvar \#0 $ea(top) opt
+    return $opt(curr_editor)
+}
+
 # The "differences" bar that separates a pair of join editors
 proc diff_pane {w} {
     upvar \#0 $w opt
