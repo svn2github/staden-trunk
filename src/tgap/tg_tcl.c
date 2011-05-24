@@ -598,7 +598,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
 	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
-	NREFPOS,        NANNO,
+	NREFPOS,        NANNO,	        
     };
 
     if (objc < 2) {
@@ -1231,8 +1231,9 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
 	base = *Tcl_GetString(objv[3]);
-	Tcl_GetIntFromObj(interp, objv[4], &conf);	
+	Tcl_GetIntFromObj(interp, objv[4], &conf);
 	sequence_insert_base(ts->io, &ts->seq, pos, base, conf, 1);
+	sequence_range_length(ts->io, &ts->seq);
 	break;
     }
 	
@@ -1248,6 +1249,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
 	sequence_delete_base(ts->io, &ts->seq, pos, 1);
+	sequence_range_length(ts->io, &ts->seq);
 	break;
     }
 	

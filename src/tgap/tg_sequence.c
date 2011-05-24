@@ -1183,6 +1183,40 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
 }
 
 /*
+ * Updates the range_t struct associated with this seq_t to ensure it is
+ * correct after the length of a sequence has changed; call this after
+ * calling sequence_insert_base() or sequence_delete_base() unless updating
+ * the range_t struct yourself. (We assume the left end is correct,
+ * the right end is not.)
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_range_length(GapIO *io, seq_t **s) {
+    int orient, start, end;
+    seq_t *n = *s;
+    tg_rec brec;
+    bin_index_t *bin;
+    range_t *r;
+
+    if (0 != bin_get_item_position(io, GT_Seq, n->rec,
+				   NULL, &start, &end, &orient,
+				   &brec, NULL, NULL))
+	return -1;
+
+    if (ABS(n->len) == end - start + 1)
+	return 0;
+
+    bin = cache_search(io, GT_Bin, brec);
+    r = arrp(range_t, bin->rng, n->bin_index);
+    assert(r->rec == n->rec);
+
+    r->end = r->start + ABS(n->len) - 1;
+
+    return 0;
+}
+
+/*
  * Moves all annotations attached to a sequence left or right by a certain
  * amount 'dist'. If dist is negative the annotations move left, otherwise
  * they move right.
