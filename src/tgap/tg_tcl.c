@@ -589,7 +589,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
 	"nseqs",	"anno_in_range","get_pileup",   "ref_to_padded",
-	"nrefpos",	"nanno",        (char *)NULL,
+	"nrefpos",	"nanno",        "shift_base",   (char *)NULL,
     };
 
     enum options {
@@ -598,7 +598,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
 	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
-	NREFPOS,        NANNO,	        
+	NREFPOS,        NANNO,	        SHIFT_BASE,
     };
 
     if (objc < 2) {
@@ -697,6 +697,21 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
 	contig_delete_base(tc->io, &tc->contig, pos);
+	break;
+    }
+
+    case SHIFT_BASE: {
+	int pos, dir;
+	if (objc != 4) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s insert_base position dir(+1/-1)\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &pos);
+	Tcl_GetIntFromObj(interp, objv[3], &dir);
+	contig_shift_base(tc->io, &tc->contig, pos, dir);
 	break;
     }
 

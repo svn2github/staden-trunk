@@ -1654,6 +1654,34 @@ proc editor_delete_base {w where {powerup 0}} {
     $w redraw
 }
 
+proc editor_shift {w where dir} {
+    upvar $w opt
+
+    set io [$w io]
+
+    if {$where == "" || [$io read_only]} {
+	bell
+	return
+    }
+
+    foreach {type rec pos} $where break;
+    if {$type != 17} return
+
+    $w decr_contig
+    set contig [$io get_contig $rec]
+    $contig shift_base $pos $dir
+    $contig delete
+    $w incr_contig
+
+    store_undo $w \
+	[list \
+	     [list C_SET $type $rec $pos] \
+	     [list C_SHIFT $rec $pos [expr {-$dir}]] ] {}
+
+    #$w cursor_right
+    $w redraw
+}
+
 proc editor_set_confidence {w where qual} {
     upvar $w opt
 
@@ -1726,6 +1754,11 @@ proc editor_move_seq {w where direction} {
     }
 
     foreach {type rec _pos} $where break;
+    if {$type == 17} {
+	# Consensus
+	return [editor_shift $w $where $direction]
+    }
+
     if {$type != 18} {
 	# sequences only
 	bell

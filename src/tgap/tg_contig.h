@@ -47,6 +47,8 @@ int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf);
 
 int contig_delete_base(GapIO *io, contig_t **c, int pos);
 
+int contig_shift_base(GapIO *io, contig_t **c, int pos, int dir);
+
 
 contig_t *find_contig_by_name(GapIO *io, char *name);
 tg_rec contig_index_query(GapIO *io, char *name);
