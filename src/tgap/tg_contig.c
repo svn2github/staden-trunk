@@ -116,7 +116,7 @@ int contig_offset(GapIO *io, contig_t **c) {
  * Returns >=0 for success (0 => no insertion made, 1 => insert done)
  *          -1 for failure
  */
-static int contig_insert_base2(GapIO *io, tg_rec bnum,
+static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			       int pos, int offset, char base, int conf,
 			       int comp, HacheTable *hash) {
     int i, ins = 0;
@@ -235,7 +235,7 @@ static int contig_insert_base2(GapIO *io, tg_rec bnum,
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 		continue;
 
-	    if ( (r->mqual/*type*/ == GT_Contig &&
+	    if ( (r->pair_rec == crec &&
 		  MIN(r->start, r->end) >= pos)
 		||
 		 HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec))){
@@ -270,7 +270,7 @@ static int contig_insert_base2(GapIO *io, tg_rec bnum,
 
 	    if (pos >= MIN(ch->pos, ch->pos + ch->size-1) &&
 		pos <= MAX(ch->pos, ch->pos + ch->size-1)) {
-		ins |= contig_insert_base2(io, bin->child[i], pos,
+		ins |= contig_insert_base2(io, crec, bin->child[i], pos,
 					   MIN(ch->pos, ch->pos + ch->size-1),
 					   base, conf, comp, hash);
 		/* Children to the right of this one need pos updating too */
@@ -315,10 +315,11 @@ int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
 	 * to know which seqs moved and which didn't so we can correctly
 	 * move annotations.
 	 */
-	hash = HacheTableCreate(256, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS);
+	hash = HacheTableCreate(4096, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS
+				| HASH_ALLOW_DUP_KEYS | HASH_DYNAMIC_SIZE);
     }
 
-    if (1 != contig_insert_base2(io, contig_get_bin(c), pos,
+    if (1 != contig_insert_base2(io, n->rec, contig_get_bin(c), pos,
 				 contig_offset(io, c), base, conf, 0, hash))
 	return 0;
 
@@ -448,7 +449,7 @@ static int bin_delete(GapIO *io, bin_index_t *bin) {
  *                            had to perform any contig shifting)
  *         -1 on failure.
  */
-static int contig_delete_base2(GapIO *io, tg_rec bnum,
+static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			       int pos, int offset, int shift, int comp,
 			       HacheTable *hash) {
     int i;
@@ -565,7 +566,7 @@ static int contig_delete_base2(GapIO *io, tg_rec bnum,
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 		continue;
 
-	    if ( (r->mqual/*type*/ == GT_Contig &&
+	    if ( (r->pair_rec == crec &&
 		  MIN(r->start, r->end) >= pos)
 		||
 		 HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec))){
@@ -606,7 +607,7 @@ static int contig_delete_base2(GapIO *io, tg_rec bnum,
 
 	    if (pos >= MIN(ch->pos, ch->pos + ch->size-1) &&
 		pos <= MAX(ch->pos, ch->pos + ch->size-1)) {
-		ret |= contig_delete_base2(io, bin->child[i], pos,
+		ret |= contig_delete_base2(io, crec, bin->child[i], pos,
 					   MIN(ch->pos, ch->pos + ch->size-1),
 					   shift, comp, hash);
 
@@ -745,9 +746,10 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
      * move annotations too. See comments in insertion code for why.
      */
     if (shift)
-	hash = HacheTableCreate(256, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS);
+	hash = HacheTableCreate(4096, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS
+				| HASH_ALLOW_DUP_KEYS | HASH_DYNAMIC_SIZE);
 
-    reduced = contig_delete_base2(io, contig_get_bin(c), pos,
+    reduced = contig_delete_base2(io, n->rec, contig_get_bin(c), pos,
 				  contig_offset(io, c), shift, 0, hash);
 
     if (reduced == 1)
