@@ -98,7 +98,7 @@ proc io_undo_exec {w crec cmdu} {
     set io [$w io]
 
     foreach cmd $cmdu {
-	foreach {code op1 op2 op3 op4} $cmd break
+	foreach {code op1 op2 op3 op4 op5} $cmd break
 	switch -- $code {
 	    C_SET {
 		$w set_cursor $op1 $op2 $op3 1
@@ -178,6 +178,52 @@ proc io_undo_exec {w crec cmdu} {
 		set contig [$io get_contig $op1]
 		$contig delete_base $op2
 		$contig delete
+	    }
+
+	    C_SHIFT {
+		$w decr_contig
+		set contig [$io get_contig $op1]
+		$contig shift_base $op2 $op3
+		set seqs [$contig seqs_in_range [expr {$op2-1}] [expr {$op2+2}]]
+		set anno [$contig anno_in_range [expr {$op2-1}] [expr {$op2+2}]]
+		$contig delete
+
+		if {$seqs != $op4} {
+		    array set old {}
+		    array set new {}
+		    foreach _ $op4 {
+			set old([lindex $_ 2]) [lindex $_ 0]
+		    }
+		    foreach _ $seqs {
+			set new([lindex $_ 2]) [lindex $_ 0]
+		    }
+
+		    foreach seq [array names new] {
+			if {![info exists old($seq)]} {
+			    continue
+			}
+			if {$new($seq) == $old($seq)} {
+			    continue
+			}
+
+			set contig [$io get_contig $op1]
+			foreach {p f} [$contig remove_sequence $seq] break;
+			$contig add_sequence $seq $old($seq) $p $f
+			$contig delete
+			set s [$io get_sequence $seq]
+			$s move_annos [expr {$old($seq)-$new($seq)}]
+			$s delete
+		    }
+		}
+
+		# Shift back consensus tags which shouldn't have moved
+		set contig [$io get_contig $op1]
+		foreach anno $op5 {
+		    $contig move_anno $anno -1
+		}
+		$contig delete
+
+		$w incr_contig
 	    }
 
 	    T_DEL {
@@ -1447,6 +1493,10 @@ proc editor_undo_info {top {clear 0}} {
 		lappend msg "Delete column from contig at position $op2"
 	    }
 
+	    C_SHIFT {
+		lappend msg "Shift column from contig at position $op2, dir $op3"
+	    }
+	    
 	    T_DEL {
 		set tag [$io get_anno_ele $op1]
 		set otype [$tag get_obj_type]
@@ -1497,7 +1547,7 @@ proc editor_undo_info {top {clear 0}} {
     }
 
     regsub -all "\n" $msg "\\n" msg
-    set opt(Status) [join $msg " / "]
+    set opt(Status) [string range [join $msg " / "] 0 1000]
 }
 
 # proc editor_redo {top} {
@@ -1667,19 +1717,58 @@ proc editor_shift {w where dir} {
     foreach {type rec pos} $where break;
     if {$type != 17} return
 
+    # Undo of shift-left is *mostly* shift-right, and vice versa.
+    # Where it fails is if a read starts at that point. Eg:
+    #
+    #     cursor pos
+    #     v
+    #  --------        A
+    #     --------     B
+    #        --------  C
+    #
+    # control-left here moves seq C but not seq B. control-right
+    # (assumed undo) moves both B+C.
+    # Solution to shift-left at pos is to shift-right at pos+1 and also
+    # to manually shift-right any sequences which weren't at pos before
+    # the shift-left but are now. Similarly for opposite shifts.
+
     $w decr_contig
     set contig [$io get_contig $rec]
-    $contig shift_base $pos $dir
+    set seqs [$contig seqs_in_range [expr {$pos-1}] [expr {$pos+1}]]
+
+    if {$dir == 1} {
+	set anno {}
+    } else {
+	set anno [$contig anno_in_range [expr {$pos-1}] [expr {$pos+1}]]
+
+	set cons_anno {}
+	foreach a $anno {
+	    # Consensus anno only
+	    if {[lindex $a 8] != $rec} continue
+
+	    # And only those starting at this base, which won't be shifted.
+	    if {[lindex $a 0] != $pos} continue
+
+	    lappend cons_anno [lindex $a 2]
+	}
+	set anno $cons_anno
+    }
+
+    set shifted [$contig shift_base $pos $dir]
     $contig delete
     $w incr_contig
 
-    store_undo $w \
-	[list \
-	     [list C_SET $type $rec $pos] \
-	     [list C_SHIFT $rec $pos [expr {-$dir}]] ] {}
+    if {$shifted > 0} {
+	store_undo $w \
+	    [list \
+		 [list C_SET $type $rec $pos] \
+		 [list C_SHIFT $rec $pos [expr {-$dir}] $seqs $anno] ] {}
 
-    #$w cursor_right
-    $w redraw
+	#$w cursor_right
+	$w redraw
+    } else {
+	bell
+    }
 }
 
 proc editor_set_confidence {w where qual} {

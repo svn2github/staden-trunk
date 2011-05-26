@@ -589,7 +589,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
 	"nseqs",	"anno_in_range","get_pileup",   "ref_to_padded",
-	"nrefpos",	"nanno",        "shift_base",   (char *)NULL,
+	"nrefpos",	"nanno",        "shift_base",   "move_anno",
+	(char *)NULL,
     };
 
     enum options {
@@ -598,7 +599,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
 	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
-	NREFPOS,        NANNO,	        SHIFT_BASE,
+	NREFPOS,        NANNO,	        SHIFT_BASE,     MOVE_ANNO,
     };
 
     if (objc < 2) {
@@ -711,7 +712,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
 	Tcl_GetIntFromObj(interp, objv[3], &dir);
-	contig_shift_base(tc->io, &tc->contig, pos, dir);
+	vTcl_SetResult(interp, "%d",
+		       contig_shift_base(tc->io, &tc->contig, pos, dir));
 	break;
     }
 
@@ -754,7 +756,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	if (objc < 4 || objc > 6) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
-			   "\"%s remove_sequence rec pos ?pair_rec ?flags??\"\n",
+			   "\"%s add_sequence rec pos ?pair_rec ?flags??\"\n",
 			   Tcl_GetStringFromObj(objv[0], NULL));
 	    return TCL_ERROR;
 	}
@@ -815,6 +817,79 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 		s->left  = ABS(s->len) - (s->right-1);
 		s->right = ABS(s->len) - (tmp-1);
 	    }
+	}
+	break;
+    }
+
+    case MOVE_ANNO: {
+	Tcl_WideInt rec;
+	int start, end;
+	range_t r, *r_out;
+	anno_ele_t *a;
+	bin_index_t *bin;
+	Tcl_WideInt obj_rec;
+	int obj_type;
+
+	/* Parse args */
+	if (objc < 4 || objc > 7) {
+	    vTcl_SetResult(interp, "wrong # args: should be \"%s "
+			   "move_anno rec start end ?obj_type obj_rec?\" or "
+			   "\"%s move_anno rec distance\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL),
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetWideIntFromObj(interp, objv[2], &rec);
+	a = (anno_ele_t *)cache_search(tc->io, GT_AnnoEle, rec);
+
+	if (objc == 4) {
+	    int dist;
+
+	    Tcl_GetIntFromObj(interp, objv[3], &dist);
+	    anno_get_position(tc->io, rec, NULL, &start, &end, NULL);
+	    start += dist;
+	    end   += dist;
+	} else {
+	    Tcl_GetIntFromObj(interp, objv[3], &start);
+	    Tcl_GetIntFromObj(interp, objv[4], &end);
+	}
+
+	if (objc >= 5) {
+	    Tcl_GetIntFromObj(interp, objv[5], &obj_type);
+	} else {
+	    obj_type = a->obj_type;
+	}
+
+	if (objc >= 6) {
+	    Tcl_GetWideIntFromObj(interp, objv[5], &obj_rec);
+	} else {
+	    obj_rec = a->obj_rec;
+	}
+
+
+	/* Remove from old place */
+	bin_remove_item(tc->io, &tc->contig, GT_AnnoEle, rec);
+
+
+	/* Add back to new location */
+	memset(&r, 0, sizeof(r));
+	r.start    = start;
+	r.end      = end;
+	r.rec      = rec;
+	r.mqual    = a->tag_type;
+	r.pair_rec = obj_rec;
+	r.flags    = GRANGE_FLAG_ISANNO;
+	if (GT_Seq == obj_type)
+	    r.flags |= GRANGE_FLAG_TAG_SEQ;
+
+	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL, 0);
+
+
+	/* The move may have changed bin, if so update anno pointer too */
+	if (a->bin != bin->rec) {
+	    a = cache_rw(tc->io, a);
+	    a->bin = bin->rec;
 	}
 	break;
     }

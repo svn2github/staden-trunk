@@ -292,7 +292,8 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     return ins;
 }
 
-int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
+int contig_insert_base_common(GapIO *io, contig_t **c,
+			      int pos, char base, int conf) {
     contig_t *n;
     int rpos, add_indel = 1;
     bin_index_t *bin;
@@ -302,6 +303,7 @@ int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
     tg_rec ref_id = 0;
     int dir;
     HacheTable *hash = NULL;
+    int ret;
 
     if (!(n = cache_rw(io, *c)))
 	return -1;
@@ -319,8 +321,9 @@ int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
 				| HASH_ALLOW_DUP_KEYS | HASH_DYNAMIC_SIZE);
     }
 
-    if (1 != contig_insert_base2(io, n->rec, contig_get_bin(c), pos,
-				 contig_offset(io, c), base, conf, 0, hash))
+    ret = contig_insert_base2(io, n->rec, contig_get_bin(c), pos,
+			      contig_offset(io, c), base, conf, 0, hash);
+    if (1 != ret)
 	return 0;
 
     rpos = padded_to_reference_pos(io, (*c)->rec, pos, &dir, NULL);
@@ -406,7 +409,11 @@ int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
     if (hash)
 	HacheTableDestroy(hash, 0);
 
-    return 0;
+    return ret;
+}
+
+int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
+    return contig_insert_base_common(io, c, pos, base, conf) >= 0 ? 0 : -1;
 }
 
 /*
@@ -758,11 +765,11 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
     if (hash)
 	HacheTableDestroy(hash, 0);
 
-    return 0;
+    return reduced;
 }
 
 int contig_delete_base(GapIO *io, contig_t **c, int pos) {
-    return contig_delete_base_common(io, c, pos, 0);
+    return contig_delete_base_common(io, c, pos, 0) >= 0 ? 0 : -1;
 }
 
 /*
@@ -779,7 +786,7 @@ int contig_delete_base(GapIO *io, contig_t **c, int pos) {
  */
 int contig_shift_base(GapIO *io, contig_t **c, int pos, int dir) {
     if (dir > 0)
-	return contig_insert_base(io, c, pos, 0, 0);
+	return contig_insert_base_common(io, c, pos, 0, 0);
     else
 	return contig_delete_base_common(io, c, pos+1, 1);
 }
