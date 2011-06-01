@@ -20,7 +20,7 @@
 #include "g-struct.h"
 
 
-int find_db_files(char *fn, char *fndb, char *fnaux);
+int find_db_files(char *fn, char *dir, char *fndb, char *fnaux);
 
 
 extern GFile *g_open_file(char *fn, int read_only);

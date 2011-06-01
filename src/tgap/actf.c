@@ -148,16 +148,18 @@ int actf_lock(int read_only, char *file, int new) {
 
     if (cp = strrchr(file, '/')) {
 	db_name = cp+1;
+	strncpy(dir, file, cp - file + 1);
     } else {
 	db_name = file;
     }
 
-    if (new) {
+   if (new) {
 	sprintf(db_path,  "%s.g5d", db_name);
 	sprintf(aux_path, "%s.g5x", db_name);
     } else {
-	if (0 != find_db_files(db_name, db_path, aux_path))
+	if (0 != find_db_files(db_name, dir, db_path, aux_path)) {
 	    return 7;
+	}
     }
 
     sprintf(fname,    "%s%s.BUSY", dir, db_name);

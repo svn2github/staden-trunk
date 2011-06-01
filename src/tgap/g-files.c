@@ -143,11 +143,15 @@ static GToggle g_toggle_state(GTimeStamp time, AuxIndex *idx)
  * Returns 0 on success
  *        -1 on failure (no obvious derivations of fn found).
  */
-int find_db_files(char *fn, char *fndb, char *fnaux) {
-    char fn2[1024];
+int find_db_files(char *fn, char *dir, char *fndb, char *fnaux) {
+    char fn2[2048];
     int try;
-
-    strncpy(fn2, fn, 1024);
+    
+    if (dir) {
+    	sprintf(fn2, "%s%s", dir, fn);
+    } else {
+    	strncpy(fn2, fn, 2048);
+    }
 
     for (try = 0; try < 2; try++) {
 	char *cp;
@@ -157,7 +161,7 @@ int find_db_files(char *fn, char *fndb, char *fnaux) {
 	strcat(fndb ,G5_DB_SUFFIX);
 	strcpy(fnaux,fn2);
 	strcat(fnaux,G5_AUX_SUFFIX);
-
+	
 	if (file_exists(fndb) && file_exists(fnaux))
 	    break;
 
@@ -231,7 +235,7 @@ GFile *g_open_file(char *fn, int read_only)
 	ABORT(GERR_NAME_TOO_LONG);
 
     /* Attempt to work alternative file names. */
-    if (find_db_files(fn, fndb, fnaux) == -1) {
+    if (find_db_files(fn, 0, fndb, fnaux) == -1) {
 	gerr_set(GERR_OPENING_FILE);
 	return NULL;
     }
