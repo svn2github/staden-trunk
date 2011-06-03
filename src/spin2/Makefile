@@ -10,11 +10,11 @@ LIBS = spin2
 PROGS = lib$(LIBS)
 PROGLIBS=$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-include	$(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
-INCLUDES_E += $(TK_INC) $(ITK_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(IOLIB_INC)
+INCLUDES_E += $(TK_INC) $(ITK_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(IOLIB_INC) $(MISC_INC) -I/nfs/users/nfs_j/jkb/scratch/src/staden/incrTcl-3.3cvs/itcl/generic -I/nfs/users/nfs_j/jkb/scratch/src/staden/incrTcl-3.3cvs/itk/generic/
 CFLAGS += $(SHLIB_CFLAGS)
 
 SPIN2BIN=$(O)
@@ -83,13 +83,11 @@ lib$(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
 DEPS = $(TK_LIB) \
-       $(ITCL_LIB)\
-       $(ITK_LIB) \
        $(IOUTILS_LIB) \
        $(TKUTILS_LIB) \
        $(SEQUTILS_LIB) \
-       $(MISC_LIB)
-
+       $(MISC_LIB) \
+	/usr/lib/libitcl3.2.so.1 /usr/lib/libitk3.2.so.1
 
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(DEPS)

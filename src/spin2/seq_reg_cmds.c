@@ -35,6 +35,10 @@
 #include "element_canvas.h"
 #include "seq_element_cmds.h"
 
+int valid_seq(char *a, int b) {
+    return 1;
+}
+
 static int seq_file_save_ft(FILE *pw, Featcds **key_index, int start, int end,
 			    char *seq,  char *identifier);
 
