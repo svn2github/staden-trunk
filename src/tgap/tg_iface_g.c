@@ -2433,7 +2433,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 
 static GRange *unpack_rng_array(int comp_mode, int fmt,
 				unsigned char *packed,
-				int packed_sz, int *nr) {
+				int packed_sz, int *nrp) {
     uint32_t i, off[6];
     int32_t i32;
     unsigned char *cp[6], *zpacked = NULL;
@@ -2441,6 +2441,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
     size_t ssz;
     int64_t last_r_rec = 0, last_r_pair_rec = 0;
     int32_t last_r_mqual = 0;
+    int nr;
 
     /* First of all, inflate the compressed data */
     zpacked = packed = (unsigned char *)mem_inflate(comp_mode,
@@ -2449,7 +2450,8 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
     packed_sz = ssz;
 
     /* Unpack number of ranges */
-    packed += u72int(packed, (uint32_t *)nr);
+    packed += u72int(packed, (uint32_t *)nrp);
+    nr = *nrp;
 
     /* Unpack offsets of the 6 range components */
     for (i = 0; i < 6; i++) 
@@ -2458,13 +2460,13 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
     for (i = 1; i < 6; i++)
 	cp[i] = cp[i-1] + off[i-1];
 
-    r = (GRange *)malloc(*nr * sizeof(*r));
+    r = (GRange *)malloc(nr * sizeof(*r));
     memset(ls, 0, sizeof(*ls));
     memset(lt, 0, sizeof(*lt)); /* Correct? Same mem as *ls */
     memset(lr, 0, sizeof(*lr));
 
     /* And finally unpack from the 6 components in parallel for each struct */
-    for (i = 0; i < *nr; i++) {
+    for (i = 0; i < nr; i++) {
 	r[i].y = 0;
 
 	switch (fmt) {
