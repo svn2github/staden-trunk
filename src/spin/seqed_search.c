@@ -151,7 +151,7 @@ int seqed_string_search(char *sequence,
 				   max_matches);
 
     if (n_matches < 0) {
-	vmessage("String search", "no matches found\n");
+	vmessage("String search: no matches found\n");
 	return -1;
     }
 

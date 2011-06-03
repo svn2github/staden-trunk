@@ -2250,7 +2250,6 @@ static char *pack_rng_array(int comp_mode, int fmt,
 
     int last_r_rec = 0;
     int last_r_mqual = 0;
-    int last_r_flags = 640;
     int last_r_pair_rec = 0;
 
     memset(&last, 0, sizeof(last));

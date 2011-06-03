@@ -224,7 +224,7 @@ CopyDB(ClientData clientData,
 	return TCL_ERROR;
 
     if (NULL == (p = strrchr(io_name(args.io), '.'))) {
-	vTcl_SetResult(interp, "Malformed database names", TCL_STATIC);
+	Tcl_SetResult(interp, "Malformed database names", TCL_STATIC);
 	return TCL_ERROR;
     }
 
@@ -233,7 +233,7 @@ CopyDB(ClientData clientData,
 
     if (strcmp(p+1, args.version) == 0) {
 	verror(ERR_FATAL, "copy_database", "attempt to copy over ourself!");
-	vTcl_SetResult(interp, "-1", TCL_STATIC);
+	Tcl_SetResult(interp, "-1", TCL_STATIC);
 	return TCL_OK;
     }
 

@@ -1332,7 +1332,7 @@ static void trace_report_table(dstring_t *html, EdStruct *xx,
 			text_len = strlen(tag_text);
 		    }
 		    dstring_appendf(html, "        <br><small>%.*s</small>\n",
-				    text_len, tag_text);
+				    (int)text_len, tag_text);
 		} else {
 		    dstring_append(html, "        <br><small>Mutation not tagged</small>\n");
 		}

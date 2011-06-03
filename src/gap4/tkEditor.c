@@ -1434,7 +1434,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	if (argc == 2) {
-	    vTcl_SetResult(interp, "%d %d",
+	    vTcl_SetResult(interp, "%d %d %d %d",
 			   ed->xx->compare_trace_match,
 			   ed->xx->compare_trace_select,
 			   ed->xx->compare_trace_algorithm,

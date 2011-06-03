@@ -613,8 +613,6 @@ int edview_search_tag_indel(edview *xx, int dir, int strand, char *value) {
 	return -1;
 
     while (r = ifunc(xx->io, iter)) {
-	anno_ele_t *ae;
-
 	if ((dir  && r->start < start) ||
 	    (!dir && r->start > end))
 	    continue;

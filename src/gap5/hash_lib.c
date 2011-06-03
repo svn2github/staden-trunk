@@ -616,7 +616,6 @@ void store_hashn ( Hash *h ) {
 
 /* As per store_hashn() but no h->counts[] array. Terminate list on -1 */
 void store_hashn_nocount ( Hash *h ) {
-    int nw;
     register int i,j,n;
 
     for (i=0; i<h->size_hash; i++) {
@@ -3091,7 +3090,7 @@ int reps_nocount(Hash *h,
 	 int offset,
 	 char sense) {
     
-    int nrw, word, pw1, pw2, pw2_last, i, j, match_size;
+    int nrw, word, pw1, pw2, pw2_last, i, match_size;
     int diag_pos, size_hist;
     int pw_inc, bck;
     /* clock_t t1, t2; */

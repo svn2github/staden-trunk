@@ -1247,7 +1247,7 @@ void SeqReplotResults(Tk_Raster *raster,
     if (zoom) {
 	if (TCL_OK != Tcl_VarEval(output->interp, "rasterRescaleZoom ", 
 				  raster_win, NULL))
-	    verror(ERR_WARN, "SeqReplotResults", "%\n", 
+	    verror(ERR_WARN, "SeqReplotResults", "%s\n", 
 		   Tcl_GetStringResult(output->interp));
     }
 

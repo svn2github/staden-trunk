@@ -583,8 +583,8 @@ int dstring_htmlise_links(dstring_t *ds) {
 		return -1;
 
 	    if (-1 == dstring_insertf(url, 0, "<a href=\"%.*s\">%.*s</a>",
-				      end-pos, &str[pos],
-				      end-pos, &str[pos])) {
+				      (int)(end-pos), &str[pos],
+				      (int)(end-pos), &str[pos])) {
 		dstring_destroy(url);
 		return -1;
 	    }

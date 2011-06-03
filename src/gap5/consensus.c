@@ -20,8 +20,10 @@
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
-static unsigned char lookup[256], lookup_done = 0;
+static unsigned char lookup[256];
 
+#if 0
+static unsigned char lookup_done = 0;
 static double logodds2log[256];
 static double *lo2l = logodds2log+128;
 
@@ -37,6 +39,7 @@ static unsigned char *lo2ph = logodds2phred+128;
 static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 				   int start, int end,
 				   consensus_t *cons);
+#endif
 
 
 /*
@@ -471,6 +474,7 @@ typedef struct {
 } cstat;
 
 
+#if 0
 /*
  * The core of the consensus algorithm.
  *
@@ -838,6 +842,7 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 
     return 0;
 }
+#endif
 
 
 #define P_HET 1e-6

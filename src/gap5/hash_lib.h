@@ -78,6 +78,7 @@ int hash_word4n ( char *seq, int *start_base, int seq_len, int word_length,
 int hash_seq4n ( char *seq, int *hash_values, int seq_len, int word_length);
 
 void store_hashn ( Hash *h );
+void store_hashn_nocount ( Hash *h );
 
 int hash_seqn (Hash *h, int job);
 
@@ -112,6 +113,8 @@ int compare_seqs(Hash *h, int *seq1_match_pos, int *seq2_match_pos, int *match_l
 
 int reps (Hash *h, int **seq1_match_pos, int **seq2_match_pos, int **match_len,
 	  int offset, char sense);
+int reps_nocount(Hash *h, int **seq1_match_pos, int **seq2_match_pos,
+		 int **match_length, int offset, char sense);
 
 int set_band_blocks(int seq1_len, int seq2_len);
 

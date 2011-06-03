@@ -52,8 +52,6 @@ typedef struct {
 void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 			mobj_template *template) {
     static char buf[80];
-    char cmd[1024];
-    f_int *handle;
     obj_cs *cs;
     int cs_id;
 
@@ -114,7 +112,6 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 	    {
 	        tg_rec cnum[2], llino[2];
 		int pos[2];
-		int pt1, pt2;
 
 		cnum[0] = ABS(obj->c1);
 		cnum[1] = ABS(obj->c2);
@@ -294,13 +291,11 @@ void readpair_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
  * does not need completing
  */
 int PlotTempMatches(GapIO *io, read_pair_t *rp) {
-    int i, j, k, id;
+    int id;
     mobj_template *template;
     obj_read_pair *matches;
-    int count;
     int n_matches = 0;
     int max_matches = 64; /* dynamically grows */
-    item_t *item, *it;
     char *val;
 
     if (!rp)

@@ -155,9 +155,12 @@ int update_library_stats(GapIO *io, tg_rec rec, int min_count,
 			 double *mean, double *sd, int *type) {
     library_t *lib = cache_search(io, GT_Library, rec);
     int i, j;
+    /*
     double sum[3]    = {0, 0, 0};
     double sum_sq[3] = {0, 0, 0};
-    double N[3], m, s;
+    double m, s;
+    */
+    double N[3];
     double isize[3], sd_[3];
 
     if (!lib)
@@ -197,7 +200,6 @@ int update_library_stats(GapIO *io, tg_rec rec, int min_count,
 	double q1, q2, q3;
 
 	for (i = SMALLEST_BIN; i < LIB_BINS; i++) {
-	    int bsize = ibin2isize(i+1);
 	    count += (double)lib->size_hist[j][i];
 	}
 	N[j] = count;

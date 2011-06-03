@@ -40,6 +40,7 @@
 #include "caf.h"
 #include "tg_index_common.h"
 #include "zfio.h"
+#include "fasta.h"
 
 #include "sam_index.h"
 #include "bam.h"

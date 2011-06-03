@@ -1628,8 +1628,6 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
 	    //printf("Pos %d nth %d, old pad count = %d\n", pos, nth, np);
 	    
 	    if (nth > np) {
-		int i;
-
 		contig_insert_base(bio->io, &bio->c,
 				   get_padded_coord(bio->tree, pos+1) +
 				   bio->n_inserts,
