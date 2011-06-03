@@ -37,10 +37,6 @@ static unsigned char *lo2ph = logodds2phred+128;
 static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 				   int start, int end,
 				   consensus_t *cons);
-static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
-				       int start, int end,
-				       consensus_t *cons);
-
 
 
 /*
@@ -60,15 +56,22 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 				char *con, float *qual) {
     int i, j;
     consensus_t q[CONS_BLOCK_SIZE];
+    contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
     
     /* Compute in small ranges */
     for (i = start; i <= end; i += CONS_BLOCK_SIZE) {
+	rangec_t *r = NULL;
+	int nr;
 	int st = i;
 	int en = st + CONS_BLOCK_SIZE-1; /* inclusive range */
 	if (en > end)
 	    en = end;
 
-	if (0 != calculate_consensus_bit_het(io, contig, st, en, q)) {
+	/* Find sequences visible */
+	r = contig_seqs_in_range(io, &c, st, en, 0, &nr);
+
+	if (0 != calculate_consensus_bit_het(io, contig, st, en, CONS_ALL,
+					     r, nr, q)){
 	    for (j = 0; j < en-st; j++) {
 		if (con)
 		    con[i-start+j] = 'N';
@@ -77,6 +80,8 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 	    }
 	    return -1;
 	}
+
+	if (r) free(r);
 
 	for (j = 0; j < en-st+1; j++) {
 	    if (q[j].call == 6) {
@@ -397,16 +402,62 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 			consensus_t *cons) {
     int i;
+    contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
 
     /* Compute in small ranges */
     for (i = start; i <= end; i += CONS_BLOCK_SIZE) {
+	rangec_t *r = NULL;
+	int nr;
 	int st = i;
 	int en = st + CONS_BLOCK_SIZE-1;
 	if (en > end)
 	    en = end;
 
-	if (0 != calculate_consensus_bit_het(io, contig, st, en, &cons[i-start]))
+	/* Find sequences visible */
+	r = contig_seqs_in_range(io, &c, st, en, 0, &nr);
+
+	if (0 != calculate_consensus_bit_het(io, contig, st, en,
+					     CONS_ALL, r, nr,
+					     &cons[i-start])) {
+	    if (r)
+		free(r);
 	    return -1;
+	}
+
+	if (r)
+	    free(r);
+    }
+
+    return 0;
+}
+
+/* Just compute the basic consensus + phred score */
+int calculate_consensus_fast(GapIO *io, tg_rec contig, int start, int end,
+			     consensus_t *cons) {
+    int i;
+    contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
+
+    /* Compute in small ranges */
+    for (i = start; i <= end; i += CONS_BLOCK_SIZE) {
+	rangec_t *r = NULL;
+	int nr;
+	int st = i;
+	int en = st + CONS_BLOCK_SIZE-1;
+	if (en > end)
+	    en = end;
+
+	/* Find sequences visible */
+	r = contig_seqs_in_range(io, &c, st, en, 0, &nr);
+
+	if (0 != calculate_consensus_bit_het(io, contig, st, en,
+					     0, r, nr, &cons[i-start])) {
+	    return -1;
+	    if (r)
+		free(r);
+	}
+
+	if (r)
+	    free(r);
     }
 
     return 0;
@@ -798,6 +849,10 @@ static double acc_prior[25]; /* Cumulative values up to 32768 */
 /* Precomputed matrices for the consensus algorithm */
 static double pMM[101], p__[101], p_M[101];
 
+static double e_tab_a[1002];
+static double *e_tab = &e_tab_a[500];
+static double e_log[501];
+
 static void consensus_init(double p_het) {
     int i;
     double acc = 0;
@@ -808,6 +863,11 @@ static void consensus_init(double p_het) {
     lookup['G'] = lookup['g'] = 2;
     lookup['T'] = lookup['t'] = 3;
     lookup['*'] =               4;
+
+    for (i = -500; i <= 500; i++)
+    	e_tab[i] = exp(i);
+    for (i = 0; i <= 500; i++)
+	e_log[i] = log(i);
 
     for (i = 0; i < 25; i++)
 	prior[i] = p_het / 20;
@@ -846,16 +906,60 @@ static void consensus_init(double p_het) {
     p_M[0] = p_M[1];
 }
 
+/* 
+ * See "A Fast, Compact Approximation of the Exponential Function"
+ * by NN. Schraudolph, Neural Computation, 1999
+ */
+#if 0
+static inline double fast_exp(double y) {
+    union {
+	double d;
+	int i, j;
+    } x;
+
+    x.i = 0;
+    x.j = 1512775 * y + 1072632447;
+
+    return x.d;
+}
+
+static inline double fast_log(double y) {
+    union {
+	double d;
+	int i, j;
+    } x;
+    
+    x.d = y;
+    return (x.j - 1072632447.0) / 1512775;
+}
+#endif
+
+#if 1
+static inline double fast_exp(double y) {
+    if (y < -500)
+	y = -500;
+    if (y > 500)
+	y = 500;
+
+    //    printf("%f => %g %g\n", y, exp(y), e_tab[(int)y]);
+
+    return e_tab[(int)y];
+}
+#endif
+
+//#define fast_exp exp
+#define fast_log log
+
+
 /*
  * As above, but allowing for the possibility of the data being
  * heterozygous.
  */
-static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
-				       int start, int end,
-				       consensus_t *cons) {
-    int i, j, nr;
-    rangec_t *r = NULL;
-    contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
+int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
+				int start, int end, int flags,
+				rangec_t *r, int nr,
+				consensus_t *cons) {
+    int i, j;
     int len = end - start + 1;
     static int loop = 0;
     static int init_done =0;
@@ -863,7 +967,7 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
     double min_e_exp = DBL_MIN_EXP * log(2) + 1;
 
     double (*scores)[15];
-    double (*sumsC)[6], *sumsE;
+    double (*sumsC)[6] = NULL, *sumsE = NULL;
     char *perfect; /* quality=100 bases */
     int *depth, vst, ven;
 
@@ -891,18 +995,17 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
     /* Initialise */
     if (NULL == (scores = (double (*)[15])calloc(len, 15 * sizeof(double))))
 	return -1;
-    if (NULL == (sumsC = (double (*)[6])calloc(len, 6 * sizeof(double))))
-	return -1;
-    if (NULL == (sumsE = (double *)calloc(len, sizeof(double))))
-	return -1;
+    if (flags & CONS_DISCREP) {
+	if (NULL == (sumsC = (double (*)[6])calloc(len, 6 * sizeof(double))))
+	    return -1;
+	if (NULL == (sumsE = (double *)calloc(len, sizeof(double))))
+	    return -1;
+    }
 
     if (NULL == (depth = (int *)calloc(len, sizeof(int))))
 	return -1;
     if (NULL == (perfect = (char *)calloc(len, sizeof(char))))
 	return -1;
-
-    /* Find sequences visible */
-    r = contig_seqs_in_range(io, &c, start, end, 0, &nr);
 
     for (i = 0; i < nr; i++) {
 	int sp = r[i].start;
@@ -943,7 +1046,13 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	    if (sp+j > end)
 		continue;
 
-	    sequence_get_base(io, &s, j+off, &base, &qual, NULL, 0);
+	    if (s->format != SEQ_FORMAT_CNF4) {
+		/* Inline version for speed */
+		base = s->seq[j+off];
+		qual = s->conf[j+off];
+	    } else {
+		sequence_get_base(io, &s, j+off, &base, &qual, NULL, 0);
+	    }
 
 	    base_l = lookup[base];
 	    if (base_l < 5 && qual == 100)
@@ -960,9 +1069,11 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	    MM = pMM[qual];
 	    _M = p_M[qual];
 
-	    qe = q2p[qual];
-	    sumsE[sp-start+j] += qe;
-	    sumsC[sp-start+j][base_l] += 1 - qe;
+	    if (flags & CONS_DISCREP) {
+		qe = q2p[qual];
+		sumsE[sp-start+j] += qe;
+		sumsC[sp-start+j][base_l] += 1 - qe;
+	    }
 
 	    switch (base_l) {
 	    case 0:
@@ -1019,7 +1130,7 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
     }
 
     /* Determine valid ranges, if necessary */
-    if (depth[0] == 0 && loop == 0) {
+    if ((flags & CONS_NO_END_N) && depth[0] == 0 && loop == 0) {
 	/* Check left edge */
 	loop = 1;
 	consensus_valid_range(io, contig, &vst, NULL);
@@ -1033,7 +1144,7 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	vst = 0;
     }
 
-    if (depth[len-1] == 0 && loop == 0) {
+    if ((flags & CONS_NO_END_N) && depth[len-1] == 0 && loop == 0) {
 	/* Check right edge */
 	loop = 1;
 	consensus_valid_range(io, contig, NULL, &ven);
@@ -1050,7 +1161,7 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
     /* and speculate */
     for (i = 0; i < len; i++) {
 	double shift, max, max_het, *S, norm[15];
-	int call, het_call, ph;
+	int call = 0, het_call = 0, ph;
 	double tot1, tot2;
 
 	/* Perfect => manual edit at 100% */
@@ -1140,7 +1251,8 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	for (j = 0; j < 15; j++) {
 	    S[j] -= shift;
 	    if (S[j] > min_e_exp) {
-		S[j] = exp(S[j]);
+		//S[j] = exp(S[j]);
+		S[j] = fast_exp(S[j]);
 	    } else {
 		S[j] = DBL_MIN;
 	    }
@@ -1155,11 +1267,6 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	    tot2 += S[14-j];
 	}
 
-	for (j = 0; j < 15; j++) {
-	    if (norm[j] == 0)
-		norm[j] = DBL_MIN;
-	}
-
 	/* And store result */
 	if (depth[i]) {
 	    double m;
@@ -1167,40 +1274,51 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	    cons[i].depth = depth[i];
 
 	    cons[i].call     = map_sing[call];
-	    ph = -TENOVERLOG10 * log(norm[call]) + .5;
+	    if (norm[call] == 0) norm[call] = DBL_MIN;
+	    ph = -TENOVERLOG10 * fast_log(norm[call]) + .5;
 	    cons[i].phred = ph > 255 ? 255 : (ph < 0 ? 0 : ph);
 
 	    cons[i].het_call = map_het[het_call];
-	    ph = TENOVERLOG10 * (log(S[het_call]) - log(norm[het_call])) + .5;
+	    if (norm[het_call] == 0) norm[het_call] = DBL_MIN;
+	    ph = TENOVERLOG10 * (fast_log(S[het_call]) - fast_log(norm[het_call])) + .5;
 	    cons[i].scores[6] = ph;
 
-	    /* AA */
-	    ph = TENOVERLOG10 * (log(S[0]) - log(norm[0])) + .5;
-	    cons[i].scores[0] = ph;
+	    if (flags & CONS_SCORES) {
+		/* AA */
+		if (norm[0] == 0) norm[0] = DBL_MIN;
+		ph = TENOVERLOG10 * (fast_log(S[0]) - fast_log(norm[0])) + .5;
+		cons[i].scores[0] = ph;
 
-	    /* CC */
-	    ph = TENOVERLOG10 * (log(S[5]) - log(norm[5])) + .5;
-	    cons[i].scores[1] = ph;
+		/* CC */
+		if (norm[5] == 0) norm[5] = DBL_MIN;
+		ph = TENOVERLOG10 * (fast_log(S[5]) - fast_log(norm[5])) + .5;
+		cons[i].scores[1] = ph;
 
-	    /* GG */
-	    ph = TENOVERLOG10 * (log(S[9]) - log(norm[9])) + .5;
-	    cons[i].scores[2] = ph;
+		/* GG */
+		if (norm[9] == 0) norm[9] = DBL_MIN;
+		ph = TENOVERLOG10 * (fast_log(S[9]) - fast_log(norm[9])) + .5;
+		cons[i].scores[2] = ph;
 
-	    /* TT */
-	    ph = TENOVERLOG10 * (log(S[12]) - log(norm[12])) + .5;
-	    cons[i].scores[3] = ph;
+		/* TT */
+		if (norm[12] == 0) norm[12] = DBL_MIN;
+		ph = TENOVERLOG10 * (fast_log(S[12]) - fast_log(norm[12])) + .5;
+		cons[i].scores[3] = ph;
 
-	    /* ** */
-	    ph = TENOVERLOG10 * (log(S[14]) - log(norm[14])) + .5;
-	    cons[i].scores[4] = ph;
+		/* ** */
+		if (norm[14] == 0) norm[14] = DBL_MIN;
+		ph = TENOVERLOG10 * (fast_log(S[14]) - fast_log(norm[14])) + .5;
+		cons[i].scores[4] = ph;
 
-	    /* N */
-	    cons[i].scores[5] = 0; /* N */
+		/* N */
+		cons[i].scores[5] = 0; /* N */
+	    }
 
 	    /* Compute discrepancy score */
-	    m = sumsC[i][0]+sumsC[i][1]+sumsC[i][2]+sumsC[i][3]+sumsC[i][4]
-		- sumsC[i][cons[i].call];
-	    cons[i].discrep = (m-sumsE[i])/sqrt(m+sumsE[i]);
+	    if (flags & CONS_DISCREP) {
+		m = sumsC[i][0]+sumsC[i][1]+sumsC[i][2]+sumsC[i][3]+sumsC[i][4]
+		    - sumsC[i][cons[i].call];
+		cons[i].discrep = (m-sumsE[i])/sqrt(m+sumsE[i]);
+	    }
 	} else {
 	    if (i < vst || i > ven)
 		cons[i].call = 6; /* No base */
@@ -1220,10 +1338,13 @@ static int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	}
     }
 
-    if (r) free(r);
     free(scores);
     free(depth);
     free(perfect);
+    if (sumsE)
+	free(sumsE);
+    if (sumsC)
+	free(sumsC);
 
     return 0;
 }

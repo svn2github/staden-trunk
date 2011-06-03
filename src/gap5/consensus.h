@@ -3,6 +3,12 @@
 
 #include <tg_gio.h>
 
+#define CONS_NO_END_N   1
+#define CONS_SCORES     2
+#define CONS_DISCREP    4
+
+#define CONS_ALL        7
+
 typedef struct {
     /* the most likely base call - we never call N here */
     /* A=0, C=1, G=2, T=3, *=4 */
@@ -25,6 +31,7 @@ typedef struct {
     /* Discrepancy search score */
     float discrep;
 } consensus_t;
+
 
 /*
  * The consensus calculation function - rewritten for tgap style
@@ -59,7 +66,20 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
  */
 int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 			consensus_t *cons);
+int calculate_consensus_fast(GapIO *io, tg_rec contig, int start, int end,
+			     consensus_t *cons);
 
+/*
+ * Internal function, called by calculate_consensus(). Exposed here for when
+ * we already have a rangec_t array loaded so we can avoid recomputing the
+ * same data. (Used in quality_plot.c of the template display).
+ */
+int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
+				int start, int end,
+				int end_N,
+				rangec_t *r,
+				int nr,
+				consensus_t *cons);
 /*
  * Finds the portion of a contig that has non-clipped data.
  * This is a somewhat crude method by just computing consensus at the ends
