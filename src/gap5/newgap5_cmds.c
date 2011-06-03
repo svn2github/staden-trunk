@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <tcl.h>
 #include <tk.h>
+#include <float.h>
 
 #include <tg_gio.h>
 #include "gap4_compat.h"
@@ -40,6 +41,7 @@
 #include "tg_index_common.h"
 #include "gap_range.h"
 #include "depth_track.h"
+#include "quality_plot.h"
 #include "maq.h"
 #include "ace.h"
 #include "baf.h"
@@ -1988,6 +1990,7 @@ NewGap_Init(Tcl_Interp *interp) {
     Tk_CreateItemType(&tkTDItem);
     
     Tk_CreateItemType(&tkDepthItem);
+    Tk_CreateItemType(&consQualityItem);
 
 #ifdef VALGRIND
     Tcl_CreateObjCommand(interp, "leak_check",

@@ -84,18 +84,7 @@ static void		translate_depth(Tk_Canvas canvas,
 /* none mandatory protoypes */
 static void compute_depth_bbox(Tk_Canvas canvas, DepthTrackItem *dti);
 
-static int  range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	    	    	    char *value, char *widgRec, int offset);
-static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
-	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr);
-		    
 static void redraw_depth_image(DepthTrackItem *dti, Display *display);
-
-/* define the non-standard option types */ 
-static Tk_CustomOption range_option = {
-    (Tk_OptionParseProc *)range_cmd_parse,
-    range_cmd_print, (ClientData)NULL
-};
 
 /* config options, some are meant only to be returned with itemcget */
 static Tk_ConfigSpec config_specs[] = {
@@ -564,35 +553,6 @@ static int depth_postscript(Tcl_Interp *interp, Tk_Canvas canvas, Tk_Item *itemP
     return TCL_ERROR;
 }
 
-
-/* parse the range command to get at the data */
-
-static int range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	    	    	    char *value, char *widgRec, int offset) {
-			    
-    DepthTrackItem *dti = (DepthTrackItem *)widgRec;
-    Tcl_CmdInfo info;
-    
-    if (!Tcl_GetCommandInfo(interp, value, &info)) return TCL_ERROR;
-    
-    dti->gr = (gap_range_t *)info.objClientData;
-
-    return TCL_OK;
-}
-    
-
-/* return value for the range command */
-
-static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
-	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr) {
-    DepthTrackItem *dti = (DepthTrackItem *)widgRec;
-    
-    if (dti->gr == NULL) 
-    	return "gap range not set";
-    else
-    	return "gap range set";
-}
-			    
 
 /* do the actual work of drawing the depth track, uses the gap_range
    functions for most of the data handling */

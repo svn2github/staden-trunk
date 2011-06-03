@@ -379,7 +379,7 @@ proc c2x {w pos} {
 # m* is the size of the margins.
 # +ve = from that edge.
 # -ve = from opposite edge
-proc add_plot {w func height has_scroll has_scale args} {
+proc add_plot {w func height has_scroll has_scale visible args} {
     global $w
     incr ${w}(ntracks)
     set tnum [set ${w}(ntracks)]
@@ -417,7 +417,9 @@ proc add_plot {w func height has_scroll has_scale args} {
     set ${t}(canvas) [eval canvas $t -height $height $args \
 			  [list -yscrollcommand [list yscroll_plot_set $w $t]]]
     grid $t -row $tnum -column 1 -sticky nsew
-    grid rowconfigure $w $tnum -weight $weight
+    if {$visible} {
+	grid rowconfigure $w $tnum -weight $weight
+    }
 }
 
 #
@@ -454,7 +456,7 @@ proc yscale_resize {ys height} {
 
 proc yscale_seq {w t height} {
     global $w $t
-    
+
     set ys [set ${t}(yscale)]
     yscale_resize $ys $height
 
@@ -713,7 +715,7 @@ proc nice_num {v r p} {
 }
 
 
-proc yscale_depth {w t height} {
+proc yscale_depth {w t height {offset 0}} {
     global $w $t
 
     set ys [set ${t}(yscale)]
@@ -749,7 +751,7 @@ proc yscale_depth {w t height} {
     $ys create line $w1 0 $w1 $height
     
     for {set i $min; set j $p1} {$i < $max} {set i [expr {$i + $step}]; set j [expr {$j + $pstep}]} {
-    	set yi [expr {$height - ($i / $zoom)}]
+    	set yi [expr {$height - ($i / $zoom)} - $offset]
 	$ys create line $w1 $yi $w5 $yi
 
 	if {$dist < 200} {
@@ -859,7 +861,6 @@ proc show_track {w track_type height show} {
     }
 }
 
-
 proc show_plot {w track_type} {
     global $w
     
@@ -872,12 +873,14 @@ proc show_plot {w track_type} {
 	if {$comp == 0} {
 	    grid $w.yscale$id
 	    grid $t
-	    grid $w.yscroll$id
+	    if {[winfo exists $w.yscroll$id]} {
+		grid $w.yscroll$id
+	    }
 	    grid rowconfigure $w $id -weight 1
 	}
     }
     
-    redraw_plot $w 
+    redraw_plot $w
 }
 
 proc remove_plot {w track_type} {
@@ -896,7 +899,9 @@ proc remove_plot {w track_type} {
 	if {$comp == 0} {
 	    grid remove $w.yscale$id
 	    grid remove $t
-	    grid remove $w.yscroll$id
+	    if {[winfo exists $w.yscroll$id]} {
+		grid remove $w.yscroll$id
+	    }
 	    grid rowconfigure $w $id -weight 0
 	}
     }
@@ -952,7 +957,6 @@ proc redraw_plot_doit {w} {
 #    puts ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 #    puts "xorigin=[set ${w}(xorigin)] xzoom=[set ${w}(xzoom)] yzoom=[set ${w}(yzoom)]"
 #    puts "base coord=$x1..$x2   canvas coord=[x2c $w $x1]..[x2c $w $x2]"
-#    puts ""
 
     $w configure -cursor watch
 
@@ -964,6 +968,7 @@ proc redraw_plot_doit {w} {
 	set y1 [set ${t}(y1)]
 	set y2 [expr {[set ${t}(y1)]+[winfo height [set ${t}(canvas)]]}]
 	[set ${t}(func)] $w $t $x1 $x2 $y1 $y2
+	#puts [set ${t}(func)]\t[time {[set ${t}(func)] $w $t $x1 $x2 $y1 $y2}]
     }
     
     $w configure -cursor {}
@@ -1338,8 +1343,6 @@ proc depth_item {w t x1 x2 y1 y2} {
     	set ${t}(all_visible) 0
     }
 
-    eval [set ${t}(ys)] set [set ${t}(tb)] 
-    
     yscale_depth $w $t [winfo height $d]
     
     range_sanity_check $w $t
@@ -2069,6 +2072,110 @@ proc template_dialog {w t} {
 
 
 
+#-----------------------------------------------------------------------------
+# Consensus quality track
+proc quality_item_init {w t} {
+    global $w $t
+    global gap5_defs
+
+    set ${t}(m_start) -1
+    set ${t}(m_stop)  -1
+
+    set d [set ${t}(canvas)]
+    set ${t}(track) [$d create quality_plot 0 0 \
+			 -anchor nw \
+			 -io     [set ${w}(io)] \
+			 -contig [set ${w}(cnum)] \
+			 -range  [set ${w}(grange)] \
+			 -quality_colour \
+			     [keylget gap5_defs TEMPLATE.QUAL_COLOUR] \
+			 -heterozygosity_colour \
+			     [keylget gap5_defs TEMPLATE.HETERO_COLOUR] \
+			 -discrepancies_colour \
+			     [keylget gap5_defs TEMPLATE.DISCREP_COLOUR]]
+    set ${t}(Init) 1
+
+    set m $w.menubar.tracks
+    $m add separator
+    $m add checkbutton \
+	-label "Consensus Quality" \
+        -variable ${w}(quality) \
+	-command "quality_item_config $w $t"
+    $m add checkbutton \
+	-label "Consensus Heterozygosity" \
+	-variable ${w}(hetero) \
+	-command "quality_item_config $w $t"
+    $m add checkbutton \
+	-label "Consensus Discrepancies" \
+	-variable ${w}(discrep) \
+	-command "quality_item_config $w $t"
+
+    set ${w}(quality) 0
+    set ${w}(hetero)  0
+    set ${w}(discrep) 0
+#    quality_item_config $w $t
+
+    bind $d <2> "set lastx %x; set lasty %y"
+    bind $d <B2-Motion> "addLine $d %x %y"
+    bind $d <3> "$d delete withttag tline"
+
+    bind $d <B1-Motion> "drag_x $w $t %x %y"
+    bind $d <B1-ButtonRelease> "end_drag_x $w $t %x %y"
+
+    bind $d <Any-Motion> "cross_hair $w $t %x %y"
+    bind $d <Any-Leave>  "cross_hair_leave $w"
+
+    bind $d <<use>> "invoke_editor $w $t %x"
+}
+
+proc quality_item_config {w t} {
+    global $w $t
+
+    # Do we need it to be visible
+    set visible 0
+    if {[set ${w}(quality)]} {set visible 1}
+    if {[set ${w}(hetero)]}  {set visible 1}
+    if {[set ${w}(discrep)]} {set visible 1}
+
+    set d [set ${t}(canvas)]
+    set td [set ${t}(track)]
+    $d itemconfigure $td \
+	-quality        [set ${w}(quality)] \
+	-heterozygosity [set ${w}(hetero)] \
+	-discrepancies  [set ${w}(discrep)]
+    
+    if {$visible} {
+	show_plot $w quality_item
+    } else {
+	remove_plot $w quality_item
+    }
+}
+
+
+proc quality_item {w t x1 x2 y1 y2} {
+    global $w $t
+
+    if {![info exists ${t}(Init)]} {
+    	quality_item_init $w $t
+    }
+
+    # Make sure editor cursors are positioned
+    1.5redraw_cursor $w $t
+
+    set d [set ${t}(canvas)]
+    set td [set ${t}(track)]
+
+    $d itemconfigure $td \
+	-wx0 $x1 \
+	-wy0 $y1 \
+	-wx1 $x2 \
+	-wy1 $y2
+
+    # reset coords just in case they have moved
+    $d coords $td 0 0
+
+    yscale_depth $w $t [winfo height $d] 5
+}
 
 ##############################################################################
 #user interface dialog box for reading coverage histogram
@@ -2154,15 +2261,19 @@ proc CreateTemplateDisplay {io cnum} {
 #    add_plot $pwin seq_seqs    250  1 1 -bd 0 -relief raised
 #    add_separator $pwin 1
 #    add_plot $pwin depth_track 150  1 1 -bd 0 -relief raised
-    add_plot $pwin template_item 250  1 1 -bd 0 -relief raised -bg black
-    add_plot $pwin depth_item    150  1 1 -bd 0 -relief raised -bg black
-    add_plot $pwin seq_ruler    50  0 0 -bd 1 -relief sunken
+
+    add_plot $pwin template_item 200 1 1 1 -bd 0 -relief raised -bg black
+    add_plot $pwin depth_item      0 0 1 1 -bd 0 -relief raised -bg black
+    add_plot $pwin quality_item    0 0 1 0 -bd 0 -relief raised -bg black
+    add_plot $pwin seq_ruler      50 0 0 1 -bd 1 -relief sunken
 }
 
 
 ##############################################################################
 # Test version when running as a script in its own right
 if {[string match "*depth.tcl" $argv0]} {
+    package require Tk
+
     source $env(STADTABL)/shlib.conf
     load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
     load_package tk_utils
@@ -2181,12 +2292,14 @@ if {[string match "*depth.tcl" $argv0]} {
     #add_plot $w bg_grid
     set pwin .plot
     1.5Dplot $pwin $io 800 600
-    add_plot $pwin seq_depth  50 -bd 2 -relief raised
-    add_plot $pwin seq_seqs -200 -bd 2 -relief raised
-    add_plot $pwin seq_ruler  50 -bd 2 -relief raised
+    #set ${pwin}(x1) 4000000
+    #$pwin.bcontrol.xzoom set 40.0
+
+    add_plot $pwin template_item  150 1 1 1 -bd 2 -relief raised
+    add_plot $pwin depth_item       0 0 1 1 -bd 2 -relief raised
+    add_plot $pwin quality_item     0 0 1 0 -bd 2 -relief raised
+    add_plot $pwin seq_ruler       50 0 0 1 -bd 2 -relief raised
     #add_plot $pwin bg_grid
+
+    wm protocol .plot WM_DELETE_WINDOW exit
 }
-
-
-
-

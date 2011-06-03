@@ -97,6 +97,7 @@ GAP5=\
 	template_display.o \
 	depth_track.o \
 	template_draw.o \
+	quality_plot.o\
 	fij.o\
 	do_fij.o\
 	break_contig.o \

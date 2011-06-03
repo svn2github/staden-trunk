@@ -9,6 +9,7 @@
 #define _GAP_RANGE_H
  
 #include <tcl.h>
+#include <tk.h>
 #include "tg_gio.h"
 
 typedef struct {
@@ -63,6 +64,9 @@ typedef struct {
 
 /* define range beyond window size used in track calc */
 #define GR_WINDOW_RANGE 1000
+
+/* Global gap range_option */
+Tk_CustomOption range_option;
 
 int  GRange_Init(Tcl_Interp *interp);
 void gap_range_destroy(gap_range_t *gr);

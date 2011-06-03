@@ -103,19 +103,9 @@ static void		translate_template(Tk_Canvas canvas,
 /* none mandatory protoypes */
 static void compute_template_bbox(Tk_Canvas canvas, TemplateDisplayItem *tdi);
 static int  initialise_template_image(TemplateDisplayItem *tdi, Display *display);
-static int  range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	    	    	    char *value, char *widgRec, int offset);
-static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
-	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr);
 static void redraw_template_image(TemplateDisplayItem *tdi, Display *display);
 
 
-
-/* define the non-standard option types */ 
-static Tk_CustomOption range_option = {
-    (Tk_OptionParseProc *)range_cmd_parse,
-    range_cmd_print, (ClientData)NULL
-};
 
 /* config options, some are meant only to be returned with itemcget */
 static Tk_ConfigSpec config_specs[] = {
@@ -569,34 +559,6 @@ static int template_postscript(Tcl_Interp *interp, Tk_Canvas canvas, Tk_Item *it
     return TCL_ERROR;
 }
 
-
-/* parse the range command to get at the data */
-
-static int range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	    	    	    char *value, char *widgRec, int offset) {
-			    
-    Tcl_CmdInfo info;
-    TemplateDisplayItem *tdi = (TemplateDisplayItem *)widgRec;
-    
-    if (!Tcl_GetCommandInfo(interp, value, &info)) return TCL_ERROR;
-    
-    tdi->gr = (gap_range_t *)info.objClientData;
-
-    return TCL_OK;
-}
-    
-
-/* return value for the range command */
-
-static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
-	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr) {
-    TemplateDisplayItem *tdi = (TemplateDisplayItem *)clientData;
-    
-    if (tdi->gr == NULL) 
-    	return "gap range not set";
-    else
-    	return "gap range set";
-}
 
 
 /* set up the image to draw the template on */

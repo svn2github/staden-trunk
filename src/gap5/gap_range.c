@@ -13,6 +13,39 @@
 #include "gap_range.h"
 #include "gap_cli_arg.h"
 
+/*** Tk_ConfigSpec custom handler ***/ 
+
+/* parse the range command to get at the data */
+static int range_cmd_parse(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+	    	    	    char *value, char *widgRec, int offset) {
+			    
+    Tcl_CmdInfo info;
+    
+    if (!Tcl_GetCommandInfo(interp, value, &info)) return TCL_ERROR;
+    
+    *(gap_range_t **)(widgRec + offset) = (gap_range_t *)info.objClientData;
+
+    return TCL_OK;
+}
+    
+
+/* return value for the range command */
+static char *range_cmd_print(ClientData clientData, Tk_Window tkwin,
+	    	    	     char *widgRec, int offset, Tcl_FreeProc **freeProcPtr) {
+    gap_range_t *gr = *(gap_range_t **)(widgRec + offset);
+    
+    if (gr == NULL) 
+    	return "gap range not set";
+    else
+    	return "gap range set";
+}
+
+/* define the non-standard option types */ 
+Tk_CustomOption range_option = {
+    (Tk_OptionParseProc *)range_cmd_parse,
+    range_cmd_print, (ClientData)NULL
+};
+
 
 /*** Tcl command functions ***/ 
 
@@ -266,10 +299,10 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    
 	    if (!reads_only && r->pair_rec) {
 	    	/* only draw once */
-		if (!r->rec) continue;
+		if (r->flags & (1<<30)) continue;
 		
 		if (r->pair_ind != -1) {
-		    gr->r[r->pair_ind].rec = 0;
+		    r->flags |= (1<<30);
 		}
 		
 		/* accurate drawing, this will slow things down */

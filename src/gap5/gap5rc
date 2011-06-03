@@ -1255,6 +1255,12 @@ set_def READING_COVERAGE.STRAND.BUTTON.4	"Summation"
 set_def READING_COVERAGE.COLOUR1		red
 set_def READING_COVERAGE.COLOUR2		black
 
+# Template display (some also in READING.* above)
+set_def TEMPLATE.QUAL_COLOUR		yellow4
+set_def TEMPLATE.HETERO_COLOUR		magenta
+set_def TEMPLATE.DISCREP_COLOUR		green
+
+
 #readpair coverage
 set_def READPAIR_COVERAGE.COLOUR		"black"
 set_def READPAIR_COVERAGE.WIN			.readpair_coverage_win
