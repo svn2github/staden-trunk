@@ -3095,8 +3095,12 @@ bind EdNames <<select-drag>> {
 }
 
 # Searching
-bind Editor <<search>>		{create_search_win %W.search "%W search" 1}
-bind Editor <<rsearch>>		{create_search_win %W.search "%W search" -1}
+bind Editor <<search>>		{
+    create_search_win [set %W(top)].search "%W search" 1
+}
+bind Editor <<rsearch>>		{
+    create_search_win [set %W(top)].search "%W search" -1
+}
 
 # Tag editing
 bind Editor <Key-F11> {

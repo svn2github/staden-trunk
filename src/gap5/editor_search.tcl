@@ -128,7 +128,7 @@ proc create_search_win {w com {dir 0} {raise 1}} {
 
     # Search terms
     set terms {
-	{l annotation                annotation}
+	{l {annotation text}         annotation}
 #	{l {padded position}         position}
 #	{l problem                   problem}
 	{l sequence                  sequence}
@@ -257,6 +257,10 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     pack $bf.search $bf.quit -side left -expand 1
     pack $bf.help -side right -expand 1
 
+    # A bit of a hack, but highlight the current editor we'll be searching
+    # in.
+    bind $bf.search <Any-Enter> "editor_hl \[set [winfo parent $w](curr_editor)\] red"
+    bind $bf.search <Any-Leave> "editor_hl \[set [winfo parent $w](curr_editor)\] \#d9d9d9"
 
     # Packing/Gridding
     grid columnconfigure $w 0 -weight 1
