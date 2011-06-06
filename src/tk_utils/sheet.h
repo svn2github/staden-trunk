@@ -88,6 +88,7 @@ typedef struct {
     int		   border_width;
     int            width_in_pixels;
     int            height_in_pixels;
+    int		   hollow_cursor;
     GC             normgc;
     GC             greygc;
     GC             whitegc;

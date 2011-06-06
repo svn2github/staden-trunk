@@ -813,6 +813,8 @@ proc contig_editor {w args} {
     if {$join} {
 	$c2 delete
     }
+
+    after idle "focus \[set ${w}(curr_editor)\]"
 }
 
 proc editor_search {w args} {
@@ -1030,7 +1032,11 @@ proc editor_pane {top w above ind arg_array} {
 		-fg black \
 		-indelcolour [keylget gap5_defs CONTIG_EDITOR.INDEL_COLOUR] \
 	        -bg [tk::Darken [. cget -bg] 115]]
+    if {[info exists opt(curr_editor)]} {
+	$opt(curr_editor) configure -hollow_cursor 1
+    }
     set opt(curr_editor) $ed
+    $ed configure -hollow_cursor 0
 
     # X and y scrollbars
     scrollbar $w.seq.x -orient horiz -repeatinterval 10
@@ -2929,7 +2935,9 @@ bind Editor <<select>> {
     focus %W
     set w [winfo toplevel %W]
     if {![string match [set ${w}(curr_editor)] %W]} {
+	[set ${w}(curr_editor)] configure -hollow_cursor 1
 	set ${w}(curr_editor) %W
+	[set ${w}(curr_editor)] configure -hollow_cursor 0
 	$w.toolbar.undo configure -state [io_undo_state [%W contig_rec]]
 #	$w.toolbar.redo configure -state [io_redo_state [%W contig_rec]]
     }

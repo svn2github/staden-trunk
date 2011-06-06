@@ -167,6 +167,7 @@ int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg, Pixel ifg) {
     sw->window = 0;
     sw->yflip = 0;
     sw->dbl_buffer = 0;
+    sw->hollow_cursor = 0;
 
     sheet_resize(sw, 0, 0);
 
@@ -752,10 +753,14 @@ static void redrawCursor(Sheet *sw, Boolean draw)
 
     ink.fg = ink_base->fg;
     ink.bg = ink_base->bg;
-    if (draw)
-	ink.sh = ink_base->sh | sh_inverse;
-    else
+    if (draw) {
+	if (sw->hollow_cursor)
+	    ink.sh = ink_base->sh | sh_box;
+	else
+	    ink.sh = ink_base->sh | sh_inverse;
+    } else {
 	ink.sh = ink_base->sh;
+    }
 
     /*
     cursor_was = sw->display_cursor;

@@ -2,6 +2,8 @@
 	 DEF_SHEET_WIDTH, offset(sw.columns), 0, NULL},
     {TK_CONFIG_INT, "-height", "height", "Height",
 	 DEF_SHEET_HEIGHT, offset(sw.rows), 0, NULL},
+    {TK_CONFIG_INT, "-hollow_cursor", "hollowCursor", "HollowCursor",
+	 DEF_SHEET_HEIGHT, offset(sw.hollow_cursor), 0, NULL},
     {TK_CONFIG_FONT,
 	 "-font",	"font",		"Font",		DEF_SHEET_FONT,
 	 offset(sw.font),		0, NULL},
