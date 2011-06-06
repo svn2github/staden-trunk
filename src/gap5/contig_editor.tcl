@@ -2939,6 +2939,7 @@ bind Editor <<select>> {
 	return
     } else {
 	eval %W set_cursor $_sel 0
+	update_brief %W
     }
     unset _sel
     %W select clear
