@@ -299,10 +299,13 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    
 	    if (!reads_only && r->pair_rec) {
 	    	/* only draw once */
-		if (r->flags & (1<<30)) continue;
+		if (r->flags & (1<<30)) {
+		    r->flags &= ~(1<<30);
+		    continue;
+		}
 		
 		if (r->pair_ind != -1) {
-		    r->flags |= (1<<30);
+		    gr->r[r->pair_ind].flags |= (1<<30);
 		}
 		
 		/* accurate drawing, this will slow things down */
