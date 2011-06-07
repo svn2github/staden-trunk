@@ -2002,8 +2002,9 @@ void contig_bin_dump(GapIO *io, tg_rec cnum) {
 /* ---------------------------------------------------------------------- */
 /* iterators on a contig to allow scanning back and forth */
 
-/* Block size for iterator fetches */
+/* Block size for iterator fetches, first set optionally small */
 #define CITER_BS 10000
+#define CITER_bs 100
 
 /*
  * Similar to contig_bins_in_range(), but checking for the first bin to
@@ -2490,10 +2491,10 @@ contig_iterator *contig_iter_new_by_type(GapIO *io, tg_rec cnum,
 
     if ((whence & CITER_FL_MASK) == CITER_FIRST) {
 	start = ci->cstart;
-	end   = start + CITER_BS-1;
+	end   = start + ((whence & CITER_SMALL_BS) ? CITER_bs-1 : CITER_BS-1);
     } else {
 	end   = ci->cend;
-	start = end - CITER_BS+1;
+	start = end - ((whence & CITER_SMALL_BS) ? CITER_bs-1 : CITER_BS-1);
     }
 
     if (0 != range_populate(io, ci, cnum, start, end)) {
