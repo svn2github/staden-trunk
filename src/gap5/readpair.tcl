@@ -40,10 +40,50 @@ proc ReadPairDialog { io f} {
 	-type CheckInt \
 	-orient horiz
 
+    # Produce a listbox of library names
+    label $f.spacer -text ""
+    labelframe $f.libs -text ""
+    label $f.libs.label -text "By default templates in all libraries are used to spot read pairs. To restrict to specific libraries, select them from the list below." -wrap 400 -justify left
+    tablelist $f.libs.tl \
+	-height 5 \
+	-columns {15 Name 10 "Pair count" 10 "Insert size"} \
+	-selectmode extended \
+	-exportselection 0 \
+	-stretch 0 \
+	-yscrollcommand [list $f.libs.ys set]
+    scrollbar $f.libs.ys -command "$f.libs.tl yview" -orient vertical
+    pack $f.libs.label -side top -fill both
+    pack $f.libs.tl -side left -expand 1 -fill both
+    pack $f.libs.ys -side right -fill both
+    set db [$io get_database]
+    set nl [$db get_num_libraries]
+    for {set i 0} {$i < $nl} {incr i} {
+	set rec [$db get_library_rec $i]
+	set lib [$io get_library $rec]
+	$lib update_stats
+
+	set count [$lib get_count]
+	set size  [$lib get_insert_size]
+	for {set max 0; set k 0; set j 0} {$j < 3} {incr j} {
+	    if {$max < [lindex $count $j]} {
+		set max [lindex $count $j]
+		set k $j
+	    }
+	}
+	set count [lindex $count $k]
+	set size  [lindex $size $k]
+
+	$f.libs.tl insert end [list [$lib get_name] $count $size]
+
+	$lib delete
+	upvar \#0 $f.libs.tl l_rec
+	set l_rec($i) $rec
+    }
+
     ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-	    -ok_command "ReadPairs_OK_Pressed $io $f $f.infile $f.mode $f.end_size $f.min_mq"\
+	    -ok_command "ReadPairs_OK_Pressed $io $f $f.infile $f.mode $f.end_size $f.min_mq $f.libs.tl"\
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap5 {Read Pairs}" \
 	    -bd 2 \
@@ -51,12 +91,14 @@ proc ReadPairDialog { io f} {
     ###########################################################################
     #final packing
 
-    pack $f.infile $f.mode $f.end_size $f.min_mq $f.ok_cancel -fill x
+    pack $f.infile $f.mode $f.end_size $f.min_mq $f.spacer $f.libs \
+	$f.ok_cancel -fill x
 
 }
 
-proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq} {
+proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq lib_w} {
     global gap5_defs
+    upvar \#0 $lib_w l_rec
 
     if {[lorf_in_get $infile] == 3} {
 	set list [CreateAllContigList $io]
@@ -67,6 +109,16 @@ proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq} {
     set end_size [$end_size get]
     set min_mq [scalebox_get $min_mq]
     set mode [lindex {end_end end_all all_all} [expr {[radiolist_get $mode]-1}]]
+    set libs {}
+    foreach idx [$lib_w curselection] {
+	lappend libs $l_rec($idx)
+    }
+
+    set db [$io get_database]
+    if {[llength $libs] == [$db get_num_libraries]} {
+	puts "All libs"
+	set libs {}
+    }
 
     destroy $f
 
@@ -78,6 +130,7 @@ proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq} {
 	-contigs      $list \
 	-mode         $mode \
 	-end_size     $end_size \
-	-min_map_qual $min_mq
+	-min_map_qual $min_mq \
+	-libraries    $libs
     ClearBusy
 }

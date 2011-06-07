@@ -392,6 +392,11 @@ int PlotTempMatches(GapIO *io, read_pair_t *rp) {
 
 /*
  * Identifies spanning read pairs within end_size of the end of each contig.
+ * Library/nlibrary is used to filter read-pairs as coming only from specific
+ * libraries. It can be specified as NULL/0 if no filtering is required,
+ * otherwise we will only accept pairs that are contained within the lib
+ * list.
+ *
  * Mode is 0 for all vs all.
  *         1 for ends vs all.
  *	   2 for ends vs ends.
@@ -399,7 +404,8 @@ int PlotTempMatches(GapIO *io, read_pair_t *rp) {
 read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 			    contig_list_t *contig_array,
 			    enum readpair_mode mode,
-			    int end_size, int min_mq) {
+			    int end_size, int min_mq,
+			    tg_rec *library, int nlibrary) {
     int i;
     HashTable *h;
     HashIter *iter;
@@ -408,11 +414,23 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     int npairs = 0, nalloc = 0;
     int no_large_contigs = 1;
     pool_alloc_t *rp_pool;
+    HashTable *lib_hash = NULL;
 
     h = HashTableCreate(1024, HASH_FUNC_HSIEH |
 			      HASH_DYNAMIC_SIZE |
 			      HASH_POOL_ITEMS);
     rp_pool = pool_create(sizeof(rangec_t));
+
+    if (library) {
+	lib_hash = HashTableCreate(16, HASH_FUNC_HSIEH | 
+				       HASH_DYNAMIC_SIZE |
+				       HASH_POOL_ITEMS);
+	for (i = 0; i < nlibrary; i++) {
+	    HashData hd;
+	    hd.i = 1;
+	    HashTableAdd(lib_hash, (char *)&library[i], sizeof(tg_rec), hd, 0);
+	}
+    }
 
     if (!h || !rp_pool)
 	return NULL;
@@ -603,6 +621,25 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	if (r1->mqual < min_mq || r2->mqual < min_mq)
 	    continue;
 
+	/*
+	 * Filter by library: we do this late as it's a slow process due
+	 * to (currently) needing to load the sequence struct itself
+	 * rather than just iterate through the range arrays.
+	 */
+	if (library) {
+	    seq_t *s = cache_search(io, GT_Seq, r1->rec);
+	    tg_rec lib;
+
+	    /* Assume r1 and r2 are both in the same library. Should be! */
+	    if (s->parent_type != GT_Library)
+		continue;
+
+	    lib = s->parent_rec;
+	    if (!HashTableSearch(lib_hash, (char *)&lib, sizeof(lib))) {
+		continue;
+	    }
+	}
+
 	/* Accepted - add it to pairs[] array */
 	if (npairs >= nalloc) {
 	    nalloc = nalloc ? nalloc*2 : 1024;
@@ -651,6 +688,8 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     HashTableIterDestroy(iter);
     HashTableDestroy(h, 0);
     pool_destroy(rp_pool);
+    if (lib_hash)
+	HashTableDestroy(lib_hash, 0);
 
     vmessage("Found %d read-pairs\n", npairs);
 
@@ -663,12 +702,14 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
  * ---------------------------------------------
  */
 int find_read_pairs(GapIO *io, int num_contigs, contig_list_t *contig_array,
-		    enum readpair_mode mode, int end_size, int min_mq) {
+		    enum readpair_mode mode, int end_size, int min_mq,
+		    tg_rec *library, int nlibrary) {
 
     read_pair_t *tarr;
 
     if (NULL == (tarr = spanning_pairs(io, num_contigs, contig_array,
-				       mode, end_size, min_mq)))
+				       mode, end_size, min_mq,
+				       library, nlibrary)))
 	return -1;
 
     /* Find only those templates spanning multiple contigs and plot them. */

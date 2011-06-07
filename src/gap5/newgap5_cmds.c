@@ -5,6 +5,7 @@
 #include <tcl.h>
 #include <tk.h>
 #include <float.h>
+#include <time.h>
 
 #include <tg_gio.h>
 #include "gap4_compat.h"
@@ -822,12 +823,15 @@ FindReadPairs(ClientData clientData,
     enum readpair_mode mode;
     Tcl_DString input_params;
     readpair_arg args;
+    Array libraries = NULL;
+
     cli_args a[] = {
 	{"-io",	     ARG_IO,  1, NULL,      offsetof(readpair_arg, io)},
 	{"-contigs", ARG_STR, 1, NULL,      offsetof(readpair_arg, inlist)},
 	{"-mode",    ARG_STR, 1, "end_end", offsetof(readpair_arg, mode)},
 	{"-end_size",ARG_INT, 1, "2000",    offsetof(readpair_arg, end_size)},
 	{"-min_map_qual", ARG_INT, 1, "10", offsetof(readpair_arg, min_map_qual)},
+	{"-libraries", ARG_STR, 1, "",      offsetof(readpair_arg, libraries)},
 	{NULL,	     0,	     0, NULL, 0}
     };
 
@@ -838,6 +842,7 @@ FindReadPairs(ClientData clientData,
 
     /* create contig name array */
     active_list_contigs(args.io, args.inlist, &num_contigs, &contig_array);
+
     if (num_contigs == 0) {
 	xfree(contig_array);
 	return TCL_OK;
@@ -861,13 +866,39 @@ FindReadPairs(ClientData clientData,
     vfuncparams("%s", Tcl_DStringValue(&input_params));
     Tcl_DStringFree(&input_params);
 
+    /* Create library filter if required */
+    if (*args.libraries) {
+	tg_rec rec;
+	int n;
+	char *cp, *endptr;
+
+	libraries = ArrayCreate(100, sizeof(tg_rec));
+
+	cp = args.libraries;
+	for (n = 0; ;n++) {
+	    rec = strtol64(cp, &endptr, 10);
+	    if (endptr == cp)
+		break;
+	    else
+		cp = endptr;
+
+	    ArrayRef(libraries, n);
+	    arr(tg_rec, libraries, n) = rec;
+	}
+    }
+
     if (find_read_pairs(args.io, num_contigs, contig_array, mode,
-			args.end_size, args.min_map_qual) < 0 ) {
+			args.end_size, args.min_map_qual,
+			libraries ? ArrayBase(tg_rec, libraries) : NULL,
+			libraries ? ArrayMax(libraries) : 0) < 0 ) {
 	verror(ERR_WARN, "Find read pairs", "Failure in Find Read Pairs");
 	return TCL_OK;
     }
 
     xfree(contig_array);
+    if (libraries)
+	ArrayDestroy(libraries);
+
     return TCL_OK;
 
 } /* end FindReadPairs */
