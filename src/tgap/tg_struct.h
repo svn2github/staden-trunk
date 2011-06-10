@@ -499,6 +499,8 @@ typedef struct {
     
     /* A distribution summary, in 1s initially, and then 2s, 4s, 8s, etc */
     int size_hist[3][LIB_BINS+1];
+    int counts[3];
+    int flags; /* 0 => just loaded, 1 => update_library_stats ran */
 
     char *name;
     char data[1];
