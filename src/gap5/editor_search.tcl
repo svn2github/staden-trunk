@@ -129,14 +129,14 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     # Search terms
     set terms {
 	{l {annotation text}         annotation}
-#	{l {padded position}         position}
+	{l {padded position}         position}
 #	{l problem                   problem}
 	{l sequence                  sequence}
 #	{l quality                   quality}
 	{l {consensus quality}       consquality}
 #	{l {from file}               file}
 	{r {tag type}                tag}
-#	{r {unpadded position}       uposition}
+	{r {unpadded position}       uposition}
 	{r {reading name}            name}
 #	{r edit                      edit}
 #	{r {evidence for edits (1)}  verifyand}
@@ -322,6 +322,7 @@ proc do_search {w com args} {
     set .cedit.Defaults(${type}2) $value2
 
     if {$type == "position" \
+	    || $type == "uposition" \
 	    || $type == "annotation" \
 	    || $type == "name" \
 	    || $type == "consquality" \
@@ -329,8 +330,6 @@ proc do_search {w com args} {
 	    || $type == "conshet"
             || $type == "consdiscrep"} {
         set r [eval $com $dir $strand $type [list $value1]]
-    } elseif {$type == "uposition"} {
-	set r [eval $com $dir $strand position [list u$value1]]
     } elseif {$type == "sequence"} {
 	set r [eval $com $dir $strand $type [list $value1#$value2#$where]]
     } elseif {$type == "tag"} {

@@ -18,12 +18,19 @@
 #define WIN_WIDTH 65536
 
 int edview_search_position(edview *xx, int dir, int strand, char *value) { 
-    puts("position search");
+    int pos = atoi(value);
+
+    edSetCursorPos(xx, GT_Contig, xx->contig->rec, pos, 1);
     return 0;
 }
 
 int edview_search_uposition(edview *xx, int dir, int strand, char *value) {
-    puts("uposition search");
+    int upos = atoi(value), ppos;
+
+    if (0 != consensus_padded_pos(xx->io, xx->contig->rec, upos, &ppos))
+	return -1;
+
+    edSetCursorPos(xx, GT_Contig, xx->contig->rec, ppos, 1);
     return 0;
 }
 

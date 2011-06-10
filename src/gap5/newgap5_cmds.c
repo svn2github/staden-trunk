@@ -1341,11 +1341,11 @@ int
 tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
 		 int objc, Tcl_Obj *CONST objv[])
 {
-    break_contig_arg args;
+    contig_pos_arg args;
     cli_args a[] = {
-	{"-io",	    ARG_IO,  1, NULL, offsetof(break_contig_arg, io)},
-	{"-contig", ARG_REC, 1, NULL, offsetof(break_contig_arg, contig)},
-	{"-pos",    ARG_INT, 1, NULL, offsetof(break_contig_arg, pos)},
+	{"-io",	    ARG_IO,  1, NULL, offsetof(contig_pos_arg, io)},
+	{"-contig", ARG_REC, 1, NULL, offsetof(contig_pos_arg, contig)},
+	{"-pos",    ARG_INT, 1, NULL, offsetof(contig_pos_arg, pos)},
 	{NULL,	 0,	  0, NULL, 0}
     };
 
@@ -1699,8 +1699,6 @@ int tcl_consensus_valid_range(ClientData clientData, Tcl_Interp *interp,
 	{NULL,	    0,	     0, NULL, 0}
     };
 
-    vfuncheader("complement contig");
-
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
         return TCL_ERROR;
 
@@ -1726,6 +1724,58 @@ int tcl_consensus_valid_range(ClientData clientData, Tcl_Interp *interp,
     Tcl_SetObjResult(interp, res);
 
     xfree(rargv);
+    return TCL_OK;
+}
+
+/*
+ * Converts a padded position into an unpadded position.
+ */
+int tcl_consensus_unpadded_pos(ClientData clientData, Tcl_Interp *interp,
+			       int objc, Tcl_Obj *CONST objv[])
+{
+    int upos;
+    contig_pos_arg args;
+
+    cli_args a[] = {
+	{"-io",	    ARG_IO,  1, NULL, offsetof(contig_pos_arg, io)},
+	{"-contig", ARG_REC, 1, NULL, offsetof(contig_pos_arg, contig)},
+	{"-pos",    ARG_INT, 1, NULL, offsetof(contig_pos_arg, pos)},
+	{NULL,	 0,	  0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    if (0 != consensus_unpadded_pos(args.io, args.contig, args.pos, &upos))
+	return TCL_ERROR;
+
+    vTcl_SetResult(interp, "%d", upos);
+    return TCL_OK;
+}
+
+/*
+ * Converts an unpadded position into a padded position.
+ */
+int tcl_consensus_padded_pos(ClientData clientData, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[])
+{
+    int pos;
+    contig_pos_arg args;
+
+    cli_args a[] = {
+	{"-io",	    ARG_IO,  1, NULL, offsetof(contig_pos_arg, io)},
+	{"-contig", ARG_REC, 1, NULL, offsetof(contig_pos_arg, contig)},
+	{"-pos",    ARG_INT, 1, NULL, offsetof(contig_pos_arg, pos)},
+	{NULL,	 0,	  0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    if (0 != consensus_padded_pos(args.io, args.contig, args.pos, &pos))
+	return TCL_ERROR;
+
+    vTcl_SetResult(interp, "%d", pos);
     return TCL_OK;
 }
 
@@ -2011,6 +2061,12 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "consensus_valid_range",
 			 tcl_consensus_valid_range,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "consensus_unpadded_pos",
+			 tcl_consensus_unpadded_pos,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "consensus_padded_pos",
+			 tcl_consensus_padded_pos,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "iter_test",

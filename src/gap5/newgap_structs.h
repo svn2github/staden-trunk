@@ -121,7 +121,7 @@ typedef struct {
     GapIO *io;
     tg_rec contig;
     int pos;
-} break_contig_arg;
+} contig_pos_arg;
 
 typedef struct {
     GapIO *io;

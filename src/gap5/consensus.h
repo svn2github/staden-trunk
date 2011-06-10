@@ -93,4 +93,19 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
  */
 int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end);
 
+
+/*
+ * Converts a padded position into an unpadded position.
+ * Returns 0 for success and writes to upos
+ *        -1 for error
+ */
+int consensus_unpadded_pos(GapIO *io, tg_rec contig, int pos, int *upos);
+
+/*
+ * Converts an unpadded position into a padded position.
+ * Returns 0 for success and writes to pos
+ *        -1 for error
+ */
+int consensus_padded_pos(GapIO *io, tg_rec contig, int upos, int *pos);
+
 #endif /* _CONSENSUS_H_ */

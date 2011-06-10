@@ -615,6 +615,7 @@ proc contig_editor {w args} {
     set opt(PackSequences)   [keylget gap5_defs CONTIG_EDITOR.PACK_SEQUENCES]
     set opt(StripeMode)      [keylget gap5_defs CONTIG_EDITOR.STRIPE_SIZE]
     set opt(Quality)         [keylget gap5_defs CONTIG_EDITOR.SHOW_QUALITY]
+    set opt(MappingQuality)  [keylget gap5_defs CONTIG_EDITOR.SHOW_MAPPING_QUALITY]
     set opt(Cutoffs)         [keylget gap5_defs CONTIG_EDITOR.SHOW_CUTOFFS]
     set opt(PosType)	     [keylget gap5_defs CONTIG_EDITOR.POS_TYPE]
     set opt(HideAnno)        0
@@ -803,7 +804,7 @@ proc contig_editor {w args} {
     # only move in increments of one font element.
 
     update idletasks
-    array set font [font metrics sheet_font]
+#    array set font [font metrics sheet_font]
 #    wm grid $w [winfo width .e1] [winfo height .e1] \
 #	[font measure sheet_font A] $font(-linespace)
 
@@ -1025,7 +1026,7 @@ proc editor_pane {top w above ind arg_array} {
 		-differences_case_sensitive  $opt(DisagreeCase) \
 		-display_differences_quality $opt(DisagreeQuality) \
 		-display_quality             $opt(Quality) \
-		-display_mapping_quality     $opt(Quality) \
+		-display_mapping_quality     $opt(MappingQuality) \
 		-display_cutoffs             $opt(Cutoffs) \
 	        -hide_anno                   $opt(HideAnno) \
 		-pos_type		     [scan $opt(PosType) %c] \
@@ -1231,6 +1232,7 @@ proc editor_goto {ed w} {
     upvar \#0 $ed eopt
     upvar \#0 $eopt(top) opt
 
+    set unpadded 0
     set pos $eopt(displayPos)
 
     if {[regexp {^([-+]?[0-9]+)[rR]$} $pos _ _p]} {
@@ -1238,6 +1240,9 @@ proc editor_goto {ed w} {
 	set pos $_p
     } elseif {[regexp {^([-+]?[0-9]+)[pP]$} $pos _ _p]} {
 	set opt(PosType) P
+	set pos $_p
+    } elseif {[regexp {^([-+]?[0-9]+)[uU]$} $pos _ _p]} {
+	set unpadded 1
 	set pos $_p
     } elseif {![regexp {^[-+]?[0-9]+$} $pos]} {
 	set opt(Status) "**ERROR**: $pos is not a number"
@@ -1247,7 +1252,13 @@ proc editor_goto {ed w} {
 
     set opt(Status) ""
 
-    if {$opt(PosType) == "P"} {
+    if {$unpadded} {
+	set ppos [consensus_padded_pos \
+		      -io     [$ed io]  \
+		      -contig [$ed contig_rec] \
+		      -pos    $pos]
+	$w xview $ppos
+    } elseif {$opt(PosType) == "P"} {
 	$w xview $pos
     } else {
 	set crec [$ed contig_rec]
@@ -1287,7 +1298,6 @@ proc editor_quality {w} {
 
     foreach ed $opt(all_editors) {
 	$ed configure -display_quality $opt(Quality)
-	$ed configure -display_mapping_quality $opt(Quality)
 	$ed redraw
     }
 }
@@ -1350,6 +1360,15 @@ proc set_editor_stripe_mode {w} {
 
     foreach ed $opt(all_editors) {
 	$ed configure -stripe_mode [expr {2*$opt(StripeMode)}]
+	$ed redraw
+    }
+}
+
+proc set_editor_mapping_quality {w} {
+    upvar \#0 $w opt
+
+    foreach ed $opt(all_editors) {
+	$ed configure -display_mapping_quality $opt(MappingQuality)
 	$ed redraw
     }
 }
@@ -2951,6 +2970,20 @@ bind Editor <<select>> {
     }
     unset _sel
     %W select clear
+}
+
+bind Editor <Key-Return> {
+    foreach {type rec pos} [%W get_number] break;
+
+    if {$type != 17} return
+
+    set upos [consensus_unpadded_pos \
+		  -io     [%W io] \
+		  -contig $rec \
+		  -pos    $pos]
+    
+    set w [set %W(top)]
+    set ${w}(Status) "Padded position $pos, unpadded $upos"
 }
 
 bind Editor <Key-Left>		{%W cursor_left; update_brief %W}

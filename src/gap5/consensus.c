@@ -73,7 +73,8 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 	/* Find sequences visible */
 	r = contig_seqs_in_range(io, &c, st, en, 0, &nr);
 
-	if (0 != calculate_consensus_bit_het(io, contig, st, en, CONS_ALL,
+	if (0 != calculate_consensus_bit_het(io, contig, st, en,
+					     qual ? CONS_SCORES : 0,
 					     r, nr, q)){
 	    for (j = 0; j < en-st; j++) {
 		if (con)
@@ -111,10 +112,10 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
     contig_t *c;
     int left, right;
 
-    /* Don't bother caching for temporary io structs */
-    if (io->base) {
-	return calculate_consensus_simple2(io, contig, start, end, con, qual);
-    }
+   /* Don't bother caching for temporary io structs if short queries */
+   if (io->base && end - start < 10) {
+       return calculate_consensus_simple2(io, contig, start, end, con, qual);
+   }
 
     //printf("Calculate_consensus_simple(contig=%"PRIrec", range=%d..%d)\n",
     //       contig, start, end);
@@ -382,7 +383,8 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 				    qual ? &qual[left-start] : NULL); 
     }
 
-    cache_flush(io);
+    if (!io->base)
+	cache_flush(io);
 
     return 0;
 }
@@ -1438,6 +1440,108 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 	contig_iter_del(ci);
 	*end = best != INT_MIN ? best : 0;
     }
+
+    return 0;
+}
+
+/*
+ * Converts a padded position into an unpadded position.
+ * Returns 0 for success and writes to upos
+ *        -1 for error
+ */
+int consensus_unpadded_pos(GapIO *io, tg_rec contig, int pos, int *upos) {
+    int np, i, i_end;
+    char *cons;
+    contig_t *c;
+
+    /* For now it's the slow route: compute consensus and count '*'s */
+    if (NULL == (c = cache_search(io, GT_Contig, contig)))
+	return TCL_ERROR;
+    if (pos <= c->start) {
+	*upos = pos;
+	return 0;
+    }
+
+    if (NULL == (cons = malloc(pos - c->start + 1)))
+	return -1;
+
+    if (-1 == calculate_consensus_simple(io, contig, c->start,
+					 pos, cons, NULL)) {
+	free(cons);
+	return -1;
+    }
+
+    i_end = pos - c->start;
+    for (np = 0, i = 0; i < i_end; i++) {
+	if (cons[i] == '*')
+	    np++;
+    }
+    *upos = pos - np + c->start;
+    free(cons);
+
+    return 0;
+}
+
+/*
+ * Converts an unpadded position into a padded position.
+ * Returns 0 for success and writes to pos
+ *        -1 for error
+ */
+int consensus_padded_pos(GapIO *io, tg_rec contig, int upos, int *pos) {
+    int np, i, i_end, offset;
+    char *cons;
+    contig_t *c;
+
+    /* For now it's the slow route: compute consensus and count '*'s */
+    if (NULL == (c = cache_search(io, GT_Contig, contig)))
+	return TCL_ERROR;
+    if (upos <= c->start) {
+	*pos = upos;
+	return 0;
+    }
+
+    /* First guess at 8k more */
+    if (NULL == (cons = malloc(upos - c->start + 1 + 8192)))
+	return -1;
+
+    if (-1 == calculate_consensus_simple(io, contig, c->start,
+					 upos + 8192, cons, NULL)) {
+	free(cons);
+	return -1;
+    }
+
+    i_end = upos - c->start;
+    offset = c->start;
+    np = 0;
+    for(;;) {
+	int sz;
+
+	for (i = 0; i < i_end; i++) {
+
+	    if (cons[i] == '*')
+		np++;
+	    if (i + offset >= upos + np)
+		break;
+	}
+	
+	if (i + offset >= upos + np)
+	    break;
+
+	/* If we haven't found the unpadded location yet, keep going */
+	sz = MAX(upos + np - (i + offset), 8192);
+	if (-1 == calculate_consensus_simple(io, contig,
+					     i + offset, i + offset + sz,
+					     cons, NULL)) {
+	    free(cons);
+	    return -1;
+	}
+					     
+	offset += i;
+	i_end = sz+1;
+    }
+
+    *pos = i + offset;
+    free(cons);
 
     return 0;
 }
