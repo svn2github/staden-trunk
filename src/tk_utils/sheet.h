@@ -67,6 +67,7 @@ typedef struct {
     Tk_Window tkwin;
     Drawable window;
     Tk_Font        font;
+    Tk_Font        bold_font;
     Tk_FontMetrics fm;
     int            font_width;
 
@@ -90,6 +91,7 @@ typedef struct {
     int            height_in_pixels;
     int		   hollow_cursor;
     GC             normgc;
+    GC             normgcB;
     GC             greygc;
     GC             whitegc;
     GC		   indelgc;

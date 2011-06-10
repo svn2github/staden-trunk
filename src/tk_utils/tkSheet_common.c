@@ -45,6 +45,7 @@ Tk_Window SheetCmdCommon(Tcl_Interp *interp, Tk_Window main,
     sw->sw.tkwin = tkwin;
     sw->sw.display = Tk_Display(tkwin);
     sw->sw.font = NULL;
+    sw->sw.bold_font = NULL;
     sw->interp = interp;
     sw->border = NULL;
     sw->fg = NULL;

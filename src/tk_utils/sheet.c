@@ -123,11 +123,14 @@ void sheet_config(Sheet *sw, Pixel light, Pixel fg, Pixel bg, Pixel ifg) {
      * Change GC colours
      */
     valuemask = GCFont | GCGraphicsExposures | GCForeground | GCBackground;
-    values.font = Tk_FontId(sw->font);
     values.graphics_exposures = False;
 
     values.foreground = fg;
     values.background = bg;
+    values.font = Tk_FontId(sw->bold_font);
+    sw->normgcB = Tk_GetGC(sw->tkwin, valuemask, &values);
+
+    values.font = Tk_FontId(sw->font);
     sw->normgc = Tk_GetGC(sw->tkwin, valuemask, &values);
 
     values.foreground = bg;
@@ -175,16 +178,19 @@ int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg, Pixel ifg) {
      * GCs and things
      */
     valuemask = GCFont | GCGraphicsExposures | GCForeground | GCBackground ;
-    values.font = Tk_FontId(sw->font);
     values.graphics_exposures = False;
+
+    values.foreground = sw->foreground;
+    values.background = sw->background;
+    values.font = Tk_FontId(sw->bold_font);
+    sw->normgcB = Tk_GetGC(sw->tkwin, valuemask, &values);
+
+    values.font = Tk_FontId(sw->font);
+    sw->normgc = Tk_GetGC(sw->tkwin, valuemask, &values);
 
     values.foreground = sw->indel_foreground;
     values.background = sw->background;
     sw->indelgc = Tk_GetGC(sw->tkwin, valuemask, &values);
-
-    values.foreground = sw->foreground;
-    values.background = sw->background;
-    sw->normgc = Tk_GetGC(sw->tkwin, valuemask, &values);
 
     values.foreground = sw->background;
     values.background = sw->background;
@@ -360,7 +366,9 @@ static GC setGC(Sheet *sw, sheet_ink ink_base)
     XGCValues values;
 
     valuemask = GCFont | GCGraphicsExposures | GCForeground | GCBackground ;
-    values.font = Tk_FontId(sw->font);
+    values.font = ink_base->sh & sh_bold
+	? Tk_FontId(sw->bold_font)
+	: Tk_FontId(sw->font);
     values.graphics_exposures = False;
 
     if (ink_base->sh & sh_inverse) {
@@ -1009,7 +1017,7 @@ Hilights currently supported:
     sh_inverse		yes
     sh_light		yes
     sh_tick		yes
-    sh_bold		no
+    sh_bold		yes
     sh_italic		no
 */
 

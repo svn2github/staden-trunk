@@ -19,6 +19,7 @@
 #define DEF_SHEET_HEIGHT "1"
 /* #define DEF_SHEET_FONT   "Fixed -20 roman" */
 #define DEF_SHEET_FONT   "sheet_font"
+#define DEF_SHEETB_FONT  "sheet_bold_font"
 
 /*
  * Initialise and create the window. This routine should be used from within

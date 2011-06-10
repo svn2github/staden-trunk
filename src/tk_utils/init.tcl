@@ -126,11 +126,22 @@ eval font create trace_conf_font  	[keylget tk_utils_defs FONT.TRACE_CONF]
 eval font create title_font  		[keylget tk_utils_defs FONT.TITLE]
 eval font create text_font  		[keylget tk_utils_defs FONT.TEXT]
 eval font create sheet_font  		[keylget tk_utils_defs FONT.SHEET]
+eval font create sheet_bold_font 	[keylget tk_utils_defs FONT.SHEET] -weight bold
 eval font create menu_title_font  	[keylget tk_utils_defs FONT.MENU_TITLE]
 eval font create menu_font 		[keylget tk_utils_defs FONT.MENU]
 eval font create listbox_font  		[keylget tk_utils_defs FONT.LISTBOX]
 eval font create button_font  		[keylget tk_utils_defs FONT.BUTTON]
 eval font create enzyme_font		[keylget tk_utils_defs FONT.ENZYME]
+
+# Sometimes asking for a bold font will give us a different shaped font as
+# the exact match wasn't available. Double check this and revert to normal
+# if necessary.
+if {[font metrics sheet_font] != [font metrics sheet_bold_font] || \
+    [font measure sheet_font lllM] != [font measure sheet_bold_font lllM]} {
+    puts stderr "Warning: Normal and bold sheet fonts differ in size."
+    font delete sheet_bold_font
+    eval font create sheet_bold_font 	[keylget tk_utils_defs FONT.SHEET]
+}
 
 option add *Menu.font		menu_font
 option add *Text.font		text_font
