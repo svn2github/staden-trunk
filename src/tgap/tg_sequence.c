@@ -732,6 +732,109 @@ tg_rec sequence_get_pair(GapIO *io, seq_t *s) {
 }
 
 /*
+ * Fetches information about a template - the size, status, type, etc.
+ * Status is the primary return and all other returned fields passed as
+ * arguments may be NULL.
+ *
+ * Returns status code on success
+ *        -1 on failure
+ */
+int sequence_get_template_info(GapIO *io, seq_t *s1,
+			       tg_rec *library,
+			       int *size) {
+    tg_rec paired;
+    seq_t *s2;
+    tg_rec c1, c2;
+    int st1, st2, en1, en2, o1, o2;
+    library_t *lib;
+    tg_rec lib_rec;
+    int dist, orient;
+    int total_count;
+
+    if (!s1)
+	return -1;
+
+    paired = sequence_get_pair(io, s1);
+    if (paired == -1 || paired == 0)
+	return TEMPLATE_SINGLE;
+
+    /* Fetch contig, location and orientation for both sequences */
+    s2 = cache_search(io, GT_Seq, paired);
+    if (-1 == sequence_get_position(io, s1->rec, &c1, &st1, &en1, &o1))
+	return -1;
+    if (-1 == sequence_get_position(io, s2->rec, &c2, &st2, &en2, &o2))
+	return -1;
+
+    o1 ^= (s1->len < 0);
+    o2 ^= (s2->len < 0);
+
+    if (c1 != c2)
+	return TEMPLATE_SPANNING;
+
+    dist = MAX(MAX(st1, en1), MAX(st2, en2)) -
+	MIN(MIN(st1, en1), MIN(st2, en2));
+	
+    if (size)
+	*size = dist;
+    if (o1 == o2) {
+	orient = LIB_T_SAME;
+    } else {
+	if ((o1 == 0 && o2 == 1 && MIN(st1, en1) < MAX(st2, en2)) ||
+	    (o1 == 1 && o2 == 0 && MIN(st2, en2) < MAX(st1, en1))) {
+	    orient = LIB_T_INWARD;
+	} else {
+	    orient = LIB_T_OUTWARD;
+	}
+    }
+
+    if (s1->parent_type == GT_Library) {
+	lib_rec = s1->parent_rec;
+    } else if (s2->parent_type == GT_Library) {
+	lib_rec = s2->parent_rec;
+    } else {
+	lib_rec = 0;
+    }
+    if (library)
+	*library = lib_rec;
+    
+    /* If no library, we have guess work on orientation and distance */
+    if (!lib_rec) {
+	if (o1 == o2)
+	    return TEMPLATE_ORIENT;
+	if (dist > 10000)
+	    return TEMPLATE_DISTANCE;
+
+	return TEMPLATE_PAIRED;
+    }
+
+    /* Otherwise check orientation and distance vs library stats */
+    lib = cache_search(io, GT_Library, lib_rec);
+    if (!lib)
+	return TEMPLATE_ERR;
+
+    if (lib->flags == 0) {
+	if (-1 == update_library_stats(io, lib_rec, 100, NULL, NULL, NULL))
+	    return TEMPLATE_ERR;
+    }
+
+    total_count = lib->counts[0] + lib->counts[1] + lib->counts[2];
+
+    /*
+    printf("lib count = %d/%d, mean = %d, sd = %d => %d is %s\n",
+	   lib->counts[orient], total_count,
+	   lib->insert_size[orient], (int)lib->sd[orient], dist,
+	   ABS(dist - lib->insert_size[orient]) < 3*lib->sd[orient]
+	   ? "ok" : "invalid");
+    */
+
+    return (lib->counts[orient] >= .05 * total_count &&
+	    ABS(dist - lib->insert_size[orient]) < 3*lib->sd[orient])
+	? TEMPLATE_PAIRED
+	: TEMPLATE_DISTANCE;
+}
+
+
+/*
  * ---------------------------------------------------------------------------
  * Base editing functions
  */

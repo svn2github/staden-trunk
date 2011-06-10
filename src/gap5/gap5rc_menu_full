@@ -376,6 +376,11 @@ add_check       {Settings.Hide Annotations}             1 0 {${w}(HideAnno)} \
 	{editor_toggle_annos $w}
 add_check       {Settings.Background stripes}           1 0 {${w}(StripeMode)} \
 	{set_editor_stripe_mode $w}
+add_separator	{Settings.S2b}
+add_radio       {Settings.Show Mapping Quality}         1 0 \
+    {${w}(MappingQuality)} 1	{set_editor_mapping_quality $w}
+add_radio       {Settings.Show Template Status}         1 0 \
+    {${w}(MappingQuality)} 0	{set_editor_mapping_quality $w}
 
 add_separator	{Settings.S3}
 add_radio	{Settings.Padded coordinates}		1 0 {${w}(PosType)} \

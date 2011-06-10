@@ -2120,6 +2120,7 @@ static cached_item *io_library_read(void *dbh, tg_rec rec) {
 	l.sd[1] = 0;
 	l.sd[2] = 0;
 	l.machine = 0;
+	l.flags = 0;
 	l.lib_type = 0;
 	l.name = NULL;
 	memset(l.size_hist, 0, 3 * LIB_BINS * sizeof(l.size_hist[0][0]));
@@ -2136,6 +2137,7 @@ static cached_item *io_library_read(void *dbh, tg_rec rec) {
 	cp += u72int(cp, &tmp); l.sd[2] = tmp/100.0;
 	cp += u72int(cp, (uint32_t *)&l.machine);
 	cp += u72int(cp, (uint32_t *)&l.lib_type);
+	l.flags = 0;
 	
 	for (j = 0; j < 3; j++) {
 	    int last = 0;

@@ -1360,7 +1360,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		if (xx->ed->stack_mode) {
 		    int p  = r[i].start - xx->displayPos;
 		    int p2 = r[i].end   - xx->displayPos;
-		    int bg = -1;
+		    int bg = -1, t;
 		    double nc = xx->names->sw.columns;
 		    if (p < 0) p = 0;
 		    p = p * (nc / xx->displayWidth);
@@ -1374,6 +1374,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		    if (seq_in_readings_list(xx, s->rec)) {
 			int ptmp = p;
 			do {
+			    nink[ptmp].sh |= sh_bold;
 			    nink[ptmp++].sh |= box_alt ? sh_box : sh_box_alt;
 			} while (ptmp < p2);
 			qual_bg = xx->ed->qual_bg2;
@@ -1385,6 +1386,10 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 			if (qbin < 0) qbin = 0;
 			if (qbin > 9) qbin = 9;
 			bg = qual_bg[qbin]->pixel;
+		    } else {
+			t = sequence_get_template_info(xx->io, sorig,
+						       NULL, NULL);
+			bg = xx->ed->tmpl_bg[t+1]->pixel;
 		    }
 
 		    nline[p] = dir;
@@ -1403,19 +1408,15 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 
 		} else {
 		    XColor **qual_bg = xx->ed->qual_bg;
+		    int t;
 
 		    nline[0] = dir;
 		    if (nl > 0)
 			memcpy(&nline[1], s->name + xx->names_xPos, nl);
+
+		    t = sequence_get_template_info(xx->io, sorig, NULL, NULL);
 		    nink[0].sh = sh_bg;
-		    if (r[i].pair_rec) {
-			nink[0].bg = xx->ed->qual_bg[9]->pixel;
-		    } else {
-			nink[0].bg = xx->ed->qual_bg[0]->pixel;
-		    }
-		    for (k = 1; k < ncol && k < 1024; k++) {
-			nink[k].sh = sh_default;
-		    }
+		    nink[0].bg = xx->ed->tmpl_bg[t+1]->pixel;
 
 		    if (seq_in_readings_list(xx, s->rec)) {
 			qual_bg = xx->ed->qual_bg2;
@@ -1426,7 +1427,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 			}
 		    }
 
-		    if (xx->ed->display_mapping_quality) {
+		    /*if (xx->ed->display_mapping_quality)*/ {
 			int qbin = s->mapping_qual / 10;
 			if (qbin < 0) qbin = 0;
 			if (qbin > 9) qbin = 9;

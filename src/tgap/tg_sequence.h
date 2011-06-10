@@ -136,4 +136,23 @@ int  sequence_copy(seq_t *s, seq_t *f);
  */
 int sequence_move_annos(GapIO *io, seq_t **s, int dist);
 
+#define TEMPLATE_ERR		-1 /* Unknown due to error */
+#define TEMPLATE_SINGLE		0
+#define TEMPLATE_PAIRED		1  /* Normal OK pair */
+#define TEMPLATE_DISTANCE	2  /* Distance incorrect */
+#define TEMPLATE_ORIENT		3  /* Invalid orientation */
+#define TEMPLATE_SPANNING	4  /* Spans two contigs */
+
+/*
+ * Fetches information about a template - the size, status, type, etc.
+ * Status is the primary return and all other returned fields passed as
+ * arguments may be NULL.
+ *
+ * Returns status code on success
+ *        -1 on failure
+ */
+int sequence_get_template_info(GapIO *io, seq_t *s,
+			       tg_rec *library,
+			       int *size);
+
 #endif /* _TG_SEQUENCE_H_ */

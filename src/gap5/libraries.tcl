@@ -30,7 +30,7 @@ package require Plotchart
 	    incr tot [lindex $count $j]
 	}
 	set mean [lindex $mean $o]
-	set sd   [lindex $sd   $o]
+	set sd   [expr {int([lindex $sd   $o]+.5)}]
 	set or   [lindex [list "-> <-" "<- ->" "-> -> / <- <-"] $o]
 
 	$w insert end [list $i $name $tot $type $mean $sd $or]
@@ -162,7 +162,7 @@ proc ListLibraries {io} {
     if {$bsize < 1} {set bsize 1}
     set maxy [expr {$maxy * $bsize*1.05}]
 
-    # Find tune X range
+    # Fine tune X range
     set minx $maxx
     set maxx 1
     set y100 [expr {$maxy / 100}]
