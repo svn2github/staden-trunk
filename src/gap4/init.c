@@ -8,9 +8,11 @@
 #include "gap-tcl.h"
 #include "active_tags.h"
 
+/*
 #ifndef _WIN32
 #  define TRAP_SIGNALS
 #endif
+*/
 
 #ifdef TRAP_SIGNALS
 #include <signal.h>
