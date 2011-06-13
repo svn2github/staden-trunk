@@ -36,6 +36,12 @@
 static void redisplaySelection(edview *xx);
 
 /*
+ * Global hash of active edview widgets, used for finding existing editors
+ * for remote control.
+ */
+static HacheTable *edview_hash = NULL;
+
+/*
  * A C interface to the edit_contig and join_contig Tcl functions.
  */
 int edit_contig(GapIO *io, tg_rec cnum, tg_rec rnum, int pos) {
@@ -125,6 +131,17 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
     xx->cursor = create_contig_cursor(io->base, contig, 1, xx->reg_id);
     edSetApos(xx);
     xx->displayPos = xx->cursor_apos;
+
+    /* Add to our global hash table */
+    {
+	HacheData hd;
+
+	if (!edview_hash)
+	    edview_hash = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
+	
+	hd.p = xx;
+	HacheTableAdd(edview_hash, (char *)&contig, sizeof(tg_rec), hd, NULL);
+    }
     
     return xx;
 }
@@ -147,7 +164,31 @@ void edview_destroy(edview *xx) {
 
     cache_decr(xx->io, xx->contig);
 
+    HacheTableRemove(edview_hash, (char *)&xx->cnum, sizeof(tg_rec), 0);
+
     xfree(xx);
+}
+
+/*
+ * Finds an existing editor widget for a specific contig.
+ * Returns edview on success
+ *         NULL on failure
+ */
+edview *edview_find(GapIO *io, tg_rec contig) {
+    HacheIter *iter;
+    HacheItem *hi;
+
+    if (!edview_hash)
+	return NULL;
+
+    iter = HacheTableIterCreate();
+    while (hi = HacheTableIterNext(edview_hash, iter)) {
+	edview *xx = (edview *)hi->data.p;
+	if (!xx->link && xx->cnum == contig)
+	    return xx;
+    }
+
+    return NULL;
 }
 
 static seq_t *get_seq(GapIO *io, tg_rec rec) {

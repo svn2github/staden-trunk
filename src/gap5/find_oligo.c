@@ -212,6 +212,7 @@ void *find_oligo_obj_func2(int job,
 	case 2: /* Invoke contig editor */ {
 	    tg_rec cnum, llino;
 	    int pos;
+	    edview *xx;
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    find_oligo->current = (int)(obj - find_oligo->match);
@@ -220,18 +221,15 @@ void *find_oligo_obj_func2(int job,
 	    llino = 0;
 	    pos   = obj->pos1;
 
-	    /* FIXME
-	    if ((id = editor_available(cnum, 1)) == -1) {
-		edit_contig(GetInterp(), find_oligo->io, cnum, llino, pos,
-			    consensus_cutoff, quality_cutoff, 0, NULL);
+	    if (NULL == (xx = edview_find(find_oligo->io, cnum))) {
+		edit_contig(find_oligo->io, cnum, llino, pos);
+		xx = edview_find(find_oligo->io, cnum);
 	    }
-	    if ((id = editor_available(cnum, 1)) != -1) {
-		move_editor(id, llino, pos);
-		editor_select_region(id, llino, pos, obj->length);
-	    }
-	    */
 
-	    edit_contig(find_oligo->io, cnum, llino, pos);
+	    if (xx) {
+		edSelectSet(xx, cnum, pos, pos + obj->length-1);
+		edSetCursorPos(xx, GT_Contig, cnum, pos, 1);
+	    }
 
 	    break;
 	}

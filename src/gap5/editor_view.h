@@ -144,7 +144,14 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
 void edview_destroy(edview *xx);
 
 /*
- * Deallocates an edview
+ * Finds an existing editor widget for a specific contig.
+ * Returns edview on success
+ *         NULL on failure
+ */
+edview *edview_find(GapIO *io, tg_rec contig);
+
+/*
+ * The main editor redraw function
  */
 int edview_redraw(edview *xx);
 
