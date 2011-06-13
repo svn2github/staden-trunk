@@ -121,11 +121,11 @@ void GAP_ERROR_FATAL(char *reason, ...) {
 	 * so use a message box
 	 */
 	if( fileno(stderr) == -1 ){
-	    MessageBox(NULL,buf,"Gap4 Error",MB_OK|MB_ICONERROR|MB_TASKMODAL);
+	    MessageBox(NULL,buf,"Gap5 Error",MB_OK|MB_ICONERROR|MB_TASKMODAL);
 	    return;
 	}
 #endif
-	fputs("Gap4 has found an unrecoverable error - These are usually bugs.\nPlease submit all errors at https://sourceforge.net/projects/staden/\n", stderr);
+	fputs("Gap5 has found an unrecoverable error - These are usually bugs.\nPlease submit all errors at https://sourceforge.net/projects/staden/\n", stderr);
 	signal(SIGSEGV, SIG_DFL);
 /* 11/1/99 johnt - No SIGBUS on WINNT */
 #if defined(SIGBUS)

@@ -248,6 +248,20 @@ void stack_trace(void) {
     fclose(fp);
 }
 
+
+/*
+ * ---------------------------------------------------------------------------
+ * Linux/glibc code
+ * ---------------------------------------------------------------------------
+ */
+#elif defined(__linux__)
+void stack_trace(void) {
+    void *stack[100];
+    int size = backtrace(stack, 100);
+    backtrace_symbols_fd(stack, size, 2);
+}
+
+
 /*
  * ---------------------------------------------------------------------------
  * "Anything else" specific code
