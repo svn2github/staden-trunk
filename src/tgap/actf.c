@@ -149,6 +149,7 @@ int actf_lock(int read_only, char *file, int new) {
     if (cp = strrchr(file, '/')) {
 	db_name = cp+1;
 	strncpy(dir, file, cp - file + 1);
+	dir[cp-file+1] = 0;
     } else {
 	db_name = file;
     }
