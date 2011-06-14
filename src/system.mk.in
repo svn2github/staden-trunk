@@ -66,9 +66,9 @@ SVNVERS := $(shell @SVNVERSION@ @srcdir@)
 LIB_RUNTIME_DIR   = ${prefix}/lib/staden
 CC		  = @CC@
 #CDEBUG		  = -Wall -Wno-sign-compare -Wno-pointer-sign -Wno-parentheses -Wno-unused -Wno-char-subscripts -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
-CFLAGS		  = @CFLAGS@ $(DEFINES) $(INCLUDES)
+CFLAGS		  = @CFLAGS@ $(DEFINES) $(INCLUDES) -DSVN_VERSION=$(SVNVERS)
 CXX		  = @CXX@
-CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES)
+CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES) -DSVN_VERSION=$(SVNVERS)
 CPP		  = @CPP@
 CPPFLAGS	  = @CPPFLAGS@
 LDFLAGS		  = -L$(L) @LDFLAGS@ @CC_SEARCH_FLAGS@
