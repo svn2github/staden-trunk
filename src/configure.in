@@ -68,6 +68,16 @@ PWD=`pwd`
 AC_SUBST([PWD])
 
 #-----------------------------------------------------------------------------
+# Svn repository version, for use within program version numbers
+if svnversion --help >/dev/null 2>&1
+then
+SVNVERSION=svnversion
+else
+SVNVERSION=true
+fi
+AC_SUBST([SVNVERSION])
+
+#-----------------------------------------------------------------------------
 # Tcl TEA usage
 TEA_INIT([3.7])
 

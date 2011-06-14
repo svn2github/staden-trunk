@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
     a.store_refpos   = 1;
     a.remove_dups    = 1;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.12\n");
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.13"SVN_VERS"\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2011, Wellcome Trust Sanger Institute\n\n");
 

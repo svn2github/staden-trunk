@@ -261,7 +261,7 @@ static void save_pair_data(tg_pair_t *pair) {
 
 static void find_pair(GapIO *io, tg_pair_t *pair, tg_rec recno, char *tname,
 	       bin_index_t *bin, contig_t *c, seq_t *seq, tg_args *a,
-	       range_t *r_out, library_t *lib){		
+	       range_t *r_out, library_t *lib) {		
     int new = 0;
     HacheData hd;
     pair_loc_t *pl  = NULL;
@@ -276,6 +276,7 @@ static void find_pair(GapIO *io, tg_pair_t *pair, tg_rec recno, char *tname,
     pl->idx    = seq->bin_index;
     pl->orient = seq->len < 0;
     pl->flags  = seq->flags;
+    pl->mq     = seq->mapping_qual;
     hd.p = pl;
     
     hi = HacheTableAdd(pair->phache, tname, strlen(tname), hd, &new);
@@ -365,7 +366,8 @@ static void find_pair(GapIO *io, tg_pair_t *pair, tg_rec recno, char *tname,
 		}
 		
 		lib = cache_rw(io, lib);
-		
+
+		//if (pl->mq > 10 && po->mq > 10) /* good only */
 		accumulate_library(io, lib, ltype, ABS(isize));
 	    }
 	}	    

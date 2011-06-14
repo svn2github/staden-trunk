@@ -29,8 +29,6 @@ if {[lindex $argv 0] == "-h" || [lindex $argv 1] == "-help" || [lindex $argv 1]
     usage
 }
 
-set VERSION "1.9"
-
 if {[catch tkinit]} {
     package require Tk
 }
@@ -1468,6 +1466,8 @@ load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
 load_package tk_utils
 tk_utils_init
 load_package trev
+
+set VERSION "1.9$svn_version"
 
 InitGlobals
 set xmag 150

@@ -6,6 +6,7 @@
 #include "tclXkeylist.h"
 #include "tclCanvGraph.h"
 #include "tcl_io_lib.h"
+#include "misc.h"
 /* #include "tkCanvGraph.h" */
 
 extern int TclXKeylist_Init(Tcl_Interp *);
@@ -43,6 +44,9 @@ int Tk_utils_Init(Tcl_Interp *interp) {
 
     /* FIXME: Remove this, but firstly we need to remove from tcl code */
     Tcl_SetVar2(interp, "licence","type", "f", TCL_GLOBAL_ONLY);
+
+    /* Master subversion repository version */
+    Tcl_SetVar(interp, "svn_version", SVN_VERS, TCL_GLOBAL_ONLY);
 
     /* Keyed lists from tclX */
     TclX_KeyedListInit(interp);

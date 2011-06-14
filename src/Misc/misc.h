@@ -157,4 +157,8 @@ int64_t strtol64(const char *nptr, char **endptr, int base);
 int32_t atoi32(const char *nptr);
 int32_t atoi64(const char *nptr);
 
+#define SVN_VERS3(x) "-r"#x
+#define SVN_VERS2(x) SVN_VERS3(x)
+#define SVN_VERS SVN_VERS2(SVN_VERSION)
+
 #endif /*_misc_h*/

@@ -392,11 +392,11 @@ proc config_panel_restart {} {
 }
 
 proc build_gui {w} {
-    global pregap4_defs
+    global pregap4_defs svn_version
 
     init_modules
 
-    wm title . "Pregap4 version 1.6"
+    wm title . "Pregap4 version 1.6$svn_version"
     wm protocol . WM_DELETE_WINDOW exit
 
     menu_panel $w
