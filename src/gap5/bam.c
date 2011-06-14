@@ -734,7 +734,7 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     cp = cpf;
     //while (*cpf && *cpf != '\t')
     while (*cpf > '\t')
-	*cpt++ = *cpf++, n++;
+	*cpt++ = *cpf++;
     *cpt++ = 0;
     if (!*cpf++) return -1;
     bam_set_name_len(bs, cpf-cp);
