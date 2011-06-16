@@ -212,7 +212,7 @@ static int next_range(bin_index_t *bin) {
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
-#define CACHE_LAST_BIN
+//#define CACHE_LAST_BIN
 bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 			   int start, int end, int extend,
 			   int *offset_r,  int *comp_r) {
@@ -420,7 +420,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
 		    bin = get_bin(io, bin->child[0]);
 		    cache_incr(io, bin);
-		    offset += bin->pos;
+		    offset = NMIN(pos, pos+sz-1);
 		    continue;
 		}
 	    }
@@ -461,7 +461,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
 		    bin = get_bin(io, bin->child[1]);
 		    cache_incr(io, bin);
-		    offset += bin->pos;
+		    offset = NMIN(pos, pos+sz-1);
 		    continue;
 		}
 	    }
@@ -630,14 +630,26 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 
     /* Adjust start/end used in bin */
     if (bin->rng) {
-	if (bin->start_used > r->start - offset)
-	    bin->start_used = r->start - offset;
-	if (bin->end_used < r->end - offset)
-	    bin->end_used = r->end - offset;
+	if (comp) {
+	    if (bin->start_used > bin->size-1 - (r->end - offset))
+		bin->start_used = bin->size-1 - (r->end - offset);
+	    if (bin->end_used   < bin->size-1 - (r->start - offset))
+		bin->end_used   = bin->size-1 - (r->start - offset);
+	} else {
+	    if (bin->start_used > r->start - offset)
+		bin->start_used = r->start - offset;
+	    if (bin->end_used   < r->end - offset)
+		bin->end_used   = r->end - offset;
+	}
     } else {
 	/* Initial case */
-	bin->start_used = r->start - offset;
-	bin->end_used = r->end - offset;
+	if (comp) {
+	    bin->start_used = bin->size-1 - (r->end - offset);
+	    bin->end_used   = bin->size-1 - (r->start - offset);
+	} else {
+	    bin->start_used = r->start - offset;
+	    bin->end_used   = r->end - offset;
+	}
     }
 
     /* Update Range array */
