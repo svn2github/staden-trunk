@@ -2534,8 +2534,10 @@ rangec_t *contig_iter_next(GapIO *io, contig_iterator *ci) {
 	    //	if (!ci->auto_extend)
 	    //	    return NULL;
 
-	    candidate = range_next_by_type(io, ci->cnum, ci->start + CITER_BS,
-					   ci->type);
+	    if (ci->end >= ci->cend)
+		return NULL;
+
+	    candidate = range_next_by_type(io, ci->cnum, ci->end+1, ci->type);
 
 	    if (-1 == range_populate(io, ci, ci->cnum,
 	    			     candidate, candidate + CITER_BS-1))
@@ -2577,9 +2579,11 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
 	    /* Fallen off the range edge */
 	    //	if (!ci->auto_extend)
 	    //	    return NULL;
+
+	    if (ci->start <= ci->cstart)
+		return NULL;
 	    
-	    candidate = range_prev_by_type(io, ci->cnum, ci->end - CITER_BS,
-					   ci->type);
+	    candidate = range_prev_by_type(io, ci->cnum, ci->start, ci->type);
 	    
 	    if (-1 == range_populate(io, ci, ci->cnum,
 				     candidate - CITER_BS+1, candidate))

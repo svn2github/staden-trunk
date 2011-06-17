@@ -110,11 +110,12 @@ typedef struct {
 #define CITER_FIRST   0
 #define CITER_LAST    1
 #define CITER_FL_MASK 1
-#define CITER_SMALL_BS 2
 
 #define CITER_ISTART  0
 #define CITER_IEND    2
 #define CITER_SE_MASK 2
+
+#define CITER_SMALL_BS 4
 
 #define CITER_CSTART INT_MIN
 #define CITER_CEND   INT_MAX
