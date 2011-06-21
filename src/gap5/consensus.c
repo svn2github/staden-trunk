@@ -1374,7 +1374,7 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
     if (start) {
 	int best = INT_MAX;
 
-	ci = contig_iter_new(io, contig, 0, CITER_FIRST | CITER_ISTART |
+	ci = contig_iter_new(io, contig, 1, CITER_FIRST | CITER_ISTART |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
 
 	while ((r = contig_iter_next(io, ci))) {
@@ -1409,7 +1409,7 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
     if (end) {
 	int best = INT_MIN;
 
-	ci = contig_iter_new(io, contig, 0, CITER_LAST | CITER_IEND |
+	ci = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
 	
 	while ((r = contig_iter_prev(io, ci))) {
