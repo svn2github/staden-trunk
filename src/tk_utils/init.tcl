@@ -136,6 +136,17 @@ eval font create enzyme_font		[keylget tk_utils_defs FONT.ENZYME]
 # Sometimes asking for a bold font will give us a different shaped font as
 # the exact match wasn't available. Double check this and revert to normal
 # if necessary.
+if {[lindex [regexp -inline -- {-fixed (\d)} [font metrics sheet_font]] 1] == 0} {
+    puts stderr "sheet_font is proportional - picking a new font"
+    font delete sheet_font
+    if {[lsearch [font names] TkFixedFont] != -1} {
+	eval font create sheet_font [font actual TkFixedFont]
+    } else {
+	font create sheet_font -family Courier -size 10 -weight normal -slant roman -underline 0 -overstrike 0
+    }
+    font delete sheet_bold_font
+    eval font create sheet_bold_font [font actual sheet_font] -weight bold
+}
 if {[font metrics sheet_font] != [font metrics sheet_bold_font] || \
     [font measure sheet_font lllM] != [font measure sheet_bold_font lllM]} {
     puts stderr "Warning: Normal and bold sheet fonts differ in size."
