@@ -926,8 +926,8 @@ proc PopUpCSContigMenu {io canvas current X Y x y} {
 	$canvas.m add command -label "Complement contig" \
 	    -command "popup_cs_contig_3 $io $canvas $current"
     }
-    $canvas.m add command -label "List notes" \
-	-command "popup_cs_contig_cnotes $io $canvas $current"
+#    $canvas.m add command -label "List notes" \
+#	-command "popup_cs_contig_cnotes $io $canvas $current"
     tk_popup $canvas.m [expr $X-20] [expr $Y-10]
 }
 
