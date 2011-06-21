@@ -317,14 +317,18 @@ MALIGN *realign_seqs(int contig, MALIGN *malign, int band) {
 	o->malign_len = malign->length - cons_pos;
 #if 1
 	/* 3 bases overhang to the right */
-	if (o->malign_len > contigl->mseg->length+3)
-	    o->malign_len = contigl->mseg->length+3;
+	if (o->malign_len > contigl->mseg->length+band/2+1)
+	    o->malign_len = contigl->mseg->length+band/2+1;
 
 	/* And 3 to the left */
-	if (cons_pos > 3) {
-	    cons_pos -= 3;
-	    o->malign_len += 3;
-	    contigl->mseg->offset -= 3;
+	if (cons_pos > band/2+1) {
+	    cons_pos -= band/2+1;
+	    o->malign_len += band/2+1;
+	    contigl->mseg->offset -= band/2+1;
+	} else {
+	    o->malign_len += cons_pos;
+	    contigl->mseg->offset -= cons_pos;
+	    cons_pos = 0;
 	}
 #else
 	if (o->malign_len > contigl->mseg->length)
