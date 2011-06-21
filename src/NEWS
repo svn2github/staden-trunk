@@ -1,3 +1,89 @@
+Jun 14th 2011
+-------------
+
+*	Sequence Search (main menu, outside of the editor) no longer
+        brings up a separate editor every time the Next button is
+        pressed, instead preferring to reuse existing ones if
+        available. It also underlines the matched sequence in the
+        contig editor.
+
+*	The contig editor window now colours the sequence names
+        according to the consistency/validity of the templates. The
+        colours are:
+
+	  white = ok pair
+	  blue = single ended
+	  orange = pair, spanning contigs
+	  red = inconsistent orientation
+	  grey = consistent orientation, but distance too large or too
+	  small.
+
+        This also required a few tweaks to the colouring of the name
+        display and UI controls. The Quality button now only turns
+        quality grey-scales on and off for sequence bases, not the
+        mapping qualities. Instead the Settings menu has two radio
+        buttons to toggle between template status and mapping quality
+        for the names panel. This only has an effect when in Pack
+        Sequences mode; the one sequence per line mode has room to
+        display both pieces of information and so always does so.
+
+*	Implemented a simplistic approach for computing unpadded
+        consensus coordinates. This uses the cached consensus
+        sequence, which can now be updated from within the contig
+        editor too (so it may ask to save changes even when it's
+        simply to add more cached data), so it is far faster than
+        gap4.  However it is still linear time based on the number of
+        fragments and consensus length.
+
+	The editor "goto" box in the bottom left still works on padded
+	or reference coordinates as listed by the P or R button, but
+	manually adding the letter 'u' after a number will request
+	unpadded coord.  The P/R button hasn't been made P/R/U yet as
+	the display of coordinates will be too slow still.
+	  
+	There are more explicit padded vs unpadded options in the
+	search dialogue, or hitting Return in the editor consensus
+	will also show that coordinate.
+
+*	The Template display now has various quality plots. They're
+        turned off by default as they incur a substantial speed
+        penalty.
+
+*	The Find Read Pairs plot now has the option to filter the
+	reported hits by the library. By default it uses all. Note
+	filtering slows down the code substantially.
+
+*	Improved editor search UI. Hovering over the Search button in
+	the dialogue window will now highlight which editor of an join
+	editor pair will be searched in. (As before, left-clicking in
+	an editor will change this, only now it's obvious this
+	happens.)  Plus the editor cursor of an inactive editor in a
+	join-editor pair is no longer solid, when visible. Instead it
+	is a hollow square.
+	  
+	Also fixed control-S/control-R so they don't bring up a separate
+	dialogue window to just hitting the Search button.
+
+*	Clicking on a base within the tag now displays the summary
+	data of the base underneath it instead of repeating the
+	mouse-over text. This is the same interface as gap4 now.
+
+*	Added SVN revision numbers to the version strings reported by
+        most of the main programs.
+
+*	Removed error signal handlers in gap4 and gap5 so that crashes
+        are easier to debug on linux. For some reason calling abort
+        from a signal handler often ends up with a stack that gdb will
+        not list.
+
+
+
+26th May 2011
+-------------
+
+... missing bits ...
+
+
 Gap5 updates (21st Mar 2011)
 ============
 

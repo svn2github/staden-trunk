@@ -105,6 +105,7 @@ GAP5=\
 	export_contigs.o \
 	find_oligo.o \
 	import_gff.o \
+	shuffle_pads.o \
 	$(CEDITOR) \
 	$(TG_INDEX)
 

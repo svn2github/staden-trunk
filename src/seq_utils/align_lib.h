@@ -1,16 +1,19 @@
 #if !defined(ALIGN_LIB_H)
 #define ALIGN_LIB_H
 
+#include <inttypes.h>
+
 typedef struct Mseg {
   char *seq;
   int length;
   int offset;
+  int comp;
 } MSEG;
 
 typedef struct Contigl {
   MSEG *mseg;
   struct Contigl *next;
-  int id;
+  int64_t id;
 }CONTIGL;
 
 CONTIGL *create_contig_link(void);

@@ -48,6 +48,7 @@
 #include "baf.h"
 #include "tg_index_common.h"
 #include "dis_readings.h"
+#include "shuffle_pads.h"
 
 #include "sam_index.h"
 #include "bam.h"
@@ -1779,6 +1780,32 @@ int tcl_consensus_padded_pos(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
+		     int objc, Tcl_Obj *CONST objv[])
+{
+    shuffle_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(shuffle_arg, io)},
+	{"-contigs",	ARG_STR, 1, "*",   offsetof(shuffle_arg, inlist)},
+	{"-band",	ARG_INT, 1, "8",   offsetof(shuffle_arg, band)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+    int rargc;
+    contig_list_t *rargv;
+    
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    vfuncheader("Shuffle Pads");
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    shuffle_contigs_io(args.io, rargc, rargv, args.band);
+
+    xfree(rargv);
+
+    return TCL_OK;
+}
+
 #ifdef VALGRIND
 tcl_leak_check(ClientData clientData,
 	       Tcl_Interp *interp,
@@ -2067,6 +2094,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "consensus_padded_pos",
 			 tcl_consensus_padded_pos,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "iter_test",

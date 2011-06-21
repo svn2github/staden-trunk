@@ -670,6 +670,8 @@ void scale_malign_scores(MALIGN *malign, int start, int end) {
 		  s += 0.5;
 	      malign->scores[i][j] = s * 100;
 	  }
+	  /* Penalty for gaps is marginally higher */
+	  malign->scores[i][5] *= 1.01;
       } else {
 	  for(j=0;j<malign->charset_size;j++) {
 	      malign->scores[i][j] = 0;
@@ -6025,6 +6027,7 @@ int fixed_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
  * get away with very small bands in order to realign sequences with the
  * minimal amount of effort.
  */
+#define GAPM 101
 int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
     char *seq1, *seq2;
     int seq1_len, seq2_len, seq_out_len;
@@ -6091,16 +6094,16 @@ int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
     if ( edge_mode & EDGE_GAPS_COUNT ) {
 	for(E_gap = 0, i = 0; i < seq1_len; i++) {
 	    F1[i] = E_gap;
-	    E_gap += 100;
+	    E_gap += GAPM;
 	}
-	E_gap = 100;
+	E_gap = GAPM;
 	edge_inc = 1;
     } else if ( edge_mode & EDGE_GAPS_ZEROX ) {
 	/* ZEROX means we penalise in Y but not X */
 	for(i = 0; i <= seq1_len; i++)
 	    F1[i] = 0;
 	edge_inc = 1;
-	E_gap = 100;
+	E_gap = GAPM;
     } else {
 	printf("scream: unknown gaps mode\n");
 	destroy_af_mem ( F1, F2, 0, 0, 0, 0, bit_trace, seq1_out, seq2_out );
@@ -6207,7 +6210,7 @@ int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 	    e_row = (row - first_row + 1) * band_length;
 	    e_col = column - band_left + 1;
 	    e = e_row + e_col;
-	    insy_cost = (seq2[row-1] == '*' ? 0 : 100);
+	    insy_cost = (seq2[row-1] == '*' ? 0 : GAPM);
 
 	    for(; column <= max_col; e++, column++, pF1++, pF2++) {
 		int V_diag, V_insx, V_insy;
@@ -6309,7 +6312,7 @@ int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 	    }
 	    row_index = malign_lookup[(int)seq2[row-1]];
 
-	    insy_cost = (seq2[row-1] == '*' ? 0 : 100);
+	    insy_cost = (seq2[row-1] == '*' ? 0 : GAPM);
 	  
 	    /* process each column. i.e. each character of seq1 */
 	    for(column = 1; column <= seq1_len; column++, e++) {
