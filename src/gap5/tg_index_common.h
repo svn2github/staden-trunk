@@ -14,6 +14,7 @@ typedef struct {
     int pos;
     int orient;
     int flags;
+    //int mq;
 } pair_loc_t;
 
 typedef struct {

@@ -276,7 +276,7 @@ static void find_pair(GapIO *io, tg_pair_t *pair, tg_rec recno, char *tname,
     pl->idx    = seq->bin_index;
     pl->orient = seq->len < 0;
     pl->flags  = seq->flags;
-    pl->mq     = seq->mapping_qual;
+    //pl->mq     = seq->mapping_qual;
     hd.p = pl;
     
     hi = HacheTableAdd(pair->phache, tname, strlen(tname), hd, &new);
