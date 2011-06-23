@@ -69,6 +69,7 @@ TG_IO = \
 	tg_tracks.o \
 	tg_anno.o \
 	tg_library.o \
+	tg_check.o \
         actf.o \
 	zfio.o
 

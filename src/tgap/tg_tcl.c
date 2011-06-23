@@ -20,6 +20,7 @@
 #include "array.h"
 #include "misc.h"
 #include "tg_gio.h"
+#include "tg_check.h"
 #include "gap_cli_arg.h"
 
 extern Tcl_Command Tcl_GetCommandFromObj(Tcl_Interp *interp,
@@ -590,7 +591,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
 	"nseqs",	"anno_in_range","get_pileup",   "ref_to_padded",
 	"nrefpos",	"nanno",        "shift_base",   "move_anno",
-	(char *)NULL,
+	"check",        (char *)NULL,
     };
 
     enum options {
@@ -600,6 +601,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
 	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
 	NREFPOS,        NANNO,	        SHIFT_BASE,     MOVE_ANNO,
+	CHECK,
     };
 
     if (objc < 2) {
@@ -969,6 +971,12 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	break;
     }
+
+    case CHECK: 
+	Tcl_SetIntObj(Tcl_GetObjResult(interp),
+		      check_contig(tc->io, tc->contig->rec));
+	break;
+	
     }
 
     return TCL_OK;
