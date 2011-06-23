@@ -93,6 +93,15 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
  */
 int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end);
 
+/*
+ * As per consensus_valid_range(), but we return the unclipped size of the
+ * contig instead. This is somewhat easier and faster to compute.
+ * Passing NULL as start or end implies you are uninterested in that end.
+ *
+ * Returns 0 for success
+ *        -1 for failure.
+ */
+int consensus_unclipped_range(GapIO *io, tg_rec contig, int *start, int *end);
 
 /*
  * Converts a padded position into an unpadded position.

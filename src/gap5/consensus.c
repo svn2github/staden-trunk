@@ -1445,6 +1445,63 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 }
 
 /*
+ * As per consensus_valid_range(), but we return the unclipped size of the
+ * contig instead. This is somewhat easier and faster to compute.
+ * Passing NULL as start or end implies you are uninterested in that end.
+ *
+ * Returns 0 for success
+ *        -1 for failure.
+ */
+int consensus_unclipped_range(GapIO *io, tg_rec contig, int *start, int *end) {
+    contig_iterator *ci;
+    rangec_t *r;
+
+    if (start) {
+	int best = INT_MAX;
+
+	ci = contig_iter_new(io, contig, 1, CITER_FIRST | CITER_ISTART |
+			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
+
+	while ((r = contig_iter_next(io, ci))) {
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
+		continue;
+
+	    if (r->start > best)
+		break;
+
+	    if (best > r->start)
+		best = r->start;
+	}
+
+	contig_iter_del(ci);
+	*start = best != INT_MAX ? best : 0;
+    }
+
+    if (end) {
+	int best = INT_MIN;
+
+	ci = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND |
+			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
+	
+	while ((r = contig_iter_prev(io, ci))) {
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
+		continue;
+
+	    if (r->end < best)
+		break;
+
+	    if (best < r->end)
+		best = r->end;
+	}
+
+	contig_iter_del(ci);
+	*end = best != INT_MIN ? best : 0;
+    }
+
+    return 0;
+}
+
+/*
  * Converts a padded position into an unpadded position.
  * Returns 0 for success and writes to upos
  *        -1 for error

@@ -651,7 +651,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 	    bin->end_used   = r->end - offset;
 	}
     }
-
+    
     /* Update Range array */
     bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
     bin->flags &= ~BIN_CONS_VALID;
@@ -852,7 +852,9 @@ int bin_get_orient(GapIO *io, tg_rec rec) {
 int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 			     int type, tg_rec rec) {
     bin_index_t *bin;
-    int i;
+    int i, start = INT_MAX, end = INT_MIN;
+    int new_contig_range = 0;
+    int seq_start, seq_end;
 
     if (!(bin = cache_rw(io, *binp)))
 	return -1;
@@ -860,16 +862,69 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 
     bin->flags &= ~BIN_CONS_VALID;
 
-    /* FIXME: we should check and update bin->start_used and bin->end_used */
-
-    /* FIXME: use seq->bin_index or anno_ele->idx here as a short-cut? */
+    /* FIXME: use seq->bin_index or anno_ele->idx here as a short-cut?
+     * Is loading a seq or anno in addition slower than simply scanning
+     * this? It'll depend whether it is in the cache, so the simple
+     * approach for now works.
+     */
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
 	if (r->flags & GRANGE_FLAG_UNUSED)
 	    continue;
 
-	if (r->rec != rec)
+	if (r->rec != rec) {
+	    if (start > r->start)
+		start = r->start;
+	    if (end   < r->end)
+		end   = r->end;
+
+	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+		if (seq_start > r->start)
+		    seq_start = r->start;
+		if (seq_end   < r->end)
+		    seq_end   = r->end;
+	    }
+
 	    continue;
+	}
+
+
+	/* check and update bin->start_used and bin->end_used */
+	if (r->start < start || r->end > end) {
+	    /* Maybe this is pushing the range out, so keep looking */
+	    int j;
+	    for (j = i+1; j < ArrayMax(bin->rng); j++) {
+		range_t *r = arrp(range_t, bin->rng, j);
+		if (r->flags & GRANGE_FLAG_UNUSED)
+		    continue;
+
+		if (start > r->start)
+		    start = r->start;
+		if (end   < r->end)
+		    end   = r->end;
+	    }
+
+	    seq_start = r->start;
+	    seq_end   = r->end;
+
+	    printf("this read    = %d..%d\n", r->start, r->end);
+	    printf("curr extents = %d..%d\n", bin->start_used, bin->end_used);
+	    printf("new extents  = %d..%d\n", start, end);
+
+	    if (bin->start_used != start || bin->end_used != end) {
+		bin->start_used = start;
+		bin->end_used = end;
+		new_contig_range = 1;
+	    }
+	}
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ) {
+	    /* Even though we may have changed it,
+	     * we don't need to update contig
+	     */
+	    new_contig_range = 0;
+	}
+	
 
 	r->flags |= GRANGE_FLAG_UNUSED;
 	r->rec = (tg_rec)bin->rng_free;
@@ -886,6 +941,59 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    bin_incr_nanno(io, bin, -1);
 
 	break;
+    }
+
+    /*
+     * If we edited the bin start_used / end_used values, then possibly
+     * the contig start/end may also have changed. We need to check.
+     */
+    if (new_contig_range) {
+	int offset = bin->pos;
+	int comp = 0;
+	tg_rec bnum;
+
+	start = seq_start;
+	end   = seq_end;
+
+	printf("bin ranges => %d..%d / %d..%d\n",
+	       bin->start_used, bin->end_used,
+	       seq_start, seq_end);
+
+	for (;;) {
+	    if (bin->flags & BIN_COMPLEMENTED) {
+		start = bin->size-1 - start;
+		end   = bin->size-1 - end;
+		comp ^= 1;
+	    }
+	    start += bin->pos;
+	    end   += bin->pos;
+
+	    if (bin->parent_type != GT_Bin)
+		break;
+
+	    bnum = bin->parent;
+	    bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
+	}
+
+	printf("absolute seq range=%d..%d\n", start, end);
+	printf("Contig range      =%d..%d\n", (*c)->start, (*c)->end);
+
+	if (start <= (*c)->start || end >= (*c)->end) {
+	    /*
+	     * Seq is at very end of contig. So we need to do find the
+	     * new start/end and correct it.
+	     */
+	    int new_start, *ns;
+	    int new_end, *ne;
+
+	    ns = start <= (*c)->start ? &new_start : NULL;
+	    ne = end   >= (*c)->end   ? &new_end   : NULL;
+
+	    if (-1 != consensus_unclipped_range(io, (*c)->rec, ns, ne)) {
+		if (ns) (*c)->start = *ns;
+		if (ne) (*c)->end   = *ne;
+	    }
+	}
     }
 
     return 0;
