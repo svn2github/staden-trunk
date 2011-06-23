@@ -1,5 +1,21 @@
-Jun 14th 2011
+?? 2011
+-------
+
+Gap5 Updates
+============
+
+*	Added a Check Database function. It's slow, but a useful
+        sanity check for me during development, and maybe others.
+
+Gap5 Fixes
+==========
+
+
+Jun 23rd 2011
 -------------
+
+Gap5 Updates
+============
 
 *	Sequence Search (main menu, outside of the editor) no longer
         brings up a separate editor every time the Next button is
@@ -53,6 +69,9 @@ Jun 14th 2011
 	reported hits by the library. By default it uses all. Note
 	filtering slows down the code substantially.
 
+*	Added the first draft of a Shuffle Pads algorithm, much the
+        same as in Gap4.
+
 *	Improved editor search UI. Hovering over the Search button in
 	the dialogue window will now highlight which editor of an join
 	editor pair will be searched in. (As before, left-clicking in
@@ -76,15 +95,91 @@ Jun 14th 2011
         from a signal handler often ends up with a stack that gdb will
         not list.
 
+Gap5 Fixes
+==========
+
+*	Adding new sequences to complemented contigs could create
+        incorrect sequencing positionings if the smallest bin had
+        grown, triggering a new leaf node. Also correted some
+        house-keeping coordinates (start/end used) for complemented
+        bins.
+
 
 
 26th May 2011
 -------------
 
-... missing bits ...
+Gap4 bug fixes
+==============
+
+*	Fix crash in Find Internal Joins when faces with lots of small
+        contigs and insufficient reserved space for the consensus.
 
 
-Gap5 updates (21st Mar 2011)
+Gap5 Updates
+============
+
+*	Major overhaul of the consensus algorithm. It now allows for
+        the possibility of SNPs. Also added a discrepancy calculation
+        where it compares the number of observed differences against
+        the expected differences given the quality scores.
+
+	The editor has several new search tools relating to these
+	features.
+
+*	Added editor Join To menu command for read-pairs that span
+        contigs. The Go To menu item has also been updated to report
+        the observed insert size.
+
+*	Added an editor method to shift entire portions of an alignment
+	left/right.
+
+*	Bringing up the join editor should now set the editing cursor
+        to the correct sequence.
+
+*	Increased the word size in Find Repeats and some other
+        optimisations - now dramatically faster, often 100x
+        improvement.
+
+	Removing the Contig Selector plots is also now far faster
+        (approx 1500x faster in the extreme case of 1 million repeat
+        hits). 
+
+*	Further improvements to Find Internal Joins speeds. 
+
+*	Various minor compilation improvements, removing warnings and
+        fixing compilation issues with gcc 4.4.4 onwards and use of
+        _FORTIFY_SOURCE.
+
+
+Gap5 Fixes
+==========
+
+*	Removal of bugs in sequence insertion/deletion code, causing
+        assertion failures. Typically observed when inserting entire
+        columns of pads.
+
+*	Create Tag now works on both editors in a Join Editor.
+
+*	Fixed issues when shifting individual sequences left/right in
+        the editor.
+
+*	Cut and pasting of complemented sequences now works.
+
+*	Improved robustness of specifying malformed contig names (plus
+        allow #contig_rec in addition to the old =contig_rec syntax).
+
+*	Gap5 now checks the master database version and will no longer
+        automatically start updating individual records to the latest
+        encoding/formats if the database is an older format. This
+	allows testing of newer versions without risking the inability
+        to revert back.
+
+
+21st Mar 2011
+-------------
+
+Gap5 updates 
 ============
 
 *	We now keep track of original reference positions during a
