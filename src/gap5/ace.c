@@ -31,6 +31,9 @@
 #define MAX_NAME 128
 #define MAX_LINE_LEN 1024
 
+/* Unknown mapping quality */
+#define ACE_MQUAL 255
+
 /* AS <number of contigs> <total number of reads in ace file> */
 typedef struct {
     int type;
@@ -304,10 +307,11 @@ ace_item_t *next_ace_item(zfp *fp) {
 	if (4 != sscanf(line+3, fmt, ai.rd.rname,
 			&ai.rd.nbases, &ai.rd.ninfo, &ai.rd.ntags))
 	    return NULL;
-	    
+
 	ai.rd.seq = (char *)malloc(ai.rd.nbases+1);
 	while (NULL != zfgets(line, MAX_LINE_LEN, fp)) {
 	    size_t l = strlen(line);
+
 	    if (line[l-1] == '\n')
 		l--;
 	    if (l == 0)
@@ -321,6 +325,7 @@ ace_item_t *next_ace_item(zfp *fp) {
 	    strncpy(&ai.rd.seq[pos], line, l);
 	    pos += l;
 	}
+
 	ai.rd.seq[pos] = 0;
 	if (pos != ai.rd.nbases) {
 	    fprintf(stderr, "Sequence in RD line does not match "
@@ -494,17 +499,17 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    seq.rec = 0;
 	    seq.pos = af[seq_count].pos;
 	    seq.len = af[seq_count].dir == 0 ? ai->rd.nbases : -ai->rd.nbases;
-	    seq.mapping_qual = 50;
+	    seq.mapping_qual = ACE_MQUAL;
 	    seq.left = 1;
 	    seq.right = ai->rd.nbases;
 	    seq.flags = af[seq_count].dir == 0 ? 0 : SEQ_COMPLEMENTED;
 	    seq.name_len = strlen(ai->rd.rname);
 	    seq.name = (char *)malloc(seq.name_len+1+2*ai->rd.nbases);
 	    strcpy(seq.name, ai->rd.rname);
-	    seq.seq = seq.data + seq.name_len + 1;
+	    seq.seq = seq.name + seq.name_len + 1;
+	    memcpy(seq.seq, ai->rd.seq, ai->rd.nbases);
 	    seq.trace_name = NULL;
 	    seq.alignment = NULL;
-	    memcpy(seq.seq, ai->rd.seq, ai->rd.nbases);
 	    seq.conf = seq.seq + ai->rd.nbases;
 	    memset(seq.conf, 4, ai->rd.nbases);
 
@@ -522,7 +527,8 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    break;
 
 	case ACE_DS:
-	    save_range_sequence(io, &seq, 0, pair, (pair && *ai->ds.tname),
+	    save_range_sequence(io, &seq, ACE_MQUAL, pair,
+				(pair && *ai->ds.tname),
 				ai->ds.tname, c, a, GRANGE_FLAG_TYPE_SINGLE,
 				NULL);
 	    seq_count++;
