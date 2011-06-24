@@ -205,17 +205,25 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 
 		    s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
 		    s = cache_rw(io, s);
+
 		    if (cons_r->start != bstart || cons_r->end   != bend) {
 			size_t extra_len =
-			    (s->name       ? strlen(s->name)       : 0) +
-			    (s->trace_name ? strlen(s->trace_name) : 0) +
-			    (s->alignment  ? strlen(s->alignment)  : 0) +
+			    (s->name       ? strlen(s->name)       : 0)+1 +
+			    (s->trace_name ? strlen(s->trace_name) : 0)+1 +
+			    (s->alignment  ? strlen(s->alignment)  : 0)+1 +
 			    (bend - bstart + 1)*2;
+
+			/* Reset positions/lengths */
+			s->pos   = bstart;
+			s->len   = (s->len > 0)
+			    ?   bend - bstart + 1
+			    : -(bend - bstart + 1);
 			s = cache_item_resize(s, sizeof(*s) + extra_len);
+			sequence_reset_ptr(s);
 		    }
 
 		    if ((s->len < 0) ^ r[i].comp)
-			s->len = -s->len;
+		    	s->len = -s->len;
 		    
 		} else {
 		    printf("Creating new cached cons %d..%d bin #%"PRIrec"\n",
