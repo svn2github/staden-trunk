@@ -1475,6 +1475,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	char *tokens[4], *cp, *tag_text, tag_type[5];
 	int ntok;
 	int tag_pos, tag_len;
+	tg_rec orec;
+	int otype;
 
 	if (!(aux_key[0] == 'Z' && (aux_key[1] == 's' || aux_key[1] == 'c')))
 	    continue;
@@ -1500,13 +1502,15 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	r.start    = tag_pos-1 + s.pos;
 	r.end      = tag_pos-1 + s.pos + tag_len-1;
 	if (aux_key[1] == 'c') {
-	    r.pair_rec = bio->c->rec;
-	    r.flags    = GRANGE_FLAG_ISANNO;
+	    orec = r.pair_rec = bio->c->rec;
+	    otype = GT_Contig;
+	    r.flags = GRANGE_FLAG_ISANNO;
 	} else {
-	    r.pair_rec = recno;
-	    r.flags    = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+	    orec = r.pair_rec = recno;
+	    otype = GT_Seq;
+	    r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
 	}
-	r.rec      = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual,
+	r.rec      = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
 				  tag_text);
 
 	/* Link it to a bin */
