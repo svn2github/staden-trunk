@@ -19,6 +19,14 @@
 /* ------------------------------------------------------------------------ */
 /* Open/close/commit */
 
+void xperror_fatal(char *name, char *str) {
+    verror(ERR_FATAL, name, str);
+}
+
+void xperror_warn(char *name, char *str) {
+    verror(ERR_WARN, name, str);
+}
+
 /*
  * Open a database, optionally in read-only mode and creating if desired too.
  *
@@ -44,8 +52,10 @@ GapIO *gio_open(char *fn, int ro, int create) {
 
     io->iface = get_iface_g();
     if (create) {
-	if (-1 == io->iface->create(fn))
+	if (0 != io->iface->create(fn)) {
+	    xperror("In tg_gio.c:gio_open()", xperror_fatal);
 	    return NULL;
+	}
     }
 
     io->min_bin_size = MIN_BIN_SIZE; /* default */
