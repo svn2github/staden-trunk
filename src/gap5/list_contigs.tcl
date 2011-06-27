@@ -222,6 +222,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	set clen [$cstruct get_length]
 	set nreads [$cstruct nseqs]
 	set nanno [$cstruct nanno]
+	$cstruct delete
 	$w insert end [list "$name (=$num)" $clen $nreads $nanno]
     }
     if {[$w sortcolumn] != -1} {
