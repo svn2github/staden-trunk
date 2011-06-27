@@ -923,13 +923,17 @@ static int io_rec_exists(void *dbh, int type, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     GView v;
     unsigned char buf;
+    int r;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
 	return 0;
     
     buf = 0;
-    if (0 != g_read(dbh, v, &buf, 1))
+    r = g_read(dbh, v, &buf, 1);
+    unlock(io, v);
+
+    if (0 != r)
 	return 0;
 
     return buf == type ? 1 : 0;
