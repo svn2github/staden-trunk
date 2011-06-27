@@ -694,7 +694,7 @@ if {$io != ""} {
     wm iconname . "[tk appname]: [db_info db_name $io]"
     if {[db_info num_contigs $io] > 0} {
 	if {$do_check_db == 1 || ($do_check_db == -1 && !$read_only)} {
-	    if {[check_database -io $io] == 0} {
+	    if {[$io check] == 0} {
 		if {$do_csel} {
 		    if {$do_csel == 2 || [db_info num_contigs $io] <= 1000} {
 			ContigSelector $io

@@ -65,7 +65,7 @@ add_command	{File.Open}			 1 2 {Gap_Open \$io}
 if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
     add_command     {File.Import from BioLIMS}	12 22 {ImportBiolims \$io}
 }
-#add_command	{File.Check database}		12 6 {check_database -io \$io}
+add_command	{File.Check database}		12 6 {CheckDatabase \$io}
 #add_command	{File.Copy database}		 8 10 {CopyDatabase \$io}
 #add_command	{File.Copy readings}		 8 26 {CopyReads \$io}
 add_command	{File.Change directory}		 1 2 {ChangeDirectory} e

@@ -139,7 +139,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"contig_order","num_contigs",  "seq_name2rec", "child",
 	"get_library", "db_version",   "name",         "read_only",
 	"new_contig",  "new_sequence", "new_anno_ele", "rec_exists",
-	"seq_name_iter","seq_name_next","seq_name_end", 
+	"seq_name_iter","seq_name_next","seq_name_end","check",
 	(char *)NULL,
     };
 
@@ -149,7 +149,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
 	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
 	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,   IO_REC_EXISTS,
-	SEQ_NAME_ITER,SEQ_NAME_NEXT,  SEQ_NAME_END
+	SEQ_NAME_ITER,SEQ_NAME_NEXT,  SEQ_NAME_END,   CHECK,
     };
 
     if (objc < 2) {
@@ -322,6 +322,19 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	    io->seq_name_iter = NULL;
 	}
 	break;
+
+    case CHECK:  {
+	int fix = 0, level = 2;
+	if (objc >= 3)
+	    Tcl_GetIntFromObj(interp, objv[2], &fix);
+	if (objc >= 4)
+	    Tcl_GetIntFromObj(interp, objv[3], &level);
+	
+
+	Tcl_SetObjResult(interp,
+			 Tcl_NewIntObj(check_database(io, fix, level)));
+	break;
+    }
     }
 
     return TCL_OK;
@@ -972,11 +985,19 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
     }
 
-    case CHECK: 
-	Tcl_SetIntObj(Tcl_GetObjResult(interp),
-		      check_contig(tc->io, tc->contig->rec));
-	break;
+    case CHECK: {
+	int fix = 0, level = 2;
+	int ret;
+
+	if (objc >= 3)
+	    Tcl_GetIntFromObj(interp, objv[2], &fix);
+	if (objc >= 4)
+	    Tcl_GetIntFromObj(interp, objv[3], &level);
 	
+	ret = check_contig(tc->io, tc->contig->rec, fix, level, NULL);
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(ret));
+	break;
+    }
     }
 
     return TCL_OK;

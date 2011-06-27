@@ -21,7 +21,7 @@ set_def ERROR_SCROLL		1
 set_def DIFF_WARNING		20
 set_def LOGGING			1
 set_def MAX_MENU_ITEMS		40
-set_def CHECKDB_AT_STARTUP	-1
+set_def CHECKDB_AT_STARTUP	0
 set_def ALIGNMENT.OPEN.COST	8
 set_def ALIGNMENT.EXTEND.COST	7
 set_def ALIGNMENT.MATRIX_FILE	$env(STADTABL)/nuc_matrix
@@ -1312,6 +1312,11 @@ set_def PREFINISH.CONFIG_FILE $env(STADTABL)/config.prefinish
 
 # fasta/fastq assembly
 set_def ASSEMBLE_SINGLE.FORMAT 1
+
+# Check Database
+set_def CHECK_DATABASE.INFILE	$defs_c_in
+set_def CHECK_DATABASE.FIX	0
+set_def CHECK_DATABASE.DETAIL	2; # 2=>Thorough, 1=>Fast
 
 # Set this to a Tcl list of the interpreter names of programs which Gap4 can
 # communicate with using the Send To command. If they're not already running,
