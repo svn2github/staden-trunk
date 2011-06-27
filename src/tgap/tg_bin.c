@@ -907,10 +907,6 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    seq_start = r->start;
 	    seq_end   = r->end;
 
-	    printf("this read    = %d..%d\n", r->start, r->end);
-	    printf("curr extents = %d..%d\n", bin->start_used, bin->end_used);
-	    printf("new extents  = %d..%d\n", start, end);
-
 	    if (bin->start_used != start || bin->end_used != end) {
 		bin->start_used = start;
 		bin->end_used = end;
