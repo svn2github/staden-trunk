@@ -2122,6 +2122,7 @@ static int range_next_by_type2(GapIO *io, contig_t *c, int bin_num,
     }
 
     if (best_start <= start) {
+	cache_decr(io, bin);
 	return start;
     }
 
@@ -2294,6 +2295,7 @@ static int range_prev_by_type2(GapIO *io, contig_t *c, int bin_num,
     }
 
     if (best_start >= start) {
+	cache_decr(io, bin);
 	return start;
     }
 
@@ -2901,6 +2903,7 @@ int contig_destroy(GapIO *io, tg_rec rec) {
     }
 
     io->db->Ncontigs--;
+    ArrayMax(io->contig_order)--;
 
     /* Remove from registration system */
     contig_register_delete(io, rec);
