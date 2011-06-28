@@ -226,7 +226,7 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r) {
 	}
 
 	if (acontig != ocontig || astart < ostart || aend > oend) {
-	    vmessage("Anno %"PRIrec": does not overlap annotated object:",
+	    vmessage("Anno %"PRIrec": does not overlap annotated object:\n",
 		     a->rec);
 	    vmessage("\tTag Ctg %"PRIrec" at %d..%d\n", acontig, astart, aend);
 	    vmessage("\tObj Ctg %"PRIrec" at %d..%d\n", ocontig, ostart, oend);
@@ -265,6 +265,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
     int i, f_a, f_b, err = 0;
     bin_stats child_stats;
     int start, end, cstart, cend, nthis_seq = 0;
+    int valid_range;
 
     if (!rec)
 	return 1;
@@ -330,12 +331,15 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
     end    = INT_MIN;
     cstart = INT_MAX;
     cend   = INT_MIN;
+    valid_range = 0;
     if (bin->rng) {
 	for (i = 0; i < ArrayMax(bin->rng); i++) {
 	    range_t *r = arrp(range_t, bin->rng, i);
 
 	    if (r->flags & GRANGE_FLAG_UNUSED)
 		continue;
+
+	    valid_range = 1;
 
 #ifdef DEBUG_CHECK
 	    printf("Range item %d: %d..%d (abs %d..%d)\n",
@@ -423,7 +427,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
      * Check used start/end range, and accumulate absolute positions so we
      * can check the contig later.
      */
-    if (bin->rng) {
+    if (valid_range) {
 	if (start != bin->start_used ||
 	    end   != bin->end_used) {
 	    vmessage("bin %"PRIrec": used start/end range are incorrect\n",
@@ -476,6 +480,12 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
     contig_t *c;
     bin_stats bs;
     int err;
+
+    if (!cache_exists(io, GT_Contig, crec)) {
+	vmessage("Record %"PRIrec" is not a contig, but in contig order\n",
+		 crec);
+	return 1;
+    }
 
     c = cache_search(io, GT_Contig, crec);
     cache_incr(io, c);
@@ -545,6 +555,11 @@ int check_database(GapIO *io, int fix, int level) {
     if (db->Ncontigs != ArrayMax(contig_order)) {
 	vmessage("Contig order array is not the same size as db->Ncontigs\n");
 	err++;
+	if (fix) {
+	    cache_rw(io, io->contig_order);
+	    ArrayMax(io->contig_order) = io->db->Ncontigs;
+	    ArrayMax(contig_order) = io->db->Ncontigs;
+	}
     }
 
     for (i = 0; i < ArrayMax(contig_order); i++) {
