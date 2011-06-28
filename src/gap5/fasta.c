@@ -356,9 +356,9 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 	static int dummy_qual_len;
 	static char *dummy_qual = NULL;
 
-	//printf("@%s\n%s\n+\n%s\n", ent->name, ent->seq, ent->qual);
-	//printf("%d\tSeq %s len %d / %d\n",
-	//nseqs, ent->name, (int)strlen(ent->seq), ent->seq_len);
+	// printf("@%s\n%s\n+\n%s\n", ent->name, ent->seq, ent->qual);
+	// printf("%d\tSeq %s len %d / %d\n",
+	// nseqs, ent->name, (int)strlen(ent->seq), ent->seq_len);
 
 	/* Create 1 read contig */
 	create_new_contig(io, &c, ent->name, 0);
@@ -375,7 +375,7 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 	seq.right    = ent->seq_len;
 
 	seq.name_len = strlen(ent->name);
-	seq.name     = ent->name;
+	seq.name     = strdup(ent->name);
 
 	seq.seq      = ent->seq;
 	seq.len      = ent->seq_len;
@@ -422,7 +422,7 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 			    GRANGE_FLAG_TYPE_SINGLE,
 			    NULL  /* library */
 			    );
-
+			 
 	if ((++nseqs & 0xff) == 0) {
 	    int perc = 0;
 	    off_t pos = zftello(fp);
