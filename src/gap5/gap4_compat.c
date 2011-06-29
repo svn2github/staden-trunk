@@ -226,6 +226,11 @@ tg_rec contig_name_to_number(GapIO *io, char *name) {
     } else {
 	n = contig_index_query(io, name);
     }
+    if (n <= 0) {
+	n = read_name_to_number(io, name);
+	if (n > 0)
+	    n = rnumtocnum(io, n);
+    }
     return n > 0 ? n : 0;
 }
 
