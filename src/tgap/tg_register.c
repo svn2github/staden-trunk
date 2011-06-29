@@ -695,9 +695,16 @@ void contig_notify(GapIO *io, tg_rec contig, reg_data *jdata) {
     while (io->base)
 	io = io->base;
 
-    send_event(io, io_contig_reg(io), contig, jdata, -1);
-    if (contig)
-	send_event(io, io_contig_reg(io), -contig, jdata, -1);
+    /* Hack for QUIT_DISPLAYS, but need to tidy up contig 0 I think */
+    /* Do this for all contig 0 events? */
+    /* Or always register every method with contig 0? */
+    if (jdata->job == REG_QUIT && contig == 0) {
+	broadcast_event(io, io_contig_reg(io), jdata, -1);
+    } else {
+	send_event(io, io_contig_reg(io), contig, jdata, -1);
+	if (contig)
+	    send_event(io, io_contig_reg(io), -contig, jdata, -1);
+    }
 }
 
 void contig_notify_except(GapIO *io, tg_rec contig, reg_data *jdata, int id) {

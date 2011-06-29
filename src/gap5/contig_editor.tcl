@@ -464,6 +464,10 @@ proc contig_register_callback {ed type id args} {
 	HIGHLIGHT_READ {
 	    $ed redraw
 	}
+
+	QUIT {
+	    return [editor_exit $w]
+	}
 	
 	default {
 	    puts "Event '$type $id $args' not handled"

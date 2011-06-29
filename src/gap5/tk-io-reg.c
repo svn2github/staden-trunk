@@ -1028,6 +1028,13 @@ static void tk_contig_register_cmd(GapIO *io, tg_rec contig, void *fdata,
 	sprintf(buf, "%.1024s", Tcl_GetStringResult(crt->interp));
 	jdata->params.string = buf;
 	break;
+
+    case REG_QUIT:
+	/* True = ok to quit, false = don't quit */
+	if (atoi(Tcl_GetStringResult(crt->interp)) == 0) {
+	    jdata->glock.lock &= ~REG_LOCK_WRITE;
+	}
+	break;
     }
 
     if (--crt->ref == 0) {
