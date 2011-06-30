@@ -3904,7 +3904,7 @@ static int io_seq_index_del(void *dbh, char *name) {
  * Either way the reading code will handle it as the first format byte
  * is adjusted to indicate whether reordering took place.
  */
-
+#define FAST_REORDER
 static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     GView v;
@@ -4052,9 +4052,66 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     }
 
     if (reorder_by_read_group) {
+#ifdef FAST_REORDER
+	int l;
+
+	for (i = k = l = first_seq; i < SEQ_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+
+	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
+	    in[l].idx = i;
+	    l = i;
+
+	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
+		if ((in[j].parent_rec && in[j].parent_rec != in[i].parent_rec)
+		    || !in[j].bin)
+		    continue;
+		
+		cp += u72int(cp, (uint32_t *)&in[j].name_len);
+		in[j].parent_rec = -in[j].parent_rec;
+
+		/* Thread a linked list of reordered records through .idx */
+		in[l].idx = j;
+		l = j;
+	    }
+
+	    /* 1 loop only */
+	    i++;
+	    break;
+	}
+
+	for (; i < SEQ_BLOCK_SZ; i++) {
+	    /*
+	     * If this is one we've already processed, then continue.
+	     * We mark "already processed" by negating the parent_rec.
+	     * For parent_rec == 0 this obviously doesn't work, so we
+	     * always deal with those in the first pass.
+	     */
+	    if (in[i].parent_rec < 0 || in[i].parent_rec == 0 || !in[i].bin) {
+		in[i].parent_rec = -in[i].parent_rec;
+		continue;
+	    }
+
+	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
+	    in[l].idx = i;
+	    l = i;
+
+	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
+		if ((in[j].parent_rec && in[j].parent_rec != in[i].parent_rec)
+		    || !in[j].parent_rec || !in[j].bin)
+		    continue;
+
+		cp += u72int(cp, (uint32_t *)&in[j].name_len);
+		in[j].parent_rec = -in[j].parent_rec;
+		in[l].idx = j;
+		l = j;
+	    }
+	}
+ 	in[l].idx = -1;
+#else
 	int p1 = 1;
 
-	for (i = k = 0; i < SEQ_BLOCK_SZ; i++) {
+	for (i = k = first_seq; i < SEQ_BLOCK_SZ; i++) {
 	    if (!in[i].bin) continue;
 
 	    /*
@@ -4081,6 +4138,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 
 	    p1 = 0;
 	}
+#endif
     } else {
 	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	    if (!in[i].bin) continue;
@@ -4131,7 +4189,9 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	    in[i].anno = NULL;
 	    *b->seq[i] = in[i];
 	    b->seq[i]->block = b;
+#ifndef FAST_REORDER
 	    b->seq[i]->idx = i;
+#endif
 	} else {
 	    b->seq[i] = NULL;
 	}
@@ -4140,6 +4200,16 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     /* Decode variable sized components */
     /* Names */
     if (reorder_by_read_group) {
+#ifdef FAST_REORDER
+	seq_t *s;
+	for (i = first_seq; i != -1; i = s->idx) {
+	    s = b->seq[i];
+	    s->name = (char *)&s->data;
+	    memcpy(s->name, cp, s->name_len);
+	    cp += s->name_len;
+	    s->name[s->name_len] = 0;
+	}
+#else
 	for (i = k = 0; i < SEQ_BLOCK_SZ; i++) {
 	    seq_t *s = b->seq[i];
 	    if (!s) continue;
@@ -4178,6 +4248,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 		s2->parent_rec = -s2->parent_rec;
 	    }
 	}
+#endif
     } else {
 	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	    if (!b->seq[i]) continue;
@@ -4223,6 +4294,16 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 
     /* Quality */
     if (reorder_by_read_group) {
+	seq_t *s;
+#ifdef FAST_REORDER
+	for (i = first_seq; i != -1; i = s->idx) {
+	    s = b->seq[i];
+	    s->conf = s->seq + ABS(s->len);
+	    memcpy(s->conf, cp, ABS(s->len));
+	    cp += ABS(s->len);
+
+	}
+#else
 	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	    seq_t *s = b->seq[i];
 	    if (!s) continue;
@@ -4252,6 +4333,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 		s2->parent_rec = -s2->parent_rec;
 	    }
 	}
+#endif
     } else {
 	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	    if (!b->seq[i]) continue;
@@ -4275,6 +4357,13 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	    cp += b->seq[i]->aux_len;
 	}
     }
+
+#ifdef FAST_REORDER
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!b->seq[i]) continue;
+	b->seq[i]->idx = i;
+    }
+#endif
 
     assert(cp - buf == buf_len);
     free(buf);
