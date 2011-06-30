@@ -259,22 +259,28 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		    cache_incr(io, s);
 
 		/* Update consensus and quality */
-		tmp_qual = calloc(bend - bstart + 1, sizeof(float));
+		if (!qual && io->read_only) {
+		    tmp_qual = NULL;
+		} else {
+		    tmp_qual = calloc(bend - bstart + 1, sizeof(float));
+		}
 
 		calculate_consensus_simple2(io, contig,
 					    bstart, bend,
 					    s->seq, tmp_qual);
 
-		for (n = 0; n < ABS(s->len); n++) {
-		    int q = rint(tmp_qual[n]);
-		    if (q < 0)
-			s->conf[n] = 0;
-		    else if (q > 127)
-			s->conf[n] = 127;
-		    else
-			s->conf[n] = q;
-		}			
-		free(tmp_qual);
+		if (tmp_qual) {
+		    for (n = 0; n < ABS(s->len); n++) {
+			int q = rint(tmp_qual[n]);
+			if (q < 0)
+			    s->conf[n] = 0;
+			else if (q > 127)
+			    s->conf[n] = 127;
+			else
+			    s->conf[n] = q;
+		    }			
+		    free(tmp_qual);
+		}
 
 
 		/* If cached and range changed, move sequence */
@@ -391,7 +397,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 				    qual ? &qual[left-start] : NULL); 
     }
 
-    if (!io->base)
+    if (!io->base && !io->read_only)
 	cache_flush(io);
 
     return 0;
