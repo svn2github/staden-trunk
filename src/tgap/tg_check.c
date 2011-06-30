@@ -302,6 +302,17 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	if (!bin->child[i])
 	    continue;
 	ch = get_bin(io, bin->child[i]);
+	if (!ch) {
+	    vmessage("bin %"PRIrec" failed to load.\n",
+		     bin->child[i]);
+	    err++;
+	    if (fix) {
+		bin = cache_rw(io, bin);
+		bin->flags |= BIN_BIN_UPDATED;
+		bin->child[i] = 0;
+	    }
+	    continue;
+	}
 
 	child_stats.cstart = INT_MAX;
 	child_stats.cend   = INT_MIN;
