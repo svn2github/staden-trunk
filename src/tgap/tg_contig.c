@@ -156,7 +156,10 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
 		(r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
-		assert(ABS(r->end - r->start) + 1 == ABS(s->len));
+		if (ABS(r->end - r->start) + 1 != ABS(s->len)) {
+		    verror(ERR_WARN, "contig_insert_base2", 
+			   "Range start/end are inconsistent with seq len. ");
+		}
 
 		if (base) {
 		    sequence_insert_base(io, &s, pos - MIN(r->start, r->end),
