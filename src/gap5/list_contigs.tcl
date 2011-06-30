@@ -196,6 +196,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	"DELETE" -
 	"QUIT" {
 	    destroy [winfo toplevel $w]
+	    return 1
 	}
 
 	"LENGTH" -
