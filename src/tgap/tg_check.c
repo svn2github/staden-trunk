@@ -50,8 +50,8 @@ static int check_seq(GapIO *io, bin_index_t *bin, range_t *r,
 	isbase['C'] = isbase['c'] = 1;
 	isbase['G'] = isbase['g'] = 1;
 	isbase['T'] = isbase['t'] = 1;
-	isbase['N'] = isbase['-'] = 1;
-	isbase['*'] = 1;
+	isbase['N'] = isbase['n'] = 1;
+	isbase['*'] = isbase['-'] = 1;
 	isbase['0'] = isbase['1'] = 1;
 	isbase['2'] = isbase['3'] = 1;
 	init_done = 1;
