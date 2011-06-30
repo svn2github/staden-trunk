@@ -588,7 +588,7 @@ proc get_consensus {args} {
 	    switch $opt(-format) {
 		1 {
 		    # Fastq
-		    set qual [calc_quality -io $io -contigs =$crec]
+		    set qual [calc_quality -io $io -contigs "{=$crec $start $end}"]
 		    if {$opt(-strip_pads)} {
 			Strip_Pads $cons $qual new_cons new_qual
 			set cons $new_cons; unset new_cons
