@@ -582,6 +582,7 @@ proc get_consensus {args} {
 	    set c [$io get_contig $crec]
 	    if {$start == ""} {set start [$c get_start]}
 	    if {$end   == ""} {set end   [$c get_end]}
+	    $c delete
 
 	    set cons [calc_consensus -io $io -contigs "{=$crec $start $end}"]
 	    switch $opt(-format) {
