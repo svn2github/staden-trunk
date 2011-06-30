@@ -94,7 +94,8 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
  * Returns 0 on success (plus *contig & *pos)
  *        -1 on failure
  */
-int bin_get_position(GapIO *io, bin_index_t *bin, tg_rec *contig, int *pos);
+int bin_get_position(GapIO *io, bin_index_t *bin, tg_rec *contig, int *pos,
+		     int *comp);
 
 /*
  * Removes a record referenced from a known bin

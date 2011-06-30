@@ -1028,23 +1028,33 @@ int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec) {
  * Returns 0 on success (plus *contig & *pos)
  *        -1 on failure
  */
-int bin_get_position(GapIO *io, bin_index_t *bin, tg_rec *contig, int *pos) {
+int bin_get_position(GapIO *io, bin_index_t *bin, tg_rec *contig, int *pos,
+		     int *comp_p) {
     tg_rec bnum;
     int offset = 0;
-
-    offset += bin->pos;
+    int comp = 0;
 
     /* Find the position of this bin relative to the contig itself */
-    while (bin->parent_type == GT_Bin) {
+    for (;;) {
+	if (bin->flags & BIN_COMPLEMENTED) {
+	    offset = bin->size-1 - offset;
+	    comp ^= 1;
+	}
+	offset += bin->pos;
+
+	if (bin->parent_type != GT_Bin)
+	    break;
+
 	bnum = bin->parent;
 	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
-	offset += bin->pos;
     }
     
     assert(bin->parent_type == GT_Contig);
     *contig = bin->parent;
 
     *pos = offset;
+    if (comp_p)
+	*comp_p = comp;
 
     return 0;
 }
@@ -1276,7 +1286,7 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
     }
 
     /* Else use child bin tracks, in ever-decreasing circles */
-    if (-1 == bin_get_position(io, bin, &cnum, &pos))
+    if (-1 == bin_get_position(io, bin, &cnum, &pos, NULL))
 	return NULL;
     c = (contig_t *)cache_search(io, GT_Contig, cnum);
     child = contig_get_track(io, &c, pos, pos + bin->size-1, type, bpv);

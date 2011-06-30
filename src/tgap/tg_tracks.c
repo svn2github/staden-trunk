@@ -28,7 +28,7 @@ int *track_read_depth_r1(GapIO *io, bin_index_t *bin) {
     if (!bin->rng)
 	return depth;
 
-    if (-1 == bin_get_position(io, bin, &cnum, &pos))
+    if (-1 == bin_get_position(io, bin, &cnum, &pos, NULL))
 	return NULL;
     c = (contig_t *)cache_search(io, GT_Contig, cnum);
     r = contig_seqs_in_range(io, &c, pos, pos+bin->size-1, 0, &nr);

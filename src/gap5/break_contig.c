@@ -115,7 +115,7 @@ static void remove_empty_bins(GapIO *io, tg_rec contig) {
 	if (first != c->bin) {
 	    bin_index_t *bin;
 	    tg_rec bp, br, cdummy;
-	    int offset;
+	    int offset, comp;
 
 	    /* Cut out the offending waste */
 	    bin = cache_search(io, GT_Bin, first);
@@ -123,7 +123,12 @@ static void remove_empty_bins(GapIO *io, tg_rec contig) {
 	    bp = bin->parent;
 
 	    // Find new bin offset
-	    bin_get_position(io, bin, &cdummy, &offset);
+	    if (bin_get_orient(io, bin->rec))
+		bin->flags |= BIN_COMPLEMENTED;
+	    else
+		bin->flags &= ~BIN_COMPLEMENTED;
+
+	    bin_get_position(io, bin, &cdummy, &offset, &comp);
 	    assert(cdummy == contig);
 
 	    bin->pos = offset;
@@ -1020,6 +1025,14 @@ int break_contig(GapIO *io, tg_rec crec, int cpos) {
     cr->start = 1;
     cr->end = cl->end - right_start + 1;
     bin->pos -= right_start-1;
+
+    /*
+     * END may not be cl->end - right_start + 1 if the previous right hand
+     * end was a long read that started before the break point.
+     * Brute force and find it. The current cr->end is just a maximum possible
+     * extent to make consensus_unclipped_range() efficient.
+     */
+    consensus_unclipped_range(io, cr->rec, NULL, &cr->end);
 #else
     cr->start = right_start;
     cr->end = cl->end;
