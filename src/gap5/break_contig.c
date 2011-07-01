@@ -1038,6 +1038,8 @@ int break_contig(GapIO *io, tg_rec crec, int cpos) {
     cr->end = cl->end;
 #endif
 
+    consensus_unclipped_range(io, cl->rec, &cl->start, NULL);
+
     if ((do_comp && !(bin->flags & BIN_COMPLEMENTED)) ||
 	(!do_comp && (bin->flags & BIN_COMPLEMENTED))) {
 	bin->flags ^= BIN_COMPLEMENTED;
