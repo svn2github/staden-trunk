@@ -390,7 +390,7 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     int offset, ret;
     int overlapLength;
     int len0,len1;
-    int shift = 0;
+    int shift = 0, extra;
     edview **xx2;
 
     int l0, l1, r0, r1; /* contig used extents */
@@ -448,22 +448,23 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 	}
     }
 
-    /* Add on extra data either end to allow for padding */
-#define XTRA_PERC 0.30
     overlapLength = right0 - left0+1;
     if (overlapLength <= 0) return 0; /* nothing to do */
 
+    /* Add on extra data either end to allow for padding */
+    extra = set_band_blocks(overlapLength, overlapLength)/2;
+
     if (!fixed_left) {
-	left0 -= (int)(overlapLength * XTRA_PERC);
-	left1 -= (int)(overlapLength * XTRA_PERC);
+	left0 -= extra;
+	left1 -= extra;
 
 	if (left0 < l0) left0 = l0;
 	if (left1 < l1) left1 = l1;
     }
 
     if (!fixed_right) {
-	right0  += (int)(overlapLength * XTRA_PERC);
-	right1  += (int)(overlapLength * XTRA_PERC);
+	right0 += extra;
+	right1 += extra;
 
 	if (right0 > r0) right0 = r0;
 	if (right1 > r1) right1 = r1;
