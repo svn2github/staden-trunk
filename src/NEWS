@@ -1,14 +1,37 @@
-?? 2011
--------
+July 1st 2011
+-------------
 
 Gap5 Updates
 ============
 
 *	Added a Check Database function. It's slow, but a useful
-        sanity check for me during development, and maybe others.
+        sanity check for me during development, and maybe for others.
 
 Gap5 Fixes
 ==========
+
+*	Importing from fasta files should be more robust now.
+
+*	Fixed a stack corruption when importing from ACE. Sequences
+        imported now also have a mapping score of 255.
+
+*	Fixed a memory corruption in the new consensus algorithm.
+
+*	Removed several reference count leaks in List Contigs, Save
+        Consensus and consensus iterators. This included things like
+        the consensus computed for Find Internal Joins.
+
+*	Improved handling of contig identifiers: fixed a crash when
+        given #<rec> where <rec> is neither a contig or a reading;
+        contig lists now work when the entries are sequence names.
+
+*	The contig editor now correctly responds to notifications that
+        the program is trying to shut down, asking the user if they
+        wish to save. Formly it would sometimes simply crash.
+
+*	Fixed another Break Contig bug that caused data to be moved
+        within the contig rather than starting at base 1. This only
+        happened after some combinations of complementing and joining.
 
 
 Jun 23rd 2011

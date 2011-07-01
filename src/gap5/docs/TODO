@@ -1,3 +1,7 @@
+*	BUG: break_contig with position < contig_start gives a
+        negative length contig and corruptions/crashes. Should do
+        nothing.
+
 *	BUG: complementing a contig via the contig list does nothing.
 
 *	BUG: (hp3) A contig with data from 1.0mill to 1.01mill shows a
