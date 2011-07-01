@@ -171,6 +171,30 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r) {
 	err++;
     }
 
+    /* Types match */
+    switch (a->obj_type) {
+    case GT_Contig:
+	if (r->flags & GRANGE_FLAG_TAG_SEQ) {
+	    vmessage("Anno %"PRIrec": range flags indicate sequence, but anno "
+		     "obj_type claims contig\n", a->rec);
+	    err++;
+	}
+	break;
+
+    case GT_Seq:
+	if (!(r->flags & GRANGE_FLAG_TAG_SEQ)) {
+	    vmessage("Anno %"PRIrec": range flags indicate contig, but anno "
+		     "obj_type claims sequence\n", a->rec);
+	    err++;
+	}
+	break;
+
+    default:
+	vmessage("Anno %"PRIrec": unrecognised value (%d) for obj_type\n",
+		 a->rec, a->obj_type);
+	err++;
+    }
+
     /* That anno links to the correct data type */
     if (a->obj_rec && !cache_exists(io, a->obj_type, a->obj_rec)) {
 	vmessage("Anno %"PRIrec": obj_rec/type do not match\n", a->rec);
@@ -183,7 +207,7 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r) {
 		"range_t struct.\n", a->rec);
 	err++;
     }
-    if (a->obj_rec != r->pair_rec) {
+    if (a->obj_type != GT_Contig && a->obj_rec != r->pair_rec) {
 	vmessage("Anno %"PRIrec": obj_rec does not match copy "
 		 "in range_t struct.\n", a->rec);
 	err++;
@@ -209,7 +233,13 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r) {
 	    contig_t *c;
 
 	    ocontig = a->obj_rec;
-	    c = cache_search(io, GT_Contig, acontig);
+	    if (ocontig && ocontig != acontig) {
+		/* Previously an error, but removed assumptions on this */
+		vmessage("Anno %"PRIrec": non-zero obj_rec with obj_type "
+			 "GT_Contig is deprecated\n", a->rec);
+	    }
+	    ocontig = acontig;
+	    c = cache_search(io, GT_Contig, ocontig);
 	    if (!c) {
 		cache_decr(io, a);
 		return err+1;

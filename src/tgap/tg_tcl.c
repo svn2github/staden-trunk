@@ -879,7 +879,11 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	if (objc >= 6) {
 	    Tcl_GetWideIntFromObj(interp, objv[5], &obj_rec);
 	} else {
-	    obj_rec = a->obj_rec;
+	    if (obj_type == GT_Contig) {
+		obj_rec = tc->contig->rec;
+	    } else {
+		obj_rec = a->obj_rec;
+	    }
 	}
 
 
@@ -1687,7 +1691,15 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     case GET_OBJ_REC:
-	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), te->anno->obj_rec);
+	if (te->anno->obj_type == GT_Contig) {
+	    tg_rec contig;
+	    if (NULL == (anno_get_range(te->io, te->anno->rec, &contig, 0)))
+		return TCL_ERROR;
+	    
+	    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), contig);
+	} else {
+	    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), te->anno->obj_rec);
+	}
 	break;
 
     case SET_OBJ_REC: {

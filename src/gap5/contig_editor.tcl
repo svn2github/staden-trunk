@@ -1773,7 +1773,7 @@ proc editor_shift {w where dir} {
 	set cons_anno {}
 	foreach a $anno {
 	    # Consensus anno only
-	    if {[lindex $a 8] != $rec} continue
+	    if {[lindex $a 12] != 0} continue
 
 	    # And only those starting at this base, which won't be shifted.
 	    if {[lindex $a 0] != $pos} continue
@@ -2155,7 +2155,8 @@ proc tag_repopulate_menu {w} {
     # Perhaps not the most efficient approach, but it works
     set c [$cio(io) get_contig $cio(crec)]
     foreach anno [$c anno_in_range $apos $apos] {
-	if {$rrec == [lindex $anno 8]} {
+	if {$rrec == [lindex $anno 8] || \
+		($cio(crec) == $rrec && [lindex $anno 12] == 0)} {
 	    foreach {start end rec itype} $anno break
 	    set type ""
 	    while {$itype > 0} {

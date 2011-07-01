@@ -238,7 +238,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 		continue;
 
-	    if ( (r->pair_rec == crec &&
+	    if ( (!(r->flags & GRANGE_FLAG_TAG_SEQ) &&
 		  MIN(r->start, r->end) >= pos)
 		||
 		 HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec))){
@@ -576,7 +576,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 		continue;
 
-	    if ( (r->pair_rec == crec &&
+	    if ( (!(r->flags & GRANGE_FLAG_TAG_SEQ) &&
 		  MIN(r->start, r->end) >= pos)
 		||
 		 HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec))){

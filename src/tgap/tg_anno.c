@@ -17,7 +17,7 @@ tg_rec anno_ele_new(GapIO *io, tg_rec bin,
 
     e.bin      = bin;
     e.obj_type = obj_type;
-    e.obj_rec  = obj_rec;
+    e.obj_rec  = obj_type == GT_Contig ? 0 : obj_rec;
     e.anno_rec = anno_rec;
     e.tag_type = type;
     e.comment  = comment;
