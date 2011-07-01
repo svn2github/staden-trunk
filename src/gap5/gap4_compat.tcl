@@ -50,10 +50,13 @@ proc cname2crec {io name} {
 
     # #sequence_rec => seq2contig conversion
     if {[string match "\#*" $name]} {
-	set s [$io get_seq [string range $name 1 end]]
-	set cr [$s get_contig]
-	$s delete
-	return $cr
+	set rec [string range $name 1 end]
+	if {[$io rec_exists 18 $rec]} {
+	    set s [$io get_seq $rec]
+	    set cr [$s get_contig]
+	    $s delete
+	    return $cr
+	}
     }
 
     # else "contig_name"

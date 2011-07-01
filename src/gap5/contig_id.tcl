@@ -242,6 +242,10 @@ proc contig_id_rec {path} {
 	    SetContigGlobals [set $path.Io] $cn
 	}
 	$c delete
+    } else {
+	verror ERR_WARN "Unknown contig id \"[entrybox_get $path.ent]\""
+	bell
+	return ""
     }
 
     return $r
