@@ -2861,11 +2861,18 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 
 	    //printf("Unpacked %d ranges from %d bytes\n", nranges, vi.used);
 
-	    bin->rng = ArrayCreate(sizeof(GRange), nranges);
-	    if (ArrayBase(GRange, bin->rng))
-		free(ArrayBase(GRange, bin->rng));
-	    bin->rng->base = r;
-	    ArrayRef(bin->rng, nranges-1);
+	    if (nranges) {
+		bin->rng = ArrayCreate(sizeof(GRange), nranges);
+		
+		if (ArrayBase(GRange, bin->rng))
+		    free(ArrayBase(GRange, bin->rng));
+		bin->rng->base = r;
+		ArrayRef(bin->rng, nranges-1);
+	    } else {
+		if (r)
+		    free(r);
+		bin->rng = NULL;
+	    }
 	} else {
 	    bin->rng = NULL;
 	}
@@ -4063,8 +4070,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	    l = i;
 
 	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
-		if ((in[j].parent_rec && in[j].parent_rec != in[i].parent_rec)
-		    || !in[j].bin)
+		if (!in[j].bin ||
+		    (in[j].parent_rec && in[j].parent_rec != in[i].parent_rec))
 		    continue;
 		
 		cp += u72int(cp, (uint32_t *)&in[j].name_len);
@@ -4087,7 +4094,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	     * For parent_rec == 0 this obviously doesn't work, so we
 	     * always deal with those in the first pass.
 	     */
-	    if (in[i].parent_rec < 0 || in[i].parent_rec == 0 || !in[i].bin) {
+	    if (!in[i].bin || in[i].parent_rec < 0 || in[i].parent_rec == 0) {
 		in[i].parent_rec = -in[i].parent_rec;
 		continue;
 	    }
