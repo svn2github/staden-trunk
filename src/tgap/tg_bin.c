@@ -191,6 +191,8 @@ static int next_range(bin_index_t *bin) {
     } else {
 	int tmp;
 	range_t *r = arrp(range_t, bin->rng, bin->rng_free);
+
+	assert(bin->rng_free < ArrayMax(ra));
 	
 	tmp = bin->rng_free;
 	bin->rng_free = (int)r->rec;
