@@ -2520,7 +2520,7 @@ int edReadEnd(edview *xx) {
 	    seq_t *s = get_seq(xx->io, xx->cursor_rec);
 	    xx->cursor_pos = ABS(s->len);
 	} else {
-	    xx->cursor_pos = xx->contig->end;
+	    xx->cursor_pos = xx->contig->end+1;
 	}
     } else {
 	if (xx->cursor_type == GT_Seq) {
