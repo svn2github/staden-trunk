@@ -60,6 +60,8 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
     int i, j;
     consensus_t q[CONS_BLOCK_SIZE];
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
+
+    cache_incr(io, c);
     
     /* Compute in small ranges */
     for (i = start; i <= end; i += CONS_BLOCK_SIZE) {
@@ -82,6 +84,7 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 		if (qual)
 		    qual[i-start+j] = 0;
 	    }
+	    cache_decr(io, c);
 	    return -1;
 	}
 
@@ -102,6 +105,7 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 	}
     }
 
+    cache_decr(io, c);
     return 0;
 }
 
