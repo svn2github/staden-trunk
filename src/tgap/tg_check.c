@@ -296,6 +296,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
     bin_stats child_stats;
     int start, end, cstart, cend, nthis_seq = 0;
     int valid_range;
+    int db_vers = io->base ? io->base->db->version : io->db->version;
 
     if (!rec)
 	return 1;
@@ -445,14 +446,14 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	}
 	err++;
     }
-    if (io->db->version > 1 && bin->nanno != bs->nanno) {
+    if (db_vers > 1 && bin->nanno != bs->nanno) {
 	vmessage("bin %"PRIrec": nanno does not match observed counts\n",
 		 bin->rec);
 	if (fix)
 	    bin->nanno = bs->nanno;
 	err++;
     }
-    if (io->db->version > 1 && bin->nrefpos != bs->nref) {
+    if (db_vers > 1 && bin->nrefpos != bs->nref) {
 	vmessage("bin %"PRIrec": nrefpos does not match observed counts\n",
 		 bin->rec);
 	if (fix) {
