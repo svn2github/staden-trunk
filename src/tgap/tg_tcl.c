@@ -527,7 +527,7 @@ static int tcl_contig_pileup(tcl_contig *tc, Tcl_Interp *interp,
     /* Produce a tcl list of elements consisting of seq rec, pos, base, qual */
     items = Tcl_NewListObj(0, NULL);
     for (i = 0; i < nr; i++) {
-	Tcl_Obj *ele, *e5[5];
+	Tcl_Obj *ele, *e6[6];
 	seq_t *s = cache_search(io, GT_Seq, r[i].rec);
 	char base;
 	int conf, ret, cut;
@@ -540,13 +540,14 @@ static int tcl_contig_pileup(tcl_contig *tc, Tcl_Interp *interp,
 	    fprintf(stderr, "ERROR: failed to read base at position %d "
 		    "in seq #%"PRIrec"\n", pos, r[i].rec);
 	}
-	e5[0] = Tcl_NewWideIntObj(r[i].rec);
-	e5[1] = Tcl_NewIntObj(pos - r[i].start);
-	e5[2] = Tcl_NewStringObj(&base, 1);
-	e5[3] = Tcl_NewIntObj(conf);
-	e5[4] = Tcl_NewIntObj(cut);
+	e6[0] = Tcl_NewWideIntObj(r[i].rec);
+	e6[1] = Tcl_NewIntObj(pos - r[i].start);
+	e6[2] = Tcl_NewStringObj(&base, 1);
+	e6[3] = Tcl_NewIntObj(conf);
+	e6[4] = Tcl_NewIntObj(cut);
+	e6[5] = Tcl_NewIntObj(r[i].start);
 
-	ele = Tcl_NewListObj(5, e5);
+	ele = Tcl_NewListObj(6, e6);
 
 	Tcl_ListObjAppendElement(interp, items, ele);
     }
@@ -604,7 +605,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
 	"nseqs",	"anno_in_range","get_pileup",   "ref_to_padded",
 	"nrefpos",	"nanno",        "shift_base",   "move_anno",
-	"check",        (char *)NULL,
+	"check",        "move_seq",     (char *)NULL,
     };
 
     enum options {
@@ -614,7 +615,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
 	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
 	NREFPOS,        NANNO,	        SHIFT_BASE,     MOVE_ANNO,
-	CHECK,
+	CHECK,          MOVE_SEQ
     };
 
     if (objc < 2) {
@@ -833,6 +834,65 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 		s->right = ABS(s->len) - (tmp-1);
 	    }
 	}
+	break;
+    }
+
+    case MOVE_SEQ: {
+	/* A combination of remove and add */
+	Tcl_WideInt rec;
+	seq_t *s;
+	bin_index_t *bin;
+	range_t r, *r_out;
+	int dist, dir;
+
+	if (objc < 4) {
+	    vTcl_SetResult(interp, "wrong # args: should be \"%s "
+			   "move_seq rec distance\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetWideIntFromObj(interp, objv[2], &rec);
+	Tcl_GetIntFromObj(interp, objv[3], &dist);
+
+	/* Get old range coords and convert from relative to absolute */
+	s = cache_search(tc->io, GT_Seq, rec);
+	cache_incr(tc->io, s);
+
+	bin = cache_search(tc->io, GT_Bin, s->bin);
+	r = arr(range_t, bin->rng, s->bin_index);
+	assert(r.rec == s->rec);
+	assert(ABS(r.end - r.start) + 1 == ABS(s->len));
+	sequence_get_position(tc->io, s->rec, NULL, &r.start, &r.end, &dir);
+
+	bin_remove_item(tc->io, &tc->contig, GT_Seq, rec);
+
+	/* Add it back at the new range */
+	r.start += dist;
+	r.end += dist;
+	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL, 0);
+
+	/* Update seq if parent has changed */
+	if (s->bin != bin->rec) {
+	    int old_comp = bin_get_orient(tc->io, s->bin);
+	    int new_comp = bin_get_orient(tc->io, bin->rec);
+
+	    s = cache_rw(tc->io, s);
+	    s->bin = bin->rec;
+	    s->bin_index = r_out - ArrayBase(range_t, bin->rng);
+
+	    /* Check if the new bin has a different complemented status too */
+	    if (new_comp != old_comp) {
+		int tmp;
+		s->len *= -1;
+		tmp = s->left;
+		s->left  = ABS(s->len) - (s->right-1);
+		s->right = ABS(s->len) - (tmp-1);
+	    }
+	}
+
+	cache_decr(tc->io, s);
+
 	break;
     }
 

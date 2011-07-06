@@ -147,9 +147,42 @@ proc io_undo_exec {w crec cmdu} {
 		set contig [$io get_contig $op1]
 		$contig insert_base $op2
 		foreach seq $op3 {
-		    foreach {rec pos base val cut} $seq break;
+		    foreach {rec pos base val cut start} $seq break;
 		    set seq [$io get_sequence $rec]
-		    $seq replace_base $pos $base $val
+
+		    if {$pos >= abs([$seq get_length])} {
+			# Add to end as "$contig insert_base" hasn't
+			$seq insert_base $pos $base $val
+
+			# Whether or not the insert also moved depends on
+			# orientation, so we may also need to fix this
+			set s_pos [$seq get_position]
+			if {$s_pos != $start} {
+			    $contig move_seq $rec [expr {$start-$s_pos}]
+			}
+		    } else {
+			set s_pos [$seq get_position]
+			if {$start != $s_pos} {
+			    # $contig insert_base moved the sequence instead
+			    # of inserting to it, probably because we're
+			    # adding to the first base. Manually insert instead
+			    $seq insert_base $pos $base $val
+
+			    # Whether or not the insert also moved depends on
+			    # orientation, so we may also need to fix this
+			    set s_pos [$seq get_position]
+			    if {$s_pos != $start} {
+				$contig move_seq $rec [expr {$start-$s_pos}]
+			    }
+			} else {
+			    # Otherwise it did insert a *, but it may not have
+			    # been the original base we removed and the quality
+			    # is almost certainly wrong. Replace it with the
+			    # correct value.
+			    $seq replace_base $pos $base $val
+			}
+		    }
+			
 		    foreach {b q c} [$seq get_base $pos] break
 		    if {$c != $cut} {
 			# Base was deleted from cutoff, but now in
@@ -236,7 +269,24 @@ proc io_undo_exec {w crec cmdu} {
 	    T_NEW {
 		$w decr_contig
 		array set d $op1
-		set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
+
+		# If we have a record already, we never actually deallocated it
+		# so reuse that record and add it back. This fixes bugs where
+		# higher up in the undo list we may still have that tag record
+		# number referred to.
+		if {[info exists d(rec)] && $d(rec) > 0} {
+		    set c [$io get_contig $cio(crec)]
+		    # The anno isn't actually in $c any more as we're adding
+		    # it back, but "$c move_anno" doesn't care: if the remove
+		    # fails it will assume it wasn't there and so defaults
+		    # to being an add_anno method instead (this doesn't
+		    # exist, hence the hacky approach for quickness).
+		    $c move_anno $d(rec) $d(start) $d(end) $d(otype) $d(orec)
+		    $c delete
+		    set rec $d(rec)
+		} else {
+		    set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
+		}
 		set t [$io get_anno_ele $rec]
 		$t set_comment $d(anno)
 		$t set_type $d(type)
@@ -1474,6 +1524,8 @@ proc editor_undo_info {top {clear 0}} {
 
     set io [$w io]
 
+    set c [$io get_contig $crec]
+
     set msg ""
     foreach cmd $cmdu {
 	foreach {code op1 op2 op3 op4} $cmd break
@@ -2084,6 +2136,7 @@ proc U_tag_change {w rec new_a} {
 	set d(orec)    [$tag get_obj_rec]
 	set d(anno)    [$tag get_comment]
 	set d(default) "?"
+	set d(rec)     $rec
 
 	set old_a [array get d]
 	unset d
@@ -2194,8 +2247,9 @@ proc tag_editor_launch {w where} {
     set d(otype)   [$tag get_obj_type]
     set d(orec)    [$tag get_obj_rec]
     set d(anno)    [$tag get_comment]
-    set d(default) "?"
-    
+    set d(default) "?" 
+    set d(rec)     $rec
+
     $tag delete
 
     create_tag_editor $w.tag_$rec "tag_editor_callback $w $rec" .Tag.$rec
@@ -2238,6 +2292,7 @@ proc tag_editor_create {w} {
     set d(end)     $end
     set d(anno)    "default"
     set d(default) "?"
+    set d(rec)     $rec
 
     create_tag_editor $w.tag_$rec "tag_editor_callback $w $rec" .Tag.$rec
 }
@@ -2796,7 +2851,6 @@ proc editor_oligo_add {ed w} {
 	# Next-best in cutoff data, but keep searching
 	set r_st $pos
 	set r_en [expr {$pos+abs($len)-1}]
-	puts "$r_st,$r_en vs [set ${w}(start)],[set ${w}(end)]"
 	if {[set ${w}(start)] >= $r_st && [set ${w}(end)] <= $r_en} {
 	    set use_rec $rec
 	    set offset -$pos
