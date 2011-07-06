@@ -726,7 +726,10 @@ tg_rec sequence_get_pair(GapIO *io, seq_t *s) {
     /* Jump over to pair */
     r = arrp(range_t, b->rng, s->bin_index);
     assert(r->rec == s->rec);
-    assert(ABS(r->end - r->start) + 1 == ABS(s->len));
+    if (ABS(r->end - r->start) + 1 != ABS(s->len)) {
+	verror(ERR_WARN, "contig_insert_base2", 
+	       "Range start/end are inconsistent with seq len. ");
+    }
 
     return r->pair_rec;
 }
@@ -1264,7 +1267,7 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
     if (pos < n->right)
 	n->right--;
 
-    if (pos >= ABS(n->len) || pos < 0) {
+    if (pos >= ABS(n->len)+1 || pos < 0) {
 	sequence_reset_ptr(n);
 	return 0;
     }
@@ -1315,6 +1318,54 @@ int sequence_range_length(GapIO *io, seq_t **s) {
     assert(r->rec == n->rec);
 
     r->end = r->start + ABS(n->len) - 1;
+
+    /* Check bin used_start/used_end and if changed, contig start/end */
+    if (r->end > bin->end_used) {
+	contig_t *c;
+	int offset = bin->pos;
+	int comp = 0;
+
+	bin = cache_rw(io, bin);
+	bin->end_used = r->end;
+	bin->flags |= BIN_BIN_UPDATED;
+
+	/* If the bin changed size, then possibly so has the contig. */
+	start = bin->start_used;
+	end   = bin->end_used;
+	for (;;) {
+	    if (bin->flags & BIN_COMPLEMENTED) {
+		start = bin->size-1 - start;
+		end   = bin->size-1 - end;
+		comp ^= 1;
+	    }
+	    start += bin->pos;
+	    end   += bin->pos;
+
+	    if (bin->parent_type != GT_Bin)
+		break;
+
+	    bin = (bin_index_t *)cache_search(io, GT_Bin, bin->parent);
+	}
+
+	/* start/end are now the absolute bin position in the contig */
+	c = cache_search(io, GT_Contig, bin->parent);
+
+	/* Make sure contig extends are at least as large as bin start..end */
+	c = cache_rw(io, c);
+	if (c->start > start)
+	    c->start = start;
+	if (c->end < end)
+	    c->end = end;
+
+	/*
+	 * And now compute actual unclipped pos (minus cached consensus seqs).
+	 * We do this in two steps as consensus_unclipped_range() uses a
+	 * contig iterator, which in turn uses the existing c->start and
+	 * c->end parameters so we need them to be at least as large as the
+	 * actual size.
+	 */
+	consensus_unclipped_range(io, c->rec, &c->start, &c->end);
+    }
 
     return 0;
 }
