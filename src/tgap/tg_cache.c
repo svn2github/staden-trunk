@@ -1424,6 +1424,16 @@ static tg_rec cache_item_create_anno_ele(GapIO *io, void *from) {
 
 /*
  * Creates a new item.
+ *
+ * Note this is using io->iface and io->dbh so it directly creates records
+ * using the lower level API, even if this is a child IO. (Both io->dbh and
+ * io->base->dbh will be the same.)
+ *
+ * Therefore our child I/O isn't quite the copy-on-write layer we think it
+ * is for item creation or destruction. It's sufficient for our current
+ * purposes though and the failure mode is harmless - we run the risk of,
+ * say, creating a tag in the editor, quitting without saving it, using up
+ * a record for the GT_AnnoEleBlock but never writing one.
  */
 tg_rec cache_item_create(GapIO *io, int type, void *from) {
     switch (type) {
