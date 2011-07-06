@@ -117,7 +117,8 @@ int contig_offset(GapIO *io, contig_t **c) {
  *          -1 for failure
  */
 static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
-			       int pos, int offset, char base, int conf,
+			       int pos, int start_of_contig,
+			       int offset, char base, int conf,
 			       int comp, HacheTable *hash) {
     int i, ins = 0;
     bin_index_t *bin;
@@ -151,7 +152,9 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	if (r->flags & GRANGE_FLAG_UNUSED)
 	    continue;
 
-	if (MAX(r->start, r->end) >= pos && MIN(r->start, r->end) < pos) {
+	if (pos <= MAX(r->start, r->end) &&
+	    (pos > MIN(r->start, r->end) ||
+	     (start_of_contig && pos >= MIN(r->start, r->end)))) {
 	    /* Insert */
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
 		(r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
@@ -249,10 +252,11 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     }
 
     /* Adjust the bin dimensions */
-    if (ins) {
+    if (ins || base) {
 	bin->size++;
 	if (bin->rng) {
-	    if (pos <= bin->start_used)
+	    if (( start_of_contig && pos <  bin->start_used) ||
+		(!start_of_contig && pos <= bin->start_used))
 		bin->start_used++;
 	    if (pos <= bin->end_used)
 		bin->end_used++;
@@ -274,6 +278,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    if (pos >= MIN(ch->pos, ch->pos + ch->size-1) &&
 		pos <= MAX(ch->pos, ch->pos + ch->size-1)) {
 		ins |= contig_insert_base2(io, crec, bin->child[i], pos,
+					   start_of_contig,
 					   MIN(ch->pos, ch->pos + ch->size-1),
 					   base, conf, comp, hash);
 		/* Children to the right of this one need pos updating too */
@@ -308,6 +313,9 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
     HacheTable *hash = NULL;
     int ret;
 
+    if (pos < (*c)->start || pos > (*c)->end)
+	return 0;
+
     if (!(n = cache_rw(io, *c)))
 	return -1;
     *c = n;
@@ -325,6 +333,7 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
     }
 
     ret = contig_insert_base2(io, n->rec, contig_get_bin(c), pos,
+			      pos == n->start,
 			      contig_offset(io, c), base, conf, 0, hash);
     if (1 != ret)
 	return 0;
@@ -587,7 +596,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     }
 
     /* Adjust the bin dimensions */
-    if (reduced) {
+    if (reduced || !shift) {
 	ret = 1;
 	if (--bin->size <= 0) {
 	    /* Remove object entirely */
