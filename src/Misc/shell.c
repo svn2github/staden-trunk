@@ -9,7 +9,8 @@ void shell_call(char *command, char *output, int len)
     output[0]='\0';
     /* some systems don't prototype this */
     pipe = (FILE *)popen(command,"r");
-    fgets(output,len,pipe);
+    if (!fgets(output,len,pipe))
+	*output = 0;
     pclose(pipe);
 
     /* clobber last new line */
