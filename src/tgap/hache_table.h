@@ -99,6 +99,7 @@ void HacheTableDecRef(HacheTable *h, HacheItem *hi);
 int HacheTableRehash(HacheTable *h, HacheItem *hi, char *key, int key_len);
 
 void HacheTablePurge(HacheTable *h);
+void HacheTableReverse(HacheTable *h);
 void HacheTableStats(HacheTable *h, FILE *fp);
 void HacheTableDump(HacheTable *h, FILE *fp);
 void HacheTableRefInfo(HacheTable *h, FILE *fp);

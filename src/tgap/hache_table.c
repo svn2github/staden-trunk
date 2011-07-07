@@ -1237,6 +1237,30 @@ HacheItem *HacheTableNext(HacheItem *hi, char *key, int key_len) {
 }
 
 /*
+ * Reverses the order of items in a buckets of the hash table.
+ * HacheTableAdd has the effect of reversing the list as it always adds to the
+ * start (for efficiency), but sometimes we wish to keep this order consistent.
+ */
+void HacheTableReverse(HacheTable *h) {
+    int i;
+    for (i = 0; i < h->nbuckets; i++) {
+	HacheItem *hi = h->bucket[i], *last = NULL, *next = NULL;
+
+	if (!hi)
+	    continue;
+
+	while (hi) {
+	    next = hi->next;
+	    hi->next = last;
+	    last = hi;
+	    hi = next;
+	}
+
+	h->bucket[i] = last;
+    }
+}
+
+/*
  * Dumps a textual represenation of the hash table to stdout.
  */
 void HacheTableDump(HacheTable *h, FILE *fp) {

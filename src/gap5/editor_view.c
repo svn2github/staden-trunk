@@ -964,6 +964,9 @@ int edview_visible_items(edview *xx, int start, int end) {
 	HacheTableAdd(xx->anno_hash, (char *)&key, sizeof(key), hd, NULL);
     }
 
+    /* Reverse the order of annotations in the anno_hash. */
+    HacheTableReverse(xx->anno_hash);
+
 #if 0
     puts("");
     for (i = 0; i < xx->nr; i++) {
