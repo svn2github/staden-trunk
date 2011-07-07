@@ -1637,7 +1637,6 @@ proc editor_undo_info {top {clear 0}} {
 #     io_redo [$w contig_rec]
 # } 
 
-
 #-----------------------------------------------------------------------------
 # Basic sequence editing function
 proc editor_edit_base {w call where} {
@@ -3241,6 +3240,16 @@ bind Editor <<menu>> {
 
     tag_repopulate_menu %W
     editor_menu %W %x %y
+}
+
+bind Editor <Control-Key-c> {
+    upvar \#0 [winfo toplevel %W] opt
+ 
+    set w $opt(curr_editor)
+    set crec [$w contig_rec]
+    set c [[$w io] get_contig $crec]
+    vmessage "Check contig: [$c check] errs"
+    $c delete
 }
 
 bind Editor <Key-F9> {editor_oligo_dialog %W}
