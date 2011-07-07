@@ -866,6 +866,7 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
     *binp = bin;
 
     bin->flags &= ~BIN_CONS_VALID;
+    bin->flags |= BIN_BIN_UPDATED;
 
     /* FIXME: use seq->bin_index or anno_ele->idx here as a short-cut?
      * Is loading a seq or anno in addition slower than simply scanning
@@ -955,10 +956,6 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	start = seq_start;
 	end   = seq_end;
 
-	printf("bin ranges => %d..%d / %d..%d\n",
-	       bin->start_used, bin->end_used,
-	       seq_start, seq_end);
-
 	for (;;) {
 	    if (bin->flags & BIN_COMPLEMENTED) {
 		start = bin->size-1 - start;
@@ -975,9 +972,6 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
 	}
 
-	printf("absolute seq range=%d..%d\n", start, end);
-	printf("Contig range      =%d..%d\n", (*c)->start, (*c)->end);
-
 	if (start <= (*c)->start || end >= (*c)->end) {
 	    /*
 	     * Seq is at very end of contig. So we need to do find the
@@ -985,6 +979,8 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	     */
 	    int new_start, *ns;
 	    int new_end, *ne;
+
+	    (*c) = cache_rw(io, *c);
 
 	    ns = start <= (*c)->start ? &new_start : NULL;
 	    ne = end   >= (*c)->end   ? &new_end   : NULL;
