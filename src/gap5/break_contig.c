@@ -535,6 +535,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	bin_dup->rng = bin->rng;
 	bin_dup->rng_rec = bin->rng_rec;
 	bin_dup->rng_free = bin->rng_free;
+	bin_dup->flags |= BIN_BIN_UPDATED;
 	if (bin_dup->rng_rec)
 	    bin_dup->flags |= BIN_RANGE_UPDATED;
 
@@ -726,6 +727,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		r->flags = GRANGE_FLAG_UNUSED;
 		r->rec = bin->rng_free;
 		bin->rng_free = i;
+		bin->flags |= BIN_BIN_UPDATED | BIN_RANGE_UPDATED;
 	    } else {
 		if (lmin > r->start) lmin = r->start;
 		if (lmin > r->end)   lmin = r->end;

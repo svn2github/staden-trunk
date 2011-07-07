@@ -179,8 +179,11 @@ static bin_index_t *contig_extend_bins_left(GapIO *io, contig_t **c) {
  * Allocates and returns next range from a range array
  * Returns -1 for error.
  */
-static int next_range(bin_index_t *bin) {
+static int next_range(GapIO *io, bin_index_t *bin) {
     Array ra = bin->rng;
+
+    bin = cache_rw(io, bin);
+    bin->flags |= BIN_BIN_UPDATED | BIN_RANGE_UPDATED;
 
     if (bin->rng_free == -1) {
 	if (NULL == ArrayRef(ra, ArrayMax(ra)))
@@ -660,7 +663,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     if (!bin->rng)
 	bin->rng = ArrayCreate(sizeof(range_t), 0);
 
-    nr = next_range(bin);
+    nr = next_range(io, bin);
     r2 = arrp(range_t, bin->rng, nr);
 
     *r2 = *r; /* struct copy */
@@ -923,7 +926,6 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    new_contig_range = 0;
 	}
 	
-
 	r->flags |= GRANGE_FLAG_UNUSED;
 	r->rec = (tg_rec)bin->rng_free;
 	bin->rng_free = i;

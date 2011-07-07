@@ -2272,6 +2272,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 	if (r.flags & GRANGE_FLAG_UNUSED) {
 	    if (fmt == 0)
 		cp[2] += int2u7((int32_t)r.rec, cp[2]);
+	    /* INCORRECT - losing linked list */
 	    cp[4] += int2u7(GRANGE_FLAG_UNUSED, cp[4]);
 	    continue;
 	}
@@ -2479,7 +2480,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 	    cp[2] += u72int(cp[2], &i32); r[i].rec = i32;
 	    cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
 	    if (r[i].flags & GRANGE_FLAG_UNUSED) {
-		r[i].rec = 0;
+		r[i].rec = -1;
 		r[i].start = 0;
 		r[i].end = 0;
 		r[i].mqual = 0;
@@ -2526,7 +2527,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 
 	    cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
 	    if (r[i].flags & GRANGE_FLAG_UNUSED) {
-		r[i].rec = 0;
+		r[i].rec = -1;
 		r[i].start = 0;
 		r[i].end = 0;
 		r[i].mqual = 0;
@@ -2577,7 +2578,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 
 	    cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
 	    if (r[i].flags & GRANGE_FLAG_UNUSED) {
-		r[i].rec = 0;
+		r[i].rec = -1; /* INCORRECT!  Losing linked list */
 		r[i].start = 0;
 		r[i].end = 0;
 		r[i].mqual = 0;
