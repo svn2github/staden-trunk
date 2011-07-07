@@ -36,7 +36,7 @@ typedef struct {
  * Checks a sequence struct is consistent, both internally and with the
  * range that points to it.
  */
-static int check_seq(GapIO *io, bin_index_t *bin, range_t *r,
+static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 		     HacheTable *lib_hash) {
     int err = 0;
     int i, len;
@@ -57,17 +57,16 @@ static int check_seq(GapIO *io, bin_index_t *bin, range_t *r,
 	init_done = 1;
     }
 
-    if (!s)
+    if (!s) {
+	vmessage("Seq %"PRIrec": failed to load\n", r->rec);
+	if (fix && !io->base) {
+	    /* Returns bin if io->base is NULL */
+	    cache_rw(io, bin);
+	    r->rec      = 0;
+	    r->flags    = GRANGE_FLAG_UNUSED;
+	    bin->flags |= BIN_RANGE_UPDATED;
+	}
 	return 1;
-
-    if (r->end - r->start + 1 != ABS(s->len)) {
-	vmessage("Seq %"PRIrec": length does not match bin-range\n", s->rec);
-	err++;
-    }
-
-    if (s->bin != bin->rec) {
-	vmessage("Seq %"PRIrec": bin does not match observed bin\n", s->rec);
-	err++;
     }
 
     if (!bin->rng ||
@@ -75,24 +74,61 @@ static int check_seq(GapIO *io, bin_index_t *bin, range_t *r,
 	vmessage("Seq %"PRIrec": bin_index does not match range index\n",
 		 s->rec);
 	err++;
+	if (fix) {
+	    s = cache_rw(io, s);
+	    s->bin_index = r - ArrayBase(range_t, bin->rng);
+	}
+    }
+
+    if (s->bin != bin->rec) {
+	vmessage("Seq %"PRIrec": bin does not match observed bin\n", s->rec);
+	err++;
+	if (fix) {
+	    s = cache_rw(io, s);
+	    s->bin = bin->rec;
+	}
+    }
+    if (r->end - r->start + 1 != ABS(s->len)) {
+	vmessage("Seq %"PRIrec": length does not match bin-range\n", s->rec);
+	err++;
+	if (fix && !io->base) {
+	    cache_rw(io, bin);
+	    r->end = ABS(s->len)-1 + r->start;
+	    bin->flags |= BIN_RANGE_UPDATED;
+	}
     }
 
     if (s->left < 1 || s->right > ABS(s->len)) {
 	vmessage("Seq %"PRIrec": left/right clips outside of sequence "
 		 "bounds.\n", s->rec);
 	err++;
+	if (fix) {
+	    s = cache_rw(io, s);
+	    if (s->left < 1)
+		s->left = 1;
+	    if (s->right > ABS(s->len))
+		s->right = s->len;
+	}
     }
 
     if (s->right < s->left) {
 	vmessage("Seq %"PRIrec": right clip starts before left clip\n",
 		 s->rec);
 	err++;
+	if (fix) {
+	    s = cache_rw(io, s);
+	    s->left = s->right;
+	}
     }
 
     if (s->mapping_qual != r->mqual) {
 	vmessage("Seq %"PRIrec": mapping_qual disagrees with range\n",
 		 s->rec);
 	err++;
+	if (fix) {
+	    s = cache_rw(io, s);
+	    s->mapping_qual = r->mqual;
+	}
     }
 
     /* TODO: Check r->pair_rec? */
@@ -375,6 +411,91 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
     cend   = INT_MIN;
     valid_range = 0;
     if (bin->rng) {
+	char *loop;
+	int last_range = -1;
+
+	/* Check rng_free list */
+	if (bin->rng_free < -1 ||
+	    (bin->rng_free != -1 && bin->rng_free >= ArrayMax(bin->rng))) {
+	    vmessage("bin %"PRIrec": rng_free has invalid value %d\n",
+		     bin->rec, bin->rng_free);
+	    err++;
+	    if (fix) {
+		bin = cache_rw(io, bin);
+		bin->rng_free = -1;
+		bin->flags |= BIN_BIN_UPDATED;
+	    } else {
+		goto skip_checks;
+	    }
+	}
+
+	loop = (char *)calloc(ArrayMax(bin->rng), sizeof(char));
+	i = bin->rng_free;
+	while (i != -1) { 
+	    range_t *r = arrp(range_t, bin->rng, i);
+
+	    if (!(r->flags & GRANGE_FLAG_UNUSED)) {
+		vmessage("bin %"PRIrec" free range item %d: "
+			 "flagged as in use\n", bin->rec, i);
+		err++;
+		if (fix) {
+		    bin = cache_rw(io, bin);
+		    /* Terminate rng_free list and just accept the
+		     * chance of leaking.
+		     */
+		    if (last_range != -1) {
+			r = arrp(range_t, bin->rng, last_range);
+			r->rec = -1;
+			bin->flags |= BIN_RANGE_UPDATED;
+		    } else {
+			bin->rng_free = -1;
+			bin->flags |= BIN_BIN_UPDATED;
+		    }
+		}
+		break;
+	    }
+
+	    if ((int)r->rec < -1 || 
+		((int)r->rec != -1 && (int)r->rec >= ArrayMax(bin->rng))) {
+		vmessage("bin %"PRIrec" free range item %d: "
+			 "next rec (r->rec) is invalid\n", bin->rec, i);
+		err++;
+		if (fix) {
+		    bin = cache_rw(io, bin);
+		    r->rec = -1;
+		    bin->flags |= BIN_RANGE_UPDATED;
+		}
+		break;
+	    }
+
+	    /* Loop detection */
+	    if (loop[i]) {
+		vmessage("bin %"PRIrec": loop detected in free list\n",
+			 bin->rec);
+		err++;
+		if (fix) {
+		    bin = cache_rw(io, bin);
+		    if (last_range != -1) {
+			r = arrp(range_t, bin->rng, last_range);
+			r->rec = -1;
+			bin->flags |= BIN_RANGE_UPDATED;
+		    } else {
+			bin->rng_free = -1;
+			bin->flags |= BIN_BIN_UPDATED;
+		    }
+		}
+		break;
+	    }
+	    loop[i] = 1;
+
+	    last_range = i;
+	    i = (int)r->rec;
+	}
+	free(loop);
+
+    skip_checks:
+
+	/* Iterate through USED bin items and check them */
 	for (i = 0; i < ArrayMax(bin->rng); i++) {
 	    range_t *r = arrp(range_t, bin->rng, i);
 
@@ -384,8 +505,8 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    valid_range = 1;
 
 #ifdef DEBUG_CHECK
-	    printf("Range item %d: %d..%d (abs %d..%d)\n",
-		   i, r->start, r->end,
+	    printf("Range item %d (%"PRIrec" flag %d): %d..%d (abs %d..%d)\n",
+		   i, r->rec, r->flags, r->start, r->end,
 		   NMIN(r->start, r->end), NMAX(r->start, r->end));
 #endif
 	    if (start > r->start)
@@ -398,7 +519,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bs->nseq++;
 		nthis_seq++;
 		if (level > 1)
-		    err += check_seq(io, bin, r, lib_hash);
+		    err += check_seq(io, fix, bin, r, lib_hash);
 
 		if (cstart > r->start)
 		    cstart = r->start;
@@ -419,9 +540,14 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		    err += check_refpos(io, r);
 		break;
 
-	    case GRANGE_FLAG_ISUMSEQ:
 	    case GRANGE_FLAG_ISCONS:
+		if (level > 1)
+		    err += check_seq(io, fix, bin, r, NULL);
+		break;
+
+	    case GRANGE_FLAG_ISUMSEQ:
 	    case GRANGE_FLAG_ISREF:
+		/* FIXME: check */
 		break;
 
 	    default:
