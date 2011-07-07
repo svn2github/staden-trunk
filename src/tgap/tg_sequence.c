@@ -1304,6 +1304,7 @@ int sequence_range_length(GapIO *io, seq_t **s) {
     tg_rec brec;
     bin_index_t *bin;
     range_t *r;
+    int check_used = 0;
 
     if (0 != bin_get_item_position(io, GT_Seq, n->rec,
 				   NULL, &start, &end, &orient,
@@ -1314,24 +1315,43 @@ int sequence_range_length(GapIO *io, seq_t **s) {
 	return 0;
 
     bin = cache_search(io, GT_Bin, brec);
+    bin = cache_rw(io, bin);
     r = arrp(range_t, bin->rng, n->bin_index);
     assert(r->rec == n->rec);
 
+    if (r->start == bin->start_used || r->end == bin->end_used)
+	check_used = 1;
+
     r->end = r->start + ABS(n->len) - 1;
+    bin->flags |= BIN_RANGE_UPDATED;
 
     /* Check bin used_start/used_end and if changed, contig start/end */
-    if (r->end > bin->end_used) {
+    if (check_used) {
+	int i;
+	int bstart = INT_MAX, bend = INT_MIN;
 	contig_t *c;
 	int offset = bin->pos;
 	int comp = 0;
+
+	for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
+	    if (bstart > r->start)
+		bstart = r->start;
+	    if (bend   < r->end)
+		bend   = r->end;
+	}
+
+	/* No change still, so bail out now */
+	if (bstart == bin->start_used && bend == bin->end_used)
+	    return 0;
 
 	bin = cache_rw(io, bin);
 	bin->end_used = r->end;
 	bin->flags |= BIN_BIN_UPDATED;
 
 	/* If the bin changed size, then possibly so has the contig. */
-	start = bin->start_used;
-	end   = bin->end_used;
 	for (;;) {
 	    if (bin->flags & BIN_COMPLEMENTED) {
 		start = bin->size-1 - start;
