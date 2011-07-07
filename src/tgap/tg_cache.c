@@ -77,10 +77,28 @@ cached_item *cache_new(int type, tg_rec rec, GView v,
     return ci;
 }
 
+/*
+ * Frees a cached item, for use after appropriate <TYPE>_unload function 
+ * has been called. This is usually nothing more than a free() call, but
+ * centralised here to provide extra debugging functionality when needed.
+ */
+static void cache_free(cached_item *ci) {
+#ifdef CACHE_REF_DEBUG
+    /*
+     * Also memset the data so it's blatantly obvious when we try to use it.
+     * This helps to detect possible reference count issues where we should
+     * have done a cache_incr() in order to prevent something from being
+     * purged.
+     */
+    memset(ci, 'z', ci->data_size + sizeof(*ci));
+#endif
+
+    free(ci);
+}
+
 /* ----------------------------------------------------------------------
  * Callback functions used by the Hache table.
  */
-
 
 /*
  * A forced unload of a sequence.
@@ -96,7 +114,7 @@ static void seq_unload(GapIO *io, cached_item *ci, int unlock) {
     if (s->anno)
 	ArrayDestroy(s->anno);
 
-    free(ci);
+    cache_free(ci);
 }
 
 /*
@@ -135,7 +153,7 @@ static void seq_block_unload(GapIO *io, cached_item *ci, int unlock) {
 	    free(si);
 	}
     }
-    free(ci);
+    cache_free(ci);
 }
 
 /*
@@ -160,7 +178,7 @@ static void track_unload(GapIO *io, cached_item *ci, int unlock) {
 
     if (track->data)
 	ArrayDestroy(track->data);
-    free(ci);
+    cache_free(ci);
 }
 
 /*
@@ -190,7 +208,7 @@ static void bin_unload(GapIO *io, cached_item *ci, int unlock) {
 	ArrayDestroy(bin->rng);
     if (bin->track)
 	ArrayDestroy(bin->track);
-    free(ci);
+    cache_free(ci);
 }
 
 /*
@@ -210,7 +228,7 @@ static void contig_unload(GapIO *io, cached_item *ci, int unlock) {
 
     if (unlock)
 	io->iface->contig.unlock(io->dbh, ci->view);
-    free(ci);
+    cache_free(ci);
 }
 
 /*
@@ -235,13 +253,13 @@ static void array_unload(GapIO *io, cached_item *ci, int unlock) {
 
     if (unlock)
 	io->iface->seq.unlock(io->dbh, ci->view);
-    free(ci);
+    cache_free(ci);
 }
 
 static void database_unload(GapIO *io, cached_item *ci, int unlock) {
     if (unlock)
 	io->iface->database.unlock(io->dbh, ci->view);
-    free(ci);
+    cache_free(ci);
 }
 
 /*
@@ -263,12 +281,12 @@ static int anno_ele_block_write(GapIO *io, cached_item *ci) {
 static void anno_ele_unload(GapIO *io, cached_item *ci, int unlock) {
     if (unlock)
 	io->iface->anno_ele.unlock(io->dbh, ci->view);
-    free(ci);
+    cache_free(ci);
 }
 static void anno_unload(GapIO *io, cached_item *ci, int unlock) {
     if (unlock)
 	io->iface->anno.unlock(io->dbh, ci->view);
-    free(ci);
+    cache_free(ci);
 }
 static void anno_ele_block_unload(GapIO *io, cached_item *ci, int unlock) {
     int i;
@@ -284,7 +302,7 @@ static void anno_ele_block_unload(GapIO *io, cached_item *ci, int unlock) {
 		free(si);
 	}
     }
-    free(ci);
+    cache_free(ci);
 }
 
 
@@ -301,7 +319,7 @@ static int library_write(GapIO *io, cached_item *ci) {
 static void library_unload(GapIO *io, cached_item *ci, int unlock) {
     if (unlock)
 	io->iface->library.unlock(io->dbh, ci->view);
-    free(ci);
+    cache_free(ci);
 }
 
 
@@ -539,8 +557,14 @@ int cache_create(GapIO *io) {
     HacheTable *h;
 
     //    if (NULL == (h = HacheTableCreate(131072, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
+#ifdef CACHE_REF_DEBUG
+    /* Test smaller cache to stress-test ref counting bugs */
+    if (NULL == (h = HacheTableCreate(64, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
+	return -1;
+#else
     if (NULL == (h = HacheTableCreate(1024, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 	return -1;
+#endif
     h->name = "tg_cache";
 
     h->clientdata = io;
