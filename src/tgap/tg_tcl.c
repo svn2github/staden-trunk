@@ -937,7 +937,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	if (objc >= 6) {
-	    Tcl_GetWideIntFromObj(interp, objv[5], &obj_rec);
+	    Tcl_GetWideIntFromObj(interp, objv[6], &obj_rec);
 	} else {
 	    if (obj_type == GT_Contig) {
 		obj_rec = tc->contig->rec;
@@ -950,6 +950,15 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	/* Remove from old place */
 	bin_remove_item(tc->io, &tc->contig, GT_AnnoEle, rec);
 
+	if (obj_type == GT_Seq) {
+	    int st, en;
+	    cache_incr(tc->io, a);
+	    sequence_get_position(tc->io, obj_rec, NULL, &st, &en, NULL);
+	    cache_decr(tc->io, a);
+
+	    start += st;
+	    end += st;
+	}
 
 	/* Add back to new location */
 	memset(&r, 0, sizeof(r));
