@@ -1,3 +1,50 @@
+July 8th 2011
+-------------
+
+Gap Fixes
+=========
+
+*	Improvements to the check database code - more checks, more
+        fixing.
+
+*	Tags are now displayed in strict left to right order rather than
+	the broken right to left order as before.
+
+*	Fixed (contig) reference count leaks. Harmless?
+
+*	Added protection against malformed tags in SAM files. We trim
+        them to overlap sequences if they go off the edge.
+
+*	Deleting consensus bases such that entire tags or sequences
+        are removed now correctly updates no.seq and no.anno fields in
+	the bins.
+
+*	Fixed a bug in undo of tag removal in the contig editor
+	(again).
+
+*	Added write-lock to bins when removing items. This could cause
+	some data to not be written back to disk if unmodified by
+	another function, or for editor edits to be pushed to main
+	gap5 I/O without hitting Save. (A potentially major corruption)
+
+*	Fixed bugs in range updates when inserting and removing to
+	sequences. (Minor issue)
+
+*	Fixed a major corruption involving reuse of bin-range
+	slots. This could cause overwriting of some data once we've
+	managed to remove 2 or more items from a bin and then start to
+	reuse those slots.
+
+*	Many bug fixes to editor Undo, especially in relation to
+	inserting and removing columns at the first and last bases in
+	sequences or the contig.
+
+*	Fixed a bug in reference counting in the consensus algorithm,
+	sometimes showing up as crashes in gap5_consensus tool.
+
+*	Fixed a memory corruption when we remove the last item from a bin.
+
+
 July 1st 2011
 -------------
 
