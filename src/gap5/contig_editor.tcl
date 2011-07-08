@@ -1627,6 +1627,8 @@ proc editor_undo_info {top {clear 0}} {
 	}
     }
 
+    $c delete
+
     regsub -all "\n" $msg "\\n" msg
     set opt(Status) [string range [join $msg " / "] 0 1000]
 }
