@@ -1509,6 +1509,20 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	    orec = r.pair_rec = recno;
 	    otype = GT_Seq;
 	    r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+	    if (r.start < s.pos || r.end > s.pos + ABS(s.len)-1) {
+		verror(ERR_WARN, "sam_import", "Anno. range (%d..%d) is "
+		       "outside of sequence range (%d..%d)",
+		       r.start, r.end, s.pos, s.pos + ABS(s.len)-1);
+		if (r.start < s.pos)
+		    r.start = s.pos;
+		if (r.end > s.pos + ABS(s.len)-1)
+		    r.end = s.pos + ABS(s.len)-1;
+		if (r.start > r.end) {
+		    int tmp = r.start;
+		    r.start = r.end;
+		    r.end = tmp;
+		}
+	    }
 	}
 	r.rec      = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
 				  tag_text);
