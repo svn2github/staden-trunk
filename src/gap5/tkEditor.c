@@ -479,7 +479,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"select",	 "edit_annotation",  "clear_visibility_cache",
 	"cursor_id",     "get_cursor",	  "search",      "get_xy",
 	"decr_contig",   "incr_contig",   "select_oligo","show_cursor",
-	"reference_pos", "next_difference", "prev_difference", NULL
+	"reference_pos", "next_difference", "prev_difference", "ref_count",
+	NULL
     };
     enum options {
 	_CONFIGURE,      _INIT,          _IO,            _REDRAW,
@@ -493,7 +494,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_SELECT,	 _EDIT_ANNOTATION,  _CLEAR_VISIBILITY_CACHE,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	 _GET_XY,
 	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO,  _SHOW_CURSOR,
-	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE,
+	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE, _REF_COUNT
     };
 
     if (argc < 2) {
@@ -1173,7 +1174,12 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	ed->xx->contig = cache_search(ed->xx->io, GT_Contig, ed->xx->cnum);
 	cache_incr(ed->xx->io, ed->xx->contig);
 	break;
-
+    case _REF_COUNT:
+	/* Debugging to print up current ref count */
+	printf("REF COUNT = %d\n",
+	       ((cached_item *)cache_master(ci_ptr(ed->xx->contig)))
+	       ->hi->ref_count);
+	break;
 
     case _SELECT_OLIGO: {
 	Tcl_Obj *obj;
