@@ -513,6 +513,10 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
 		    bin_incr_nrefpos(io, bin, -1);
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+		    bin_incr_nseq(io, bin, -1);
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+		    bin_incr_nanno(io, bin, -1);
 	    } else if (!shift) {
 		/* Delete */
 		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
