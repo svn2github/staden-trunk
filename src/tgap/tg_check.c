@@ -37,7 +37,7 @@ typedef struct {
  * range that points to it.
  */
 static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
-		     HacheTable *lib_hash) {
+		     HacheTable *lib_hash, int is_cons) {
     int err = 0;
     int i, len;
     seq_t *s = cache_search(io, GT_Seq, r->rec);
@@ -174,9 +174,10 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
     /* Check valid sequence characters */
     len = ABS(s->len);
     for (i = 0; i < len; i++) {
-	if (!isbase[(unsigned char)s->seq[i]]) {
-	vmessage("Seq %"PRIrec": seq has unexpected char '%c' (%d)\n",
-		 s->rec, isprint(s->seq[i]) ? s->seq[i] : '?', s->seq[i]);
+	if (!isbase[(unsigned char)s->seq[i]] &&
+	    !(s->seq[i] == ' ' && is_cons)) {
+	    vmessage("Seq %"PRIrec": seq has unexpected char '%c' (%d)\n",
+		     s->rec, isprint(s->seq[i]) ? s->seq[i] : '?', s->seq[i]);
 	    err++;
 	    break;
 	}
@@ -519,7 +520,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bs->nseq++;
 		nthis_seq++;
 		if (level > 1)
-		    err += check_seq(io, fix, bin, r, lib_hash);
+		    err += check_seq(io, fix, bin, r, lib_hash, 0);
 
 		if (cstart > r->start)
 		    cstart = r->start;
@@ -542,7 +543,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 
 	    case GRANGE_FLAG_ISCONS:
 		if (level > 1)
-		    err += check_seq(io, fix, bin, r, NULL);
+		    err += check_seq(io, fix, bin, r, NULL, 1);
 		break;
 
 	    case GRANGE_FLAG_ISUMSEQ:
