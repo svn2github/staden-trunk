@@ -1179,9 +1179,40 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 	int old_score, new_score, tot_score, orig_score;
 	//for (start = 0; start < 1000000; start += 1000) {
 	//  MALIGN *malign = build_malign(io, cnum, start, start + 1000);
-	MALIGN *malign = build_malign(io, cnum);
+	MALIGN *malign;
+	int c_start, c_shift;
+	bin_index_t *root_bin = NULL;
 
 	vmessage("Shuffling pads for contig %s\n", get_contig_name(io, cnum));
+
+	/*
+	 * The shuffle pads code (malign) comes from gap4 and has lots of
+	 * assumptions that the contig goes from base 1 to base N.
+	 * Fixing these assumptions is a lot of work, so for now we will take
+	 * the cheat route of moving the contig to ensure the assumption
+	 * is valid.
+	 */
+	if (-1 == consensus_valid_range(io, cnum, &c_start, NULL)) {
+	    verror(ERR_WARN, "shuffle_contigs_io",
+		   "Failure in consensus_valid_range()");
+	    return -1;
+	}
+	printf("Contig starts at base %d\n", c_start);
+	c_shift = 1-c_start;
+	if (c_shift != 0) {
+	    contig_t *c = cache_search(io, GT_Contig, cnum);
+
+	    if (!c)
+		return -1;
+	    if (!(root_bin = cache_search(io, GT_Bin, contig_get_bin(&c))))
+		return -1;
+
+	    printf("Shifting by %d\n", c_shift);
+	    root_bin = cache_rw(io, root_bin);
+	    root_bin->pos += c_shift;
+	}
+
+	malign = build_malign(io, cnum);
 	resort_contigl(malign);
 
 	ArrayMax(indels) = 0;
@@ -1231,9 +1262,14 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 
 	/* reassign_confidence_values(io, cnum); */
       //}
-    }
 
-    cache_flush(io);
+	/* Shift contig back */
+	if (root_bin) {
+	    root_bin->pos -= c_shift;
+	}
+
+	cache_flush(io);
+    }
 
     ArrayDestroy(indels);
 
