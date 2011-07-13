@@ -120,7 +120,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			       int pos, int start_of_contig,
 			       int offset, char base, int conf,
 			       int comp, HacheTable *hash) {
-    int i, ins = 0;
+    int i, ins = 0, check_used = 0;
     bin_index_t *bin;
     HacheData hd;
 
@@ -152,12 +152,16 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	if (r->flags & GRANGE_FLAG_UNUSED)
 	    continue;
 
-	if (pos <= MAX(r->start, r->end) &&
-	    (pos > MIN(r->start, r->end) ||
-	     (start_of_contig && pos >= MIN(r->start, r->end)))) {
+	if ((start_of_contig &&
+	     pos <= MAX(r->start, r->end)+1 &&
+	     pos >= MIN(r->start, r->end))  ||
+	    (!start_of_contig &&
+	     pos <= MAX(r->start, r->end)   &&
+	     pos >  MIN(r->start, r->end))) {
 	    /* Insert */
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
 		(r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+		/* ISCONS? skip perhaps as we invalidate them anyway */
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
 		if (ABS(r->end - r->start) + 1 != ABS(s->len)) {
 		    verror(ERR_WARN, "contig_insert_base2", 
@@ -194,8 +198,10 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    }
 		}
 	    } else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-		if (base)
+		if (base) {
 		    r->end++;
+		    ins = 1;
+		}
 	    }
 	    
 	    bin->flags |= BIN_RANGE_UPDATED;
@@ -206,6 +212,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		r->start++;
 		r->end++;
 		ins = 1;
+		check_used = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
 
 		if (hash)
@@ -247,6 +254,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		 HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec))){
 		r->start++;
 		r->end++;
+		ins = 1;
 	    }
 	}
     }
@@ -255,11 +263,26 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     if (ins || base) {
 	bin->size++;
 	if (bin->rng) {
-	    if (( start_of_contig && pos <  bin->start_used) ||
-		(!start_of_contig && pos <= bin->start_used))
-		bin->start_used++;
-	    if (pos <= bin->end_used)
-		bin->end_used++;
+	    int start = INT_MAX;
+	    int end   = INT_MIN;
+	    for (i = 0; i < ArrayMax(bin->rng); i++) {
+		range_t *r = arrp(range_t, bin->rng, i);
+	    
+		if (r->flags & GRANGE_FLAG_UNUSED)
+		    continue;
+
+		if (start > r->start)
+		    start = r->start;
+		if (end   < r->end)
+		    end   = r->end;
+	    }
+	    if (start != INT_MAX) {
+		bin->start_used = start;
+		bin->end_used = end;
+	    } else {
+		bin->start_used = 0;
+		bin->end_used = 0;
+	    }
 	}
 	bin->flags |= BIN_BIN_UPDATED;
     }
