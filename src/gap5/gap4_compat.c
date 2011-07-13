@@ -643,6 +643,8 @@ int complement_contig(GapIO *io, tg_rec crec) {
     if (!(c = (contig_t *)cache_search(io, GT_Contig, crec)))
 	return -1;
 
+    cache_incr(io, c);
+
     /*
      * Attempt to have symmetry in coordinates such that a contig
      * with used (unclipped) data from position A to B will be
@@ -652,16 +654,24 @@ int complement_contig(GapIO *io, tg_rec crec) {
     delta = (ustart - c->start) - (c->end - uend);
 
     /* Empty contig is special case */
-    if (!contig_get_bin(&c))
+    if (!contig_get_bin(&c)) {
+	cache_decr(io, c);
 	return 0;
+    }
 
-    if (!(b = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&c))))
+    if (!(b = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&c)))) {
+	cache_decr(io, c);
 	return -1;
+    }
 
-    if (!(b = cache_rw(io, b)))
+    if (!(b = cache_rw(io, b))) {
+	cache_decr(io, c);
 	return -1;
-    if (!(c = cache_rw(io, c)))
+    }
+    if (!(c = cache_rw(io, c))) {
+	cache_decr(io, c);
 	return -1;
+    }
 
     b->flags ^= BIN_COMPLEMENTED;
     b->flags |= BIN_BIN_UPDATED;
@@ -678,6 +688,8 @@ int complement_contig(GapIO *io, tg_rec crec) {
     
     rc.job = REG_COMPLEMENT;
     contig_notify(io, crec, (reg_data *)&rc);
+
+    cache_decr(io, c);
 
     return 0;
 }
