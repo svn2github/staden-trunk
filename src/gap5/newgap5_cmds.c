@@ -1364,6 +1364,32 @@ tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
 }
 
 int
+tcl_join_contigs(ClientData clientData, Tcl_Interp *interp,
+		 int objc, Tcl_Obj *CONST objv[])
+{
+    contig_pos2_arg args;
+    cli_args a[] = {
+	{"-io",	     ARG_IO,  1, NULL, offsetof(contig_pos2_arg, io)},
+	{"-contig1", ARG_REC, 1, NULL, offsetof(contig_pos2_arg, contig1)},
+	{"-contig2", ARG_REC, 1, NULL, offsetof(contig_pos2_arg, contig2)},
+	{"-pos1",    ARG_INT, 1, NULL, offsetof(contig_pos2_arg, pos1)},
+	{NULL,	 0,	  0, NULL, 0}
+    };
+
+    vfuncheader("join contig");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    if (join_contigs(args.io, args.contig1, args.contig2, args.pos1) != 0) {
+	Tcl_SetResult(interp, "Failure in join_contigs", TCL_STATIC);
+	return TCL_ERROR;
+    }
+
+    return TCL_OK;
+}
+
+int
 tcl_disassemble_readings(ClientData clientData, Tcl_Interp *interp,
 			 int objc, Tcl_Obj *CONST objv[])
 {
@@ -2055,6 +2081,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "break_contig",
 			 tcl_break_contig,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "join_contigs",
+			 tcl_join_contigs,
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "disassemble_readings",
 			 tcl_disassemble_readings,

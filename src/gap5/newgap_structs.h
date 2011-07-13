@@ -125,6 +125,14 @@ typedef struct {
 
 typedef struct {
     GapIO *io;
+    tg_rec contig1;
+    tg_rec contig2;
+    int pos1;
+    int pos2;
+} contig_pos2_arg;
+
+typedef struct {
+    GapIO *io;
     char *mask;
     char *mode;
     int min_overlap;

@@ -128,7 +128,8 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
     cp = Tcl_GetVar2(xx->interp, Tk_PathName(xx->ed->sw.tkwin), "reg",
 		     TCL_GLOBAL_ONLY);
     xx->reg_id = cp ? atoi(cp) : 0;
-    xx->cursor = create_contig_cursor(io->base, contig, 1, xx->reg_id);
+    if (io->base)
+	xx->cursor = create_contig_cursor(io->base, contig, 1, xx->reg_id);
     edSetApos(xx);
     xx->displayPos = xx->cursor_apos;
 

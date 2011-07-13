@@ -805,30 +805,17 @@ static void contig_remove_refpos_markers(GapIO *io, contig_t *c,
  * Returns 0 for success
  *        -1 for failure
  */
-int edJoin(edview *xx) {
-    /* p=parent contig, l=left contig, r=right contig */
+int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     contig_t *cl, *cr;
-    GapIO *io = xx->io;
     bin_index_t *binp, *binl, *binr;
-    int offset;
     tg_rec above, binp_id;
     reg_length rl;
     reg_join rj;
 
-    if (!xx->link)
+    cl = cache_search(io, GT_Contig, clrec);
+    cr = cache_search(io, GT_Contig, crrec);
+    if (!cl || !cr)
 	return -1;
-
-    if (xx->link->lockOffset > 0) {
-	cl = xx->link->xx[1]->contig;
-	cr = xx->link->xx[0]->contig;
-	offset = xx->link->lockOffset;
-    } else {
-	cl = xx->link->xx[0]->contig;
-	cr = xx->link->xx[1]->contig;
-	offset = -xx->link->lockOffset;
-    }
-
-    cache_flush(io);
 
     /* Force joins at the top-level IO */
     while (io->base)
@@ -837,6 +824,7 @@ int edJoin(edview *xx) {
     /* Invalidate any cached data in the overlapping bins */
     join_invalidate(io, cl, cr, offset);
 
+#if 0
     /* Find appropriate bin to insert our new contig above */
     above = find_join_bin(io, contig_get_bin(&cl), contig_get_bin(&cr),
 			  contig_offset(io, &cl), contig_offset(io, &cr),
@@ -846,7 +834,7 @@ int edJoin(edview *xx) {
 	above = contig_get_bin(&cl);
 
     /* Ignore this for now */
-#if 0
+
     /* Optimisation, hang binr off binl if it fits */
     binp_id = bin_new(io, 0, 0, cl->rec, GT_Contig);
     binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
@@ -995,3 +983,28 @@ int edJoin(edview *xx) {
 
     return 0;
 }
+
+int edJoin(edview *xx) {
+    /* p=parent contig, l=left contig, r=right contig */
+    contig_t *cl, *cr;
+    GapIO *io = xx->io;
+    int offset;
+
+    if (!xx->link)
+	return -1;
+
+    if (xx->link->lockOffset > 0) {
+	cl = xx->link->xx[1]->contig;
+	cr = xx->link->xx[0]->contig;
+	offset = xx->link->lockOffset;
+    } else {
+	cl = xx->link->xx[0]->contig;
+	cr = xx->link->xx[1]->contig;
+	offset = -xx->link->lockOffset;
+    }
+
+    cache_flush(io);
+
+    return join_contigs(io, cl->rec, cr->rec, offset);
+}
+
