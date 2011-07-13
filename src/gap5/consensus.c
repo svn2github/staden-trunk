@@ -208,6 +208,8 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			   cons_r->start, cons_r->end, r[i].start);
 
 		    s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
+		    if (!s)
+			goto load_failed;
 		    s = cache_rw(io, s);
 
 		    if (cons_r->start != bstart || cons_r->end   != bend) {
@@ -230,6 +232,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		    	s->len = -s->len;
 		    
 		} else {
+		load_failed: /* Horrid, I know! */
 		    printf("Creating new cached cons %d..%d bin #%"PRIrec"\n",
 			   bstart, bend, bin->rec);
 		    memset(&seq, 0, sizeof(seq));
