@@ -97,7 +97,7 @@ static int remove_empty_bins_r(GapIO *io, tg_rec brec, tg_rec *first) {
  * 1) If a contig is totally empty, remove the contig.
  * 2) If a bin is empty and all below it, remove the bin.
  * 3) If a bin is empty and all above it, remove parent bins and link
- *    contig to new root. (TODO)
+ *    contig to new root.
  */
 static void remove_empty_bins(GapIO *io, tg_rec contig) {
     contig_t *c = cache_search(io, GT_Contig, contig);
@@ -131,7 +131,11 @@ static void remove_empty_bins(GapIO *io, tg_rec contig) {
 	    bin_get_position(io, bin, &cdummy, &offset, &comp);
 	    assert(cdummy == contig);
 
-	    bin->pos = offset;
+	    if (comp) {
+		bin->pos = offset - (bin->size-1);
+	    } else {
+		bin->pos = offset;
+	    }
 	    bin->parent = contig;
 	    bin->parent_type = GT_Contig;
 	    bin->flags |= BIN_BIN_UPDATED;
@@ -905,7 +909,6 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
 	if ((rc->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS)
 	    continue;
 
-	printf("R=%d..%d\n", rc->start, rc->end);
 	if (rc->start < first_seq) {
 	    bin_index_t *bin;
 	    range_t *r2;
@@ -947,6 +950,81 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
 }
 
 /*
+ * Checks if the break can do anything. Eg breaking at the very start or
+ * very end could yield a zero-read contig, which causes inconsistencies.
+ * We just abort if so.
+ *
+ * Returns 0 for OK
+ *        -1 to abort/error
+ */
+int break_check_counts(GapIO *io, tg_rec crec, int cpos) {
+    contig_iterator *ci;
+    rangec_t *r;
+    int left_ok = 0, right_ok = 0;
+
+    /* Check left end */
+    ci = contig_iter_new(io, crec, 1, CITER_LAST | CITER_ISTART,
+			 CITER_CSTART, cpos-1);
+    if (!ci)
+	return -1;
+
+    while (r = contig_iter_prev(io, ci)) {
+	seq_t *s = cache_search(io, GT_Seq, r->rec);
+	int cstart;
+	if (!s)
+	    return -1;
+
+	if ((s->len < 0) ^ r->comp) {
+	    cstart = r->start + ABS(s->len) - (s->right-1) - 1;
+	} else {
+	    cstart = r->start + s->left-1;
+	}
+
+	if (cstart >= cpos) {
+	    left_ok = 1;
+	    break;
+	}
+    }
+
+    if (!left_ok) {
+	contig_iter_del(ci);
+	return -1;
+    }
+
+
+    /* Check right end */
+    ci = contig_iter_new(io, crec, 1, CITER_FIRST | CITER_ISTART,
+			 cpos-1, CITER_CEND);
+    if (!ci)
+	return -1;
+
+    while (r = contig_iter_next(io, ci)) {
+	seq_t *s = cache_search(io, GT_Seq, r->rec);
+	int cstart;
+	if (!s)
+	    return -1;
+
+	if ((s->len < 0) ^ r->comp) {
+	    cstart = r->start + ABS(s->len) - (s->right-1) - 1;
+	} else {
+	    cstart = r->start + s->left-1;
+	}
+
+	if (cstart < cpos) {
+	    right_ok = 1;
+	    break;
+	}
+    }
+
+    if (!right_ok) {
+	contig_iter_del(ci);
+	return -1;
+    }
+
+    return 0;
+}
+
+/*
  * Breaks a contig in two such that snum is the right-most reading of
  * a new contig.
  */
@@ -959,6 +1037,13 @@ int break_contig(GapIO *io, tg_rec crec, int cpos) {
     bin_index_t *bin;
     int do_comp = 0;
     HacheTable *h;
+
+   if (break_check_counts(io, crec, cpos) == -1) {
+       verror(ERR_WARN, "break_contig",
+	      "Breaking at %d would create a contig with no sequences. Abort",
+	      cpos);
+       return 0;
+   }
 
     cl = (contig_t *)cache_search(io, GT_Contig, crec);
 
