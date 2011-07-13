@@ -636,6 +636,13 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    bin->start_used--;
 		if (pos <= bin->end_used)
 		    bin->end_used--;
+		if (bin->end_used < bin->start_used) {
+		    /* Now empty */
+		    assert(bin->nseqs == 0);
+		    assert(bin->nrefpos == 0);
+		    assert(bin->nanno == 0);
+		    bin->start_used = bin->end_used = 0;
+		}
 	    }
 	    bin->flags |= BIN_BIN_UPDATED;
 	}
