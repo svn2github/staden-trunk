@@ -2933,41 +2933,44 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
 	bin->flags &= ~BIN_RANGE_UPDATED;
 
-	if (!bin->rng_rec) {
-	    bin->rng_rec = allocate(io, GT_Range);
-	    bin->flags |= BIN_BIN_UPDATED;
-	}
+	if (bin->rng) {
+	    if (!bin->rng_rec) {
+		bin->rng_rec = allocate(io, GT_Range);
+		bin->flags |= BIN_BIN_UPDATED;
+	    }
 
-	cp = pack_rng_array(io->comp_mode, fmt2, ArrayBase(GRange, bin->rng),
-			    ArrayMax(bin->rng),
-			    /* bin->start_used, */ &sz);
-	//printf("Packed %d ranges in %d bytes\n", ArrayMax(bin->rng), sz);
+	    cp = pack_rng_array(io->comp_mode, fmt2,
+				ArrayBase(GRange, bin->rng),
+				ArrayMax(bin->rng),
+				/* bin->start_used, */ &sz);
+	    //printf("Packed %d ranges in %d bytes\n", ArrayMax(bin->rng), sz);
 
 #ifdef DEBUG
-	{
-	    char fn[1024];
-	    sprintf(fn, "/tmp/jkb/rng.%d", bin->rec);
-	    int fd = open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	    if (fd == -1) {
-		perror (fn);
-	    } else {
-		write(fd, cp, sz);
-		close(fd);
+	    {
+		char fn[1024];
+		sprintf(fn, "/tmp/jkb/rng.%d", bin->rec);
+		int fd = open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		if (fd == -1) {
+		    perror (fn);
+		} else {
+		    write(fd, cp, sz);
+		    close(fd);
+		}
 	    }
-	}
 #endif
 
-	assert(bin->rng_rec > 0);
-	v = lock(io, (int)bin->rng_rec, G_LOCK_EX);
-	//	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
-	//	       sizeof(GRange) * ArrayMax(bin->rng));
-	wrstats[GT_Range] += sz+2;
-	wrcounts[GT_Range]++;
-	vec[0].buf = fmt;   vec[0].len = 2;
-	vec[1].buf = cp;    vec[1].len = sz;
-	err |= g_writev(io, v, vec, 2);
-	free(cp);
-	err |= unlock(io, v);
+	    assert(bin->rng_rec > 0);
+	    v = lock(io, (int)bin->rng_rec, G_LOCK_EX);
+	    //	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
+	    //	       sizeof(GRange) * ArrayMax(bin->rng));
+	    wrstats[GT_Range] += sz+2;
+	    wrcounts[GT_Range]++;
+	    vec[0].buf = fmt;   vec[0].len = 2;
+	    vec[1].buf = cp;    vec[1].len = sz;
+	    err |= g_writev(io, v, vec, 2);
+	    free(cp);
+	    err |= unlock(io, v);
+	}
     }
 
     /* Tracks */
