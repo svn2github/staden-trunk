@@ -93,7 +93,12 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	err++;
 	if (fix && !io->base) {
 	    cache_rw(io, bin);
-	    r->end = ABS(s->len)-1 + r->start;
+	    /* Best guess - it shows correctly now so amend appropriate end */
+	    if (bin->flags & BIN_COMPLEMENTED) {
+		r->start = r->end - (ABS(s->len)-1);
+	    } else {
+		r->end = ABS(s->len)-1 + r->start;
+	    }
 	    bin->flags |= BIN_RANGE_UPDATED;
 	}
     }
