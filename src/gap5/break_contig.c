@@ -221,7 +221,7 @@ int contig_visible_end(GapIO *io, tg_rec crec) {
     return 0;
 }
 
-static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
+static int break_contig_move_bin(GapIO *io, bin_index_t *bin, int bpos,
 				 contig_t *cfrom, tg_rec pfrom,
 				 contig_t *cto,   tg_rec pto,
 				 int child_no) {
@@ -232,8 +232,9 @@ static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
 	    cache_rec_deallocate(io, GT_Bin, cto->rec);
 	}
 	cto->bin = bin->rec;
-	cto->start = 1;
-	cto->end = bin->size;
+	/* Maximum extents - tightened up later */
+	cto->start = bpos;
+	cto->end = bpos + bin->size;
 
 	bin->parent = cto->rec;
 	bin->parent_type = GT_Contig;
@@ -404,7 +405,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	printf("%*sADD_TO_RIGHT pl=%"PRIrec" pr=%"PRIrec"\n",
 	       level*4, "", pleft, pright);
 
-	if (0 != break_contig_move_bin(io, bin,
+	if (0 != break_contig_move_bin(io, bin, offset,
 				       cl, pleft, cr, pright, 
 				       child_no)) {
 	    cache_decr(io, bin);
@@ -515,7 +516,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 	printf("%*sCreated dup for right, rec %"PRIrec"\n",
 	       level*4,"", bin_dup->rec);
-	break_contig_move_bin(io, bin_dup, cl, 0, cr, pright, child_no);
+	break_contig_move_bin(io, bin_dup, offset,
+			      cl, 0, cr, pright, child_no);
 	opright = pright;
 	pright = bin_dup->rec;
     } else {
@@ -674,7 +676,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		continue;
 
 	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-		cstart = NMAX(r->start, r->end);
+		cstart = NMIN(r->start, r->end);
 	    } else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
 		cstart = NORM(r->start);
 	    } else {
@@ -791,13 +793,14 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	if (bin_dup)
 	    break_contig_reparent_seqs(io, bin_dup);
 
-	if (lmin < lmax) {
-	    bin->start_used     = lmin;
-	    bin->end_used       = lmax;
-	} else {
+	if (bin->nseqs == 0 && bin->nanno == 0 && bin->nrefpos == 0 &&
+	    lmax < lmin) {
 	    /* No data left in bin */
 	    bin->start_used = 0;
 	    bin->end_used = 0;
+	} else {
+	    bin->start_used     = lmin;
+	    bin->end_used       = lmax;
 	}
 
 	printf("%*sLeft=>%d..%d right=>%d..%d\n", level*4, "",
