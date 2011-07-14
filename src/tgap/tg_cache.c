@@ -6,6 +6,7 @@
 #include <time.h>
 
 #ifdef CACHE_REF_DEBUG
+/*  So tg_gio.h doesn't redefine prototypes */
 #   define WAS_CACHE_REF_DEBUG
 #   undef CACHE_REF_DEBUG
 #endif
@@ -83,7 +84,7 @@ cached_item *cache_new(int type, tg_rec rec, GView v,
  * centralised here to provide extra debugging functionality when needed.
  */
 static void cache_free(cached_item *ci) {
-#ifdef CACHE_REF_DEBUG
+#ifdef WAS_CACHE_REF_DEBUG
     /*
      * Also memset the data so it's blatantly obvious when we try to use it.
      * This helps to detect possible reference count issues where we should
@@ -557,7 +558,7 @@ int cache_create(GapIO *io) {
     HacheTable *h;
 
     //    if (NULL == (h = HacheTableCreate(131072, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
-#ifdef CACHE_REF_DEBUG
+#ifdef WAS_CACHE_REF_DEBUG
     /* Test smaller cache to stress-test ref counting bugs */
     if (NULL == (h = HacheTableCreate(64, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 	return -1;
@@ -1588,19 +1589,26 @@ void cache_incr_debug(GapIO *io, void *data, char *where) {
     if (!ref_debug)
 	ref_debug = HacheTableCreate(1024, HASH_DYNAMIC_SIZE);
 
-    sprintf(key, "%p-%d", data, ci->hi->ref_count);
+    sprintf(key, "%p-%d", data, ci->hi->ref_count - ci->updated);
     hd.p = strdup(where);
     HacheTableAdd(ref_debug, key, 0, hd, NULL);
+
+    //fprintf(stderr, "INCR %s %s\n", key, where);
 
     cache_incr(io, data);
 }
 
-void cache_decr_debug(GapIO *io, void *data) {
+void cache_decr_debug(GapIO *io, void *data, char *where) {
     char key[100];
     cached_item *ci = cache_master(ci_ptr(data));
-    sprintf(key, "%p-%d", data, ci->hi->ref_count-1);
+    sprintf(key, "%p-%d", data, ci->hi->ref_count-1 - ci->updated);
 
-    HacheTableRemove(ref_debug, key, 0, 1);
+    if (HacheTableRemove(ref_debug, key, 0, 1) != 0) {
+	fprintf(stderr, "Failed to remove %s - not in hash table?",
+		key);
+    }
+
+    //fprintf(stderr, "DECR %s %s\n", key, where);
 
     cache_decr(io, data);
 }
