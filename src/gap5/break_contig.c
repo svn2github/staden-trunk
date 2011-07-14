@@ -406,8 +406,10 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 	if (0 != break_contig_move_bin(io, bin,
 				       cl, pleft, cr, pright, 
-				       child_no))
+				       child_no)) {
+	    cache_decr(io, bin);
 	    return -1;
+	}
 
 	bin_incr_nseq(io, bin, nseqs);
 	bin_incr_nrefpos(io, bin, nrefpos);
@@ -813,7 +815,6 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	}
     }
 
-
     /* Recurse */
     for (i = 0; i < 2; i++) {
 	bin_index_t *ch;
@@ -824,8 +825,10 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	if (0 != break_contig_recurse(io, h, cl, cr, bin->child[i], pos, pos2,
 				      NMIN(ch->pos, ch->pos + ch->size-1),
 				      level+1, pleft, pright,
-				      i, complement))
-	    return -1;
+				      i, complement)) {
+	    cache_decr(io, bin);
+	    return -1; 
+	}
     }
 
     cache_decr(io, bin);
