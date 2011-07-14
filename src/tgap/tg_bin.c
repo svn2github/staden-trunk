@@ -513,6 +513,8 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
 	if (bin->parent_type != GT_Bin)
 	    break;
 
+	assert(bin->rec != bin->parent);
+
 	bin = get_bin(io, bin->parent);
     }
 
@@ -538,6 +540,8 @@ int bin_incr_nrefpos(GapIO *io, bin_index_t *bin, int n) {
 	if (bin->parent_type != GT_Bin)
 	    break;
 
+	assert(bin->rec != bin->parent);
+
 	bin = get_bin(io, bin->parent);
     }
 
@@ -562,6 +566,8 @@ int bin_incr_nanno(GapIO *io, bin_index_t *bin, int n) {
 
 	if (bin->parent_type != GT_Bin)
 	    break;
+
+	assert(bin->rec != bin->parent);
 
 	bin = get_bin(io, bin->parent);
     }
