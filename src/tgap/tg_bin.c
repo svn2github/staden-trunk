@@ -863,9 +863,9 @@ int bin_get_orient(GapIO *io, tg_rec rec) {
 int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 			     int type, tg_rec rec) {
     bin_index_t *bin;
-    int i, start = INT_MAX, end = INT_MIN;
+    int i, start = INT_MAX, end = INT_MIN, bin_idx = -1;
     int new_contig_range = 0;
-    int seq_start, seq_end;
+    int seq_start = INT_MAX, seq_end = INT_MIN;
 
     if (!(bin = cache_rw(io, *binp)))
 	return -1;
@@ -885,11 +885,13 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    continue;
 
 	if (r->rec != rec) {
+	    /* New start/end boundaries */
 	    if (start > r->start)
 		start = r->start;
 	    if (end   < r->end)
 		end   = r->end;
 
+	    /* And start/end boundaries of ISSEQ items */
 	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 		if (seq_start > r->start)
 		    seq_start = r->start;
@@ -900,42 +902,30 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    continue;
 	}
 
+	bin_idx = i;
+    }
 
-	/* check and update bin->start_used and bin->end_used */
-	if (r->start < start || r->end > end) {
-	    /* Maybe this is pushing the range out, so keep looking */
-	    int j;
-	    for (j = i+1; j < ArrayMax(bin->rng); j++) {
-		range_t *r = arrp(range_t, bin->rng, j);
-		if (r->flags & GRANGE_FLAG_UNUSED)
-		    continue;
+    /* Found it, and also have start/end + seq_start/seq_end */
+    if (bin_idx != -1) {
+	range_t *r = arrp(range_t, bin->rng, bin_idx);
 
-		if (start > r->start)
-		    start = r->start;
-		if (end   < r->end)
-		    end   = r->end;
-	    }
-
-	    seq_start = r->start;
-	    seq_end   = r->end;
-
-	    if (bin->start_used != start || bin->end_used != end) {
+	/* Fix bin extents if needed */
+	if (bin->start_used != start || bin->end_used != end) {
+	    if (start == INT_MAX) {
+		bin->start_used = bin->end_used = 0;
+	    } else {
 		bin->start_used = start;
-		bin->end_used = end;
-		new_contig_range = 1;
+		bin->end_used   = end;
 	    }
+
+	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+		new_contig_range = 1;
 	}
 
-	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ) {
-	    /* Even though we may have changed it,
-	     * we don't need to update contig
-	     */
-	    new_contig_range = 0;
-	}
-	
+	/* Remove from bin */
 	r->flags |= GRANGE_FLAG_UNUSED;
 	r->rec = (tg_rec)bin->rng_free;
-	bin->rng_free = i;
+	bin->rng_free = bin_idx;
 	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
@@ -946,8 +936,6 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
 	    bin_incr_nanno(io, bin, -1);
-
-	break;
     }
 
     /*
