@@ -562,8 +562,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		if (r->flags & GRANGE_FLAG_UNUSED)
 		    continue;
 
-		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO &&
-		    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS) {
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 		    HacheData hd; hd.i = 1;
 		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
 		    j++;
@@ -591,8 +590,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		if (r->flags & GRANGE_FLAG_UNUSED)
 		    continue;
 
-		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO &&
-		    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS) {
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 		    HacheData hd; hd.i = 0;
 		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
 		    j++;
@@ -652,13 +650,13 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    if (cstart >= pos)  {
 		HacheData hd; hd.i = 1;
 		HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, NULL);
-		printf("Add seq #%"PRIrec" to hash value 1\n", r->rec);
+		//printf("Add seq #%"PRIrec" to hash value 1\n", r->rec);
 	    } else {
 		int end;
 
 		HacheData hd; hd.i = 0;
 		HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, NULL);
-		printf("Add seq #%"PRIrec" to hash value 0\n", r->rec);
+		//printf("Add seq #%"PRIrec" to hash value 0\n", r->rec);
 
 		end = NMAX(r->start, r->end);
 		if (pos2 < end)
