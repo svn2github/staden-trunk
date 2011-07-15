@@ -655,9 +655,6 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    }
 
 		    if (start == INT_MAX) {
-			assert(bin->nseqs == 0);
-			assert(bin->nrefpos == 0);
-			assert(bin->nanno == 0);
 			bin->start_used = bin->end_used = 0;
 		    } else {
 			bin->start_used = start;
@@ -670,9 +667,6 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			bin->end_used--;
 		    if (bin->end_used < bin->start_used) {
 			/* Now empty */
-			assert(bin->nseqs == 0);
-			assert(bin->nrefpos == 0);
-			assert(bin->nanno == 0);
 			bin->start_used = bin->end_used = 0;
 		    }
 		}

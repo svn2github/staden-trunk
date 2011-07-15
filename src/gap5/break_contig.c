@@ -807,8 +807,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	if (bin_dup)
 	    break_contig_reparent_seqs(io, bin_dup);
 
-	if (bin->nseqs == 0 && bin->nanno == 0 && bin->nrefpos == 0 &&
-	    lmax < lmin) {
+	if (lmax < lmin) {
 	    /* No data left in bin */
 	    bin->start_used = 0;
 	    bin->end_used = 0;
