@@ -496,7 +496,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			       HacheTable *hash) {
     int i;
     bin_index_t *bin;
-    int reduced = 0, ret = 0;
+    int reduced = 0, ret = 0, deleted = 0;
     HacheData hd;
 
     hd.i = 1;
@@ -540,6 +540,8 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    bin_incr_nseq(io, bin, -1);
 		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
 		    bin_incr_nanno(io, bin, -1);
+		
+		deleted = 1;
 	    } else if (!shift) {
 		/* Delete */
 		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
@@ -623,7 +625,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     }
 
     /* Adjust the bin dimensions */
-    if (reduced || !shift) {
+    if (reduced || deleted || !shift) {
 	ret = 1;
 	if (--bin->size <= 0) {
 	    /* Remove object entirely */
@@ -632,16 +634,45 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    bin_delete(io, bin);
 	} else {
 	    if (bin->rng) {
-		if (pos < bin->start_used)
-		    bin->start_used--;
-		if (pos <= bin->end_used)
-		    bin->end_used--;
-		if (bin->end_used < bin->start_used) {
-		    /* Now empty */
-		    assert(bin->nseqs == 0);
-		    assert(bin->nrefpos == 0);
-		    assert(bin->nanno == 0);
-		    bin->start_used = bin->end_used = 0;
+		if (deleted &&
+		    (pos == bin->start_used || pos == bin->end_used)) {
+		    /* Something was removed, so full recalc */
+		    int start = INT_MAX;
+		    int end   = INT_MIN;
+
+		    for (i = 0; i < ArrayMax(bin->rng); i++) {
+			range_t *r = arrp(range_t, bin->rng, i);
+
+			if (r->flags & GRANGE_FLAG_UNUSED)
+			    continue;
+
+			if (start > r->start)
+			    start = r->start;
+			if (end   < r->end)
+			    end   = r->end;
+		    }
+
+		    if (start == INT_MAX) {
+			assert(bin->nseqs == 0);
+			assert(bin->nrefpos == 0);
+			assert(bin->nanno == 0);
+			bin->start_used = bin->end_used = 0;
+		    } else {
+			bin->start_used = start;
+			bin->end_used = end;
+		    }
+		} else {
+		    if (pos < bin->start_used)
+			bin->start_used--;
+		    if (pos <= bin->end_used)
+			bin->end_used--;
+		    if (bin->end_used < bin->start_used) {
+			/* Now empty */
+			assert(bin->nseqs == 0);
+			assert(bin->nrefpos == 0);
+			assert(bin->nanno == 0);
+			bin->start_used = bin->end_used = 0;
+		    }
 		}
 	    }
 	    bin->flags |= BIN_BIN_UPDATED;
