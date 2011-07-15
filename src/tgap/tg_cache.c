@@ -78,12 +78,21 @@ cached_item *cache_new(int type, tg_rec rec, GView v,
     return ci;
 }
 
+static int chksum(cached_item *ci) {
+    return HacheTcl((uint8_t *)&ci->data, ci->data_size);
+}
+
 /*
  * Frees a cached item, for use after appropriate <TYPE>_unload function 
  * has been called. This is usually nothing more than a free() call, but
  * centralised here to provide extra debugging functionality when needed.
  */
 static void cache_free(cached_item *ci) {
+    if (chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW) {
+	printf("Chksum differs on ci for rec %"PRIrec"\n", ci->rec);
+	abort();
+    }
+
 #ifdef WAS_CACHE_REF_DEBUG
     /*
      * Also memset the data so it's blatantly obvious when we try to use it.
@@ -454,6 +463,8 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
      * we need to decrement the reference count.
      */
     HacheTableDecRef(io->cache, hi);
+
+    ci->chk_sum = chksum(ci);
 
     return &hd;
 }
@@ -1044,6 +1055,12 @@ int cache_flush(GapIO *io) {
 
 		next = hi->next;
 
+		if (chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW) {
+		    printf("Chksum differs on ci for rec %"PRIrec"\n",
+			   ci->rec);
+		    abort();
+		}
+
 		if (ci->updated) updated[ci->type]++;
 		if (hi->ref_count) ref_count[ci->type]++;
 		if (hi->in_use_prev || hi->in_use_next || h->in_use == hi)
@@ -1604,7 +1621,7 @@ void cache_decr_debug(GapIO *io, void *data, char *where) {
     sprintf(key, "%p-%d", data, ci->hi->ref_count-1 - ci->updated);
 
     if (HacheTableRemove(ref_debug, key, 0, 1) != 0) {
-	fprintf(stderr, "Failed to remove %s - not in hash table?",
+	fprintf(stderr, "Failed to remove %s - not in hash table?\n",
 		key);
     }
 

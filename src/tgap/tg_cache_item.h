@@ -30,6 +30,7 @@ typedef struct cached_item_s {
     tg_rec rec;
     HacheItem *hi;
     size_t data_size;
+    int chk_sum;
     void *data;
 } cached_item;
 
