@@ -254,7 +254,6 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		 HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec))){
 		r->start++;
 		r->end++;
-		ins = 1;
 	    }
 	}
     }
@@ -262,6 +261,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     /* Adjust the bin dimensions */
     if (ins || base) {
 	bin->size++;
+	ins = 1;
 	if (bin->rng) {
 	    int start = INT_MAX;
 	    int end   = INT_MIN;
@@ -313,6 +313,8 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		}
 
 		ch->pos++;
+		if (ch->nseqs)
+		    ins=1;
 		ch->flags |= BIN_BIN_UPDATED;
 	    }
 	}
