@@ -3915,7 +3915,7 @@ static int io_seq_index_del(void *dbh, char *name) {
  * Either way the reading code will handle it as the first format byte
  * is adjusted to indicate whether reordering took place.
  */
-#define FAST_REORDER
+//#define FAST_REORDER
 static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     GView v;
