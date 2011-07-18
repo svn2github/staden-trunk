@@ -1014,7 +1014,7 @@ int tcl_calc_consensus(ClientData clientData, Tcl_Interp *interp,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    active_list_contigs_extended(args.io, args.inlist, &rargc, &rargv);
 
     if (rargc >= 1) {
 	char *buf;
@@ -1048,7 +1048,7 @@ int tcl_calc_quality(ClientData clientData, Tcl_Interp *interp,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    active_list_contigs_extended(args.io, args.inlist, &rargc, &rargv);
 
     if (rargc >= 1) {
 	char *buf;
