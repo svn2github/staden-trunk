@@ -37,7 +37,6 @@ DIRS =	Misc\
 	hetins\
 	mutscan\
 	convert\
-	tgap\
 	gap5\
 	scripts\
 	data
@@ -208,8 +207,7 @@ convert: gap4
 copy_reads: gap4
 haplo: gap4
 prefinish: gap4
-tgap: seq_utils
-gap5: tgap primer3/src
+gap5: primer3/src
 
 FORCE:
 # DO NOT DELETE THIS LINE -- make depend depends on it.

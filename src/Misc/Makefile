@@ -137,6 +137,10 @@ strings.o: $(SRCROOT)/Misc/misc.h
 strings.o: $(SRCROOT)/Misc/os.h
 strings.o: $(SRCROOT)/Misc/xalloc.h
 strings.o: $(PWD)/staden_config.h
+strtol64.o: $(SRCROOT)/Misc/misc.h
+strtol64.o: $(SRCROOT)/Misc/os.h
+strtol64.o: $(SRCROOT)/Misc/xalloc.h
+strtol64.o: $(PWD)/staden_config.h
 vlen.o: $(SRCROOT)/Misc/misc.h
 vlen.o: $(SRCROOT)/Misc/os.h
 vlen.o: $(SRCROOT)/Misc/vlen.h

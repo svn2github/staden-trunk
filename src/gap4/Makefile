@@ -2167,7 +2167,6 @@ init.o: $(SRCROOT)/gap4/edUtils.h
 init.o: $(SRCROOT)/gap4/fort.h
 init.o: $(SRCROOT)/gap4/fortran.h
 init.o: $(SRCROOT)/gap4/gap-dbstruct.h
-init.o: $(SRCROOT)/gap4/gap-error.h
 init.o: $(SRCROOT)/gap4/gap-if.h
 init.o: $(SRCROOT)/gap4/gap-tcl.h
 init.o: $(SRCROOT)/gap4/gap_globals.h

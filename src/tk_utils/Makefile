@@ -171,6 +171,10 @@ element_canvas.o: $(SRCROOT)/tk_utils/container.h
 element_canvas.o: $(SRCROOT)/tk_utils/element_canvas.h
 element_canvas.o: $(SRCROOT)/tk_utils/tclCanvGraph.h
 element_canvas.o: $(SRCROOT)/tk_utils/text_output.h
+init.o: $(SRCROOT)/Misc/misc.h
+init.o: $(SRCROOT)/Misc/os.h
+init.o: $(SRCROOT)/Misc/xalloc.h
+init.o: $(PWD)/staden_config.h
 init.o: $(SRCROOT)/tk_utils/tclCanvGraph.h
 init.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 init.o: $(SRCROOT)/tk_utils/tcl_io_lib.h

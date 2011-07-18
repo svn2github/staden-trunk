@@ -2279,7 +2279,6 @@ if {[string match "*depth.tcl" $argv0]} {
     load_package tk_utils
     tk_utils_init
     load_package gap5
-    load libtgap.so g5
 
     #set dbname "/lustre/seq/scratch1/jkb/pe_rmdup.0"
     #set dbname "/lustre/seq/scratch1/jkb/1112_s_1"

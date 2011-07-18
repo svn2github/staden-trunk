@@ -1,3 +1,18 @@
+Gap Fixes
+=========
+
+*	More bug fixes to break contig.
+
+*	Shuffle pads no longer dies when the contig starts at a negative
+	position.
+
+*	Inserting columns in the consensus now behaves better at
+	extreme places (eg 1st base in far-left cutoff).
+
+*	Fixed a bug when writing bins that previously contained data
+	but no longer do.
+
+
 July 8th 2011
 -------------
 
