@@ -116,7 +116,8 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	}
     }
 
-    if (s->right < s->left) {
+    if (s->right < s->left-1) {
+	/* Allow 1 diff as this is a seq with no visible data */
 	vmessage("Seq %"PRIrec": right clip starts before left clip\n",
 		 s->rec);
 	err++;
