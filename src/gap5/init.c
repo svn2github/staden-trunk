@@ -43,31 +43,28 @@ int Gap_Init(Tcl_Interp *interp) {
     trap_signals();
 #endif
 
-    /*
-    Editor_Init(interp);
-    EdNames_Init(interp);
-    Sheet_Init(interp);
-    Ced_Init(interp);
-    Db_Init(interp);
-    */
+    G5_Init(interp);
     NewGap_Init(interp);
 
     get_tag_types();
 
-    return Tcl_PkgProvide(interp, "gap4", "1.0");
+    return Tcl_PkgProvide(interp, "gap5", "1.0");
 }
 
 int Gap_SafeInit(Tcl_Interp *interp) {
+    G5_SafeInit(interp);
     return Gap_Init(interp);
 }
 
 int Gap_Unload(Tcl_Interp *interp, int flags) {
+    G5_Unload(interp);
     Tcl_SetResult(interp, "Pkg_Unload() function not implemented",
 		  TCL_STATIC);
     return TCL_ERROR;
 }
 
 int Gap_SafeUnload(Tcl_Interp *interp, int flags) {
+    G5_SafeUnload(interp);
     Tcl_SetResult(interp, "Pkg_SafeUnload() function not implemented",
 		  TCL_STATIC);
     return TCL_ERROR;
