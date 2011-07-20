@@ -1,7 +1,68 @@
+Wed 20th 2011
+-------------
+
+Gap5 Updates
+============
+
+*	Added a gap5_check command. This is a CLI version of Check
+        Database.
+
+*	Improved debugging tools and checking for validity of data via
+        checksums.
+
+*	Code reorganisation: merged the tgap and gap5 directories for
+        reasons of sanity and removal of circular dependencies between
+        the two.
+
+*	The Contig ID component of dialogues now uses the visible
+        start/end portion of a contig instead of just going from base
+        1 to the contig length. This mainly prevents cases of runs of
+        Ns appearing on the ends of consensus when saving just a
+        single contig.
+
+
 Gap Fixes
 =========
 
-*	More bug fixes to break contig.
+*	Many more bug fixes to break contig.
+	- Breaking at a position where the right contig ends before
+	  base 0 (so entirely negative, prior to shifting) was not
+	  setting contig boundaries correctly.
+
+	- Incorrect computation of annotation start coordinates,
+ 	  meaning we could accidentally move them to the right hand
+ 	  contig when they overlapped the left hand contig. 
+
+	- Was Incorrtly claiming bin is empty when it infact is just 1
+ 	  base long (eg contains only a single bp tag).
+
+	- More issues with single bp tags being the only thing in a
+ 	  contig: another < vs <= bug.
+
+	- Fixed an issue where tags were not copied to the right
+	  copy. This happens when tags start to the left of the break
+	  point that are on a sequence with visible start to the right
+	  of the break point.
+
+	- Fixed an issue where cached consensus sequences were
+          sometimes counted in the number of sequences within a contig.
+
+	- Added a check to see if breaking at this position will
+	  produce a contig with zero sequences. If so abort early
+	  rather than create an inconsistency.
+
+	- Fixed an error in remove_empty_bins where the first
+          non-empty bin recursing down from the root is complemented.
+          It was setting the bin offset incorrectly.
+
+*	Reverted to the older group-reorder code when reading and
+	writing seq blocks. It's slower, but the new code has subtle
+	bugs. I will fix these later, but for now the SVN trunk
+	needs to be working.
+
+*	Fixed a contig editor bug where attempting to remove a column
+        in the contig cutoff regions (before first or after last
+        visible base) would work if the first/last base was "*".
 
 *	Shuffle pads no longer dies when the contig starts at a negative
 	position.
@@ -11,6 +72,21 @@ Gap Fixes
 
 *	Fixed a bug when writing bins that previously contained data
 	but no longer do.
+
+*	Fixed crashes in Complement Contig in some cases (typically
+        very deep data).
+
+*       Added bin simple loop detection in the various functions to
+        increment or decrement the number of seqs, annotations and
+        reference position markers. (This shouldn't happen, but it's a
+        robustness improvement.)
+
+*	When removing a consensus column causes removal of an item
+ 	from the contig, we now also update the bin and contig extents
+ 	incase the removal changed them.
+
+	Similarly inserting columns could sometimes fail to update
+ 	contig extents.
 
 
 July 8th 2011
