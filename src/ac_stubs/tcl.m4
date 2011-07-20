@@ -1618,7 +1618,7 @@ dnl AC_CHECK_TOOL(AR, ar)
 	    SHLIB_LD='${CC} -shared ${CFLAGS} ${LDFLAGS_DEFAULT}'
 	    DL_OBJS="tclLoadDl.o"
 	    DL_LIBS="-ldl"
-	    LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
+	    LDFLAGS="$LDFLAGS -Wl,--export-dynamic -Wl,--warn-common -Wl,--unresolved-symbols=ignore-in-shared-libs"
 	    AS_IF([test $doRpath = yes], [
 		CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'])
 	    LD_SEARCH_FLAGS=${CC_SEARCH_FLAGS}

@@ -66,7 +66,7 @@ typedef struct {
 #define GR_WINDOW_RANGE 1000
 
 /* Global gap range_option */
-Tk_CustomOption range_option;
+extern Tk_CustomOption range_option;
 
 int  GRange_Init(Tcl_Interp *interp);
 void gap_range_destroy(gap_range_t *gr);
