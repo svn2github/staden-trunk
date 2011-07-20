@@ -160,9 +160,14 @@ proc update_limits {io path c_name } {
 
 if {[winfo exists $path.lreg]} {
         if {[set c_num [db_info get_contig_num $io $c_name]] != -1} {
-            set len [c_length $io $c_num]
-            scalebox_configure $path.lreg -to $len -default 1
-            scalebox_configure $path.rreg -to $len -default $len
+	    set c [$io get_contig $c_num]
+	    set cst1 [$c get_start]
+	    set cen1 [$c get_end]
+	    set cst2 [$c get_visible_start]
+	    set cen2 [$c get_visible_end]
+	    $c delete
+            scalebox_configure $path.lreg -from $cst1 -to $cen1 -default $cst2
+            scalebox_configure $path.rreg -from $cst1 -to $cen1 -default $cen2
         }
 }
 }
@@ -180,9 +185,16 @@ proc contig_id_trace {path io name element op} {
 		[lindex [$path.lreg.scale configure -state] 4]] == 0} {
 
 	    if {[set c_num [db_info get_contig_num $io [set $name]]] != -1} {
-		set len [c_length $io $c_num]
-		scalebox_configure $path.lreg -to $len -default 1
-		scalebox_configure $path.rreg -to $len -default $len
+		set c [$io get_contig $c_num]
+		set cst1 [$c get_start]
+		set cen1 [$c get_end]
+		set cst2 [$c get_visible_start]
+		set cen2 [$c get_visible_end]
+		$c delete
+		scalebox_configure $path.lreg -from $cst1 -to $cen1 \
+		    -default $cst2
+		scalebox_configure $path.rreg -from $cst1 -to $cen1 \
+		    -default $cen2
 	    }
 	}
     }

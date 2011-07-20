@@ -605,7 +605,9 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
 	"nseqs",	"anno_in_range","get_pileup",   "ref_to_padded",
 	"nrefpos",	"nanno",        "shift_base",   "move_anno",
-	"check",        "move_seq",     (char *)NULL,
+	"check",        "move_seq",
+	"get_visible_start", "get_visible_end", "get_visible_length",
+	(char *)NULL,
     };
 
     enum options {
@@ -615,7 +617,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
 	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
 	NREFPOS,        NANNO,	        SHIFT_BASE,     MOVE_ANNO,
-	CHECK,          MOVE_SEQ
+	CHECK,          MOVE_SEQ,
+	GET_VISIBLE_START, GET_VISIBLE_END, GET_VISIBLE_LENGTH
     };
 
     if (objc < 2) {
@@ -668,6 +671,30 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetIntObj(Tcl_GetObjResult(interp),
 		      tc->contig->end - tc->contig->start + 1);
 	break;
+
+    case GET_VISIBLE_START: {
+	int st;
+	if (-1 == consensus_valid_range(tc->io, tc->contig->rec, &st, NULL))
+	    return TCL_ERROR;
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), st);
+	break;
+    }
+
+    case GET_VISIBLE_END: {
+	int en;
+	if (-1 == consensus_valid_range(tc->io, tc->contig->rec, NULL, &en))
+	    return TCL_ERROR;
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), en);
+	break;
+    }
+
+    case GET_VISIBLE_LENGTH: {
+	int st, en;
+	if (-1 == consensus_valid_range(tc->io, tc->contig->rec, &st, &en))
+	    return TCL_ERROR;
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), en-st+1);
+	break;
+    }
 
     case GET_NAME:
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), tc->contig->name, -1);
