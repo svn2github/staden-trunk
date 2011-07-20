@@ -1059,7 +1059,8 @@ int cache_flush(GapIO *io) {
 
 		next = hi->next;
 
-		if (chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW) {
+		if (ci->type != GT_Library &&
+		    chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW) {
 		    printf("Chksum differs on ci for rec %"PRIrec"\n",
 			   ci->rec);
 		    abort();
