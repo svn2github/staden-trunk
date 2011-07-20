@@ -1217,8 +1217,8 @@ void btree_destroy(g_io *io, HacheTable *h) {
     if (!h)
 	return;
 
-    puts("\n=== btree_hash ===");
-    HacheTableStats(h, stdout);
+    fputs("\n=== btree_hash ===", stderr);
+    HacheTableStats(h, stderr);
 
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi;
@@ -1438,40 +1438,40 @@ static int io_database_disconnect(void *dbh) {
 
     free(io);
 
-    printf("\n*** I/O stats (type, write count/size read count/size) ***\n");
-    printf("GT_RecArray     \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_RecArray],     wrstats[GT_RecArray],
-	   rdcounts[GT_RecArray],     rdstats[GT_RecArray]);
-    printf("GT_Bin          \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_Bin],          wrstats[GT_Bin],
-	   rdcounts[GT_Bin],          rdstats[GT_Bin]);
-    printf("GT_Range        \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_Range],        wrstats[GT_Range],
-	   rdcounts[GT_Range],        rdstats[GT_Range]);
-    printf("GT_BTree        \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_BTree],        wrstats[GT_BTree],
-	   rdcounts[GT_BTree],        rdstats[GT_BTree]);
-    printf("GT_Track        \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_Track],        wrstats[GT_Track],
-	   rdcounts[GT_Track],        rdstats[GT_Track]);
-    printf("GT_Contig       \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_Contig],       wrstats[GT_Contig],
-	   rdcounts[GT_Contig],       rdstats[GT_Contig]);
-    printf("GT_Seq          \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_Seq],          wrstats[GT_Seq],
-	   rdcounts[GT_Seq],          rdstats[GT_Seq]);
-    printf("GT_Anno         \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_Anno],         wrstats[GT_Anno],
-	   rdcounts[GT_Anno],         rdstats[GT_Anno]);
-    printf("GT_AnnoEle      \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_AnnoEle],      wrstats[GT_AnnoEle],
-	   rdcounts[GT_AnnoEle],      rdstats[GT_AnnoEle]);
-    printf("GT_SeqBlock     \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_SeqBlock],     wrstats[GT_SeqBlock],
-	   rdcounts[GT_SeqBlock],     rdstats[GT_SeqBlock]);
-    printf("GT_AnnoEleBlock \t%7d\t%14d\t%7d\t%14d\n",
-	   wrcounts[GT_AnnoEleBlock], wrstats[GT_AnnoEleBlock],
-	   rdcounts[GT_AnnoEleBlock], rdstats[GT_AnnoEleBlock]);
+    fprintf(stderr, "\n*** I/O stats (type, write count/size read count/size) ***\n");
+    fprintf(stderr, "GT_RecArray     \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_RecArray],     wrstats[GT_RecArray],
+	    rdcounts[GT_RecArray],     rdstats[GT_RecArray]);
+    fprintf(stderr, "GT_Bin          \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_Bin],          wrstats[GT_Bin],
+	    rdcounts[GT_Bin],          rdstats[GT_Bin]);
+    fprintf(stderr, "GT_Range        \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_Range],        wrstats[GT_Range],
+	    rdcounts[GT_Range],        rdstats[GT_Range]);
+    fprintf(stderr, "GT_BTree        \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_BTree],        wrstats[GT_BTree],
+	    rdcounts[GT_BTree],        rdstats[GT_BTree]);
+    fprintf(stderr, "GT_Track        \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_Track],        wrstats[GT_Track],
+	    rdcounts[GT_Track],        rdstats[GT_Track]);
+    fprintf(stderr, "GT_Contig       \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_Contig],       wrstats[GT_Contig],
+	    rdcounts[GT_Contig],       rdstats[GT_Contig]);
+    fprintf(stderr, "GT_Seq          \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_Seq],          wrstats[GT_Seq],
+	    rdcounts[GT_Seq],          rdstats[GT_Seq]);
+    fprintf(stderr, "GT_Anno         \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_Anno],         wrstats[GT_Anno],
+	    rdcounts[GT_Anno],         rdstats[GT_Anno]);
+    fprintf(stderr, "GT_AnnoEle      \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_AnnoEle],      wrstats[GT_AnnoEle],
+	    rdcounts[GT_AnnoEle],      rdstats[GT_AnnoEle]);
+    fprintf(stderr, "GT_SeqBlock     \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_SeqBlock],     wrstats[GT_SeqBlock],
+	    rdcounts[GT_SeqBlock],     rdstats[GT_SeqBlock]);
+    fprintf(stderr, "GT_AnnoEleBlock \t%7d\t%14d\t%7d\t%14d\n",
+	    wrcounts[GT_AnnoEleBlock], wrstats[GT_AnnoEleBlock],
+	    rdcounts[GT_AnnoEleBlock], rdstats[GT_AnnoEleBlock]);
 
     return 0;
 }
@@ -1552,7 +1552,7 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
     }
 
     io->db_vers = db->version;
-    printf("Database version=%d\n", io->db_vers);
+    fprintf(stderr, "Database version=%d\n", io->db_vers);
 
     return ci;
 

@@ -98,8 +98,8 @@ void g_free_gfile(GFile *gfile)
 	if (gfile->fdaux != -1) close(gfile->fdaux);
 	if (gfile->idx != NULL) g_destroy_index(gfile);
 	if (gfile->idx_hash) {
-	    puts("\n=== g idx_hash ===");
-	    HacheTableStats(gfile->idx_hash, stdout);
+	    fputs("\n=== g idx_hash ===", stderr);
+	    HacheTableStats(gfile->idx_hash, stderr);
 	    HacheTableDestroy(gfile->idx_hash, 1);
 	}
 	xfree(gfile);

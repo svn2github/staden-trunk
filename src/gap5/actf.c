@@ -172,11 +172,11 @@ int actf_lock(int read_only, char *file, int new) {
 #if !defined(NOLOCKF)
 	locked = test_if_locked(fname);
 	if (!locked) {
-	    vmessage("WARNING! Database has lock file, "
-		     "but is no longer in use.\n");
+	    verror(ERR_WARN, "actf_lock",
+		   "Database has lock file, but is no longer in use.\n");
 	    log_file(NULL, "Overriding lock file");
 	    if (!read_only)
-		vmessage("WARNING! Taking ownership of lock.\n");
+		verror(ERR_WARN, "actf_lock", "Taking ownership of lock.\n");
 	}
 #else
 	locked = 1;
@@ -201,7 +201,7 @@ int actf_lock(int read_only, char *file, int new) {
 
     if (locked) {
 	if (read_only) {
-	    vmessage("WARNING! Database is currently in use\n");
+	    verror(ERR_WARN, "actf_lock", "Database is currently in use\n");
 	    return 0;
 	} else {
 	    /* lock already exists */

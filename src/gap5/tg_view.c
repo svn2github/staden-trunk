@@ -924,8 +924,8 @@ int main(int argc, char **argv) {
 	endwin();
 
 	if (io->cache) {
-	    puts("\n=== cache ===");
-	    HacheTableStats(io->cache, stdout);
+	    fputs("\n=== cache ===", stderr);
+	    HacheTableStats(io->cache, stderr);
 	}
 
 	gio_close(io);
