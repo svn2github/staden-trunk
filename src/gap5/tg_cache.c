@@ -88,7 +88,7 @@ static int chksum(cached_item *ci) {
  * centralised here to provide extra debugging functionality when needed.
  */
 static void cache_free(cached_item *ci) {
-    if (chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW) {
+    if (ci->chk_sum && chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW){
 	printf("Chksum differs on ci for rec %"PRIrec"\n", ci->rec);
 	abort();
     }
@@ -329,6 +329,10 @@ static int library_write(GapIO *io, cached_item *ci) {
 static void library_unload(GapIO *io, cached_item *ci, int unlock) {
     if (unlock)
 	io->iface->library.unlock(io->dbh, ci->view);
+
+    /* Disable checking as even in r/o mode we update insert_size on the fly */
+    ci->chk_sum = 0;
+
     cache_free(ci);
 }
 
