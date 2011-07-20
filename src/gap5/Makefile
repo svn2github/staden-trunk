@@ -213,6 +213,7 @@ install:
 	cp $(S)/tg_view $(INSTALLBIN)
 	cp $(S)/gap5_consensus $(INSTALLBIN)
 	cp $(S)/gap5_export $(INSTALLBIN)
+	cp $(S)/gap5_check $(INSTALLBIN)
 
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(S)/gap5 \
