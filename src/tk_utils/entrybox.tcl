@@ -9,7 +9,7 @@
 proc CheckInput { path } {
 
     set filename [expandpath [$path.entry get]]
-    set response [CheckOpenFile $filename]
+    set response [CheckOpenFile $filename $path]
 
     return $response
 }
@@ -17,7 +17,7 @@ proc CheckInput { path } {
 proc CheckInputOptional { path } {
     set filename [expandpath [$path.entry get]]
     if {$filename != ""} {
-        set response [CheckOpenFile $filename]
+        set response [CheckOpenFile $filename $path]
     } else {
 	set response 1
     }
@@ -28,7 +28,7 @@ proc CheckInputOptional { path } {
 proc CheckInputOptionalDefault { default path } {
     set filename [expandpath [$path.entry get]]
     if {$filename != $default} {
-        set response [CheckOpenFile $filename]
+        set response [CheckOpenFile $filename $path]
     } else {
 	set response 1
     }
@@ -51,7 +51,7 @@ proc CheckContig {io path } {
 
 proc CheckContigName {io path } {
     set name [$path.entry get]
-    eval set response \{[CheckGelName $io $name]\}
+    eval set response \{[CheckGelName $io $name $path]\}
     if { $response == 1} {
 	    return 0
     }
@@ -60,7 +60,7 @@ proc CheckContigName {io path } {
 
 proc CheckOutput { path } {
     set filename [expandpath [$path.entry get]]
-    set response [CheckSaveFile "$filename"]
+    set response [CheckSaveFile "$filename" $path]
     if {$response && [file exists "$filename"]} {
 	DeleteFile $filename
     }
@@ -72,7 +72,7 @@ proc CheckOutputOptional { path } {
     if {$filename == ""} {
 	return 1;
     }
-    set response [CheckSaveFile "$filename"]
+    set response [CheckSaveFile "$filename" $path]
     if {$response && [file exists "$filename"]} {
 	DeleteFile $filename
     }
@@ -84,8 +84,8 @@ proc CheckDBOutput { path } {
     set ext 0
 
     set filename [expandpath [$path.entry get]]
-    set response1 [CheckSaveFile "$filename.$ext"]
-    set response2 [CheckDBFilename $filename]
+    set response1 [CheckSaveFile "$filename.$ext" $path]
+    set response2 [CheckDBFilename $filename $path]
 
     #user wishes to overwrite file, must remove existing file
     if {$response1} {

@@ -170,7 +170,8 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hid
     if {$tags == 1 && $active_tags == ""} {
 	set re_enter 0
 	tk_messageBox -icon error -type ok -title "No active tags" \
-		-message "No tags have been selected"
+		-message "No tags have been selected" \
+	        -parent $f
 	bell
 	#wait forever...
 	tkwait variable re_enter
@@ -178,7 +179,8 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hid
     } elseif {$tags == 2 && $sequence == ""} {
 	set re_enter 0
 	tk_messageBox -icon error -type ok -title "No search sequence" \
-		-message "No sequence has been entered"
+		-message "No sequence has been entered" \
+	        -parent $f
 	bell
 	#wait forever...
 	tkwait variable re_enter

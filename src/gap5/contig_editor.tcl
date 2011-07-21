@@ -423,6 +423,8 @@ proc contig_register_callback {ed type id args} {
 			} else {
 			    $ed set_cursor 18 $arg1 $arg2
 			}
+
+			raise [set ${w}(win)]
 		    }
 		}
 	    }
@@ -444,7 +446,13 @@ proc contig_register_callback {ed type id args} {
 		} else {
 		    $ed set_cursor 18 $arg(seq) $arg(pos)
 		}
+
+		raise [set ${w}(win)]
 	    }
+	}
+
+	RAISE {
+	    
 	}
 
 	JOIN_TO {
@@ -615,6 +623,8 @@ proc create_or_move_editor {io contig cursor_rec cursor_pos} {
 
     # If found, send a cursor movement event
     if {$found} {
+	puts "1 contig_notify -io $io -cnum $contig -type GENERIC \
+	    -args [list TASK_GENERIC "" data "set_cursor $cursor_rec $cursor_pos"]"
 	contig_notify -io $io -cnum $contig -type GENERIC \
 	    -args [list TASK_GENERIC "" data "set_cursor $cursor_rec $cursor_pos"]
     } else {

@@ -27,7 +27,7 @@ proc CheckReadingID { reading } {
 #check the gel name exists in the database
 #return 0 for success
 #return 1 for failure
-proc CheckGelName { io name } {
+proc CheckGelName { io name {p .} } {
 
     set num [cname2crec $io $name]
     if { $num == -1 } {
@@ -35,7 +35,8 @@ proc CheckGelName { io name } {
 		-icon error \
 		-title "Bad name" \
 		-message "Reading name does not exist in the database" \
-		-type ok
+		-type ok \
+	        -parent $p
 	set press_ok 1
     } else {
 	return 0
@@ -49,21 +50,23 @@ proc CheckGelName { io name } {
 #check for valid database filenames.
 #return 0 for success
 #return 1 for failure
-proc CheckDBFilename {filename} {
+proc CheckDBFilename {filename {p .}} {
     set fname [file tail $filename]
     if {[regexp "\[ \t\n\]" $fname] != 0} {
 	tk_messageBox \
 		-icon error \
 		-title "Bad filename" \
 		-message "The use of whitespace in the database name is not permitted" \
-		-type ok
+		-type ok \
+	        -parent $p
         set press_ok 1
     } elseif {[string length $fname] > 256-9} {
 	tk_messageBox \
 		-icon error \
 		-title "Bad filename" \
 		-message "The database name must be less than or equal to 247 characters long" \
-		-type ok
+		-type ok \
+	        -parent $p
 	set press_ok 1
     } else {
         return 1

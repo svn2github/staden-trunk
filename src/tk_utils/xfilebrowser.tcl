@@ -67,10 +67,10 @@ proc XInvokeFileBrowser {fn type args} {
 #check the filename to be loaded already exists and is readable by user
 #return 0 for failure
 #return 1 for success
-proc XCheckOpenFile { filename} { 
+proc XCheckOpenFile { filename {p .} } { 
 
     #check file exists and have read permissions
-    if { [XFileExists $filename] && [XFileReadable $filename] } {
+    if { [XFileExists $filename $p] && [XFileReadable $filename $p] } {
 	    return 1
     }
     #unable to load file
@@ -82,7 +82,7 @@ proc XCheckOpenFile { filename} {
 #check the filename to be saved already exists and is writable by user
 #return 0 for failure
 #return 1 for success
-proc XCheckSaveFile { filename } { 
+proc XCheckSaveFile { filename {p .} } { 
     set result -1
 
     #check to see if file already exists and if the user wishes to
@@ -90,10 +90,10 @@ proc XCheckSaveFile { filename } {
     #result = no if file exists and user does not wish to overwrite
     #result = yes if file exists and user does wish to overwrite
     #result = cancel if cancel
-    set result [XOverwrite "$filename"]
+    set result [XOverwrite "$filename" $p]
 
     case $result {
-	yes {if {![XFileWritable $filename]} {return 0}}
+	yes {if {![XFileWritable $filename $p]} {return 0}}
 	no {return 0}
 	cancel {return 0}
     }
@@ -104,7 +104,7 @@ proc XCheckSaveFile { filename } {
 
 ###############################################################################
 #check input file exists
-proc XFileExists {filename } {
+proc XFileExists { filename {p .} } {
 
     set stem [file tail $filename]
 
@@ -127,11 +127,12 @@ proc XFileExists {filename } {
 
 ##############################################################################
 #check the user has permission to read the file. 
-proc XFileReadable { filename } {
+proc XFileReadable { filename {p .} } {
 
     if {[file readable $filename] == 0} {
 	tk_messageBox -icon error -type ok -title "Permission denied" \
-		-message "You do not have permission to read $filename"
+		-message "You do not have permission to read $filename" \
+	        -parent $p
 	return 0
     }
     #do have permission
@@ -142,11 +143,12 @@ proc XFileReadable { filename } {
 
 ##############################################################################
 #check the user has permission to write the file. 
-proc XFileWritable { filename } {
+proc XFileWritable { filename {p .} } {
 
     if {[file writable $filename] == 0} {
 	tk_messageBox -icon error -type ok -title "Permission denied" \
-		-message "You do not have permission to write to $filename"
+		-message "You do not have permission to write to $filename" \
+	        -parent $p
 	return 0
     }
     #do have permission
@@ -161,7 +163,7 @@ proc XFileWritable { filename } {
 #return yes if file exists and user does wish to overwrite
 #return cancel if Cancel
 #return 3 if file does not exist
-proc XOverwrite { filename } {
+proc XOverwrite { filename {p .} } {
 
     set stem [file tail $filename]
 
@@ -174,7 +176,8 @@ proc XOverwrite { filename } {
     if {[file exists $filename]} {
 	return [tk_messageBox -icon warning -type yesnocancel \
 		-default no -title "File Exists" \
-		-message "Do you wish to overwrite $filename"]
+		-message "Do you wish to overwrite $filename" \
+		-parent $p]
 	#return [tk_dialog .fileexists "File Exists" "Do you wish to overwrite $filename" warning 0 No Yes Cancel]
     }
     

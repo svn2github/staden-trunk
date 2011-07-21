@@ -117,7 +117,8 @@ proc New_OK_Pressed { f file } {
 		-icon error \
 		-title "Bad filename" \
 		-message "The use of \".\" in the database name is not permitted" \
-		-type ok
+		-type ok \
+	        -parent $f
 	return
     }
 

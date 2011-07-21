@@ -106,10 +106,10 @@ proc InvokeBiolimsBrowser {fn type} {
 #check the filename to be loaded already exists and is readable by user
 #return 0 for failure
 #return 1 for success
-proc CheckOpenFile { filename} { 
+proc CheckOpenFile { filename {p .}} { 
 
     #check file exists and have read permissions
-    if { [FileExists $filename] && [FileReadable $filename] } {
+    if { [FileExists $filename $p] && [FileReadable $filename $p] } {
 	    return 1
     }
     #unable to load file
@@ -121,7 +121,7 @@ proc CheckOpenFile { filename} {
 #check the filename to be saved already exists and is writable by user
 #return 0 for failure
 #return 1 for success
-proc CheckSaveFile { filename } { 
+proc CheckSaveFile { filename {p .} } { 
     #check to see if file already exists and if the user wishes to
     #overwrite the existing file
     #result = no if file exists and user does not wish to overwrite
@@ -130,14 +130,15 @@ proc CheckSaveFile { filename } {
 
     if {[file isdir $filename]} {
 	tk_messageBox -icon error -type ok -title "Permission denied" \
-		-message "$filename is a directory"
+		-message "$filename is a directory" \
+	        -parent $p
 	return 0
     }
-    set result [Overwrite "$filename"]
+    set result [Overwrite "$filename" $p]
 
     case $result {
 	0 {return 0}
-	1 {if {![FileWritable $filename]} {return 0}}
+	1 {if {![FileWritable $filename $p]} {return 0}}
 	2 {return 0}
 	3 {
 	    if {[catch {set fd [open $filename w]} err]} {
@@ -145,7 +146,8 @@ proc CheckSaveFile { filename } {
 		    -icon error \
 		    -type ok \
 		    -title "error" \
-		    -message "$err"
+		    -message "$err" \
+		    -parent $p
 		return 0
 	    } else {
 		close $fd
@@ -160,18 +162,20 @@ proc CheckSaveFile { filename } {
 
 ###############################################################################
 #check input file exists
-proc FileExists {filename } {
+proc FileExists { filename {p .} } {
 
     set stem [file tail $filename]
 
     if {$stem == ""} {
 	tk_messageBox -icon error -type ok -title "File does not exist" \
-		-message "No filename has been entered"
+		-message "No filename has been entered" \
+	        -parent $p
 	return 0
     }
 
     if {![file exists $filename]} {
 	tk_messageBox -icon error -type ok -title "File does not exist" \
+	        -parent $p
 		-message "$filename cannot be opened. \
 	Please check the filename and directory"
 	return 0
@@ -183,11 +187,12 @@ proc FileExists {filename } {
 
 ##############################################################################
 #check the user has permission to read the file. 
-proc FileReadable { filename } {
+proc FileReadable { filename {p .} } {
 
     if {[file readable $filename] == 0} {
 	tk_messageBox -icon error -type ok -title "Permission denied" \
-		-message "You do not have permission to read $filename"
+		-message "You do not have permission to read $filename" \
+	        -parent $p
 	return 0
     }
     #do have permission
@@ -198,11 +203,12 @@ proc FileReadable { filename } {
 
 ##############################################################################
 #check the user has permission to write the file. 
-proc FileWritable { filename } {
+proc FileWritable { filename {p .} } {
 
     if {[file writable $filename] == 0} {
 	tk_messageBox -icon error -type ok -title "Permission denied" \
-		-message "You do not have permission to write to $filename"
+		-message "You do not have permission to write to $filename" \
+	        -parent $p
 	return 0
     }
     #do have permission
@@ -217,20 +223,22 @@ proc FileWritable { filename } {
 #return 1 if file exists and user does wish to overwrite
 #return 0 if Cancel
 #return 3 if file does not exist
-proc Overwrite { filename } {
+proc Overwrite { filename {p .} } {
 
     set stem [file tail $filename]
 
     if {$stem == ""} {
 	tk_messageBox -icon error -type ok -title "File does not exist" \
-		-message "No filename has been entered"
+		-message "No filename has been entered" \
+	        -parent $p
 	return 0
     }
 
     if {[file exists $filename]} {
 	return [lsearch {no yes cancel} [tk_messageBox -icon warning -type yesnocancel \
 		-default no -title "File Exists" \
-		-message "Do you wish to overwrite $filename"]]
+		-message "Do you wish to overwrite $filename" \
+		-parent $p]]
 	#return [tk_dialog .fileexists "File Exists" "Do you wish to overwrite $filename" warning 0 No Yes Cancel]
     }
     

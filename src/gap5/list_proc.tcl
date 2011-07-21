@@ -200,13 +200,14 @@ proc ListPrint {name} {
     return 1
 }
 
-proc ListDelete {name} {
+proc ListDelete {name {parent .}} {
     global NGList NGLists NGSpecial NGListTag
 
     if {[ListExists2 $name]} {
 	if {[info exists NGSpecial] && [lsearch -exact $NGSpecial $name] != -1 } {
 	    tk_messageBox -icon error -type ok -title "Special list" \
-		    -message "This list cannot be deleted"
+		-message "This list cannot be deleted" \
+		-parent $parent
 	    return 0
 	}
 
@@ -216,17 +217,19 @@ proc ListDelete {name} {
 	return 1
     } else {
 	tk_messageBox -icon error -type ok -title "No such list" \
-		-message "List does not exist"
+	    -message "List does not exist" \
+	    -parent $parent
 	return 0
     }
 }
 
-proc ListCopy {from to} {
+proc ListCopy {from to {parent .}} {
     global NGList NGLists
 
     if {$from == $to} {
 	tk_messageBox -icon error -type ok -title "Copy list" \
-	    -message "Source and destination list names need to be different"
+	    -message "Source and destination list names need to be different" \
+	    -parent $parent
 	return 0
     }
 
@@ -267,10 +270,10 @@ proc ListExists {name {gap 1}} {
     }
 }
 
-proc ListWritable {name} {
+proc ListWritable {name {parent .}} {
     global NGSpecial
 
-    if {![ListNameValid $name]} {
+    if {![ListNameValid $name $parent]} {
 	return 0
     }
 
@@ -278,25 +281,29 @@ proc ListWritable {name} {
 
 	if {[lsearch -exact $NGSpecial $name] != -1 } {
 	    tk_messageBox -icon error -type ok -title "Special list" \
-		    -message "This list cannot be replaced"
+		    -message "This list cannot be replaced" \
+		    -parent $parent
 	    return 0
 	}
 
 	set answer [tk_messageBox -icon question -type yesno \
-		-title "List exists" -message "List already exists. Replace?"]
+			-title "List exists" \
+			-message "List already exists. Replace?" \
+			-parent $parent]
 	case $answer {
 	    no {return 0} 
-	    yes {ListDelete $name}
+	    yes {ListDelete $name $parent}
 	}
     }
 
     return 1
 }
 
-proc ListNameValid {name} {
+proc ListNameValid {name {parent .}} {
     if {"$name" == ""} {
 	tk_messageBox -icon error -type ok -title "No list name" \
-		-message "You have not entered a list name"
+	    -message "You have not entered a list name"\
+	    -parent $parent
 	return 0
     }
     return 1
@@ -324,7 +331,7 @@ proc ListBrowse {path entry {type {read}}} {
 }
 
 proc CheckOutList {path} {
-    return [ListWritable [$path.entry get]]
+    return [ListWritable [$path.entry get] $path]
 }
 
 #############################################################################
@@ -707,7 +714,7 @@ proc LoadList2 {t file name {tag {}}} {
 
     if {"$name" == ""} {set name $file}
     if {$name != "readings"} {
-	if {![ListWritable $name]} return
+	if {![ListWritable $name $t]} return
     }
     ListLoad $file $name $tag
     destroy $t
@@ -800,7 +807,7 @@ proc SaveThisListDialog {listname {t {}}} {
 # Delete a list
 #
 proc DeleteList2 {t list} {
-    if {[ListDelete $list]} {
+    if {[ListDelete $list $t]} {
 	destroy $t
     }
 }
@@ -864,7 +871,7 @@ proc CopyList2 {t from to} {
 	return
     }
 
-    if {[ListCopy $from $to]} {destroy $t}
+    if {[ListCopy $from $to $t]} {destroy $t}
 }
 
 proc CopyListDialog {} {

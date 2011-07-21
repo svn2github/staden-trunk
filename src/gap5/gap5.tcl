@@ -168,7 +168,7 @@ proc CopyDatabase2 {t collect io version} {
     set version [string index $version 0]
     if {[regexp {^[a-zA-Z0-9~+-]$} $version] == 0} {
 	bell
-	tk_messageBox -icon error -type ok -title "Error" \
+	tk_messageBox -icon error -type ok -title "Error" -parent $t \
 		-message "Version character should be alpha-numeric or one of\
 		~, + or -"
 	return

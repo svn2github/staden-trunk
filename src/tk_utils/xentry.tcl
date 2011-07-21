@@ -177,14 +177,14 @@ namespace eval ::Widget::Xentry {;
         if {$multiple} {
 	    set response 1
 	    foreach f $path {
-		if {[XCheckOpenFile [expandpath $f]] == 0} {
+		if {[XCheckOpenFile [expandpath $f] $w] == 0} {
 		    set response 0
 		    break
 		}
 	    }
 	    return $response
 	} else {   
-	    set response [XCheckOpenFile [expandpath $path]]
+	    set response [XCheckOpenFile [expandpath $path] $w]
 	    return $response
 	}
     }
@@ -196,7 +196,7 @@ namespace eval ::Widget::Xentry {;
     if {$optional && $filename == ""} {
 	return 1;
     } else {
-	set response [XCheckSaveFile "$filename"]
+	set response [XCheckSaveFile "$filename" $w]
 	if {$response && [file exists "$filename"]} {
 	    DeleteFile $filename
 	}
