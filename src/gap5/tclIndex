@@ -61,6 +61,7 @@ set auto_index(join_contig) [list source [file join $dir contig_editor.tcl]]
 set auto_index(create_editor) [list source [file join $dir contig_editor.tcl]]
 set auto_index(EditContig) [list source [file join $dir contig_editor.tcl]]
 set auto_index(JoinContig) [list source [file join $dir contig_editor.tcl]]
+set auto_index(create_or_move_editor) [list source [file join $dir contig_editor.tcl]]
 
 set auto_index(contig_id) [list source [file join $dir contig_id.tcl]]
 set auto_index(contig_id_configure) [list source [file join $dir contig_id.tcl]]
