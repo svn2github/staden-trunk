@@ -20,6 +20,25 @@ static int rdcounts[100];
 
 #define INDEX_NAMES
 
+/* An assert that doesn't abort, instead returning rval */
+// #define g_assert(expr, rval) assert((expr))
+#ifndef STRINGIFY
+#    define STRINGIFY(a) #a
+#endif
+
+/* As a function so we can set a break point in it */
+static void g_assert_fail(const char *msg, const char *file, int line) {
+    fprintf(stderr, "g_assert failure for expression %s at %s:%d\n",
+	    msg, file, line);
+}
+#define g_assert(expr, rval)                                                 \
+    do {                                                                     \
+        if (!(expr)) {                                                       \
+   	    g_assert_fail(STRINGIFY(expr), __FILE__, __LINE__);	             \
+            return (rval);                                                   \
+       }                                                                     \
+    } while(0)
+
 static iface iface_g;
 
 /* ------------------------------------------------------------------------
@@ -733,8 +752,8 @@ static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
 	return NULL;
     }
 
-    assert(cp[0] == type);
-    assert((cp[1] & 0x3f) == 0); /* initial format */
+    g_assert(cp[0] == type, NULL);
+    g_assert((cp[1] & 0x3f) == 0, NULL); /* initial format */
     cp += 2;
     cp += u72int(cp, &ni);
     *nitems = ni;
@@ -747,7 +766,7 @@ static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
     for (i = 0; i < ni; i++)
 	cp += u72int(cp, (uint32_t *)&card[i]);
 
-    assert(cp-buf == buf_len);
+    g_assert(cp-buf == buf_len, NULL);
     free(buf);
 
     return card;
@@ -772,9 +791,9 @@ static tg_rec *io_generic_read_rec(g_io *io, GView v, int type,
 	return NULL;
     }
 
-    assert(cp[0] == type);
+    g_assert(cp[0] == type, NULL);
     fmt = (cp[1] & 0x3f);
-    assert(fmt <= 1);
+    g_assert(fmt <= 1, NULL);
 
     cp += 2;
     if (fmt == 0) {
@@ -803,7 +822,7 @@ static tg_rec *io_generic_read_rec(g_io *io, GView v, int type,
 	}
     }
 
-    assert(cp-buf == buf_len);
+    g_assert(cp-buf == buf_len, NULL);
     free(buf);
 
     return recs;
@@ -825,8 +844,8 @@ static cached_item *io_generic_read(void *dbh, tg_rec rec, int type) {
     if (buf_len < 2)
 	return NULL;
 
-    assert(cp[0] == type);
-    assert((cp[1] & 0x3f) == 0); /* initial format */
+    g_assert(cp[0] == type, NULL);
+    g_assert((cp[1] & 0x3f) == 0, NULL); /* initial format */
     cp += 2;
     cp += u72int(cp, &nitems);
 
@@ -840,7 +859,7 @@ static cached_item *io_generic_read(void *dbh, tg_rec rec, int type) {
     for (i = 0; i < nitems; i++)
 	cp += u72int(cp, (uint32_t *)&card[i]);
 
-    assert(cp-buf == buf_len);
+    g_assert(cp-buf == buf_len, NULL);
     free(buf);
 
     return ci;
@@ -979,9 +998,9 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
 	return NULL;
     }
 
-    assert(buf[0] == GT_BTree);
+    g_assert(buf[0] == GT_BTree, NULL);
     fmt = buf[1] & 0x3f;
-    assert(fmt <= 2); /* format number */
+    g_assert(fmt <= 2, NULL); /* format number */
     comp_mode = ((unsigned char)buf[1]) >> 6;
 
     if (fmt >= 1) {
@@ -1496,8 +1515,8 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 	return NULL;
 
     fmt = cp[1] & 0x3f;
-    assert(cp[0] == GT_Database);
-    assert(fmt <= 1); /* initial format */
+    g_assert(cp[0] == GT_Database, NULL);
+    g_assert(fmt <= 1, NULL); /* initial format */
     cp += 2;
 
     if (fmt == 0) {
@@ -1517,7 +1536,7 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
     cp += u72int(cp, &i32); db->seq_name_index = i32;
     cp += u72int(cp, &i32); db->contig_name_index = i32;
 
-    assert(cp-buf == buf_len);
+    g_assert(cp-buf == buf_len, NULL);
     free(buf);
 
 #ifdef INDEX_NAMES
@@ -1727,8 +1746,8 @@ static cached_item *io_contig_read(void *dbh, tg_rec rec) {
     if (len < 2)
 	return NULL;
 
-    assert(cp[0] == GT_Contig);
-    assert(cp[1] == 0);
+    g_assert(cp[0] == GT_Contig, NULL);
+    g_assert(cp[1] == 0, NULL);
     cp += 2;
 
     rdstats[GT_Contig] += len;
@@ -1961,8 +1980,8 @@ static cached_item *io_anno_ele_read(void *dbh, tg_rec rec) {
 
     /* Decode it */
     cp = bloc; 
-    assert(cp[0] == GT_AnnoEle);
-    assert(cp[1] == 0); /* format */
+    g_assert(cp[0] == GT_AnnoEle, NULL);
+    g_assert(cp[1] == 0, NULL); /* format */
     cp += 2;
     cp += u72int(cp, &bin_rec);
     cp += u72int(cp, &tag_type);
@@ -2104,10 +2123,10 @@ static cached_item *io_library_read(void *dbh, tg_rec rec) {
     ch = g_read_alloc(io, v, &len);
 
     if (ch && len) {
-	assert(ch[0] == GT_Library);
+	g_assert(ch[0] == GT_Library, NULL);
 	fmt = ch[1] & 0x3f;
 	comp_mode = ((unsigned char)ch[1]) >> 6;
-	assert(fmt >= 0 && fmt <= 1); /* format */
+	g_assert(fmt >= 0 && fmt <= 1, NULL); /* format */
 
 	zpacked = mem_inflate(comp_mode, ch+2, len-2, &ssz);
 	free(ch);
@@ -2673,7 +2692,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 	}
     }
 	
-    assert(cp[5] - zpacked == packed_sz);
+    g_assert(cp[5] - zpacked == packed_sz, NULL);
 
     if (zpacked)
 	free(zpacked);
@@ -2734,9 +2753,9 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
     rdstats[GT_Bin] += buf_len;
     rdcounts[GT_Bin]++;
 
-    assert(cp[0] == GT_Bin);
+    g_assert(cp[0] == GT_Bin, NULL);
     version = cp[1];
-    assert(version <= 2); /* format */
+    g_assert(version <= 2, NULL); /* format */
     cp += 2;
     cp += u72int(cp, &bflag);
     g.flags = (bflag & BIN_COMPLEMENTED) ? BIN_COMPLEMENTED : 0;
@@ -2851,8 +2870,8 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 	    buf = malloc(vi.used);
 	    g_read(io, v, buf, vi.used);
 	    fmt = buf[1] & 0x3f;
-	    assert(buf[0] == GT_Range);
-	    assert(fmt <= 2);
+	    g_assert(buf[0] == GT_Range, NULL);
+	    g_assert(fmt <= 2, NULL);
 	    comp_mode = ((unsigned char)buf[1]) >> 6;
 	    r = unpack_rng_array(comp_mode, fmt, buf+2, vi.used-2, &nranges);
 	    free(buf);
@@ -3257,8 +3276,8 @@ static cached_item *io_track_read(void *dbh, tg_rec rec) {
     rdstats[GT_Track] += buf_len;
     rdcounts[GT_Track]++;
 
-    assert(cp[0] == GT_Track);
-    assert(cp[1] == 0);
+    g_assert(cp[0] == GT_Track, NULL);
+    g_assert(cp[1] == 0, NULL);
     cp += 2;
 
     /* Decode fixed size portions */
@@ -3299,7 +3318,7 @@ static cached_item *io_track_read(void *dbh, tg_rec rec) {
 	break;
 
     default:
-	assert(buf_len - (cp-buf) == track->item_size * track->nitems);
+	g_assert(buf_len - (cp-buf) == track->item_size * track->nitems, NULL);
 	memcpy(ArrayBase(char, track->data), cp,
 	       track->item_size * track->nitems);
     }
@@ -3436,8 +3455,8 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, tg_rec rec) {
     if (len) {
 	uint32_t Nanno;
 	cp = buf;
-	assert(cp[0] == GT_Seq);
-	assert(cp[1] == 0);
+	g_assert(cp[0] == GT_Seq, NULL);
+	g_assert(cp[1] == 0, NULL);
 	cp += 2;
 	cp += u72int(cp, &bin);
 	cp += u72int(cp, &bin_index);
@@ -3954,8 +3973,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	return ci;
     }
 
-    assert(buf[0] == GT_SeqBlock);
-    assert((buf[1] & 0x3f) <= 7); /* format */
+    g_assert(buf[0] == GT_SeqBlock, NULL);
+    g_assert((buf[1] & 0x3f) <= 7, NULL); /* format */
     if ((buf[1] & 0x3f) >= 1)
 	reorder_by_read_group = 1;
     if ((buf[1] & 0x3f) & 2)
@@ -4376,7 +4395,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     }
 #endif
 
-    assert(cp - buf == buf_len);
+    g_assert(cp - buf == buf_len, NULL);
     free(buf);
 
     return ci;
@@ -4755,8 +4774,8 @@ static cached_item *io_anno_ele_block_read(void *dbh, tg_rec rec) {
 	return ci;
     }
 
-    assert(buf[0] == GT_AnnoEleBlock);
-    assert((buf[1] & 0x3f) == 0); /* Format */
+    g_assert(buf[0] == GT_AnnoEleBlock, NULL);
+    g_assert((buf[1] & 0x3f) == 0, NULL); /* Format */
 
     rdstats[GT_AnnoEleBlock] += buf_len;
     rdcounts[GT_AnnoEleBlock]++;
@@ -4850,7 +4869,7 @@ static cached_item *io_anno_ele_block_read(void *dbh, tg_rec rec) {
 	cp += comment_len[i];
     }
 
-    assert(cp - buf == buf_len);
+    g_assert(cp - buf == buf_len, NULL);
     free(buf);
 
     return ci;
