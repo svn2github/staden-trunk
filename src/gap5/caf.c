@@ -587,8 +587,8 @@ static int index_caf(FILE *fp, pools *pool, caf_node *caf, caf_index *contig_ent
     int qual_no   = 0;
     
     while (!err && tg_get_line(&line, &size, fp) > 0) {
-	line_num++;
 	char *name = NULL;
+	line_num++;
 	
 	if ((line_size = strlen(line))) {
 	    if ((name = get_value("Sequence :", line))) {
@@ -797,7 +797,7 @@ static long read_section_as_line(FILE *fp, long pos, char **line, int is_seq) {
     tg_get_line(&line_in, &size, fp); // skip over the header
 
     while ((length = tg_get_line(&line_in, &size, fp)) > 0) {
-    	if (isspace(line_in[0])) break; // blank line at end of section
+    	if (isspace(line_in[0]) && length <= 1) break; // blank line at end of section
 	
 	if (is_seq) {
 	    length = chomp(line_in);
