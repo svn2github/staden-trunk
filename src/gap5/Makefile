@@ -179,6 +179,7 @@ TGILIBS = \
 	$(GAP5_LIB) \
 	$(P3_LIB) \
 	$(ZLIB_LIB) \
+	$(LZMA_LIB) \
 	$(TKUTILS_LIB) \
 	$(SEQUTILS_LIB) \
 	$(TK_LIB) \
