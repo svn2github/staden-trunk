@@ -360,10 +360,12 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
     }
 
 #ifdef DEBUG_CHECK
-    printf("Bin %"PRIrec"  %d..%d  nseq=%d\n",
+    printf("Bin %"PRIrec"  %d..%d  used %d..%d nseq=%d\n",
 	   bin->rec,
-	   NMIN(bin->pos, bin->pos + bin->size-1),
-	   NMAX(bin->pos, bin->pos + bin->size-1),
+	   NMIN(0, bin->size-1),
+	   NMAX(0, bin->size-1),
+	   NMIN(bin->start_used, bin->end_used),
+	   NMAX(bin->start_used, bin->end_used),
 	   bin->nseqs);
 #endif
 
@@ -393,6 +395,24 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	child_stats.nseq   = 0;
 	child_stats.nanno  = 0;
 	child_stats.nref   = 0;
+
+	if (NMIN(ch->pos, ch->pos + ch->size-1) < NMIN(0, bin->size-1)) {
+	    vmessage("bin %"PRIrec" has child %d rec %"PRIrec" with left "
+		     "edge less than than parent. %d < %d\n",
+		     bin->rec, bin->child[i],
+		     NMIN(ch->pos, ch->pos + ch->size-1),
+		     NMIN(0, bin->size-1));
+	    err++;
+	}
+
+	if (NMAX(ch->pos, ch->pos + ch->size-1) > NMAX(0, bin->size-1)) {
+	    vmessage("bin %"PRIrec" has child %d rec %"PRIrec" with right "
+		     "edge greater than than parent. %d > %d\n",
+		     bin->rec, bin->child[i],
+		     NMAX(ch->pos, ch->pos + ch->size-1),
+		     NMAX(0, bin->size-1));
+	    err++;
+	}
 
 	err += bin_walk(io, fix, bin->child[i],
 			NMIN(ch->pos, ch->pos + ch->size-1) /* offset */,
@@ -512,8 +532,9 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    valid_range = 1;
 
 #ifdef DEBUG_CHECK
-	    printf("Range item %d (%"PRIrec" flag %d): %d..%d (abs %d..%d)\n",
-		   i, r->rec, r->flags, r->start, r->end,
+	    printf("#%"PRIrec": Range item %d (%"PRIrec" flag %d): %d..%d "
+		   "(abs %d..%d)\n",
+		   bin->rec, i, r->rec, r->flags, r->start, r->end,
 		   NMIN(r->start, r->end), NMAX(r->start, r->end));
 #endif
 	    if (start > r->start)
@@ -622,6 +643,14 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    if (bs->cend   < NMAX(cstart, cend))
 		bs->cend   = NMAX(cstart, cend);
 	}
+
+	if (bin->start_used < 0 || bin->end_used > bin->size) {
+	    vmessage("bin %"PRIrec": used start/end range beyond the bin "
+		     "boundaries (size %d vs start=%d,end=%d).\n",
+		     bin->rec, bin->size, bin->start_used, bin->end_used);
+	    err++;
+	}
+
     } else {
 	if (bin->start_used != 0 || bin->end_used != 0) {
 	    vmessage("bin %"PRIrec": used start/end are non-zero "
