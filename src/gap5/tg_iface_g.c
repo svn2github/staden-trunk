@@ -958,6 +958,14 @@ static int io_rec_exists(void *dbh, int type, tg_rec rec) {
     return buf == type ? 1 : 0;
 }
 
+static int io_update_vers(void *dbh, int vers) {
+    g_io *io = (g_io *)dbh;
+    if (vers != -1)
+	io->db_vers = vers;
+
+    return io->db_vers;
+}
+
 /* ------------------------------------------------------------------------
  * The B+Tree cache methods
  *
@@ -5024,6 +5032,7 @@ static iface iface_g = {
     io_database_unlock,
     io_database_setopt,
     io_rec_exists,
+    io_update_vers,
 
     {
 	/* Generic array */

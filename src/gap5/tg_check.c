@@ -326,6 +326,161 @@ static int check_refpos(GapIO *io, range_t *r) {
     return err;
 }
 
+/* Adds 'delta' to the start/end coordinate of all ranges. */
+static void bin_shift_range(GapIO *io, bin_index_t *bin, int delta) {
+    int i;
+    int start = INT_MAX;
+    int end   = INT_MIN;
+    int valid_range = 0;
+
+    printf("Shift range for bin %"PRIrec"\n", bin->rec);
+
+    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	range_t *r = arrp(range_t, bin->rng, i);
+
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	r->start += delta;
+	r->end   += delta;
+
+	if (start > r->start)
+	    start = r->start;
+	if (end   < r->end)
+	    end   = r->end;
+
+	valid_range = 1;
+    }
+
+    if (valid_range) {
+	bin->start_used = start;
+	bin->end_used = end;
+    }
+
+    bin->flags |= BIN_RANGE_UPDATED;
+}
+
+/* Shifts child bins by delta */
+static void bin_shift_children(GapIO *io, bin_index_t *bin, int delta) {
+    int i;
+    bin_index_t *ch;
+
+    for (i = 0; i < 2; i++) {
+	if (bin->child[i] == 0)
+	    continue;
+
+	ch = cache_search(io, GT_Bin, bin->child[i]);
+	ch = cache_rw(io, ch);
+	ch->flags |= BIN_BIN_UPDATED;
+	ch->pos += delta;
+    }
+}
+
+/*
+ * Ensures that the parent bin is large enough to cover this bin. Grow it
+ * if necessary.
+ */
+static void grow_bin(GapIO *io, bin_index_t *bin) {
+    bin_index_t *parent;
+
+    cache_incr(io, bin);
+
+    while (bin->parent_type == GT_Bin) {
+	/* Messy */
+	int par_par_comp = 0;
+	if (parent->parent_type == GT_Bin) {
+	    bin_index_t *ppbin = cache_search(io, GT_Bin, parent->parent);
+	    if (ppbin->flags & BIN_COMPLEMENTED)
+		par_par_comp = 1;
+	}
+
+
+	parent = cache_search(io, GT_Bin, bin->parent);
+	cache_incr(io, parent);
+
+	if (parent->flags & BIN_COMPLEMENTED) {
+	    int delta = -bin->pos;
+
+	    if (bin->pos < 0) {
+		if (par_par_comp == 0) {
+		    parent = cache_rw(io, parent);
+		    parent->size += delta;
+		    parent->flags |= BIN_BIN_UPDATED;
+		} else {
+		    /* Get r/w copies so pointers don't change in sub-funcs */
+		    bin = cache_rw(io, bin);
+		    parent = cache_rw(io, parent);
+
+		    parent->pos -= delta;
+		    parent->flags |= BIN_BIN_UPDATED;
+		    bin_shift_range(io, parent, delta);
+		    bin_shift_children(io, parent, delta);
+		}
+	    }
+
+	    if (bin->pos + bin->size > parent->size) {
+		int delta = bin->pos + bin->size - parent->size;
+
+		if (par_par_comp == 0) {
+		    bin = cache_rw(io, bin);
+		    parent = cache_rw(io, parent);
+
+		    parent->pos -= delta;
+		    parent->flags |= BIN_BIN_UPDATED;
+		    bin_shift_range(io, parent, delta);
+		    bin_shift_children(io, parent, delta);
+		} else {
+		    parent = cache_rw(io, parent);
+		    parent->size += delta;
+		    parent->flags |= BIN_BIN_UPDATED;
+		}
+	    }
+	} else {
+	    if (bin->pos < 0) {
+		int delta = -bin->pos;
+
+		if (par_par_comp == 0) {
+		    /* Get r/w copies so pointers don't change in sub-funcs */
+		    bin = cache_rw(io, bin);
+		    parent = cache_rw(io, parent);
+
+		    parent->pos -= delta;
+		    parent->flags |= BIN_BIN_UPDATED;
+		    bin_shift_range(io, parent, delta);
+		    bin_shift_children(io, parent, delta);
+		} else {
+		    parent = cache_rw(io, parent);
+		    parent->size += delta;
+		    parent->flags |= BIN_BIN_UPDATED;
+		}
+	    }
+
+	    if (bin->pos + bin->size > parent->size) {
+		int delta = bin->pos + bin->size - parent->size;
+
+		if (par_par_comp == 0) {
+		    parent = cache_rw(io, parent);
+		    parent->size += delta;
+		    parent->flags |= BIN_BIN_UPDATED;
+		} else {
+		    bin = cache_rw(io, bin);
+		    parent = cache_rw(io, parent);
+
+		    parent->pos -= delta;
+		    parent->flags |= BIN_BIN_UPDATED;
+		    bin_shift_range(io, parent, delta);
+		    bin_shift_children(io, parent, delta);
+		}
+	    }
+	}
+
+	cache_decr(io, bin);
+	bin = parent;
+    }
+
+    cache_decr(io, parent);
+}
+
 /*
  * Walks a contig bin tree, executing callbacks per bin.
  *
@@ -396,22 +551,49 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	child_stats.nanno  = 0;
 	child_stats.nref   = 0;
 
-	if (NMIN(ch->pos, ch->pos + ch->size-1) < NMIN(0, bin->size-1)) {
-	    vmessage("bin %"PRIrec" has child %d rec %"PRIrec" with left "
-		     "edge less than than parent. %d < %d\n",
-		     bin->rec, bin->child[i],
-		     NMIN(ch->pos, ch->pos + ch->size-1),
-		     NMIN(0, bin->size-1));
+	if (ch->parent != bin->rec || ch->parent_type != GT_Bin) {
+	    vmessage("bin %"PRIrec" parent/type is incorrect\n", ch->rec);
 	    err++;
+	    if (fix) {
+		ch = cache_rw(io, ch);
+		ch->parent = bin->rec;
+		ch->parent_type = GT_Bin;
+	    }
 	}
 
-	if (NMAX(ch->pos, ch->pos + ch->size-1) > NMAX(0, bin->size-1)) {
-	    vmessage("bin %"PRIrec" has child %d rec %"PRIrec" with right "
-		     "edge greater than than parent. %d > %d\n",
-		     bin->rec, bin->child[i],
-		     NMAX(ch->pos, ch->pos + ch->size-1),
-		     NMAX(0, bin->size-1));
+	if (ch->size <= 0) {
+	    vmessage("bin %"PRIrec" has size <= 0 (%d)\n",
+		     ch->rec, ch->size);
 	    err++;
+	    if (fix) {
+		/* Just "lose" it */
+		bin = cache_rw(io, bin);
+		bin->flags |= BIN_BIN_UPDATED;
+		bin->child[i] = 0;
+		continue;
+	    }
+
+	} else  {
+	    if (NMIN(ch->pos, ch->pos + ch->size-1) < NMIN(0, bin->size-1)) {
+		vmessage("bin %"PRIrec" has child %d rec %"PRIrec" with left "
+			 "edge less than the parent. %d < %d\n",
+			 bin->rec, i, bin->child[i],
+			 NMIN(ch->pos, ch->pos + ch->size-1),
+			 NMIN(0, bin->size-1));
+		err++;
+		if (fix) {
+		    grow_bin(io, bin);
+		}
+	    }
+
+	    if (NMAX(ch->pos, ch->pos + ch->size-1) > NMAX(0, bin->size-1)) {
+		vmessage("bin %"PRIrec" has child %d rec %"PRIrec" with right "
+			 "edge greater than the parent. %d > %d\n",
+			 bin->rec, i, bin->child[i],
+			 NMAX(ch->pos, ch->pos + ch->size-1),
+			 NMAX(0, bin->size-1));
+		err++;
+	    }
 	}
 
 	err += bin_walk(io, fix, bin->child[i],
@@ -603,9 +785,17 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
     if (db_vers > 1 && bin->nanno != bs->nanno) {
 	vmessage("bin %"PRIrec": nanno does not match observed counts\n",
 		 bin->rec);
-	if (fix)
+	if (fix) {
+	    bin = cache_rw(io, bin);
+	    bin->flags |= BIN_BIN_UPDATED;
 	    bin->nanno = bs->nanno;
+	}
 	err++;
+    } else if (fix && db_vers == 1 && bin->nanno != bs->nanno) {
+	vmessage("bin %"PRIrec": fixing nanno\n", bin->rec);
+	bin = cache_rw(io, bin);
+	bin->flags |= BIN_BIN_UPDATED;
+	bin->nanno = bs->nanno;
     }
     if (db_vers > 1 && bin->nrefpos != bs->nref) {
 	vmessage("bin %"PRIrec": nrefpos does not match observed counts\n",
@@ -616,6 +806,11 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    bin->nrefpos = bs->nref;
 	}
 	err++;
+    } else if (fix && db_vers == 1 && bin->nrefpos != bs->nref) {
+	vmessage("bin %"PRIrec": fixing nrefpos\n", bin->rec);
+	bin = cache_rw(io, bin);
+	bin->flags |= BIN_BIN_UPDATED;
+	bin->nrefpos = bs->nref;
     }
 
 
@@ -644,11 +839,27 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bs->cend   = NMAX(cstart, cend);
 	}
 
-	if (bin->start_used < 0 || bin->end_used > bin->size) {
+	if (bin->start_used < 0 || bin->end_used >= bin->size) {
 	    vmessage("bin %"PRIrec": used start/end range beyond the bin "
 		     "boundaries (size %d vs start=%d,end=%d).\n",
 		     bin->rec, bin->size, bin->start_used, bin->end_used);
 	    err++;
+	    if (fix) {
+		bin = cache_rw(io, bin);
+		bin->flags |= BIN_BIN_UPDATED | BIN_RANGE_UPDATED;
+
+		if (bin->start_used < 0) {
+		    bin->pos  += bin->start_used;
+		    bin_shift_range(io, bin, -bin->start_used);
+		}
+
+		if (bin->end_used >= bin->size) {
+		    bin->size = bin->end_used+1;
+		}
+
+		/* Now check it hasn't outgrown the parent too */
+		grow_bin(io, bin);
+	    }
 	}
 
     } else {
@@ -683,7 +894,8 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 		 HacheTable *lib_hash) {
     contig_t *c;
     bin_stats bs;
-    int err;
+    int err = 0;
+    bin_index_t *bin;
 
     if (!cache_exists(io, GT_Contig, crec)) {
 	vmessage("Record %"PRIrec" is not a contig, but in contig order\n",
@@ -700,8 +912,21 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
     bs.nanno  = 0;
     bs.nref   = 0;
 
-    err = bin_walk(io, fix, c->bin, contig_offset(io, &c), 0, level,
-		   lib_hash, &bs);
+    if (c->bin) {
+	bin = cache_search(io, GT_Bin, c->bin);
+	if (bin->parent != crec || bin->parent_type != GT_Contig) {
+	    vmessage("root bin %"PRIrec" parent/type is incorrect\n", c->bin);
+	    err++;
+	    if (fix) {
+		bin = cache_rw(io, bin);
+		bin->parent = crec;
+		bin->parent_type = GT_Contig;
+	    }
+	}
+    }
+
+    err += bin_walk(io, fix, c->bin, contig_offset(io, &c), 0, level,
+		    lib_hash, &bs);
     if (bs.cstart != c->start ||
 	bs.cend   != c->end) {
 	vmessage("Contig %"PRIrec": used start/end range are incorrect\n",
@@ -818,6 +1043,11 @@ int check_database(GapIO *io, int fix, int level) {
     cache_decr(io, db);
     cache_decr(io, library);
 
+    /* If we're fixing the DB, also migrate from v1 to v2 */
+    if (fix && io->db->version == 1) {
+	io->db = cache_rw(io, io->db);
+	io->iface->vers(io->dbh, 2);
+    }
 
     /* Check each contig in turn */
     for (i = 0; i < ArrayMax(contig_order); i++) {
@@ -827,6 +1057,9 @@ int check_database(GapIO *io, int fix, int level) {
 	UpdateTextOutput();
 	err += check_contig(io, crec, fix, level, hash);
     }
+
+    if (fix && io->db->version == 1)
+	io->db->version = 2;
 
     HacheTableDestroy(hash, 0);
 
