@@ -795,6 +795,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		    HacheItem *hi;
 		    hi = HacheTableSearch(h, (char *)&r->pair_rec,
 					  sizeof(r->pair_rec));
+
 		    if (hi) {
 			/*
 			 * Fake cstart to force move or no-move based on
@@ -810,16 +811,42 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 			 * We apparently have a tag in a bin higher up
 			 * than the sequence it belongs to. In theory tags
 			 * are smaller than their sequences so this could
-			 * never happen. However perhaps combinations of
-			 * joining to new contigs with smaller bins and then
-			 * moving the sequence would do this? Unknown.
-			 * Skip until it happens!
+			 * never happen. However joining contigs can create
+			 * overlapping bins and in turn this means new tags
+			 * can be placed down a different bin hierarchy
+			 * than the seqs. 
+			 * In this case query that bin and populate our
+			 * hash from that bin too.
 			 */
-			verror(ERR_WARN, "break_contig",
-			       "Tag #%"PRIrec" appears to be in a larger"
-			       " bin than seq #%"PRIrec"\n",
-			       r->rec, r->pair_rec);
-			cstart = NMIN(r->start, r->end);
+			seq_t *s;
+			tg_rec s_ctg;
+			int s_start, s_end, s_orient, c_start;
+			HacheData hd;
+
+			sequence_get_position(io, r->pair_rec, &s_ctg,
+					      &s_start, &s_end, &s_orient);
+			s = cache_search(io, GT_Seq, r->pair_rec);
+
+			if ((s->len < 0) ^ s_orient) {
+			    c_start = s_end - (s->right-1);
+			} else {
+			    c_start = s_start + s->left-1;
+			}
+
+			if (c_start >= pos) {
+			    cstart = pos+1;
+			    hd.i = 1;
+			} else {
+			    cstart = pos-1;
+			    hd.i = 0;
+			}
+
+			/*
+			 * Add to hache too so multiple tags on one seq
+			 * only need one sequence_get_position call.
+			 */
+			HacheTableAdd(h, (char *)&s->rec, sizeof(s->rec),
+				      hd, NULL);
 		    }
 		} else {
 		    verror(ERR_WARN, "break_contig",
@@ -1152,6 +1179,37 @@ int break_check_counts(GapIO *io, tg_rec crec, int cpos) {
     return 0;
 }
 
+/*
+ * Computes the rightmost extent of sequences that start < cpos.
+ * (That's total extent, not just clipped data.)
+ *
+ * We can't rely on doing this as we go along as we may have overlapping bins
+ * due to contig joining.
+ */
+int compute_pos2(GapIO *io, tg_rec crec, int cpos) {
+    contig_iterator *ci;
+    rangec_t *r;
+    int pos2 = cpos;
+
+    ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST | CITER_ISTART,
+				 cpos, CITER_CEND, GRANGE_FLAG_ISSEQ);
+    if (!ci) {
+	verror(ERR_WARN, "break_contig", "Failed to create contig iterator");
+	return cpos;
+    }
+
+    while (r = contig_iter_next(io, ci)) {
+	if (r->start > cpos)
+	    break;
+
+	if (pos2 < r->end)
+	    pos2 = r->end;
+    }    
+    contig_iter_del(ci);
+
+    return pos2;
+}
+
 
 /*
  * Breaks a contig in two such that snum is the right-most reading of
@@ -1220,7 +1278,8 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     do_comp = bin->flags & BIN_COMPLEMENTED;
 
     break_contig_recurse(io, h, cl, cr,
-			 contig_get_bin(&cl), cpos, cpos,
+			 contig_get_bin(&cl), cpos,
+			 compute_pos2(io, cl->rec, cpos),
 			 contig_offset(io, &cl), 0, cl->rec, cr->rec, 0, 0);
 
     /* Recompute end positions */
