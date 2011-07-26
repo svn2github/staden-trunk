@@ -166,12 +166,15 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
     rangec_t *r;
     contig_iterator *ci;
     int seq_start = 0;
+    contig_t *c = cache_search(io, GT_Contig, crec);
+
+    cache_incr(io, c);
 
     ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST | CITER_ISTART,
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANY);
     if (!ci) {
-	contig_t *c = cache_search(io, GT_Contig, crec);
+	cache_decr(io, c);
 	return c->start;
     }
     
@@ -185,6 +188,47 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
     }
     contig_iter_del(ci);
 
+    /* Trim annotations to visible portion */
+    ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST | CITER_ISTART,
+				 CITER_CSTART, CITER_CEND,
+				 GRANGE_FLAG_ISANNO);
+    while (ci && (r = contig_iter_next(io, ci))) {
+	if (r->start >= seq_start)
+	    break;
+
+	if (r->end < seq_start) {
+	    bin_remove_item(io, &c, GT_AnnoEle, r->rec);
+	} else {
+	    bin_index_t *bin;
+	    anno_ele_t *a;
+	    range_t R, *R_out;
+
+	    bin_remove_item(io, &c, GT_AnnoEle, r->rec);
+	
+	    R.start    = seq_start;
+	    R.end      = MIN(r->end, c->end);
+	    R.rec      = r->rec;
+	    R.mqual    = r->mqual;
+	    R.pair_rec = r->pair_rec;
+	    R.flags    = r->flags;
+	    bin = bin_add_range(io, &c, &R, &R_out, NULL, 0);
+
+	    /* With luck the bin & index into bin haven't changed */
+	    cache_incr(io, bin);
+	    a = cache_search(io, GT_AnnoEle, r->rec);
+	    if (a->bin != bin->rec ||
+		a->idx != R_out - ArrayBase(range_t, bin->rng)) {
+		a = cache_rw(io, a);
+		a->bin = bin->rec;
+		a->idx = R_out - ArrayBase(range_t, bin->rng);
+	    }
+
+	    cache_decr(io, bin);
+	}
+    }
+    contig_iter_del(ci);
+
+    cache_decr(io, c);
     return seq_start;
 }
 
@@ -197,12 +241,14 @@ int contig_visible_end(GapIO *io, tg_rec crec) {
     rangec_t *r;
     contig_iterator *ci;
     int seq_end = 0;
+    contig_t *c = cache_search(io, GT_Contig, crec);
 
+    cache_incr(io, c);
     ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANY);
     if (!ci) {
-	contig_t *c = cache_search(io, GT_Contig, crec);
+	cache_decr(io, c);
 	return c->end;
     }
     
@@ -216,6 +262,48 @@ int contig_visible_end(GapIO *io, tg_rec crec) {
     }
     contig_iter_del(ci);
 
+    /* Trim annotations to visible portion */
+    ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
+				 CITER_CSTART, CITER_CEND,
+				 GRANGE_FLAG_ISANNO);
+    while (ci && (r = contig_iter_prev(io, ci))) {
+	if (r->end <= seq_end)
+	    break;
+
+	if (r->start > seq_end) {
+	    bin_remove_item(io, &c, GT_AnnoEle, r->rec);
+	    continue;
+	} else {
+	    bin_index_t *bin;
+	    anno_ele_t *a;
+	    range_t R, *R_out;
+
+	    bin_remove_item(io, &c, GT_AnnoEle, r->rec);
+	
+	    R.start    = MAX(r->start, c->start);
+	    R.end      = seq_end;
+	    R.rec      = r->rec;
+	    R.mqual    = r->mqual;
+	    R.pair_rec = r->pair_rec;
+	    R.flags    = r->flags;
+	    bin = bin_add_range(io, &c, &R, &R_out, NULL, 0);
+
+	    /* With luck the bin & index into bin haven't changed */
+	    cache_incr(io, bin);
+	    a = cache_search(io, GT_AnnoEle, r->rec);
+	    if (a->bin != bin->rec ||
+		a->idx != R_out - ArrayBase(range_t, bin->rng)) {
+		a = cache_rw(io, a);
+		a->bin = bin->rec;
+		a->idx = R_out - ArrayBase(range_t, bin->rng);
+	    }
+
+	    cache_decr(io, bin);
+	}
+    }
+    contig_iter_del(ci);
+
+    cache_decr(io, c);
     return seq_end;
 }
 
@@ -615,6 +703,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	int nrl = 0, nrr = 0; /* no. refpos */
 	int nal = 0, nar = 0; /* no. anno */
 	int lmin = bin->size, lmax = 0, rmin = bin->size, rmax = 0;
+	int left_most = INT_MAX;
 
 	printf("%*sDUP %"PRIrec", SPLIT array\n", level*4, "", bin_dup->rec);
 
@@ -651,6 +740,9 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		HacheData hd; hd.i = 1;
 		HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, NULL);
 		//printf("Add seq #%"PRIrec" to hash value 1\n", r->rec);
+
+		if (left_most > NMIN(r->start, r->end))
+		    left_most = NMIN(r->start, r->end);
 	    } else {
 		int end;
 
@@ -680,6 +772,23 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		a = cache_search(io, GT_AnnoEle, r->rec);
 		if (a->obj_type == GT_Contig) {
 		    cstart = NMIN(r->start, r->end);
+
+#if 1
+		    /*
+		     * Ideally we should track the visible potion of
+		     * sequences and move consensus tags to wherever they're
+		     * in visible sequence. This may be < or > pos depending
+		     * on the layout. However for now we take a simpler
+		     * approach.
+		     */
+		    if (cstart >= pos2 && pos2 > pos) {
+			/* prefer to keep it in left contig */
+			cstart = pos-1;
+		    } else if (cstart >= left_most) {
+			/* attach it to the right contig and tidy up later */
+			cstart = pos+1;
+		    }
+#endif
 
 		/* Seq tags get moved only if the sequence itself moves */
 		} else if (a->obj_type == GT_Seq) {
@@ -1043,111 +1152,6 @@ int break_check_counts(GapIO *io, tg_rec crec, int cpos) {
     return 0;
 }
 
-/*
- * Trims any tags left overhanging the contig ends.
- */
-static int trim_contig_tags(GapIO *io, contig_t *c) {
-    contig_iterator *ci;
-    rangec_t *r;
-
-    cache_incr(io, c);
-
-    /* Left end */
-    ci = contig_iter_new_by_type(io, c->rec, 1, CITER_FIRST | CITER_ISTART |
-				 CITER_SMALL_BS, CITER_CSTART, CITER_CEND,
-				 GRANGE_FLAG_ISANY);
-    if (!ci) {
-	cache_decr(io, c);
-	return -1;
-    }
-    while ((r = contig_iter_next(io, ci))) {
-	bin_index_t *bin;
-	anno_ele_t *a;
-	range_t R, *R_out;
-
-	if (r->start >= c->start)
-	    break;
-
-	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
-	    continue;
-
-	assert(r->end >= c->start);
-
-	/* Trim */
-	bin_remove_item(io, &c, GT_AnnoEle, r->rec);
-	
-	R.start    = c->start;
-	R.end      = MIN(r->end, c->end);
-	R.rec      = r->rec;
-	R.mqual    = r->mqual;
-	R.pair_rec = r->pair_rec;
-	R.flags    = r->flags;
-	bin = bin_add_range(io, &c, &R, &R_out, NULL, 0);
-
-	/* With luck the bin & index into bin haven't changed */
-	cache_incr(io, bin);
-	a = cache_search(io, GT_AnnoEle, r->rec);
-	if (a->bin != bin->rec ||
-	    a->idx != R_out - ArrayBase(range_t, bin->rng)) {
-	    a = cache_rw(io, a);
-	    a->bin = bin->rec;
-	    a->idx = R_out - ArrayBase(range_t, bin->rng);
-	}
-
-	cache_decr(io, bin);
-    }    
-    contig_iter_del(ci);
-
-    /* Right end */
-    ci = contig_iter_new_by_type(io, c->rec, 1, CITER_LAST | CITER_IEND |
-				 CITER_SMALL_BS, CITER_CSTART, CITER_CEND,
-				 GRANGE_FLAG_ISANY);
-    if (!ci) {
-	cache_decr(io, c);
-	return -1;
-    }
-    while ((r = contig_iter_prev(io, ci))) {
-	bin_index_t *bin;
-	anno_ele_t *a;
-	range_t R, *R_out;
-
-	if (r->end <= c->end)
-	    break;
-
-	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
-	    continue;
-
-	assert(r->start <= c->end);
-
-	/* Trim by removing and adding back - easiest way */
-	bin_remove_item(io, &c, GT_AnnoEle, r->rec);
-	
-	R.start    = MAX(r->start, c->start);
-	R.end      = c->end;
-	R.rec      = r->rec;
-	R.mqual    = r->mqual;
-	R.pair_rec = r->pair_rec;
-	R.flags    = r->flags;
-	bin = bin_add_range(io, &c, &R, &R_out, NULL, 0);
-
-	/* With luck the bin & index into bin haven't changed */
-	cache_incr(io, bin);
-	a = cache_search(io, GT_AnnoEle, r->rec);
-	if (a->bin != bin->rec ||
-	    a->idx != R_out - ArrayBase(range_t, bin->rng)) {
-	    a = cache_rw(io, a);
-	    a->bin = bin->rec;
-	    a->idx = R_out - ArrayBase(range_t, bin->rng);
-	}
-
-	cache_decr(io, bin);
-    }
-    contig_iter_del(ci);
-
-    cache_decr(io, c);
-
-    return 0;
-}
 
 /*
  * Breaks a contig in two such that snum is the right-most reading of
@@ -1245,7 +1249,6 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
      * extent to make consensus_unclipped_range() efficient.
      */
     consensus_unclipped_range(io, cr->rec, NULL, &cr->end);
-    trim_contig_tags(io, cr);
 #else
     cr->start = right_start;
     cr->end = cl->end;
@@ -1259,7 +1262,6 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     }
 
     cl->end = left_end;
-    trim_contig_tags(io, cl);
 
     //    remove_redundant_bins(io, cl);
     //    remove_redundant_bins(io, cr);
