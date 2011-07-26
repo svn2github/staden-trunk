@@ -22,4 +22,11 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 
 void bin_destroy_recurse(GapIO *io, tg_rec rec);
 
+/*
+ * Looks for contig gaps between start..end in contig and if it finds them,
+ * breaking the contig in two.
+ */
+int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
+			int empty_contigs_only);
+
 #endif

@@ -95,7 +95,6 @@ add_command	{File.Save consensus.normal}	8 10 \
 
 add_command	{Edit.Edit Contig}		 8 10 {EditContig \$io}
 add_command	{Edit.Join Contig}		 8 10 {JoinContig \$io}
-add_command	{Edit.Break a contig}		 8 26 {BreakContig \$io}
 add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
 #add_command	{Edit.Order contigs}		 8 10 {OrderContigs \$io}
 #add_command	{Edit.Quality Clip}		 8 26 {QualityClip \$io} e
@@ -103,7 +102,9 @@ add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
 #add_command	{Edit.N-base Clip}		 8 26 {NClip \$io} e
 #add_command	{Edit.Quality clip contig ends}	 8 26 {QClipEnds \$io} e
 #add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io}
+add_command	{Edit.Break a contig}		 8 26 {BreakContig \$io}
 add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io}
+add_command     {Edit.Remove contig holes}       8 26 {RemoveContigHoles \$io}
 #add_command	{Edit.Enter tags}		 8 26 {EnterTags \$io} e
 add_command	{Edit.Shuffle pads}		 8 26 {ShufflePads \$io} e
 #add_command	{Edit.Edit Notebooks}	 	 8 10 {NoteSelector \$io database}

@@ -16,18 +16,28 @@ proc BreakContig {io} {
     contig_id $t.id -io $io -range 0 -command "BC_OK_Pressed $io $t $t.id $t.pos"
     xentry $t.pos -label "Base position"
 
+    frame $t.holes -bd 2 -relief flat
+    checkbutton $t.holes.b \
+	-text "Remove contig holes" \
+	-variable $t.RemoveHoles
+    pack $t.holes.b -anchor w
+    global $t.RemoveHoles
+    set $t.RemoveHoles [keylget gap5_defs BREAK_CONTIG.REMOVE_HOLES]
+
     okcancelhelp $t.ok_cancel \
-	    -ok_command "BC_OK_Pressed $io $t $t.id $t.pos"\
+	    -ok_command "BC_OK_Pressed $io $t $t.id $t.holes $t.pos"\
 	    -cancel_command "destroy $t" \
 	    -help_command "show_help gap5 {Break Contig}" \
 	    -bd 2 \
 	    -relief groove
     
     ###########################################################################
-    pack $t.id $t.pos $t.ok_cancel -side top -fill x
+    pack $t.id $t.holes $t.pos $t.ok_cancel -side top -fill x
 }
 
-proc BC_OK_Pressed {io t id pos} {
+proc BC_OK_Pressed {io t id holes pos} {
+    global $t.RemoveHoles
+
     if {[set crec [contig_id_rec $id]] == ""} return
     if {[set pos [$pos get]] == ""} return
 
@@ -40,7 +50,11 @@ proc BC_OK_Pressed {io t id pos} {
 	return
     }
 
-    break_contig -io $io -contig $crec -pos $pos
+    break_contig \
+	-io $io \
+	-contig $crec \
+	-pos $pos \
+	-break_holes [set $t.RemoveHoles]
     ContigSelector $io
     ContigInitReg $io
 

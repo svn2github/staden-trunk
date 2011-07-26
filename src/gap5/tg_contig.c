@@ -1116,6 +1116,92 @@ static int sort_range_by_x_end(const void *v1, const void *v2) {
 	return 0;
 }
 
+static GapIO *sort_io = NULL; /* Hack to pass into qsort() */
+
+static int sort_range_by_x_clipped(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    int d;
+    int r1_start, r2_start;
+
+    /* Use clipped coordinate in seqs */
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
+	if ((s->len < 0) ^ r1->comp)
+	    r1_start = r1->start + ABS(s->len) - (s->right-1) - 1;
+	else
+	    r1_start = r1->start + s->left-1;
+    } else {
+	r1_start = r1->start;
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	seq_t *s = cache_search(sort_io, GT_Seq, r2->rec);
+	if ((s->len < 0) ^ r2->comp)
+	    r2_start = r2->start + ABS(s->len) - (s->right-1) - 1;
+	else
+	    r2_start = r2->start + s->left-1;
+    } else {
+	r2_start = r2->start;
+    }
+
+    /* By X primarily */
+    if ((d = r1_start - r2_start))
+	return d;
+    
+    /* And finally by recno, allowing for 64-bit quantities. */
+    if (r1->rec > r2->rec)
+	return 1;
+    else if (r1->rec < r2->rec)
+	return -1;
+    else
+	return 0;
+}
+
+/*
+ * Sort comparison function for range_t; sort by ascending position of
+ * object end position.
+ */
+static int sort_range_by_x_clipped_end(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    int d;
+    int r1_end, r2_end;
+
+    /* Use clipped coordinate in seqs */
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
+	if ((s->len < 0) ^ r1->comp)
+	    r1_end = r1->start + ABS(s->len) - (s->left-1) - 1;
+	else
+	    r1_end = r1->start + s->right-1;
+    } else {
+	r1_end = r1->end;
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	seq_t *s = cache_search(sort_io, GT_Seq, r2->rec);
+	if ((s->len < 0) ^ r2->comp)
+	    r2_end = r2->start + ABS(s->len) - (s->left-1) - 1;
+	else
+	    r2_end = r2->start + s->right-1;
+    } else {
+	r2_end = r2->end;
+    }
+
+    /* By X primarily */
+    if ((d = r1_end - r2_end))
+	return d;
+    
+    /* And finally by recno, allowing for 64-bit quantities. */
+    if (r1->rec > r2->rec)
+	return 1;
+    else if (r1->rec < r2->rec)
+	return -1;
+    else
+	return 0;
+}
+
 /* Sort comparison function for range_t; sort by ascending position */
 static int sort_range_by_tech_x(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
@@ -1681,12 +1767,20 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 	}
 
 	if (job & CSIR_SORT_BY_XEND) {
-	    qsort(r, *count, sizeof(*r), sort_range_by_x_end);
+	    sort_io = io;
+	    if (job & CSIR_SORT_BY_CLIPPED)
+		qsort(r, *count, sizeof(*r), sort_range_by_x_clipped_end);
+	    else
+		qsort(r, *count, sizeof(*r), sort_range_by_x_end);
 	} else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
 	    if (job & CSIR_SORT_BY_SEQ_TECH) {
 		qsort(r, *count, sizeof(*r), sort_range_by_tech_x);
 	    } else {
-		qsort(r, *count, sizeof(*r), sort_range_by_x);
+		sort_io = io;
+		if (job & CSIR_SORT_BY_CLIPPED)
+		    qsort(r, *count, sizeof(*r), sort_range_by_x_clipped);
+		else
+		    qsort(r, *count, sizeof(*r), sort_range_by_x);
 	    }
 	}
 
@@ -1752,9 +1846,17 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 	}
 
 	if (job & CSIR_SORT_BY_XEND) {
-	    qsort(r, *count, sizeof(*r), sort_range_by_x_end);
+	    sort_io = io;
+	    if (job & CSIR_SORT_BY_CLIPPED)
+		qsort(r, *count, sizeof(*r), sort_range_by_x_clipped_end);
+	    else
+		qsort(r, *count, sizeof(*r), sort_range_by_x_end);
 	} else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
-	    qsort(r, *count, sizeof(*r), sort_range_by_x);
+	    sort_io = io;
+	    if (job & CSIR_SORT_BY_CLIPPED)
+		qsort(r, *count, sizeof(*r), sort_range_by_x_clipped);
+	    else
+		qsort(r, *count, sizeof(*r), sort_range_by_x);
 	}
 
 	if (job & CSIR_ALLOCATE_Y) {
@@ -2522,7 +2624,9 @@ void contig_iter_del(contig_iterator *ci) {
  * control whether we wish to sort our data by item start or end coordinate.
  * CITER_ISTART is the default mode.  (This is particularly useful if we wish
  * to step through sequences in reverse order based on when they become
- * visible.)
+ * visible.) Note this is the actual start/end and not the clipped good
+ * quality portion only. For that use CITER_ICLIPPEDSTART and
+ * CITER_ICLIPPEDEND instead.
  *
  * The start and end parameters dictate the initial region to query. We
  * may specify them as either coordinates or use CITER_CSTART and CITER_CEND
@@ -2557,9 +2661,20 @@ contig_iterator *contig_iter_new_by_type(GapIO *io, tg_rec cnum,
     ci->auto_extend = auto_extend;
     ci->first_r = 1;
     ci->type = type;
-    ci->sort_mode = (whence & CITER_SE_MASK) == CITER_IEND
-	? CSIR_SORT_BY_XEND
-	: CSIR_SORT_BY_X;
+    switch (whence & CITER_SE_MASK) {
+    case CITER_ISTART:
+	ci->sort_mode = CSIR_SORT_BY_X;
+	break;
+    case CITER_IEND:
+	ci->sort_mode = CSIR_SORT_BY_XEND;
+	break;
+    case CITER_ICLIPPEDSTART:
+	ci->sort_mode = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
+	break;
+    case CITER_ICLIPPEDEND:
+	ci->sort_mode = CSIR_SORT_BY_XEND | CSIR_SORT_BY_CLIPPED;
+	break;
+    }
 
     ci->cstart = start == CITER_CSTART ? c->start : start;
     ci->cend   =   end == CITER_CEND   ? c->end   : end;

@@ -293,36 +293,39 @@ static int bin_empty(GapIO *io, bin_index_t *bin) {
  * Looks for contig gaps between start..end in contig and if it finds them,
  * breaking the contig in two.
  */
-static int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
-			       int empty_contigs_only) {
+int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
+			int empty_contigs_only) {
     contig_t *c;
     bin_index_t *bin;
     contig_iterator *iter;
     rangec_t *r;
     int last;
 
-    printf("Finding contig holes in contig %"PRIrec" between %d..%d\n",
-	   contig, start, end);
-
-
     /* Destroy contigs if they're now entirely empty */
     c = cache_search(io, GT_Contig, contig);
+    cache_incr(io, c);
+
     bin = cache_search(io, GT_Bin, c->bin);
     if (bin_empty(io, bin)) {
 	puts("Removing empty contig");
 
 	if (c->bin)
 	    bin_destroy_recurse(io, c->bin);
+	cache_decr(io, c);
 	contig_destroy(io, contig);
 	return 0;
     }
 
     /* Invalidate any cached consensus copies */
-    if (bin_invalidate_consensus(io, contig, start, end) != 0)
+    if (bin_invalidate_consensus(io, contig, start, end) != 0) {
+	cache_decr(io, c);
 	return -1;
+    }
 
-    if (empty_contigs_only)
+    if (empty_contigs_only) {
+	cache_decr(io, c);
 	return 0;
+    }
 
 
     /* Hole at left end */
@@ -340,7 +343,8 @@ static int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 
     /* Hole at right end */
     if (c->end == end) {
-	iter = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND, start, end);
+	iter = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND,
+			       start, end);
 	if (iter) {
 	    r = contig_iter_prev(io, iter);
 	    if (r) {
@@ -351,22 +355,63 @@ static int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 	}
     }
 
-    /* Look for holes in the middle */
-    iter = contig_iter_new(io, contig, 0, CITER_LAST | CITER_IEND, start, end);
+    /* Make sure start/end are within clipped contig coordinates */
+    consensus_valid_range(io, contig, &contig_start, &contig_end);
+    if (start < contig_start)
+	start = contig_start;
+    if (end > contig_end)
+	end = contig_end;
+
+
+    /*
+     * Look for holes in the middle, using ICLIPPEDEND mode so the data
+     * is sorted by clipped sequence coords rather than just the r->end
+     * rangec_t elements we use with most iterators.
+     */
+    iter = contig_iter_new(io, contig, 0, CITER_LAST | CITER_ICLIPPEDEND,
+			   start, end);
+    if (!iter) {
+	cache_decr(io, c);
+	return 0;
+    }
+
     last = end;
     while (r = contig_iter_prev(io, iter)) {
-	//printf("Seq %d, from %d..%d\n", r->rec, r->start, r->end);
-	if (r->end < last) {
-	    printf("GAP from %d..%d, breaking...\n", r->end, last);
-	    break_contig(io, contig, last);
-	    //contig_iter_del(iter);
-	    //iter = contig_iter_new(io, contig, 0, CITER_LAST | CITER_IEND,
-	    //			   start, last);
+	seq_t *s = cache_search(io, GT_Seq, r->rec);
+	int cstart, cend;
+
+	if (!s) {
+	    cache_decr(io, c);
+	    return -1;
 	}
-	if (last > r->start)
-	    last = r->start;
+
+	if ((s->len < 0) ^ r->comp) {
+	    cstart = r->start + ABS(s->len) - (s->right-1) - 1;
+	    cend   = r->start + ABS(s->len) - (s->left-1) - 1;
+	} else {
+	    cstart = r->start + s->left-1;
+	    cend   = r->start + s->right-1;
+	}
+
+	//printf("Seq %d, from %d..%d clipped %d..%d\n",
+	//       r->rec, r->start, r->end, cstart, cend);
+
+	if (cend < last) {
+	    vmessage("GAP from %d..%d; breaking.\n", cend, last);
+	    break_contig(io, contig, last, 0);
+
+	    /* Who knows what impact break_contig has - restart to be safe */
+	    contig_iter_del(iter);
+	    iter = contig_iter_new(io, contig, 0,
+				   CITER_LAST | CITER_ICLIPPEDEND,
+	    			   start, last);
+	}
+	if (last > cstart)
+	    last = cstart;
     }
     contig_iter_del(iter);
+
+    cache_decr(io, c);
 
     return 0;
 }

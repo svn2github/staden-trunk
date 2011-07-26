@@ -999,7 +999,7 @@ int break_check_counts(GapIO *io, tg_rec crec, int cpos) {
 	    cstart = r->start + s->left-1;
 	}
 
-	if (cstart >= cpos) {
+	if (cstart < cpos) {
 	    left_ok = 1;
 	    break;
 	}
@@ -1029,7 +1029,7 @@ int break_check_counts(GapIO *io, tg_rec crec, int cpos) {
 	    cstart = r->start + s->left-1;
 	}
 
-	if (cstart < cpos) {
+	if (cstart >= cpos) {
 	    right_ok = 1;
 	    break;
 	}
@@ -1153,7 +1153,7 @@ static int trim_contig_tags(GapIO *io, contig_t *c) {
  * Breaks a contig in two such that snum is the right-most reading of
  * a new contig.
  */
-int break_contig(GapIO *io, tg_rec crec, int cpos) {
+int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     contig_t *cl;
     contig_t *cr;
     int cid;
@@ -1291,5 +1291,18 @@ int break_contig(GapIO *io, tg_rec crec, int cpos) {
 
     cache_flush(io);
 
+    /* Check for holes */
+    if (break_holes) {
+	int st, en;
+#ifndef KEEP_POSITIONS
+	st = 1;
+	en = left_end-right_start+1;
+#else
+	st = right_start;
+	en = left_end;
+#endif
+	if (0 != remove_contig_holes(io, cr->rec, st, en, 0))
+	    return -1;
+    }
     return 0;
 }

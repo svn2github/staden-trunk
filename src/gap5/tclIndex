@@ -84,6 +84,7 @@ set auto_index(UpdateListContigs) [list source [file join $dir contig_selector.t
 
 set auto_index(DisReadingsDialog) [list source [file join $dir dis_readings.tcl]]
 set auto_index(DisEditorReadingsDialog) [list source [file join $dir dis_readings.tcl]]
+set auto_index(RemoveContigHoles) [list source [file join $dir dis_readings.tcl]]
 
 set auto_index(DoubleStrand) [list source [file join $dir dstrand.tcl]]
 

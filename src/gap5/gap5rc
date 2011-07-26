@@ -752,6 +752,9 @@ set_def AUTO_ASSEMBLE.POORDATA.NAME	"Use poor data"
 set_def AUTO_ASSEMBLE.POORDATA.VALUE	1
 
 
+#break contig
+set_def BREAK_CONTIG.REMOVE_HOLES	1
+
 #disassemble readings
 set_def DIS_READINGS.INFILE		$defs_f_or_l_in
 set_def DIS_READINGS.INFILE.WHICH.NAME	"Input reading names from"

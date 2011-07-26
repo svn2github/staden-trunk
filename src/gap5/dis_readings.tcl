@@ -204,3 +204,47 @@ proc OK_Pressed_EdDisReading { io list f sel_task constags } {
 
     ContigInitReg $io
 }
+
+#-----------------------------------------------------------------------------
+# Remove Contig Holes
+proc RemoveContigHoles {io} {
+    global gap5_defs
+
+    set t .remove_contig_holes
+    if {[xtoplevel $t -resizable 0] == ""} return
+    wm title $t "Remove Contig Holes"
+
+    contig_id $t.id -io $io
+    lorf_in $t.infile [keylget gap5_defs CONSENSUS.INFILE] \
+        "{contig_id_configure $t.id -state disabled}
+         {contig_id_configure $t.id -state disabled}
+         {contig_id_configure $t.id -state disabled}
+         {contig_id_configure $t.id -state normal}" \
+	-bd 2 -relief groove
+
+    okcancelhelp $t.ok_cancel \
+	    -ok_command "RemoveContigHoles2 $io $t"\
+	    -cancel_command "destroy $t" \
+	    -help_command "show_help gap5 {RemoveContigHoles}" \
+	    -bd 2 \
+	    -relief groove
+
+    pack $t.infile $t.id $t.ok_cancel -side top -fill x
+}
+
+proc RemoveContigHoles2 {io t} {
+    if {[lorf_in_get $t.infile] == 4} {
+	set gel_name [contig_id_gel $t.id]
+	set lreg [contig_id_lreg $t.id]
+	set rreg [contig_id_rreg $t.id]
+	set list [list [list $gel_name $lreg $rreg]]
+    } elseif {[lorf_in_get $t.infile] == 3} {
+	set list [CreateAllContigList $io]
+    } else {
+	set list [lorf_get_list $t.infile]
+    }
+
+    destroy $t
+
+    break_contig_holes -io $io -contigs $list
+}
