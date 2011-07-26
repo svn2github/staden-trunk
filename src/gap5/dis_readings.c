@@ -300,6 +300,7 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
     contig_iterator *iter;
     rangec_t *r;
     int last;
+    int contig_start, contig_end;
 
     /* Destroy contigs if they're now entirely empty */
     c = cache_search(io, GT_Contig, contig);
