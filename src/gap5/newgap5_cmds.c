@@ -1338,15 +1338,23 @@ int tcl_complement_contig(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+typedef struct {
+    GapIO *io;
+    tg_rec contig;
+    int pos;
+    int no_holes;
+} break_ctg_arg;
+
 int
 tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
 		 int objc, Tcl_Obj *CONST objv[])
 {
-    contig_pos_arg args;
+    break_ctg_arg args;
     cli_args a[] = {
-	{"-io",	    ARG_IO,  1, NULL, offsetof(contig_pos_arg, io)},
-	{"-contig", ARG_REC, 1, NULL, offsetof(contig_pos_arg, contig)},
-	{"-pos",    ARG_INT, 1, NULL, offsetof(contig_pos_arg, pos)},
+	{"-io",	         ARG_IO,  1, NULL, offsetof(break_ctg_arg, io)},
+	{"-contig",      ARG_REC, 1, NULL, offsetof(break_ctg_arg, contig)},
+	{"-pos",         ARG_INT, 1, NULL, offsetof(break_ctg_arg, pos)},
+	{"-break_holes", ARG_INT, 1, "0",  offsetof(break_ctg_arg, no_holes)},
 	{NULL,	 0,	  0, NULL, 0}
     };
 
@@ -1355,7 +1363,7 @@ tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    if (break_contig(args.io, args.contig, args.pos) != 0) {
+    if (break_contig(args.io, args.contig, args.pos, args.no_holes) != 0) {
 	Tcl_SetResult(interp, "Failure in Break Contig", TCL_STATIC);
 	return TCL_ERROR;
     }
@@ -1832,6 +1840,45 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+typedef struct {
+    GapIO *io;
+    char *contigs;
+} break_holes_args;
+
+int tcl_break_contig_holes(ClientData clientData, Tcl_Interp *interp,
+			   int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc, i;
+    contig_list_t *rargv;
+    break_holes_args args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL, offsetof(break_holes_args, io)},
+	{"-contigs",	ARG_STR, 1, NULL, offsetof(break_holes_args, contigs)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+    int ret = TCL_OK;
+
+    vfuncheader("break_contig_holes");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.contigs, &rargc, &rargv);
+
+    for (i = 0; i < rargc; i++) {
+	printf("remove_contig_holes #%"PRIrec" %d..%d\n",
+	       rargv[i].contig, rargv[i].start, rargv[i].end);
+	if (remove_contig_holes(args.io, rargv[i].contig,
+				rargv[i].start, rargv[i].end, 0))
+	    ret = TCL_ERROR;
+    }
+
+    cache_flush(args.io);
+
+    xfree(rargv);
+    return ret;
+}
+
 #ifdef VALGRIND
 tcl_leak_check(ClientData clientData,
 	       Tcl_Interp *interp,
@@ -2126,6 +2173,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "break_contig_holes", tcl_break_contig_holes,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "iter_test",

@@ -29,7 +29,7 @@ proc test_break {io} {
     $c delete
     
     puts "/// break contig $crec ($s..$e) at $p ///"
-    break_contig -io $io -contig $crec -pos $p
+    break_contig -io $io -contig $crec -pos $p -break_holes 1
 }
 
 proc test_join {io} {
@@ -166,7 +166,7 @@ set db [$io get_database]
 $io check 0 2
 
 # Perform N edits and keep checking.
-for {set cycle 0} {$cycle < 100} {incr cycle} {
+for {set cycle 0} {$cycle < 76} {incr cycle} {
     set r [expr int(rand()*5)]
     puts "///$cycle r=$r"
 
