@@ -874,7 +874,7 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
     bin->flags &= ~BIN_CONS_VALID;
     bin->flags |= BIN_BIN_UPDATED;
 
-    /* FIXME: use seq->bin_index or anno_ele->idx here as a short-cut?
+    /* FIXME: use seq->bin_index or anno_ele->bin_idx here as a short-cut?
      * Is loading a seq or anno in addition slower than simply scanning
      * this? It'll depend whether it is in the cache, so the simple
      * approach for now works.

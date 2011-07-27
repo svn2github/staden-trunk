@@ -671,7 +671,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 	    a = cache_search(io, GT_AnnoEle, pos[i].anno[j].rec);
 	    a = cache_rw(io, a);
 	    a->bin = bin->rec;
-	    a->idx = r_out - ArrayBase(range_t, bin->rng);
+	    //a->bin_idx = r_out - ArrayBase(range_t, bin->rng);
 	}
     }
 

@@ -216,11 +216,11 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
 	    /* With luck the bin & index into bin haven't changed */
 	    cache_incr(io, bin);
 	    a = cache_search(io, GT_AnnoEle, r->rec);
-	    if (a->bin != bin->rec ||
-		a->idx != R_out - ArrayBase(range_t, bin->rng)) {
+	    if (a->bin != bin->rec /*||
+		a->idx != R_out - ArrayBase(range_t, bin->rng)*/) {
 		a = cache_rw(io, a);
 		a->bin = bin->rec;
-		a->idx = R_out - ArrayBase(range_t, bin->rng);
+		//a->bin_idx = R_out - ArrayBase(range_t, bin->rng);
 	    }
 
 	    cache_decr(io, bin);
@@ -291,11 +291,11 @@ int contig_visible_end(GapIO *io, tg_rec crec) {
 	    /* With luck the bin & index into bin haven't changed */
 	    cache_incr(io, bin);
 	    a = cache_search(io, GT_AnnoEle, r->rec);
-	    if (a->bin != bin->rec ||
-		a->idx != R_out - ArrayBase(range_t, bin->rng)) {
+	    if (a->bin != bin->rec/* ||
+                a->bin_idx != R_out - ArrayBase(range_t, bin->rng)*/) {
 		a = cache_rw(io, a);
 		a->bin = bin->rec;
-		a->idx = R_out - ArrayBase(range_t, bin->rng);
+		//a->bin_idx = R_out - ArrayBase(range_t, bin->rng);
 	    }
 
 	    cache_decr(io, bin);

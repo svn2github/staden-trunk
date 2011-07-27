@@ -739,12 +739,12 @@ static void tag_shift_for_insert(GapIO *io, tg_rec crec, tg_rec srec,
 	bin = bin_add_range(io, &c, &r2, &r_out, NULL, 0);
 
 	a = cache_search(io, GT_AnnoEle, r->rec);
-	if (a->bin != bin->rec ||
-	    a->idx != r_out - ArrayBase(range_t, bin->rng)) {
+	if (a->bin != bin->rec /*||
+	    a->bin_idx != r_out - ArrayBase(range_t, bin->rng)*/) {
 	    /* Annotation moved bins */
 	    a = cache_rw(io, a);
 	    a->bin = bin->rec;
-	    a->idx = r_out - ArrayBase(range_t, bin->rng);
+	    //a->bin_idx = r_out - ArrayBase(range_t, bin->rng);
 	}
     }
 
@@ -790,12 +790,12 @@ static void tag_shift_for_delete(GapIO *io, tg_rec crec, tg_rec srec,
 	bin = bin_add_range(io, &c, &r2, &r_out, NULL, 0);
 
 	a = cache_search(io, GT_AnnoEle, r->rec);
-	if (a->bin != bin->rec ||
-	    a->idx != r_out - ArrayBase(range_t, bin->rng)) {
+	if (a->bin != bin->rec /*||
+	    a->idx != r_out - ArrayBase(range_t, bin->rng)*/) {
 	    /* Annotation moved bins */
 	    a = cache_rw(io, a);
 	    a->bin = bin->rec;
-	    a->idx = r_out - ArrayBase(range_t, bin->rng);
+	    //a->bin_idx = r_out - ArrayBase(range_t, bin->rng);
 	}
     }
 

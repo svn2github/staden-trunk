@@ -1461,13 +1461,13 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
 
 	/* With luck the bin & index into bin haven't changed */
 	a = cache_search(io, GT_AnnoEle, r[i].rec);
-	if (a->bin != bin->rec ||
-	    a->idx != R_out - ArrayBase(range_t, bin->rng)) {
+	if (a->bin != bin->rec /*||
+	    a->bin_idx != R_out - ArrayBase(range_t, bin->rng)*/) {
 	    //printf("New tag bin %d->%d %d->%d\n", a->bin, bin->rec,
 	    //	   a->idx, R_out - ArrayBase(range_t, bin->rng));
 	    a = cache_rw(io, a);
 	    a->bin = bin->rec;
-	    a->idx = R_out - ArrayBase(range_t, bin->rng);
+	    //a->bin_idx = R_out - ArrayBase(range_t, bin->rng);
 	}
 
 	cache_decr(io, bin);
