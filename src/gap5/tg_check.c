@@ -1026,6 +1026,240 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
     return err;
 }
 
+int check_cache(GapIO *io) {
+    GapIO *ior = gio_open(io->name, 1, 0);
+    HacheTable *h = io->cache;
+    int i, j, err = 0;
+
+    if (!ior)
+	return 1;
+
+    for (i = 0; i < h->nbuckets; i++) {
+	HacheItem *hi, *next;
+	void *v;
+
+	for (hi = h->bucket[i]; hi; hi = next) {
+	    cached_item *ci = hi->data.p, *ci2;
+	    next = hi->next;
+	    int mis = 0;
+
+	    v = cache_search(ior, ci->type, ci->rec);
+	    ci2 = ci_ptr(v);
+
+	    switch(ci->type) {
+	    case GT_RecArray: {
+		Array a1 = (Array)&ci->data;
+		Array a2 = (Array)&ci2->data;
+
+		if (a1->size != a2->size)
+		    mis++;
+		if (a1->max != a2->max) {
+		    mis++;
+		} else {
+		    if (memcmp(a1->base, a2->base, a1->size * a1->max))
+			mis++;
+		}
+		break;
+	    }
+
+	    case GT_Bin: {
+		bin_index_t *b1 = (bin_index_t *)&ci->data;
+		bin_index_t *b2 = (bin_index_t *)&ci2->data;
+
+		if (b1->rec         != b2->rec ||
+		    b1->pos         != b2->pos ||
+		    b1->size        != b2->size ||
+		    b1->start_used  != b2->start_used ||
+		    b1->end_used    != b2->end_used ||
+		    b1->parent_type != b2->parent_type ||
+		    b1->parent      != b2->parent ||
+		    b1->child[0]    != b2->child[0] ||
+		    b1->child[1]    != b2->child[1] ||
+		    b1->rng_rec     != b2->rng_rec ||
+		    b1->flags       != b2->flags ||
+		    b1->track       != b2->track ||
+		    b1->track_rec   != b2->track_rec ||
+		    b1->nseqs       != b2->nseqs ||
+		    b1->rng_free    != b2->rng_free ||
+		    b1->nrefpos     != b2->nrefpos ||
+		    b1->nanno       != b2->nanno) {
+		    mis++;
+		} else if (b1->rng && b2->rng) {
+		    if (ArrayMax(b1->rng) != ArrayMax(b2->rng)) {
+			mis++;
+		    } else {
+			for (j = 0; j < ArrayMax(b1->rng); j++) {
+			    range_t *r1 = arrp(range_t, b1->rng, j);
+			    range_t *r2 = arrp(range_t, b2->rng, j);
+			    if ((r1->flags & GRANGE_FLAG_UNUSED) !=
+				(r2->flags & GRANGE_FLAG_UNUSED)) {
+				mis++;
+			    } else if ((r1->flags & GRANGE_FLAG_UNUSED) == 0) {
+				if (r1->start    != r2->start ||
+				    r1->end      != r2->end ||
+				    r1->mqual    != r2->mqual ||
+				    r1->rec      != r2->rec ||
+				    r1->pair_rec != r2->pair_rec ||
+				    r1->flags    != r2->flags)
+				    mis++;
+			    }
+			}
+		    }
+		}
+		break;
+	    }
+
+	    case GT_BTree: {
+		break;
+	    }
+
+	    case GT_Database: {
+		database_t *d1 = (database_t *)&ci->data;
+		database_t *d2 = (database_t *)&ci2->data;
+		if (d1->version != d2->version ||
+		    d1->Ncontigs != d2->Ncontigs ||
+		    d1->contig_order != d2->contig_order ||
+		    d1->Nlibraries != d2->Nlibraries ||
+		    d1->library != d2->library ||
+		    d1->seq_name_index != d2->seq_name_index ||
+		    d1->contig_name_index != d2->contig_name_index)
+		    mis++;
+		break;
+	    }
+
+	    case GT_Library: {
+		break;
+	    }
+
+	    case GT_Contig: {
+		contig_t *c1 = (contig_t *)&ci->data;
+		contig_t *c2 = (contig_t *)&ci2->data;
+		if (c1->rec      != c2->rec ||
+		    c1->start    != c2->start ||
+		    c1->end      != c2->end) {
+		    mis++;
+		} else if (c1->name && c2->name && strcmp(c1->name,c2->name)) {
+		    mis++;
+		}
+		break;
+	    }
+
+	    case GT_SeqBlock: {
+		seq_block_t *b1 = (seq_block_t *)&ci->data;
+		seq_block_t *b2 = (seq_block_t *)&ci2->data;
+		seq_t *s1, *s2;
+
+		for (j = 0; j < SEQ_BLOCK_SZ; j++) {
+		    if ((b1->seq[j] == NULL) != (b2->seq[j] == NULL)) {
+			mis++;
+			continue;
+		    }
+
+		    if (!b1->seq[j])
+			continue;
+
+		    s1 = b1->seq[j];
+		    s2 = b2->seq[j];
+
+		    if (s1->len            != s2->len ||
+			s1->bin            != s2->bin ||
+			s1->bin_index      != s2->bin_index ||
+			s1->left           != s2->left ||
+			s1->right          != s2->right ||
+			s1->parent_rec     != s2->parent_rec ||
+			s1->parent_type    != s2->parent_type ||
+			s1->rec            != s2->rec ||
+			s1->seq_tech       != s2->seq_tech ||
+			s1->flags          != s2->flags ||
+			s1->format         != s2->format ||
+			s1->mapping_qual   != s2->mapping_qual ||
+			s1->name_len       != s2->name_len ||
+			s1->trace_name_len != s2->trace_name_len ||
+			s1->alignment_len  != s2->alignment_len ||
+			s1->aux_len        != s2->aux_len ||
+			s1->idx            != s2->idx) {
+			mis++;
+		    } else {
+			if (s1->name && s2->name &&
+			    memcmp(s1->name, s2->name, s1->name_len))
+			    mis++;
+			if (s1->trace_name && s2->trace_name &&
+			    memcmp(s1->trace_name, s2->trace_name,
+				   s1->trace_name_len))
+			    mis++;
+			if (s1->alignment && s2->alignment &&
+			    memcmp(s1->alignment, s2->alignment,
+				   s1->alignment_len))
+			    mis++;
+			if (s1->seq && s2->seq &&
+			    memcmp(s1->seq, s2->seq, ABS(s1->len)))
+			    mis++;
+			if (s1->conf && s2->conf &&
+			    memcmp(s1->conf, s2->conf, ABS(s1->len)))
+			    mis++;
+			if (s1->sam_aux && s2->sam_aux &&
+			    memcmp(s1->sam_aux, s2->sam_aux, s1->aux_len))
+			    mis++;
+		    }
+		}
+		break;
+	    }
+
+	    case GT_AnnoEleBlock: {
+		anno_ele_block_t *b1 = (anno_ele_block_t *)&ci->data;
+		anno_ele_block_t *b2 = (anno_ele_block_t *)&ci2->data;
+		anno_ele_t *a1, *a2;
+
+		for (j = 0; j < SEQ_BLOCK_SZ; j++) {
+		    if ((b1->ae[j] == NULL) != (b2->ae[j] == NULL)) {
+			mis++;
+			continue;
+		    }
+
+		    if (!b1->ae[j])
+			continue;
+
+		    a1 = b1->ae[j];
+		    a2 = b2->ae[j];
+
+		    if (a1->tag_type != a2->tag_type ||
+			a1->rec      != a2->rec ||
+			a1->bin      != a2->bin ||
+			a1->obj_type != a2->obj_type ||
+			a1->obj_rec  != a2->obj_rec ||
+			a1->anno_rec != a2->anno_rec ||
+			a1->idx      != a2->idx) {
+			mis++;
+		    } else {
+			if (a1->comment && a2->comment) {
+			    if (strcmp(a1->comment, a2->comment))
+				mis++;
+			} else if (a1->comment || a2->comment) {
+			    mis++;
+			}
+		    }
+		}
+		break;
+	    }
+
+	    default: {
+		vmessage("Rec %"PRIrec" of type %d mismatches\n",
+			 ci->rec, ci->type);
+	    }
+	    }
+
+	    if (mis) {
+		printf("Rec %"PRIrec" type %d differs in-mem and on-disk\n",
+		       ci->rec, ci->type);
+		err++;
+	    }
+	}
+    }
+
+    close_db(ior);
+    return err;
+}
+
 
 /*
  * Performs a thorough internal consistency check of all on disk data
@@ -1043,6 +1277,10 @@ int check_database(GapIO *io, int fix, int level) {
     HacheTable *hash = NULL;
 
     vfuncheader("Check Database");
+
+    /* Check cache matches disk */
+    vmessage("--Checking in-memory cache against disk\n");
+    err += check_cache(io);
 
     /* Load low level db structs; already in GapIO, but do full reload */
     db = cache_search(io, GT_Database, 0);
