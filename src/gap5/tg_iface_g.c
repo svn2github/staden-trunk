@@ -4394,6 +4394,11 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	    memcpy(b->seq[i]->sam_aux, cp, b->seq[i]->aux_len);
 	    cp += b->seq[i]->aux_len;
 	}
+    } else {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!b->seq[i]) continue;
+	    b->seq[i]->sam_aux = NULL;
+	}
     }
 
 #ifdef FAST_REORDER
