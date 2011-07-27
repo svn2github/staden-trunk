@@ -17,6 +17,8 @@ static int load_counts[100];
 static int unload_counts[100];
 static int write_counts[100];
 
+#define BIN_CHK
+
 /*
  * This module implements a layer of caching on top of the underlying
  * IO interface.
@@ -208,6 +210,12 @@ static int track_write(GapIO *io, cached_item *ci) {
 static void bin_unload(GapIO *io, cached_item *ci, int unlock) {
     bin_index_t *bin = (bin_index_t *)&ci->data;
 
+#ifdef BIN_CHK
+    if (bin->rng)
+        ci->chk_sum ^= HacheTcl((uint8_t *)bin->rng->base,
+    				bin->rng->max * bin->rng->size);
+#endif
+
     if (ci->forgetme)
 	io->iface->bin.destroy(io->dbh, ci->rec, ci->view);
 
@@ -218,6 +226,7 @@ static void bin_unload(GapIO *io, cached_item *ci, int unlock) {
 	ArrayDestroy(bin->rng);
     if (bin->track)
 	ArrayDestroy(bin->track);
+
     cache_free(ci);
 }
 
@@ -469,6 +478,15 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
     HacheTableDecRef(io->cache, hi);
 
     ci->chk_sum = chksum(ci);
+#ifdef BIN_CHK
+    if (k->type == GT_Bin) {
+	bin_index_t *bin = (bin_index_t *)&ci->data;
+	if (bin->rng) {
+	    ci->chk_sum ^= HacheTcl((uint8_t *)bin->rng->base,
+				    bin->rng->max * bin->rng->size);
+	}
+    }
+#endif
 
     return &hd;
 }
@@ -1059,6 +1077,21 @@ int cache_flush(GapIO *io) {
 
 		next = hi->next;
 
+#ifdef BIN_CHK
+		if (ci->type == GT_Bin && ci->lock_mode < G_LOCK_RW) {
+		    bin_index_t *bin = (bin_index_t *)&ci->data;
+		    int chk = chksum(ci);
+		    if (bin->rng) {
+			chk ^= HacheTcl((uint8_t *)bin->rng->base,
+					bin->rng->max * bin->rng->size);
+		    }
+		    if (chk != ci->chk_sum) {
+			printf("Chksum differs on ci for rec %"PRIrec"\n",
+			       ci->rec);
+			abort();
+		    }
+		} else
+#endif
 		if (ci->type != GT_Library &&
 		    chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW) {
 		    printf("Chksum differs on ci for rec %"PRIrec"\n",
