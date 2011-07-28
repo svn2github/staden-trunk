@@ -1868,8 +1868,8 @@ int tcl_break_contig_holes(ClientData clientData, Tcl_Interp *interp,
     active_list_contigs(args.io, args.contigs, &rargc, &rargv);
 
     for (i = 0; i < rargc; i++) {
-	printf("remove_contig_holes #%"PRIrec" %d..%d\n",
-	       rargv[i].contig, rargv[i].start, rargv[i].end);
+	gio_debug(args.io, 1, "remove_contig_holes #%"PRIrec" %d..%d\n",
+		  rargv[i].contig, rargv[i].start, rargv[i].end);
 	if (remove_contig_holes(args.io, rargv[i].contig,
 				rargv[i].start, rargv[i].end, 0))
 	    ret = TCL_ERROR;

@@ -138,10 +138,6 @@ int repeat_search (
     int i;
     int word_size;
 
-    clock_t t1, t2;
-
-    t1 = clock();
-
     /* Depad sequence */
     if (NULL == (depad_to_pad = (int *)xmalloc(sizeof(int) * seq1_len)))
 	return -1;
@@ -262,12 +258,6 @@ int repeat_search (
     if (seq2) xfree(seq2);
     xfree(depadded_seq);
     xfree(depad_to_pad);
-
-    t2 = clock();
-
-    printf("Time = %f, nmatches = %d\n",
-	   (double)(t2-t1) / CLOCKS_PER_SEC,
-	   h->matches);
 
     return n_matches;
 }

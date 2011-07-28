@@ -797,7 +797,7 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 	hd.i = 0;
 	HacheTableAdd(dup_hash, (char *)&rnums[i], sizeof(rnums[i]), hd, &n);
 	if (!n) {
-	    printf("Skipping duplicate entry %"PRIrec"\n", rnums[i]);
+	    gio_debug(io, 1, "Skipping duplicate entry %"PRIrec"\n", rnums[i]);
 	    pos[i].contig = 0;
 	    continue;
 	}

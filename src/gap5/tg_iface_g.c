@@ -100,6 +100,7 @@ typedef struct {
     btree_t *contig_name_tree;
     int comp_mode;
     int db_vers;
+    FILE *debug_fp;
 } g_io;
 
 
@@ -1244,8 +1245,8 @@ void btree_destroy(g_io *io, HacheTable *h) {
     if (!h)
 	return;
 
-    fputs("\n=== btree_hash ===", stderr);
-    HacheTableStats(h, stderr);
+    //fputs("\n=== btree_hash ===", stderr);
+    //HacheTableStats(h, stderr);
 
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi;
@@ -1397,6 +1398,8 @@ static void *io_database_connect(char *dbname, int ro) {
 
     io->db_vers = 0;
 
+    io->debug_fp = NULL;
+
     return io;
 }
 
@@ -1406,6 +1409,10 @@ int io_database_setopt(void *dbh, io_opt opt, int val) {
     switch (opt) {
     case OPT_COMP_MODE:
 	io->comp_mode = val;
+	return 0;
+
+    case OPT_DEBUG_LEVEL:
+	io->debug_fp = val ? stderr : NULL;
 	return 0;
 
     default:
@@ -1465,40 +1472,42 @@ static int io_database_disconnect(void *dbh) {
 
     free(io);
 
-    fprintf(stderr, "\n*** I/O stats (type, write count/size read count/size) ***\n");
-    fprintf(stderr, "GT_RecArray     \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_RecArray],     wrstats[GT_RecArray],
-	    rdcounts[GT_RecArray],     rdstats[GT_RecArray]);
-    fprintf(stderr, "GT_Bin          \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_Bin],          wrstats[GT_Bin],
-	    rdcounts[GT_Bin],          rdstats[GT_Bin]);
-    fprintf(stderr, "GT_Range        \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_Range],        wrstats[GT_Range],
-	    rdcounts[GT_Range],        rdstats[GT_Range]);
-    fprintf(stderr, "GT_BTree        \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_BTree],        wrstats[GT_BTree],
-	    rdcounts[GT_BTree],        rdstats[GT_BTree]);
-    fprintf(stderr, "GT_Track        \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_Track],        wrstats[GT_Track],
-	    rdcounts[GT_Track],        rdstats[GT_Track]);
-    fprintf(stderr, "GT_Contig       \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_Contig],       wrstats[GT_Contig],
-	    rdcounts[GT_Contig],       rdstats[GT_Contig]);
-    fprintf(stderr, "GT_Seq          \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_Seq],          wrstats[GT_Seq],
-	    rdcounts[GT_Seq],          rdstats[GT_Seq]);
-    fprintf(stderr, "GT_Anno         \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_Anno],         wrstats[GT_Anno],
-	    rdcounts[GT_Anno],         rdstats[GT_Anno]);
-    fprintf(stderr, "GT_AnnoEle      \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_AnnoEle],      wrstats[GT_AnnoEle],
-	    rdcounts[GT_AnnoEle],      rdstats[GT_AnnoEle]);
-    fprintf(stderr, "GT_SeqBlock     \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_SeqBlock],     wrstats[GT_SeqBlock],
-	    rdcounts[GT_SeqBlock],     rdstats[GT_SeqBlock]);
-    fprintf(stderr, "GT_AnnoEleBlock \t%7d\t%14d\t%7d\t%14d\n",
-	    wrcounts[GT_AnnoEleBlock], wrstats[GT_AnnoEleBlock],
-	    rdcounts[GT_AnnoEleBlock], rdstats[GT_AnnoEleBlock]);
+    if (io->debug_fp) {
+	fprintf(io->debug_fp, "\n*** I/O stats (type, write count/size read count/size) ***\n");
+	fprintf(io->debug_fp, "GT_RecArray     \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_RecArray],     wrstats[GT_RecArray],
+		rdcounts[GT_RecArray],     rdstats[GT_RecArray]);
+	fprintf(io->debug_fp, "GT_Bin          \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_Bin],          wrstats[GT_Bin],
+		rdcounts[GT_Bin],          rdstats[GT_Bin]);
+	fprintf(io->debug_fp, "GT_Range        \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_Range],        wrstats[GT_Range],
+		rdcounts[GT_Range],        rdstats[GT_Range]);
+	fprintf(io->debug_fp, "GT_BTree        \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_BTree],        wrstats[GT_BTree],
+		rdcounts[GT_BTree],        rdstats[GT_BTree]);
+	fprintf(io->debug_fp, "GT_Track        \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_Track],        wrstats[GT_Track],
+		rdcounts[GT_Track],        rdstats[GT_Track]);
+	fprintf(io->debug_fp, "GT_Contig       \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_Contig],       wrstats[GT_Contig],
+		rdcounts[GT_Contig],       rdstats[GT_Contig]);
+	fprintf(io->debug_fp, "GT_Seq          \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_Seq],          wrstats[GT_Seq],
+		rdcounts[GT_Seq],          rdstats[GT_Seq]);
+	fprintf(io->debug_fp, "GT_Anno         \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_Anno],         wrstats[GT_Anno],
+		rdcounts[GT_Anno],         rdstats[GT_Anno]);
+	fprintf(io->debug_fp, "GT_AnnoEle      \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_AnnoEle],      wrstats[GT_AnnoEle],
+		rdcounts[GT_AnnoEle],      rdstats[GT_AnnoEle]);
+	fprintf(io->debug_fp, "GT_SeqBlock     \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_SeqBlock],     wrstats[GT_SeqBlock],
+		rdcounts[GT_SeqBlock],     rdstats[GT_SeqBlock]);
+	fprintf(io->debug_fp, "GT_AnnoEleBlock \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_AnnoEleBlock], wrstats[GT_AnnoEleBlock],
+		rdcounts[GT_AnnoEleBlock], rdstats[GT_AnnoEleBlock]);
+    }
 
     return 0;
 }
@@ -1579,7 +1588,8 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
     }
 
     io->db_vers = db->version;
-    fprintf(stderr, "Database version=%d\n", io->db_vers);
+    if (io->debug_fp)
+	fprintf(io->debug_fp, "Database version=%d\n", io->db_vers);
 
     return ci;
 

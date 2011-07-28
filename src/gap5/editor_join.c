@@ -480,8 +480,6 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     ret = align(xx2[0], left0, len0, xx2[1], left1, len1,
 		fixed_left, fixed_right, &shift);
 
-    printf("*** Alignment done\n");
-
     if (ret)
 	return ret;
 
@@ -666,11 +664,12 @@ tg_rec find_join_bin(GapIO *io, tg_rec lbin, tg_rec rbin, int offset,
 
 	    ch = get_bin(io, binl->child[i]);
 
-	    printf("Checking bin %"PRIrec" abs pos %d..%d vs %d..%d\n",
-		   ch->rec,
-		   NMIN(ch->pos, ch->pos+ch->size-1),
-		   NMAX(ch->pos, ch->pos+ch->size-1),
-		   start, end);
+	     gio_debug(io, 1,
+		       "Checking bin %"PRIrec" abs pos %d..%d vs %d..%d\n",
+		       ch->rec,
+		       NMIN(ch->pos, ch->pos+ch->size-1),
+		       NMAX(ch->pos, ch->pos+ch->size-1),
+		       start, end);
 
 	    if (NMIN(ch->pos, ch->pos+ch->size-1) <= start &&
 		NMAX(ch->pos, ch->pos+ch->size-1) >= end) {
@@ -687,7 +686,7 @@ tg_rec find_join_bin(GapIO *io, tg_rec lbin, tg_rec rbin, int offset,
 	}
     } while (lbin);
     
-    printf("Optimal bin to insert is above %"PRIrec"\n", bnum);
+     gio_debug(io, 1, "Optimal bin to insert is above %"PRIrec"\n", bnum);
 
     return bnum;
 }
@@ -718,9 +717,10 @@ int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
 		bin->flags &= ~BIN_CONS_VALID;
 	    }
 
-	    printf("Invalidating consensus in ctg %s, bin %"PRIrec": %d..%d (%d)\n",
-		   j ? "right" : "left",
-		   r[i].rec, r[i].start, r[i].end, r[i].end - r[i].start);
+	    gio_debug(io, 1, "Invalidating consensus in ctg %s, bin %"PRIrec
+		      ": %d..%d (%d)\n",
+		      j ? "right" : "left",
+		      r[i].rec, r[i].start, r[i].end, r[i].end - r[i].start);
 	}
 	free(r);
 

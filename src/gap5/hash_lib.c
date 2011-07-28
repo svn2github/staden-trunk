@@ -827,7 +827,7 @@ int poisson_diagonals(int min_diag, int max_diag, int word_length,
 	    }
 	}
 	if ( not_found ) {
-	    printf("not found %d %d\n",diagonal_length,hits);
+	    /* printf("not found %d %d\n",diagonal_length,hits); */
 	    expected_scores[diagonal_length] = hits;
 	}
     }

@@ -174,7 +174,7 @@ PlotRepeats(GapIO *io,
 	}
 	/* printf("cmd %s \n", cmd); */
 	if (TCL_ERROR == Tcl_Eval(GetInterp(), cmd))
-	    printf("%s \n", GetInterpResult());
+	    fprintf(stderr, "%s \n", GetInterpResult());
 
 	inum = atoi(GetInterpResult());
 	match->inum = inum;

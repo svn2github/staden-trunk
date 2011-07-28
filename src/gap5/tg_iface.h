@@ -131,7 +131,7 @@ typedef struct {
     STANDARD_IFACE
 } io_anno_ele_block;
 
-typedef enum io_opt {OPT_COMP_MODE} io_opt;
+typedef enum io_opt {OPT_COMP_MODE, OPT_DEBUG_LEVEL} io_opt;
 
 typedef struct {
     /* Higher level database-level functions */

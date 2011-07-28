@@ -9,7 +9,6 @@
 /*  So tg_gio.h doesn't redefine prototypes */
 #   define WAS_CACHE_REF_DEBUG
 #   undef CACHE_REF_DEBUG
-void cache_ref_debug_dump(void);
 #endif
 #include "tg_gio.h"
 #include "misc.h"
@@ -99,7 +98,7 @@ static int chksum(cached_item *ci) {
 static void cache_free(cached_item *ci) {
 #ifdef CACHE_CHKSUM
     if (ci->chk_sum && chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW){
-	printf("Chksum differs on ci for rec %"PRIrec"\n", ci->rec);
+	fprintf(stderr, "Chksum differs on ci for rec %"PRIrec"\n", ci->rec);
 	abort();
     }
 #endif
@@ -627,7 +626,8 @@ void cache_destroy(GapIO *io) {
     if (!h)
 	return;
 
-    HacheTableStats(h, stderr);
+    if (io->debug_level > 0)
+	HacheTableStats(h, stderr);
 
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi;
@@ -769,6 +769,9 @@ int cache_flush(GapIO *io) {
     HacheItem *hi;
     Array to_flush;
     int nflush = 0;
+#ifdef WAS_CACHE_REF_DEBUG
+    void cache_ref_debug_dump(GapIO *io);
+#endif
 
     //printf("\n>>> cache flush <<<\n");
     //HacheTableRefInfo(io->cache, stdout);
@@ -1098,16 +1101,18 @@ int cache_flush(GapIO *io) {
 					bin->rng->max * bin->rng->size);
 		    }
 		    if (chk != ci->chk_sum) {
-			printf("Chksum differs on ci for rec %"PRIrec"\n",
-			       ci->rec);
+			fprintf(stderr,
+				"Chksum differs on ci for rec %"PRIrec"\n",
+				ci->rec);
 			abort();
 		    }
 		} else
 #endif
 		if (ci->type != GT_Library &&
 		    chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW) {
-		    printf("Chksum differs on ci for rec %"PRIrec"\n",
-			   ci->rec);
+		    fprintf(stderr,
+			    "Chksum differs on ci for rec %"PRIrec"\n",
+			    ci->rec);
 		    abort();
 		}
 #endif
@@ -1155,7 +1160,8 @@ int cache_flush(GapIO *io) {
 	    tsz += sz[i];
 	    tc  += total[i];
 	}
-	printf("After flush: %ld items, %ld bytes in cache\n", tc, tsz);
+	gio_debug(io, 1, "After flush: %ld items, %ld bytes in cache\n",
+		  tc, tsz);
 	for (i = 0; i < 100; i++) {
 	    char *s[] = {
 		"", "", "", "RecArray", "", "Bin", "Range", "BTree",
@@ -1164,17 +1170,18 @@ int cache_flush(GapIO *io) {
 		"SeqBlock", "AnnoEleBlock"
 	    };
 	    if (!total[i]) continue;
-	    printf("  Type %d %s\n", i, s[i]);
-	    printf("    Size      = %ld (%ld/item)\n", sz[i], sz[i]/total[i]);
-	    printf("    Total rec = %d\n", total[i]);
-	    printf("    locked    = %d\n", ref_count[i]);
+	    gio_debug(io, 1, "  Type %d %s\n", i, s[i]);
+	    gio_debug(io, 1, "    Size      = %ld (%ld/item)\n",
+		      sz[i], sz[i]/total[i]);
+	    gio_debug(io, 1, "    Total rec = %d\n", total[i]);
+	    gio_debug(io, 1, "    locked    = %d\n", ref_count[i]);
 	    if (in_use[i] != ref_count[i])
-		printf("****'in_use'  = %d\n", in_use[i]);
+		gio_debug(io, 1, "****'in_use'  = %d\n", in_use[i]);
 	    if (updated[i])
-		printf("****updated   = %d\n", updated[i]);
+		gio_debug(io, 1, "****updated   = %d\n", updated[i]);
 	}
 
-	cache_ref_debug_dump();
+	cache_ref_debug_dump(io);
     }
 #endif
 
@@ -1537,8 +1544,8 @@ tg_rec cache_item_create(GapIO *io, int type, void *from) {
 	return cache_item_create_anno_ele(io, from);
 
     default:
-	fprintf(stderr,
-		"cache_item_create only implemented for GT_Seq/GT_AnnoEle right now\n");
+	fprintf(stderr, "cache_item_create only implemented for "
+		"GT_Seq/GT_AnnoEle right now\n");
     }
     
     return -1;
@@ -1714,7 +1721,7 @@ void cache_decr_debug(GapIO *io, void *data, char *where) {
     cache_decr(io, data);
 }
 
-void cache_ref_debug_dump(void) {
+void cache_ref_debug_dump(GapIO *io) {
     HacheIter *iter = HacheTableIterCreate();
     HacheItem *hi;
     HacheTable *h = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
@@ -1730,7 +1737,7 @@ void cache_ref_debug_dump(void) {
 
     iter = HacheTableIterCreate();
     while (hi = HacheTableIterNext(h, iter)) {
-	printf("%"PRId64"\t%s\n", hi->data.i, hi->key);
+	gio_debug(io, 1, "%"PRId64"\t%s\n", hi->data.i, hi->key);
     }
     HacheTableIterDestroy(iter);
 

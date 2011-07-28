@@ -109,6 +109,9 @@ GapIO *gio_open(char *fn, int ro, int create) {
 	cp = fn;
     io->name = strdup(cp);
 
+    io->debug_level = 0;
+    io->debug_fp = stderr;
+
     return io;
 }
 
@@ -167,6 +170,33 @@ GapIO *gio_child(GapIO *io_p) {
     io->read_only = io->base->read_only;
     io->min_bin_size = io->base->min_bin_size;
     return io;
+}
+
+/*
+ * Sets debugging to a specific level.
+ * Level 0 turns off debugging output.
+ * Returns the previous debug level.
+ */
+int gio_debug_level(GapIO *io, int level) {
+    int r = io->debug_level;
+    io->debug_level = level;
+
+    if (io->iface)
+	io->iface->setopt(io->dbh, OPT_DEBUG_LEVEL, level);
+
+    return r;
+}
+
+__PRINTF_FORMAT__(3,4)
+void gio_debug(GapIO *io, int level, char *fmt, ...) {
+    va_list args;
+
+    if (io->debug_level < level)
+	return;
+
+    va_start(args, fmt);
+    vfprintf(io->debug_fp, fmt, args);
+    va_end(args);
 }
 
 /* ------------------------------------------------------------------------ */

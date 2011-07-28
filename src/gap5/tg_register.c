@@ -232,7 +232,6 @@ void broadcast_event(GapIO *io, HacheTable *h,
 	    continue;
 
 	if (--cr->ref_count == 0) {
-	    puts("delete me");
 	    contig_reg_remove(io, cr, iter, &next);
 	}
     }
@@ -299,7 +298,6 @@ static void send_event(GapIO *io, HacheTable *h, tg_rec contig,
 	next = HacheTableNext(hi, (char *)&contig, sizeof(contig));
 
 	if (--cr->ref_count == 0) {
-	    puts("delete me");
 	    contig_reg_remove(io, cr, NULL, &next);
 	}
 

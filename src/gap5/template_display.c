@@ -222,7 +222,8 @@ static int create_template(Tcl_Interp *interp,
     }
     
     /* if we get here then something is wrong */
-    printf("TemplateDisplayItem creation failed\n");
+    verror(ERR_WARN, "create_template", 
+	   "TemplateDisplayItem creation failed\n");
     delete_template(canvas, itemPtr, Tk_Display(Tk_CanvasTkwin(canvas)));
     
     return TCL_ERROR;
@@ -300,7 +301,8 @@ static int configure_template(Tcl_Interp *interp,
     if (Tk_ConfigureWidget(interp, tkwin, config_specs, argc, (char **) argv,
 	    (char *) tdi, flags|TK_CONFIG_OBJS) != TCL_OK) {
 
-	printf("ERROR %s\n", Tcl_GetStringResult(interp));
+	verror(ERR_WARN, "configure_template", "%s",
+	       Tcl_GetStringResult(interp));
 	return TCL_ERROR;
     }
     

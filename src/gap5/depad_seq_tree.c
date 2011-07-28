@@ -48,8 +48,6 @@ pad_count_t *depad_seq_tree(char *seq, int offset) {
     }
     *out = 0;
 
-    printf("Found %d pads\n", count);
-
     return tree;
 }
 
@@ -87,7 +85,6 @@ char *repad_seq_tree(char *seq, pad_count_t *tree) {
     
     /* Allocate the buffer to the appropriate size */
     npads = node ? node->ppos - node->pos : 0;
-    printf("npads = %d\n", npads);
     if (NULL == (pseq = malloc(slen+npads+1)))
 	return NULL;
 
@@ -97,8 +94,6 @@ char *repad_seq_tree(char *seq, pad_count_t *tree) {
     for (next = RB_MIN(PAD_COUNT, tree);
 	 next;
 	 next = RB_NEXT(PAD_COUNT, tree, next)) {
-	printf("Pad at %d padded %d count=%d\n",
-	       next->pos, next->ppos, next->count);
 	memcpy(out, seq, next->pos - last);
 	out += next->pos - last;
 	npads = next->ppos - next->pos - count;

@@ -381,7 +381,7 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 	c = cache_search(io, GT_Contig, s_contig);
 
     } else {
-	printf("Unknown seqid '%s'\n", gff->seqid);
+	fprintf(stderr, "Unknown seqid '%s'\n", gff->seqid);
 	return -1;
     }
 
@@ -451,7 +451,7 @@ int import_gff(GapIO *io, char *fn, int padded, int plus_as_space) {
 
     fclose(fp);
 
-    printf("Processed %d GFF entries\n", nentry);
+    gio_debug(io, 1, "Processed %d GFF entries\n", nentry);
 
     /*
      * Remove old cached map if needed incase data is edited before

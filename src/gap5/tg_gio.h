@@ -4,6 +4,7 @@
 #include "tg_struct.h"
 #include "tg_iface.h"
 #include "hache_table.h"
+#include "misc.h"
 
 /* ------------------------------------------------------------------------- */
 /* The GapIO structure itself - the starting point of all calls */
@@ -65,11 +66,17 @@ typedef struct GapIO {
     /* Seq name and contig name iterators; for convenient use from tcl */
     btree_iter_t *seq_name_iter;
     btree_iter_t *contig_name_iter;
+
+    int debug_level;
+    FILE *debug_fp;
 } GapIO;
 
 GapIO *gio_open(char *fn, int ro, int create);
 void gio_close(GapIO *io);
 GapIO *gio_child(GapIO *io_p);
+int gio_debug_level(GapIO *io, int level);
+void gio_debug(GapIO *io, int level, char *fmt, ...) __PRINTF_FORMAT__(3,4);
+
 int gio_read_contig(GapIO *io, int cnum, contig_t **c);
 
 

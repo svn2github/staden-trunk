@@ -26,6 +26,7 @@ Options:
     -display           X Display to use
     -bitsize N         Specifies the aux file bitsize for new databases (32/64)
     -sync              Use synchronous mode for display server (debugging)
+    -debug N           Set debugging level to N
     --                 End of argument list
     }
     exit
@@ -538,6 +539,7 @@ set logging [keylget gap5_defs LOGGING]
 set exec_notes 0
 set rawdata_note 1
 set maxseq 10000000
+set debug_level 0
 
 set GAP_VERSION "1.2.13$svn_version"
 
@@ -578,6 +580,11 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
 	} else {
 	    gap5_usage
 	}
+
+    } elseif {$arg == "-debug"} {
+	set argv [lrange $argv 1 $argc]
+	incr argc -1
+	set debug_level [lindex $argv 0]
 
     } elseif {$arg == "-nocheck" || $arg == "-no_check"} {
 	set do_check_db 0
@@ -637,6 +644,7 @@ if {$argc == 1} {
 	
 	exit 1
     }
+    $io debug_level $debug_level
 
     if {$origtype == "d" && $licence(type) == "v"} {
 	viewer_mode

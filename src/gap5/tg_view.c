@@ -922,8 +922,8 @@ int main(int argc, char **argv) {
 	init_curses();
 	curses_loop(io, &c, xpos, mode);
 	endwin();
-
-	if (io->cache) {
+	
+	if (io->cache && io->debug_level > 0) {
 	    fputs("\n=== cache ===", stderr);
 	    HacheTableStats(io->cache, stderr);
 	}

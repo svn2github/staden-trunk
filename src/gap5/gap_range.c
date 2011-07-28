@@ -227,7 +227,7 @@ int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double new
 	    tmp_line = (tline *)realloc(gr->tl, gr->nr * sizeof(tline));
 	    
 	    if (!tmp_line) {
-	    	printf("GR tline memory problem\n");
+	    	fprintf(stderr, "GR tline memory problem\n");
 		gr->tl = tmp_line; // but don't stop yet
 	    } else {
 		gr->tl = tmp_line;
@@ -423,8 +423,10 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		    tl->x[2]   = r->start;
 		    tl->col[2] = col;
 		} else {
-		    printf("error, start/end do not match template pos (single)\n");
-		    printf("start %d/%d end %d/%d\n", r->start, tl->x[0], r->end, tl->x[3]); 
+		    verror(ERR_WARN, "gap_range_x",
+			   "error, start/end do not match template pos (single)\n");
+		    verror(ERR_WARN, "gap_range_x", "start %d/%d end %d/%d\n",
+			   r->start, tl->x[0], r->end, tl->x[3]); 
 		}
 		
 		if (r->pair_rec && (r->pair_start || r->pair_end)) {
@@ -439,8 +441,11 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 			tl->x[2]   = r->pair_start;
 			tl->col[2] = col;
 		    } else {
-			printf("error, start/end do not match template pos (pair)\n");
-			printf("start %d/%d end %d/%d\n", r->pair_start, tl->x[0], r->pair_end, tl->x[3]); 
+			verror(ERR_WARN, "gap_range_x",
+			       "error, start/end do not match template pos (pair)\n");
+			verror(ERR_WARN, "gap_range_x",
+			       "start %d/%d end %d/%d\n",
+			       r->pair_start, tl->x[0], r->pair_end, tl->x[3]);
 		    }
 		}
 		

@@ -150,7 +150,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
 
 	if (r[i].start > left) {
-	    printf("Filling missing region %d..%d\n", left, right);
+	    gio_debug(io, 1, "Filling missing region %d..%d\n", left, right);
 	    calculate_consensus_simple2(io, contig, left, right,
 					con  ? &con[left-start]  : NULL,
 					qual ? &qual[left-start] : NULL); 
@@ -204,8 +204,9 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 
 		/* Load existing sequence, or fill out in-memory new struct */
 		if (cons_r && !io->read_only) {
-		    printf("Recomputing cached cons from %d..%d +%d\n",
-			   cons_r->start, cons_r->end, r[i].start);
+		    gio_debug(io, 1,
+			      "Recomputing cached cons from %d..%d +%d\n",
+			      cons_r->start, cons_r->end, r[i].start);
 
 		    s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
 		    if (!s)
@@ -233,8 +234,9 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		    
 		} else {
 		load_failed: /* Horrid, I know! */
-		    printf("Creating new cached cons %d..%d bin #%"PRIrec"\n",
-			   bstart, bend, bin->rec);
+		    gio_debug(io, 1, "Creating new cached cons %d..%d "
+			      "bin #%"PRIrec"\n",
+			      bstart, bend, bin->rec);
 		    memset(&seq, 0, sizeof(seq));
 		    seq.pos    = bstart;
 		    seq.len    = bend - bstart + 1;

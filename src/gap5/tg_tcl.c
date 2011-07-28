@@ -134,7 +134,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     GapIO *io = (GapIO *)clientData;
 
     static char *options[] = {
-	"flush",       "close",
+	"flush",       "close",	       "debug_level",
 	"get_contig",  "get_sequence", "get_database", "get_anno_ele",
 	"contig_order","num_contigs",  "seq_name2rec", "child",
 	"get_library", "db_version",   "name",         "read_only",
@@ -144,7 +144,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     };
 
     enum options {
-	IO_FLUSH,     IO_CLOSE,
+	IO_FLUSH,     IO_CLOSE,       IO_DEBUG_LEVEL,
 	IO_CONTIG,    IO_SEQUENCE,    IO_DATABASE,    IO_ANNO_ELE,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
 	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
@@ -166,6 +166,15 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     case IO_CLOSE:
 	gio_close(io);
 	break;
+
+    case IO_DEBUG_LEVEL: {
+	int level;
+	if (objc == 3) {
+	    Tcl_GetIntFromObj(interp, objv[2], &level);
+	    gio_debug_level(io, level);
+	}
+	break;
+    }
 
     case IO_FLUSH:
 	cache_flush(io);

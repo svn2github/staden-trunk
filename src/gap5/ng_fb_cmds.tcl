@@ -184,6 +184,8 @@ proc DB_Load { file } {
 
     set orig_type $licence(type)
     set new_io [g5::open_database -name "$db_name" -access $access]
+    global debug_level
+    $new_io debug_level $debug_level
 
     if {$new_io == ""} {
 	tk_messageBox \

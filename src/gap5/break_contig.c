@@ -38,8 +38,8 @@ static int remove_empty_bins_r(GapIO *io, tg_rec brec, tg_rec *first) {
 
     /* Remove this bin if empty and children are too */
     if (empty[0] && empty[1] && this_is_empty) {
-	printf("Bin %"PRIrec": this & children are empty / non-existant\n",
-	       brec);
+	gio_debug(io, 1, "Bin %"PRIrec": this & children are empty "
+		  "/ non-existant\n", brec);
 	cache_rec_deallocate(io, GT_Bin, brec);
 	return 1;
     }
@@ -451,11 +451,12 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	f_b = offset;
     }
 
-    printf("%*sBreak offset %d pos %d/%d/%d => test bin %"PRIrec": %d..%d\n",
-	   level*4, "",
-	   offset, pos3, pos, pos2, bin->rec,
-	   NMIN(bin->start_used, bin->end_used),
-	   NMAX(bin->start_used, bin->end_used));
+    gio_debug(io, 1, "%*sBreak offset %d pos %d/%d/%d => test bin %"PRIrec
+	      ": %d..%d\n",
+	      level*4, "",
+	      offset, pos3, pos, pos2, bin->rec,
+	      NMIN(bin->start_used, bin->end_used),
+	      NMAX(bin->start_used, bin->end_used));
 
     bin = cache_rw(io, bin);
     nseqs = bin->nseqs;
@@ -487,8 +488,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
      * won't be < pos.
      */
     if (offset >= pos2 /*|| (bin_min >= pos && !bin->child[0])*/) {
-	printf("%*sADD_TO_RIGHT pl=%"PRIrec" pr=%"PRIrec"\n",
-	       level*4, "", pleft, pright);
+	gio_debug(io, 1, "%*sADD_TO_RIGHT pl=%"PRIrec" pr=%"PRIrec"\n",
+		  level*4, "", pleft, pright);
 
 	if (0 != break_contig_move_bin(io, bin, offset,
 				       cl, pleft, cr, pright, 
@@ -510,7 +511,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
      * or if the used portion is to the left and we have no right child.
      */
     if (offset + bin->size < pos3 /*|| (bin_max < pos && !bin->child[1])*/) {
-	printf("%*sADD_TO_LEFT\n", level*4, "");
+	gio_debug(io, 1, "%*sADD_TO_LEFT\n", level*4, "");
 
 	//if (0 != break_contig_move_bin(io, bin, cr, pright, cl, pleft, child_no))
 	//return -1;
@@ -548,7 +549,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
      */
     if (1 /* always! */ || pright != cr->rec ||
 	(!bin_empty(bin) && NMAX(bin->start_used, bin->end_used) >= pos)) {
-	//printf("NMAX=%d >= %d\n", NMAX(bin->start_used, bin->end_used), pos);
+	gio_debug(io, 2, "NMAX=%d >= %d\n",
+		  NMAX(bin->start_used, bin->end_used), pos);
 
 	rbin = 0;
 
@@ -596,12 +598,13 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	 * It'll be shifted back by the correct amount later.
 	 */
 	if (pright == cr->rec) {
-	    printf("moving root bin to offset=%d comp=%d\n", offset, complement);
+	    gio_debug(io, 1, "moving root bin to offset=%d comp=%d\n",
+		      offset, complement);
 	    bin_dup->pos = offset;
 	}
 
-	printf("%*sCreated dup for right, rec %"PRIrec"\n",
-	       level*4,"", bin_dup->rec);
+	gio_debug(io, 1, "%*sCreated dup for right, rec %"PRIrec"\n",
+		  level*4,"", bin_dup->rec);
 	break_contig_move_bin(io, bin_dup, offset,
 			      cl, 0, cr, pright, child_no);
 	opright = pright;
@@ -613,7 +616,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
     if (bin_empty(bin)) {
 	/* Empty bin */
-	printf("%*sEMPTY range\n", level*4, "");
+	gio_debug(io, 1, "%*sEMPTY range\n", level*4, "");
 	bin->start_used = bin->end_used = 0;
 	bin->flags |= BIN_BIN_UPDATED;
 	if (bin_dup) {
@@ -623,8 +626,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    
     } else if (NMIN(bin->start_used, bin->end_used) >= pos2) {
 	/* Move range to right contig */
-	printf("%*sDUP %"PRIrec", MOVE Array to right\n",
-	       level*4, "", bin_dup->rec);
+	gio_debug(io, 1, "%*sDUP %"PRIrec", MOVE Array to right\n",
+		  level*4, "", bin_dup->rec);
 
 	bin_dup->rng = bin->rng;
 	bin_dup->rng_rec = bin->rng_rec;
@@ -666,7 +669,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	}
     } else if (NMAX(bin->start_used, bin->end_used) < pos3) {
 	/* Range array already in left contig, so do nothing */
-	printf("%*sMOVE Array to left\n", level*4, "");
+	gio_debug(io, 1, "%*sMOVE Array to left\n", level*4, "");
 
 	if (bin_dup)
 	    bin_dup->start_used = bin_dup->end_used = 0;
@@ -704,7 +707,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	int nal = 0, nar = 0; /* no. anno */
 	int lmin = bin->size, lmax = 0, rmin = bin->size, rmax = 0;
 
-	printf("%*sDUP %"PRIrec", SPLIT array\n", level*4, "", bin_dup->rec);
+	gio_debug(io, 1, "%*sDUP %"PRIrec", SPLIT array\n",
+		  level*4, "", bin_dup->rec);
 
 	bin->flags |= BIN_RANGE_UPDATED;
 	bin_dup->flags |= BIN_RANGE_UPDATED;
@@ -923,8 +927,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    /* We didn't need it afterall! Odd. */
 	    bin_index_t *pb;
 
-	    printf("Purging bin %d that we didn't need afterall\n",
-		   bin_dup->rec);
+	    gio_debug(io, 1, "Purging bin %d that we didn't need afterall\n",
+		      bin_dup->rec);
 	    cache_rec_deallocate(io, GT_Bin, bin_dup->rec);
 	    pb = cache_search(io, GT_Bin, bin_dup->parent);
 	    if (pb->child[0] == bin_dup->rec)
@@ -948,8 +952,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    bin->end_used       = lmax;
 	}
 
-	printf("%*sLeft=>%d..%d right=>%d..%d\n", level*4, "",
-	       lmin, lmax, rmin, rmax);
+	gio_debug(io, 1, "%*sLeft=>%d..%d right=>%d..%d\n", level*4, "",
+		  lmin, lmax, rmin, rmax);
 
 	if (bin_dup) {
 	    if (rmin <= rmax) {
@@ -1010,7 +1014,7 @@ int remove_redundant_bins(GapIO *io, contig_t *c) {
 
 	/* Empty */
 	c->bin = bin->child[0] ? bin->child[0] : bin->child[1];
-	printf("Remove bin %"PRIrec"\n", bin->rec);
+	gio_debug(io, 1, "Remove bin %"PRIrec"\n", bin->rec);
 	bnum = c->bin;
     }
 
@@ -1040,9 +1044,9 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
     rangec_t *rc;
     int first_seq = left_end;
 
-    printf("Moving ISREFPOS markers from contig %"PRIrec" (%d..%d) to"
-	   " contig %"PRIrec".\n",
-	   cl->rec, right_start, left_end, cr->rec);
+    gio_debug(io, 1, "Moving ISREFPOS markers from contig %"PRIrec
+	      " (%d..%d) to contig %"PRIrec".\n",
+	      cl->rec, right_start, left_end, cr->rec);
 
     ci = contig_iter_new_by_type(io, cr->rec, 0, CITER_FIRST,
 				 right_start, left_end,
@@ -1065,7 +1069,8 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
 	    bin_index_t *bin;
 	    range_t *r2;
 
-	    printf("** Deleting from cr, bin %"PRIrec" **\n", rc->orig_rec);
+	    gio_debug(io, 1, "** Deleting from cr, bin %"PRIrec" **\n",
+		      rc->orig_rec);
 	    
 	    bin = cache_search(io, GT_Bin, rc->orig_rec);
 	    bin = cache_rw(io, bin);
@@ -1074,7 +1079,7 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
 	    assert(r2->mqual == rc->mqual);
 	    assert(r2->flags == rc->flags);
 
-	    printf("Mark %d for removal\n", rc->orig_ind);
+	    gio_debug(io, 1, "Mark %d for removal\n", rc->orig_ind);
 	    r2->flags = GRANGE_FLAG_UNUSED;
 	    r2->rec = bin->rng_free;
 	    bin->rng_free = rc->orig_ind;
@@ -1094,7 +1099,7 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
     }
     bin_add_range(io, NULL, NULL, NULL, NULL, -1);
 
-    printf("First real seq in cr = %d\n", first_seq);
+    gio_debug(io, 1, "First real seq in cr = %d\n", first_seq);
 
     contig_iter_del(ci);
 
@@ -1309,10 +1314,10 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     cr = cache_rw(io, cr);
     if (0 != contig_index_update(io, cname, strlen(cname), cr->rec))
 	return -1;
-    printf("Break in contig %"PRIrec", pos %d\n", crec, cpos);
+    gio_debug(io, 1, "Break in contig %"PRIrec", pos %d\n", crec, cpos);
 
-    printf("Existing left bin = %"PRIrec", right bin = %"PRIrec"\n",
-	   cl->bin, cr->bin);
+    gio_debug(io, 1, "Existing left bin = %"PRIrec", right bin = %"PRIrec"\n",
+	      cl->bin, cr->bin);
 
     cache_incr(io, cl);
     cache_incr(io, cr);
@@ -1373,8 +1378,8 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     //    remove_redundant_bins(io, cl);
     //    remove_redundant_bins(io, cr);
 
-    printf("Final left bin = %"PRIrec", right bin = %"PRIrec"\n",
-	   cl->bin, cr->bin);
+    gio_debug(io, 1, "Final left bin = %"PRIrec", right bin = %"PRIrec"\n",
+	      cl->bin, cr->bin);
 
     HacheTableDestroy(h, 0);
 
@@ -1388,11 +1393,11 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 
     /* Empty contig? If so remove it completely */
     if (cl->bin == 0) {
-	printf("Removing empty contig %"PRIrec"\n", cl->rec);
+	gio_debug(io, 1, "Removing empty contig %"PRIrec"\n", cl->rec);
 	contig_destroy(io, cl->rec);
     }
     if (cr->bin == 0) {
-	printf("Removing empty contig %"PRIrec"\n", cr->rec);
+	gio_debug(io, 1, "Removing empty contig %"PRIrec"\n", cr->rec);
 	contig_destroy(io, cr->rec);
     }
 
