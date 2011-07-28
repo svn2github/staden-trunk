@@ -137,6 +137,91 @@ proc test_deletions {io} {
     $c delete
 }
 
+proc test_tag_creation {io} {
+    set crec [random_contig $io]
+    puts "/// creating tags in contig $crec ///"
+
+    set c [$io get_contig $crec]
+    set cstart [$c get_start]
+    set cend   [$c get_end]
+    set crec   [$c get_rec]
+    
+    # Get sequence list
+    set seqs ""
+
+    foreach l [$c seqs_in_range $cstart $cend] {
+	lappend seqs [lindex $l 2]
+    }
+    $c delete
+
+    # Create tags
+    for {set i 0} {$i < 100} {incr i} {
+	if {rand() > 0.5} {
+	    set msg ""
+	} else {
+	    set msg [string repeat a [expr {int(rand()*100)}]]
+	}
+	if {rand() > 0.5} {
+	    # Consensus tag
+	    set otype 17
+	    set orec $crec
+	    set st   [expr {int(rand()*($cend-$cstart))+$cstart}]
+	    if {rand() > 0.5} {
+		set en $st
+	    } else {
+		set en   [expr {int(rand()*($cend-$st))+$st}]
+	    }
+	} else {
+	    # Sequence tag
+	    set otype 18
+	    set orec [lindex $seqs [expr {int(rand()*[llength $seqs])}]]
+	    set s [$io get_seq $orec]
+	    set len [expr {abs([$s get_len])}]
+	    $s delete
+	    set st   [expr {int(rand()*$len)}]
+	    if {rand() > 0.5} {
+		set en $st
+	    } else {
+		set en   [expr {int(rand()*($len-$st))+$st}]
+	    }
+	}
+	set rec [$io new_anno_ele $otype $orec $st $en]
+	# puts "Creating tag $rec on $otype/$orec at $st..$en"
+	set t [$io get_anno_ele $rec]
+	$t set_comment $msg
+	$t set_type COMM
+	$t delete
+    }
+}
+
+proc test_tag_deletion {io} {
+    # Randomly remove half the tags in any contig
+
+    set crec [random_contig $io]
+    puts "/// removing tags from contig $crec ///"
+
+    set c [$io get_contig $crec]
+    set cstart [$c get_start]
+    set cend   [$c get_end]
+    set crec   [$c get_rec]
+
+    # Pick tags to go
+    set to_del {}
+    foreach l [$c anno_in_range $cstart $cend] {
+	if {rand() > 0.5} {
+	    lappend to_del [lindex $l 2]
+	}
+    }
+    $c delete
+
+    # Delete them
+    foreach rec $to_del {
+	puts "Removing tag $rec"
+	set tag [$io get_anno_ele $rec]
+	$tag remove
+    }
+}
+
 #-----------------------------------------------------------------------------
 # MAIN
 
@@ -165,9 +250,15 @@ if {[catch {set io [g5::open_database -name _tmp -access rw]} err]} {
 set db [$io get_database]
 $io check 0 2
 
+if {[llength $argv] > 2} {
+    set ncycles [lindex $argv 2]
+} else {
+    set ncycles 100
+}
+
 # Perform N edits and keep checking.
-for {set cycle 0} {$cycle < 76} {incr cycle} {
-    set r [expr int(rand()*5)]
+for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
+    set r [expr int(rand()*7)]
     puts "///$cycle r=$r"
 
     # Other tests to do:
@@ -181,15 +272,30 @@ for {set cycle 0} {$cycle < 76} {incr cycle} {
 	2 { test_join $io }
 	3 { test_insertions $io }
 	4 { test_deletions $io }
+	5 { test_tag_creation $io }
+	6 { test_tag_deletion $io }
     }
 
     $io flush
-    set err [$io check 0 2]
+
+    # Check consistency when newly opened too
+    set io2 [g5::open_database -name _tmp -access r]
+#    puts io=$io,io2=$io2
+#    if {[$io2 check 0 2] != 0} {
+#	$io2 close
+#	$io close
+#	puts stderr "ERROR: on-disk and in-memort versions differ\n"
+#	exit 1
+#    }
+#    $io2 close
+
+    set err [$io check 0 1]
     if {$err != 0} {
 	$io close
 	puts stderr "ERROR: corrupted database\n"
 	exit 1
     }
+
 }
 
 $io flush

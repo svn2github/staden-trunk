@@ -1682,9 +1682,17 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 
     /* Perform the command proper */
     switch ((enum options)index) {
-    case REMOVE:
+    case REMOVE: {
+	tg_rec contig;
+
+	if (anno_get_range(te->io, te->anno->rec, &contig, 0)) {
+	    contig_t *c = cache_search(te->io, GT_Contig, contig);
+	    bin_remove_item(te->io, &c, GT_AnnoEle, te->anno->rec);
+	}
+
 	anno_ele_destroy(te->io, te->anno);
 	/* Deliberate flow through to DELETE */
+    }
 
     case DELETE:
 	Tcl_DeleteCommandFromToken(interp,
