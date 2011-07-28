@@ -17,7 +17,11 @@ static int load_counts[100];
 static int unload_counts[100];
 static int write_counts[100];
 
-#define BIN_CHK
+//#define CACHE_CHKSUM
+
+#ifdef CACHE_CHKSUM
+#    define BIN_CHK
+#endif
 
 /*
  * This module implements a layer of caching on top of the underlying
@@ -80,9 +84,11 @@ cached_item *cache_new(int type, tg_rec rec, GView v,
     return ci;
 }
 
+#ifdef CACHE_CHKSUM
 static int chksum(cached_item *ci) {
     return HacheTcl((uint8_t *)&ci->data, ci->data_size);
 }
+#endif
 
 /*
  * Frees a cached item, for use after appropriate <TYPE>_unload function 
@@ -90,10 +96,12 @@ static int chksum(cached_item *ci) {
  * centralised here to provide extra debugging functionality when needed.
  */
 static void cache_free(cached_item *ci) {
+#ifdef CACHE_CHKSUM
     if (ci->chk_sum && chksum(ci) != ci->chk_sum && ci->lock_mode < G_LOCK_RW){
 	printf("Chksum differs on ci for rec %"PRIrec"\n", ci->rec);
 	abort();
     }
+#endif
 
 #ifdef WAS_CACHE_REF_DEBUG
     /*
@@ -477,6 +485,7 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
      */
     HacheTableDecRef(io->cache, hi);
 
+#ifdef CACHE_CHKSUM
     ci->chk_sum = chksum(ci);
 #ifdef BIN_CHK
     if (k->type == GT_Bin) {
@@ -486,6 +495,7 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 				    bin->rng->max * bin->rng->size);
 	}
     }
+#endif
 #endif
 
     return &hd;
@@ -1077,6 +1087,7 @@ int cache_flush(GapIO *io) {
 
 		next = hi->next;
 
+#ifdef CACHE_CHKSUM
 #ifdef BIN_CHK
 		if (ci->type == GT_Bin && ci->lock_mode < G_LOCK_RW) {
 		    bin_index_t *bin = (bin_index_t *)&ci->data;
@@ -1098,6 +1109,7 @@ int cache_flush(GapIO *io) {
 			   ci->rec);
 		    abort();
 		}
+#endif
 
 		if (ci->updated) updated[ci->type]++;
 		if (hi->ref_count) ref_count[ci->type]++;
