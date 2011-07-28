@@ -1397,8 +1397,7 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 
 	ci = contig_iter_new(io, contig, 1, CITER_FIRST | CITER_ISTART |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
-
-	while ((r = contig_iter_next(io, ci))) {
+	while (ci && (r = contig_iter_next(io, ci))) {
 	    seq_t *s;
 	    int left;
 
@@ -1433,7 +1432,7 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 	ci = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
 	
-	while ((r = contig_iter_prev(io, ci))) {
+	while (ci && (r = contig_iter_prev(io, ci))) {
 	    seq_t *s;
 	    int right;
 
@@ -1483,7 +1482,7 @@ int consensus_unclipped_range(GapIO *io, tg_rec contig, int *start, int *end) {
 	ci = contig_iter_new(io, contig, 1, CITER_FIRST | CITER_ISTART |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
 
-	while ((r = contig_iter_next(io, ci))) {
+	while (ci && (r = contig_iter_next(io, ci))) {
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
 		continue;
 
@@ -1504,7 +1503,7 @@ int consensus_unclipped_range(GapIO *io, tg_rec contig, int *start, int *end) {
 	ci = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
 	
-	while ((r = contig_iter_prev(io, ci))) {
+	while (ci && (r = contig_iter_prev(io, ci))) {
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
 		continue;
 
