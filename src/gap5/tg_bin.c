@@ -640,7 +640,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 	return NULL;
 
     /* Adjust start/end used in bin */
-    if (bin->rng) {
+    if (bin->rng && ArrayMax(bin->rng)) {
 	if (comp) {
 	    if (bin->start_used > bin->size-1 - (r->end - offset))
 		bin->start_used = bin->size-1 - (r->end - offset);
