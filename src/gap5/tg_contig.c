@@ -2288,7 +2288,7 @@ static int range_next_by_type2(GapIO *io, contig_t *c, int bin_num,
 	order[1] = 0;
     }
 
-    if (bin->rng &&
+    if (bin->rng && ArrayMax(bin->rng) &&
 	best_start > NMIN(bin->start_used, bin->end_used) &&
 	start     <= NMAX(bin->start_used, bin->end_used)) {
 	/* Bin overlaps, but possibly the items are in children */
@@ -2461,7 +2461,7 @@ static int range_prev_by_type2(GapIO *io, contig_t *c, int bin_num,
 	order[1] = 1;
     }
 
-    if (bin->rng &&
+    if (bin->rng && ArrayMax(bin->rng) &&
 	best_start < NMAX(bin->start_used, bin->end_used) &&
 	start     >= NMIN(bin->start_used, bin->end_used)) {
 	/* Bin overlaps, but possibly the items are in children */
@@ -3263,7 +3263,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 	level_end[-level] = scale * (offset + bin->size);
 
     /* bin start_used position */
-    if (bin->rng)
+    if (bin->rng && ArrayMax(bin->rng))
 	fprintf(gv, "%g %d m (%d) S\n",
 		scale * NMIN(bin->start_used, bin->end_used),
 		level*(H+G)+H+2,
