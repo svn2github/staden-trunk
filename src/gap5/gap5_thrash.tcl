@@ -49,51 +49,51 @@ proc test_join {io} {
     join_contigs -io $io -contig1 $crec1 -contig2 $crec2 -pos1 $pos
     return
 
-    # defunct version, it crashed anyway!
-    package require Tk 
-    frame .e
-    editor .e.e1
-    set io1 [$io child]
-    ednames .e.n1
-    .e.e1 init $io $crec1 $crec1 0 .e.n1
-
-    editor .e.e2
-    set io2 [$io child]
-    ednames .e.n2
-    .e.e2 init $io $crec2 $crec2 0 .e.n2
-
-    sheet .e.d
-    .e.e1 link_to .e.e2 .e.d
-
-    .e.e1 xview moveto 0
-    .e.e2 xview moveto $p
-
-    grid .e.n1 .e.e1 -sticky nsew
-    grid .e.d        -sticky nsew -columnspan 2
-    grid .e.n2 .e.e2 -sticky nsew
-    grid .e -sticky nsew
-    update idletasks
-    update
-
-    #.e.e1 decr_contig
-    .e.e2 incr_contig
-    puts joining
-    .e.e1 join
-    puts joined
-
-    for {set i 0} {$i < 10} {incr i} {
-	update idletasks
-	update
-    }
-    puts e2
-    destroy .e.e2
-    puts e2-gone
-
-    destroy .e
-    puts io1-close
-
-    $io1 close
-    $io2 close
+#    # defunct version, it crashed anyway!
+#    package require Tk 
+#    frame .e
+#    editor .e.e1
+#    set io1 [$io child]
+#    ednames .e.n1
+#    .e.e1 init $io $crec1 $crec1 0 .e.n1
+#
+#    editor .e.e2
+#    set io2 [$io child]
+#    ednames .e.n2
+#    .e.e2 init $io $crec2 $crec2 0 .e.n2
+#
+#    sheet .e.d
+#    .e.e1 link_to .e.e2 .e.d
+#
+#    .e.e1 xview moveto 0
+#    .e.e2 xview moveto $p
+#
+#    grid .e.n1 .e.e1 -sticky nsew
+#    grid .e.d        -sticky nsew -columnspan 2
+#    grid .e.n2 .e.e2 -sticky nsew
+#    grid .e -sticky nsew
+#    update idletasks
+#    update
+#
+#    #.e.e1 decr_contig
+#    .e.e2 incr_contig
+#    puts joining
+#    .e.e1 join
+#    puts joined
+#
+#    for {set i 0} {$i < 10} {incr i} {
+#	update idletasks
+#	update
+#    }
+#    puts e2
+#    destroy .e.e2
+#    puts e2-gone
+#
+#    destroy .e
+#    puts io1-close
+#
+#    $io1 close
+#    $io2 close
 }
 
 proc test_insertions {io} {
@@ -107,12 +107,6 @@ proc test_insertions {io} {
 	set p [expr {int(rand()*$l)+$s}]
 	#puts "   ///Ins $p/$s..$e"
 	$c insert_base $p * 11
-	# set e [$c check]
-	# if {$e} {
-	#     puts "check_after=$e"
-	#     puts "\n\n\n ...  ooo  OOO  ooo  ...  ooo  OOO  ooo  ...  ooo  OOO  ooo  ...   \n\n\n"
-	#     break
-	# }
     }
     $c delete
 }
@@ -127,12 +121,6 @@ proc test_deletions {io} {
 	set p [expr {int(rand()*$l)+$s}]
 	# puts "   ///Del $p/$s+$l"
 	$c delete_base $p
-	set e [$c check]
-	# if {$e} {
-	#     puts "check_after=$e"
-	#     puts "\n\n\n ...  ooo  OOO  ooo  ...  ooo  OOO  ooo  ...  ooo  OOO  ooo  ..    \n\n\n"
-	#     break
-	# }
     }
     $c delete
 }
@@ -216,9 +204,45 @@ proc test_tag_deletion {io} {
 
     # Delete them
     foreach rec $to_del {
-	puts "Removing tag $rec"
+	# puts "Removing tag $rec"
 	set tag [$io get_anno_ele $rec]
 	$tag remove
+    }
+}
+
+proc test_clipping {io} {
+    set crec [random_contig $io]
+    puts "/// Adjusting seq clips in contig $crec ///"
+
+    set c [$io get_contig $crec]
+    set cstart [$c get_start]
+    set cend   [$c get_end]
+    set crec   [$c get_rec]
+    
+    # Get sequence list
+    set seqs ""
+    foreach l [$c seqs_in_range $cstart $cend] {
+	lappend seqs [lindex $l 2]
+    }
+    $c delete
+
+    set nseq [llength $seqs]
+    for {set i 0} {$i < 100 && $i < $nseq} {incr i} {
+	set srec [lindex $seqs [expr {int(rand()*$nseq)}]]
+
+	set s [$io get_seq $srec]
+	set len [expr {abs([$s get_length])}]
+	set l [expr {int(rand()*$len)+1}]
+	set r [expr {int(rand()*$len)+1}]
+	if {$l > $r} {
+	    set t $l
+	    set l $r
+	    set r $t
+	}
+
+	#puts "SEQ$srec set_clips $l $r"
+	$s set_clips $l $r
+	$s delete
     }
 }
 
@@ -258,13 +282,10 @@ if {[llength $argv] > 2} {
 
 # Perform N edits and keep checking.
 for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
-    set r [expr int(rand()*7)]
+    set r [expr int(rand()*8)]
     puts "///$cycle r=$r"
 
     # Other tests to do:
-    # - Add tags
-    # - Delete tags
-    # - Adjust seq clips
     # - Compute & cache consensus
     switch $r {
 	0 { test_complement $io }
@@ -274,20 +295,10 @@ for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
 	4 { test_deletions $io }
 	5 { test_tag_creation $io }
 	6 { test_tag_deletion $io }
+	7 { test_clipping $io }
     }
 
     $io flush
-
-    # Check consistency when newly opened too
-    set io2 [g5::open_database -name _tmp -access r]
-#    puts io=$io,io2=$io2
-#    if {[$io2 check 0 2] != 0} {
-#	$io2 close
-#	$io close
-#	puts stderr "ERROR: on-disk and in-memort versions differ\n"
-#	exit 1
-#    }
-#    $io2 close
 
     set err [$io check 0 1]
     if {$err != 0} {
@@ -295,7 +306,6 @@ for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
 	puts stderr "ERROR: corrupted database\n"
 	exit 1
     }
-
 }
 
 $io flush
