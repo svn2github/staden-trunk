@@ -9,6 +9,7 @@
 /*  So tg_gio.h doesn't redefine prototypes */
 #   define WAS_CACHE_REF_DEBUG
 #   undef CACHE_REF_DEBUG
+void cache_ref_debug_dump(void);
 #endif
 #include "tg_gio.h"
 #include "misc.h"
@@ -1648,6 +1649,39 @@ void cache_decr(GapIO *io, void *data) {
 }
 
 static HacheTable *ref_debug = NULL;
+void *cache_item_resize_debug(void *item, size_t size, char *where) {
+    char key1[100], key2[100];
+    cached_item *ci;
+    HacheData hd;
+
+    void *new = cache_item_resize(item, size);
+
+    if (new == item)
+	return new;
+
+    /* If ref count is 0 then we haven't ran cache_incr anyway yet */
+    ci = cache_master(ci_ptr(new));
+    if (ci->hi->ref_count - ci->updated == 0)
+	return new;
+
+    /* Update ref count debug hash */
+    sprintf(key1, "%p-%d", item, ci->hi->ref_count-1 - ci->updated);
+    sprintf(key2, "%p-%d", new,  ci->hi->ref_count-1 - ci->updated);
+
+    //fprintf(stderr, "RESIZE %s -> %s at %s\n", key1, key2, where);
+
+    if (HacheTableRemove(ref_debug, key1, 0, 1) != 0) {
+	fprintf(stderr, "Failed to remove %s from hash, "
+		"in cache_item_resize_debug\n", key1);
+	return new;
+    }
+    
+    hd.p = strdup(where);
+    HacheTableAdd(ref_debug, key2, 0, hd, NULL);
+
+    return new;
+}
+
 void cache_incr_debug(GapIO *io, void *data, char *where) {
     char key[100];
     cached_item *ci = cache_master(ci_ptr(data));
