@@ -1717,6 +1717,8 @@ tcl_import_reads(ClientData clientData,
 	bttmp_file_close(args.a.tmp);
     }
 
+    cache_flush(args.io);
+
     return TCL_OK;
 }
 

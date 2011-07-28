@@ -75,6 +75,11 @@ fastq_entry_t *fasta_next(zfp *fp) {
 	if (NULL == zfgets(line, BLK_SIZE, fp))
 	    return NULL;
 	l = strlen(line);
+	if (*line != '>') {
+	    verror(ERR_WARN, "fasta_next",
+		   "Sequence does not appear to be in fasta format");
+	    return NULL;
+	}
 	while (e->max_name_len < cp-e->name + l) {
 	    ptrdiff_t diff = cp - e->name;
 	    e->max_name_len = e->max_name_len ? 2*e->max_name_len : 1024;
@@ -359,6 +364,12 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 	// printf("@%s\n%s\n+\n%s\n", ent->name, ent->seq, ent->qual);
 	// printf("%d\tSeq %s len %d / %d\n",
 	// nseqs, ent->name, (int)strlen(ent->seq), ent->seq_len);
+
+	if (ent->seq_len <= 0) {
+	    verror(ERR_WARN, "parse_fasta_or_fastq",
+		   "Sequence named '%s' appears to be blank", ent->name);
+	    continue;
+	}
 
 	/* Create 1 read contig */
 	create_new_contig(io, &c, ent->name, 0);
