@@ -262,7 +262,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     if (ins || base) {
 	bin->size++;
 	ins = 1;
-	if (bin->rng) {
+	if (bin->rng && ArrayMax(bin->rng)) {
 	    int start = INT_MAX;
 	    int end   = INT_MIN;
 	    for (i = 0; i < ArrayMax(bin->rng); i++) {
@@ -635,7 +635,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    bin->size = 0;
 	    bin_delete(io, bin);
 	} else {
-	    if (bin->rng) {
+	    if (bin->rng && ArrayMax(bin->rng)) {
 		if (deleted &&
 		    (pos == bin->start_used || pos == bin->end_used)) {
 		    /* Something was removed, so full recalc */
@@ -2288,7 +2288,7 @@ static int range_next_by_type2(GapIO *io, contig_t *c, int bin_num,
 	order[1] = 0;
     }
 
-    if (bin->rng && ArrayMax(bin->rng) &&
+    if (!bin_empty(bin) && 
 	best_start > NMIN(bin->start_used, bin->end_used) &&
 	start     <= NMAX(bin->start_used, bin->end_used)) {
 	/* Bin overlaps, but possibly the items are in children */
@@ -2461,7 +2461,7 @@ static int range_prev_by_type2(GapIO *io, contig_t *c, int bin_num,
 	order[1] = 1;
     }
 
-    if (bin->rng && ArrayMax(bin->rng) &&
+    if (!bin_empty(bin) && 
 	best_start < NMAX(bin->start_used, bin->end_used) &&
 	start     >= NMIN(bin->start_used, bin->end_used)) {
 	/* Bin overlaps, but possibly the items are in children */
@@ -3263,7 +3263,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 	level_end[-level] = scale * (offset + bin->size);
 
     /* bin start_used position */
-    if (bin->rng && ArrayMax(bin->rng))
+    if (!bin_empty(bin))
 	fprintf(gv, "%g %d m (%d) S\n",
 		scale * NMIN(bin->start_used, bin->end_used),
 		level*(H+G)+H+2,

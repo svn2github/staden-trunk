@@ -160,4 +160,14 @@ int bin_incr_nanno(GapIO *io, bin_index_t *bin, int n);
  */
 int bin_invalidate_consensus(GapIO *io, tg_rec contig, int start, int end);
 
+/*
+ * Returns whether a bin is empty (has no ranges). This isn't as trivial
+ * as it sounds as we may have bin->rng allocated and containing data, but
+ * with all data elements being UNUSED.
+ *
+ * Returns 1 for empty
+ *         0 if not
+ */
+int bin_empty(bin_index_t *bin);
+
 #endif /* _TG_CONTIG_H_ */

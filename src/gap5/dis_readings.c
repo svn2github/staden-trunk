@@ -267,14 +267,17 @@ void bin_destroy_recurse(GapIO *io, tg_rec rec) {
 /*
  * Checks if a bin is truely empty. It's not just sufficient to check
  * nseqs==0 as we could have tags or refpos markers too.
+ * This differs to bin_empty() in that we are working out whether there is
+ * no data in this bin and the child bins. Whereas the former is simply
+ * interested in the bin->rng contents, so data within that specific bin.
  *
  * Returns 1 if empty.
  *         0 if not.
  */
-static int bin_empty(GapIO *io, bin_index_t *bin) {
+static int bin_plus_children_empty(bin_index_t *bin) {
     int i;
 
-    if (bin->nseqs || bin->nrefpos)
+    if (bin->nseqs || bin->nrefpos || bin->nanno)
 	return 0;
 
     if (!bin->rng)
@@ -307,7 +310,7 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
     cache_incr(io, c);
 
     bin = cache_search(io, GT_Bin, c->bin);
-    if (bin_empty(io, bin)) {
+    if (bin_plus_children_empty(bin)) {
 	puts("Removing empty contig");
 
 	if (c->bin)

@@ -577,6 +577,38 @@ int bin_incr_nanno(GapIO *io, bin_index_t *bin, int n) {
 
 
 /*
+ * Returns whether a bin is empty (has no ranges). This isn't as trivial
+ * as it sounds as we may have bin->rng allocated and containing data, but
+ * with all data elements being UNUSED.
+ *
+ * Note we don't indicate whether the bin hierarchy is empty (and an empty
+ * bin may have children with data). We're just returning data about this
+ * specific bin range array.
+ *
+ * Returns 1 for empty
+ *         0 if not
+ */
+int bin_empty(bin_index_t *bin) {
+    int i;
+
+    if (bin->rng == NULL || ArrayMax(bin->rng) == 0)
+	return 1;
+
+    // if (bin->start_used || bin->end_used)
+    // 	return 0;
+
+    /* So we have a non-blank range array, but maybe it's all unused? */
+    for (i = 0; i < ArrayMax(bin->rng); i++) {
+        range_t *r = arrp(range_t, bin->rng, i);
+	if (!(r->flags & GRANGE_FLAG_UNUSED))
+	    return 0;
+    }
+
+    return 1;
+}
+
+
+/*
  * Adds a range to the contig.
  *
  * Delay_nseq controls whether we update bin_incr_nseq() immediately or
@@ -640,7 +672,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 	return NULL;
 
     /* Adjust start/end used in bin */
-    if (bin->rng && ArrayMax(bin->rng)) {
+    if (!bin_empty(bin)) {
 	if (comp) {
 	    if (bin->start_used > bin->size-1 - (r->end - offset))
 		bin->start_used = bin->size-1 - (r->end - offset);

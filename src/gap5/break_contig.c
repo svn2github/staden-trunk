@@ -26,22 +26,7 @@ static int remove_empty_bins_r(GapIO *io, tg_rec brec, tg_rec *first) {
     tg_rec child[2], f[2];
 
     /* Check if this bin is empty */
-    this_is_empty = 0;
-    if (!bin->rng || ArrayMax(bin->rng) == 0) {
-	this_is_empty = 1;
-    } else {
-	/* Check if ranges are all unused */
-	for (i = 0 ; i < ArrayMax(bin->rng); i++) {
-	    range_t *r = arrp(range_t, bin->rng, i);
-	    if (!(r->flags & GRANGE_FLAG_UNUSED))
-		break;
-	}
-
-	if (i == ArrayMax(bin->rng)) {
-	    this_is_empty = 1;
-	}
-    }
-
+    this_is_empty = bin_empty(bin);
 
     /* Temporary copies to avoid needing cache_incr */
     child[0] = bin->child[0];
@@ -487,8 +472,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	bin->flags &= ~BIN_CONS_VALID;
     }
 
-    //bin_min = bin->rng ? NMIN(bin->start_used, bin->end_used) : offset;
-    //bin_max = bin->rng ? NMAX(bin->start_used, bin->end_used) : offset;
+    //bin_min = !bin_empty(bin) ? NMIN(bin->start_used,bin->end_used) : offset;
+    //bin_max = !bin_empty(bin) ? NMAX(bin->start_used,bin->end_used) : offset;
 
     /*
      * Add to right parent if this bin is to the right of pos,
@@ -562,7 +547,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
      * hand contig. Just duplicate for now and free later on if needed.
      */
     if (1 /* always! */ || pright != cr->rec ||
-	(bin->rng && NMAX(bin->start_used, bin->end_used) >= pos)) {
+	(!bin_empty(bin) && NMAX(bin->start_used, bin->end_used) >= pos)) {
 	//printf("NMAX=%d >= %d\n", NMAX(bin->start_used, bin->end_used), pos);
 
 	rbin = 0;
@@ -626,7 +611,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	pleft = bin->rec;
     }
 
-    if (!bin->rng) {
+    if (bin_empty(bin)) {
 	/* Empty bin */
 	printf("%*sEMPTY range\n", level*4, "");
 	bin->start_used = bin->end_used = 0;
@@ -1020,7 +1005,7 @@ int remove_redundant_bins(GapIO *io, contig_t *c) {
 
     for (bnum = c->bin; bnum;) {
 	bin_index_t *bin = get_bin(io, bnum);
-	if (bin->rng || (bin->child[0] && bin->child[1]))
+	if (!bin_empty(bin) || (bin->child[0] && bin->child[1]))
 	    break;
 
 	/* Empty */

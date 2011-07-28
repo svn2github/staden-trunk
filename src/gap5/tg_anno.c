@@ -85,7 +85,7 @@ int anno_ele_destroy(GapIO *io, anno_ele_t *e) {
 
     /* Find the bin range pointing to this object */
     bin = (bin_index_t *)cache_search(io, GT_Bin, e->bin);
-    if (!bin || !bin->rng)
+    if (!bin || !bin->rng || ArrayMax(bin->rng) == 0)
 	return -1;
     if (!(bin = cache_rw(io, bin)))
 	return -1;
@@ -224,7 +224,7 @@ range_t *anno_get_range(GapIO *io, tg_rec anno_ele, tg_rec *contig, int rel) {
     /* Find and load the associated bin */
     bnum = e->bin;
     bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
-    if (!bin->rng)
+    if (!bin->rng || ArrayMax(bin->rng) == 0)
 	return NULL;
 
     /* Find the appropriate range_t element */

@@ -1105,6 +1105,9 @@ int check_cache(GapIO *io) {
 			    }
 			}
 		    }
+		} else if ((b1->rng && ArrayMax(b1->rng) && !b2->rng) ||
+			   (b2->rng && ArrayMax(b2->rng) && !b1->rng)) {
+		    mis++;
 		}
 		break;
 	    }
@@ -1249,8 +1252,8 @@ int check_cache(GapIO *io) {
 	    }
 
 	    if (mis) {
-		printf("Rec %"PRIrec" type %d differs in-mem and on-disk\n",
-		       ci->rec, ci->type);
+		vmessage("Rec %"PRIrec" type %d differs in-mem and on-disk\n",
+			 ci->rec, ci->type);
 		err++;
 	    }
 	}
@@ -1279,8 +1282,10 @@ int check_database(GapIO *io, int fix, int level) {
     vfuncheader("Check Database");
 
     /* Check cache matches disk */
-    vmessage("--Checking in-memory cache against disk\n");
-    err += check_cache(io);
+    if (level > 1) {
+	vmessage("--Checking in-memory cache against disk\n");
+	err += check_cache(io);
+    }
 
     /* Load low level db structs; already in GapIO, but do full reload */
     db = cache_search(io, GT_Database, 0);
