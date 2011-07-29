@@ -1401,9 +1401,6 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 	contig_destroy(io, cr->rec);
     }
 
-    cache_decr(io, cl);
-    cache_decr(io, cr);
-
     cache_flush(io);
 
     /* Check for holes */
@@ -1416,8 +1413,16 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 	st = right_start;
 	en = left_end;
 #endif
-	if (0 != remove_contig_holes(io, cr->rec, st, en, 0))
+	if (0 != remove_contig_holes(io, cr->rec, st, en, 0)) {
+	    cache_decr(io, cl);
+	    cache_decr(io, cr);
+
 	    return -1;
+	}
     }
+
+    cache_decr(io, cl);
+    cache_decr(io, cr);
+
     return 0;
 }
