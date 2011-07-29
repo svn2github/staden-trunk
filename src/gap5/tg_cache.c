@@ -1008,6 +1008,7 @@ int cache_flush(GapIO *io) {
 	if (ret == 0) {
 	    ci->updated = 0;
 	    HacheTableDecRef(io->cache, ci->hi);
+	    cache_upgrade(io, ci, G_LOCK_RO);
 	}
 
 	//	gettimeofday(&tp1, NULL);
