@@ -29,7 +29,7 @@ proc test_break {io} {
     $c delete
     
     puts "/// break contig $crec ($s..$e) at $p ///"
-    break_contig -io $io -contig $crec -pos $p -break_holes 1
+    catch {break_contig -io $io -contig $crec -pos $p -break_holes 1}
 }
 
 proc test_join {io} {
@@ -234,6 +234,7 @@ proc test_clipping {io} {
 	set len [expr {abs([$s get_length])}]
 	set l [expr {int(rand()*$len)+1}]
 	set r [expr {int(rand()*$len)+1}]
+	if {$l == $r} continue
 	if {$l > $r} {
 	    set t $l
 	    set l $r
@@ -273,6 +274,7 @@ if {[catch {set io [g5::open_database -name _tmp -access rw]} err]} {
 }
 set db [$io get_database]
 $io check 0 2
+$io debug_level 1
 
 if {[llength $argv] > 2} {
     set ncycles [lindex $argv 2]
@@ -300,7 +302,7 @@ for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
 
     $io flush
 
-    set err [$io check 0 1]
+    set err [$io check 0 2]
     if {$err != 0} {
 	$io close
 	puts stderr "ERROR: corrupted database\n"
