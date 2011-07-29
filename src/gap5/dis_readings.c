@@ -401,11 +401,18 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 	//       r->rec, r->start, r->end, cstart, cend);
 
 	if (cend < last) {
+	    int r;
+
 	    vmessage("GAP from %d..%d; breaking.\n", cend, last);
-	    break_contig(io, contig, last, 0);
+	    r = break_contig(io, contig, last, 0);
 
 	    /* Who knows what impact break_contig has - restart to be safe */
 	    contig_iter_del(iter);
+	    if (r != 0) {
+		cache_decr(io, c);
+		return -1;
+	    }
+
 	    iter = contig_iter_new(io, contig, 0,
 				   CITER_LAST | CITER_ICLIPPEDEND,
 	    			   start, last);

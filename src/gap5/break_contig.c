@@ -1277,7 +1277,7 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
        verror(ERR_WARN, "break_contig",
 	      "Breaking at %d would create a contig with no sequences. Abort",
 	      cpos);
-       return 0;
+       return -1;
    }
 
     cl = (contig_t *)cache_search(io, GT_Contig, crec);
