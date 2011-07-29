@@ -1470,8 +1470,6 @@ static int io_database_disconnect(void *dbh) {
     g_disconnect_client_(io->gdb, io->client);
     g_shutdown_database_(io->gdb);
 
-    free(io);
-
     if (io->debug_fp) {
 	fprintf(io->debug_fp, "\n*** I/O stats (type, write count/size read count/size) ***\n");
 	fprintf(io->debug_fp, "GT_RecArray     \t%7d\t%14d\t%7d\t%14d\n",
@@ -1508,6 +1506,8 @@ static int io_database_disconnect(void *dbh) {
 		wrcounts[GT_AnnoEleBlock], wrstats[GT_AnnoEleBlock],
 		rdcounts[GT_AnnoEleBlock], rdstats[GT_AnnoEleBlock]);
     }
+
+    free(io);
 
     return 0;
 }
