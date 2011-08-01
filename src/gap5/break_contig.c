@@ -487,7 +487,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
      * that the absolute positions of the used portion of the right child
      * won't be < pos.
      */
-    if (offset >= pos2 /*|| (bin_min >= pos && !bin->child[0])*/) {
+    if (offset > pos2 /*|| (bin_min >= pos && !bin->child[0])*/) {
 	gio_debug(io, 1, "%*sADD_TO_RIGHT pl=%"PRIrec" pr=%"PRIrec"\n",
 		  level*4, "", pleft, pright);
 
@@ -624,7 +624,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    bin_dup->flags |= BIN_BIN_UPDATED;
 	}
 	    
-    } else if (NMIN(bin->start_used, bin->end_used) >= pos2) {
+    } else if (NMIN(bin->start_used, bin->end_used) > pos2) {
 	/* Move range to right contig */
 	gio_debug(io, 1, "%*sDUP %"PRIrec", MOVE Array to right\n",
 		  level*4, "", bin_dup->rec);
