@@ -229,8 +229,13 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			sequence_reset_ptr(s);
 		    }
 
-		    if ((s->len < 0) ^ r[i].comp)
+		    if ((s->len < 0) ^ r[i].comp) {
 		    	s->len = -s->len;
+			if (s->len < 0)
+			    s->flags |= SEQ_COMPLEMENTED;
+			else
+			    s->flags &= ~SEQ_COMPLEMENTED;
+		    }
 		    
 		} else {
 		load_failed: /* Horrid, I know! */
@@ -407,7 +412,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
     }
 
     if (!io->base && !io->read_only)
-	cache_flush(io);
+    	cache_flush(io);
 
     return 0;
 }
