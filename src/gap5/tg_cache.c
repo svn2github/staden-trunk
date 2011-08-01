@@ -81,6 +81,8 @@ cached_item *cache_new(int type, tg_rec rec, GView v,
     ci->forgetme = 0;
     ci->data_size = e_len;
 
+    //fprintf(stderr, "NEW %p\n", &ci->data);
+
     return ci;
 }
 
@@ -112,6 +114,8 @@ static void cache_free(cached_item *ci) {
      */
     memset(ci, 'z', ci->data_size + sizeof(*ci));
 #endif
+
+    //fprintf(stderr, "FREE %p\n", &ci->data);
 
     free(ci);
 }
@@ -414,7 +418,7 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
     cache_key_t *k = (cache_key_t *)key;
     static HacheData hd;
 
-    //printf("Cache load %d type %d\n", k->rec, k->type);
+    gio_debug(io, 2, "Cache load %d type %d\n", k->rec, k->type);
 
     load_counts[k->type]++;
 
@@ -517,7 +521,7 @@ static void cache_unload(void *clientdata, HacheData hd) {
     cached_item *ci = hd.p;
     int unlock = 1;
 
-    //    printf("Cache unload %d\n", ci->rec);
+    gio_debug(io, 2, "Cache unload %d\n", ci->rec);
 
     assert(io->base || ci->updated == 0);
 
@@ -1676,11 +1680,21 @@ void *cache_item_resize_debug(void *item, size_t size, char *where) {
     sprintf(key1, "%p-%d", item, ci->hi->ref_count-1 - ci->updated);
     sprintf(key2, "%p-%d", new,  ci->hi->ref_count-1 - ci->updated);
 
-    //fprintf(stderr, "RESIZE %s -> %s at %s\n", key1, key2, where);
+    //fprintf(stderr, "RESIZE %s -> %s, master %p/%p at %s\n",
+    //	    key1, key2,
+    //	    &(cache_master(ci_ptr(item)))->data,
+    //	    &(cache_master(ci_ptr(new )))->data,
+    //	    where);
 
+    /*
+     * We expect removal failures as these occur when doing
+     * cache_search + cache_rw + cache_resize.
+     * In this scenario we have no incr/decr ref counts to debug, except the
+     * implicit one via cache_rw.
+     */
     if (HacheTableRemove(ref_debug, key1, 0, 1) != 0) {
-	fprintf(stderr, "Failed to remove %s from hash, "
-		"in cache_item_resize_debug\n", key1);
+	//fprintf(stderr, "Failed to remove %s from hash, "
+	//	"in cache_item_resize_debug\n", key1);
 	return new;
     }
     
@@ -1702,7 +1716,8 @@ void cache_incr_debug(GapIO *io, void *data, char *where) {
     hd.p = strdup(where);
     HacheTableAdd(ref_debug, key, 0, hd, NULL);
 
-    //fprintf(stderr, "INCR %s %s\n", key, where);
+    //fprintf(stderr, "INCR %s %s master %p\n", key, where,
+    //	    &(cache_master(ci_ptr(data)))->data);
 
     cache_incr(io, data);
 }
@@ -1717,7 +1732,8 @@ void cache_decr_debug(GapIO *io, void *data, char *where) {
 		key);
     }
 
-    //fprintf(stderr, "DECR %s %s\n", key, where);
+    //fprintf(stderr, "DECR %s %s master %p\n", key, where,
+    //	    &(cache_master(ci_ptr(data)))->data);
 
     cache_decr(io, data);
 }
@@ -1731,6 +1747,7 @@ void cache_ref_debug_dump(GapIO *io) {
 	HacheData hd;
 	HacheItem *hi2;
 	hd.i = 0;
+	gio_debug(io, 2, "%.*s => %p\n", hi->key_len, hi->key, hi->data.p);
 	hi2 = HacheTableAdd(h, hi->data.p, 0, hd, NULL);
 	hi2->data.i++;
     }
