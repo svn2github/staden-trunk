@@ -1,3 +1,73 @@
+Aug 1st 2011
+------------
+
+Gap5 Updates
+============
+
+*	Further improvements and checks in Check Database; more checks
+        for bin layouts and parentage, can automatically upgrade bins
+        to v2 database format (with nanno set), checking of in-memory
+        cached data vs on-disk data.
+
+*	Break Contig now has an option to further split the right-hand
+        contig up if the break caused "holes" to appear.
+
+*	Also added a Remove Contig Holes command to break contigs
+        around sequence holes.
+
+*	Removed a lot of the debugging output. It can be reenabled by
+        running "gap5 -debug 1".
+
+Gap5 Fixes
+==========
+
+*	Fixes for building on MacOS X.
+
+*	Fixed a major issue with using Save in the Contig Editor
+        followed by continued editing. The items saved then became
+        "live" and any changes made could end up being automatically
+        written to disk regardless of whether the user did a second
+        save.
+
+*	Worked around issues with metacity window manager and refusals
+        to raise windows. Ensure that as many dialogues as possible
+        are correctly parented, otherwise metacity can gift focus to a
+        window that isn't even visible. (This is a WM bug.)
+
+*	The lowest level of Gap5 I/O code no longer simply aborts on
+        an error, but now whinges instead and passes the error up one
+        level. (The calling procedure may still abort though.)
+
+* 	Fixed parsing errors with CAF format; quality lines starting
+        with white space are no longer a problem.
+
+*	Removed crashes when parsing malformed FASTA files.
+
+*	The contig-hole detection in Disassemble Readings now checks
+        "visible holes" by looking at the sequence cutoff values,
+        rather than a hole being defined as no data at all.
+
+*	Further break contig bug fixes:
+	- Overlapping bins were causing a variety of issues, from
+          miscalculating contig start/end to moving annotations
+ 	  incorrectly.
+ 	- Improved tag clipping at the ends of contigs.
+	- Fixed cache reference counting issues.
+	- Fixed out by one error in determining whether to move data
+          to right contig.
+
+*	Several bug fixes involving detection of empty bins.
+
+*	Removed various bugs with allocating and deallocating tags
+	(caused by misunderstanding my own code and the meaning of the
+        "idx" field).
+
+*	Removing tags via the editor was still leaving them in bin
+        hierarchies, causing corruptions in some cases. Fixed.
+
+*	Fixed issues with complementing of cached consensus sequences.
+
+
 July 20th 2011
 --------------
 
