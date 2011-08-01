@@ -247,6 +247,31 @@ proc test_clipping {io} {
     }
 }
 
+proc test_consensus {io} {
+    set cl {}
+
+    for {set i 0} {$i < 10} {incr i} {
+	set crec [random_contig $io]
+	set c [$io get_contig $crec]
+	set cstart [$c get_start]
+	set cend   [$c get_end]
+	$c delete
+
+	set len [expr {$cend-$cstart+1}]
+	set l [expr {int(rand()*$len)+$cstart}]
+	set r [expr {int(rand()*$len)+$cstart}]
+
+	if {$l > $r} {
+	    set t $l
+	    set l $r
+	    set r $t
+	}
+
+	puts "/// Computing consensus for contig $crec at $l to $r ///"
+	calc_consensus -io $io -contigs [list =$crec $l $r]
+    }
+}
+
 #-----------------------------------------------------------------------------
 # MAIN
 
@@ -284,7 +309,7 @@ if {[llength $argv] > 2} {
 
 # Perform N edits and keep checking.
 for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
-    set r [expr int(rand()*8)]
+    set r [expr int(rand()*9)]
     puts "///$cycle r=$r"
 
     # Other tests to do:
@@ -298,6 +323,7 @@ for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
 	5 { test_tag_creation $io }
 	6 { test_tag_deletion $io }
 	7 { test_clipping $io }
+	8 { test_consensus $io }
     }
 
     $io flush
