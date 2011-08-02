@@ -52,6 +52,16 @@ void add_to_list(char *name, char *item);
 char *read_list(char *listname);
 
 /*
+ * Resets a Tcl NGList list
+ */
+void clear_list(char *listname);
+
+/*
+ * Removes duplicates from an NGList
+ */
+void list_remove_duplicates(char *listname);
+
+/*
  * Access to the Tcl dynamic string mechanism to hold a list in C memory
  * rather than our "list" idea in Tcl. The routines here are to abstract away
  * the use of Tcl for storing this data. We have alloc, add and free functions.

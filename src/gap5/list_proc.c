@@ -64,6 +64,9 @@ int rewind_active_list(void) {
     return 0;
 }
 
+/* --------------------------------------------------------------------------
+ * Lists menu interaction via the Tcl NGList array.
+ */
 
 /*
  * Adds to an list. Creates the list if it doesn't exist
@@ -80,7 +83,8 @@ void add_to_list(char *name, char *item) {
 	strncpy(last_list, name, 100);
 
 	if (Tcl_GetVar2(GetInterp(), "NGList", name, TCL_GLOBAL_ONLY) == NULL)
-	    Tcl_VarEval(GetInterp(), "ListCreate2 ", name, " \"\"", NULL);
+	    Tcl_VarEval(GetInterp(), "ListCreate2 ", name, " \"\" ",
+			"SEQID", NULL);
     }
 
     Tcl_SetVar2(GetInterp(), "NGList", name, item,
@@ -93,6 +97,23 @@ void add_to_list(char *name, char *item) {
 char *read_list(char *listname) {
     return Tcl_GetVar2(GetInterp(), "NGList", listname, TCL_GLOBAL_ONLY);
 }
+
+/*
+ * Resets a Tcl NGList list
+ */
+void clear_list(char *listname, char *tag) {
+    if (Tcl_GetVar2(GetInterp(), "NGList", listname, TCL_GLOBAL_ONLY))
+	Tcl_SetVar2(GetInterp(), "NGList", listname, "", TCL_GLOBAL_ONLY);
+}
+
+/*
+ * Removes duplicates from an NGList
+ */
+void list_remove_duplicates(char *listname) {
+    Tcl_VarEval(GetInterp(), "ListRemoveDuplicates ", listname, NULL);
+}
+
+/* ------------------------------------------------------------------------ */
 
 /*
  * Access to the Tcl dynamic string mechanism to hold a list in C memory

@@ -833,6 +833,7 @@ StringMatch(GapIO *io,                                                 /* in */
 			continue;
 
 		    s = cache_search(io, GT_Seq, r->rec);
+		    cache_incr(io, s);
 
 		    if (cutoff_data) {
 			seq = s->seq;
@@ -855,8 +856,11 @@ StringMatch(GapIO *io,                                                 /* in */
 					stringlen, mis_match,
 					&pos1[n_matches], &score[n_matches],
 					max_imatches);
-		if (res == -2)
+		if (res == -2) {
+		    if (s)
+			cache_decr(io, s);
 		    return -1;
+		}
 
 		if (res < 0) {
 		    verror(ERR_WARN, "find_oligos", "Too many matches");
@@ -926,6 +930,7 @@ StringMatch(GapIO *io,                                                 /* in */
 		    if ((pos1[j] >= contig_array[i].start &&
 			 pos1[j] <= contig_array[i].end) ||
 			(s != NULL && cutoff_data)) {
+
 			sprintf(name1, "%"PRIrec"", io_clnbr(io, ABS(c1[j])));
 			sprintf(title, "Match found with contig #%"PRIrec
 				" read #%"PRIrec
@@ -953,9 +958,16 @@ StringMatch(GapIO *io,                                                 /* in */
 			} else {
 			    c2[k] = c2[j];
 			}
+
+			if (s)
+			    add_to_list("seq_hits", sequence_get_name(&s));
+
 			k++;
 		    }
 		}
+
+		if (s)
+		    cache_decr(io, s);
 
 		n_matches -= j-k;
 		max_imatches += j-k;
@@ -1072,10 +1084,12 @@ find_oligos(GapIO *io,
 
     /* do match on either tag(s) or string */
     if (string && *string) {
+	clear_list("seq_hits");
 	n_matches = StringMatch(io, num_contigs, contig_array,
 				cons_array, string, mis_match, pos1, pos2,
 				score, length, c1, c2, max_matches,
 				consensus_only, in_cutoff);
+	list_remove_duplicates("seq_hits");
 	if (-1 == RegFindOligo(io, SEQUENCE, pos1, pos2, score, length, c1,
 			       c2, n_matches))
 	    goto error;
