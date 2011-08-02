@@ -218,8 +218,13 @@ void *find_oligo_obj_func2(int job,
 	    find_oligo->current = (int)(obj - find_oligo->match);
 
 	    cnum  = ABS(obj->c1);
-	    llino = 0;
-	    pos   = obj->pos1;
+	    if (obj->read) {
+		llino = obj->read;
+		pos   = (int)obj->rpos;
+	    } else {
+		llino = 0;
+		pos   = obj->pos1;
+	    }
 
 	    if (NULL == (xx = edview_find(find_oligo->io, cnum))) {
 		edit_contig(find_oligo->io, cnum, llino, pos);
@@ -227,8 +232,13 @@ void *find_oligo_obj_func2(int job,
 	    }
 
 	    if (xx) {
-		edSelectSet(xx, cnum, pos, pos + obj->length-1);
-		edSetCursorPos(xx, GT_Contig, cnum, pos, 1);
+		if (obj->read) {
+		    edSelectSet(xx, llino, pos, pos + obj->length-1);
+		    edSetCursorPos(xx, GT_Seq, llino, pos, 1);
+		} else {
+		    edSelectSet(xx, cnum, pos, pos + obj->length-1);
+		    edSetCursorPos(xx, GT_Contig, cnum, pos, 1);
+		}
 	    }
 
 	    break;
@@ -425,25 +435,48 @@ RegFindOligo(GapIO *io,
     find_oligo->match_type = REG_TYPE_OLIGO;
 
     for (i = 0; i < n_matches; i++) {
+	/*
+	 * TAG matches can be between two contigs, where we identify a tag
+	 * in one contig and match that against consensus sequences in another
+	 * contig.
+	 *
+	 * SEQUENCE matches can be either in consensus or a sequence,
+	 * but only one contig. Hence for now we overload the c2[] array
+	 * to hold a sequence or contig record, with sign as before. Pos2[]
+	 * holds the relative coordinate to the sequence too.
+	 */
 	if (type == TAG) {
 	    matches[i].func =
 		(void *(*)(int, void *, struct obj_match_t *,
 			   struct mobj_repeat_t *))find_oligo_obj_func1;
+	    matches[i].c2     = c2[i];
+	    matches[i].read   = 0;
+	    matches[i].pos2   = 0;
+	    matches[i].pos2   = pos2[i];
 	} else if (type == SEQUENCE) {
 	    matches[i].func =
 		(void *(*)(int, void *, struct obj_match_t *,
 			   struct mobj_repeat_t *))find_oligo_obj_func2;
+	    if (ABS(c1[i]) == ABS(c2[i])) {
+		matches[i].c2   = c2[i];
+		matches[i].read = 0;
+		matches[i].rpos = 0;
+	    } else {
+		matches[i].c2   = c2[i] > 0 ? ABS(c1[i]) : -ABS(c1[i]);
+		matches[i].read = ABS(c2[i]);
+		matches[i].rpos = pos2[i];
+	    }
+	    matches[i].pos2 = pos1[i];
 	} else {
 	    return -1;
 	}
-	matches[i].data = find_oligo;
-	matches[i].c1 = c1[i];
-	matches[i].c2 = c2[i];
-	matches[i].pos1 = pos1[i];
-	matches[i].pos2 = pos2[i];
+
+	matches[i].data   = find_oligo;
+	matches[i].c1     = c1[i];
+	matches[i].pos1   = pos1[i];
 	matches[i].length = length[i];
-	matches[i].score = score[i];
-	matches[i].flags = 0;
+	matches[i].score  = score[i];
+	matches[i].flags  = 0;
     }
 
     /* Sort matches */
@@ -786,14 +819,13 @@ StringMatch(GapIO *io,                                                 /* in */
 	     * Sequences in that contig on subsequent loops.
 	     */
 	    for (r = (rangec_t *)1; r; r = contig_iter_next(io, ci)) {
-		char *seq;
+		char *seq, *seq2 = NULL;
 		seq_t *s = NULL;
 
 		if (ci == 0) {
 		    /* First time through is consensus */
 		    seq = cons_array[i];
 		    seq_len = strlen(cons_array[i]);
-
 		} else {
 		    /* Subsequent times r is valid (not 1) and a sequence */
 		    if ((r->flags & GRANGE_FLAG_ISMASK) !=
@@ -808,6 +840,13 @@ StringMatch(GapIO *io,                                                 /* in */
 		    } else {
 			seq = &s->seq[s->left-1];
 			seq_len = s->right - s->left+1;
+		    }
+
+		    if ((s->len < 0) ^ r->comp) {
+			seq2 = malloc(seq_len);
+			strncpy(seq2, seq, seq_len);
+			seq = seq2;
+			complement_seq(seq, seq_len);
 		    }
 		}
 
@@ -845,19 +884,28 @@ StringMatch(GapIO *io,                                                 /* in */
 			depad_seq_len(cons_match, &seq[pos1[j]-1], stringlen);
 
 		    if (ci) {
+			pos2[j] = pos1[j]-1; /* relative pos to read */
 			if (cutoff_data) {
 			    pos1[j] += r->start-1;
 			} else {
-			    pos1[j] += r->start-1 + s->left-1;
+			    if ((s->len < 0) ^ r->comp) {
+				pos1[j] += r->start-1 +
+				    ABS(s->len) - s->right;
+				pos2[j] += ABS(s->len) - s->right;
+			    } else {
+				pos1[j] += r->start-1 + s->left-1;
+				pos2[j] += s->left-1;
+			    }
 			}
 		    }
 
 		    length[j] = padded_len;
 
 		    /* Adjust for searching in a sub-range of the contig */
-		    if (!ci)
+		    if (!ci) {
 			pos1[j] += contig_array[i].start-1;
-		    pos2[j] = pos1[j];
+			pos2[j] = pos1[j];
+		    }
 
 		    /*
 		     * The searching above may find hits outside of
@@ -869,9 +917,15 @@ StringMatch(GapIO *io,                                                 /* in */
 		     *
 		     * Rather than complicate the above code, we post
 		     * filter these false hits here.
+		     *
+		     * If we're looking in cutoff data though and this is 
+		     * a sequence, then possibly it's just off the end of
+		     * the visible part of the contig. We probably want to
+		     * report these hits (if cutoffs are enabled).
 		     */
-		    if (pos1[j] >= contig_array[i].start &&
-			pos1[j] <= contig_array[i].end) {
+		    if ((pos1[j] >= contig_array[i].start &&
+			 pos1[j] <= contig_array[i].end) ||
+			(s != NULL && cutoff_data)) {
 			sprintf(name1, "%"PRIrec"", io_clnbr(io, ABS(c1[j])));
 			sprintf(title, "Match found with contig #%"PRIrec
 				" read #%"PRIrec
@@ -891,9 +945,14 @@ StringMatch(GapIO *io,                                                 /* in */
 			pos1  [k] = pos1  [j];
 			pos2  [k] = pos2  [j];
 			c1    [k] = c1    [j];
-			c2    [k] = c2    [j];
 			length[k] = length[j];
 			score [k] = score [j];
+			if (s) {
+			    /* c2[] is seq ID for seq matches. Fix later */
+			    c2[k] = c2[k] > 0 ? s->rec : -s->rec;
+			} else {
+			    c2[k] = c2[j];
+			}
 			k++;
 		    }
 		}
@@ -917,6 +976,9 @@ StringMatch(GapIO *io,                                                 /* in */
 		    if (!ci)
 			break;
 		}
+
+		if (seq2)
+		    free(seq2);
 	    }
 
 	    if (too_many)
@@ -953,6 +1015,18 @@ find_oligos(GapIO *io,
     int n_matches;
     int max_clen;
     char **cons_array = NULL;
+
+    /*
+     * FIXME.
+     *
+     * Memory allocation is dire here. We should have StringMatch returning
+     * an obj_match array and reallocating as it goes. In turn this needs
+     * to recall inexact_pad_match multiple times possibly if we find
+     * many matches within one contig (or allocate suitable temp arrays
+     * per contig.
+     *
+     * For now we take the quick and easy approach instead.
+     */
 
     /* Calculate maximum contig length and total contig length */
     for (max_matches = 0, max_clen = 0, i=0; i<num_contigs; i++) {

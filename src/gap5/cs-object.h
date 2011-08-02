@@ -68,7 +68,7 @@ typedef struct obj_match_t {
      * except when trying to use our 'generic' PlotRepeats function with a
      * read pair result.
      */
-    tg_rec dummy1; /* This has to be the >= size of largest obj type */
+    tg_rec rpos; /* This has to be the >= size of largest obj type */
     tg_rec read;
     int score;
 } obj_match, obj_checkass;

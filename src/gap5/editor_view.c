@@ -48,7 +48,7 @@ int edit_contig(GapIO *io, tg_rec cnum, tg_rec rnum, int pos) {
     char cmd[1024];
 
     sprintf(cmd, "edit_contig -io %s -contig %"PRIrec
-	    " -reading %"PRIrec" -pos %d\n",
+	    " -reading #%"PRIrec" -pos %d\n",
 	    io_obj_as_string(io), cnum, rnum, pos);
     return Tcl_Eval(GetInterp(), cmd);
 }
