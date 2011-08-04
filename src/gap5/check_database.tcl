@@ -60,6 +60,8 @@ proc CheckDatabase2 {io w} {
 
     destroy $w
 
+    $io flush
+
     SetBusy
     if {$list == "*all*"} {
 	$io check $fix $level
@@ -86,6 +88,8 @@ proc CheckDatabase2 {io w} {
 
 	vmessage "\n*** Total number of errors: $err ***"
     }
+
+    $io flush
 
     ClearBusy
 }
