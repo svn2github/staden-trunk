@@ -73,7 +73,7 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 	    en = end;
 
 	/* Find sequences visible */
-	r = contig_seqs_in_range(io, &c, st, en, 0, &nr);
+	r = contig_seqs_in_range(io, &c, st, en, CSIR_SORT_BY_X, &nr);
 
 	if (0 != calculate_consensus_bit_het(io, contig, st, en,
 					     qual ? CONS_SCORES : 0,
@@ -351,8 +351,8 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		if (s != &seq) {
 		    cache_decr(io, s);
 		    s = dup_s = dup_seq(s);
+		    complement_seq_t(s);
 		}
-		complement_seq_t(s);
 	    }
 
 	    /*
