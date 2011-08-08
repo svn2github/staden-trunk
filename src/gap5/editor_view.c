@@ -400,6 +400,8 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
     GapIO *io = xx->io;
     seq_t *s1 = get_seq(io, seq), *s2 = NULL, *s;
     tg_rec pair = 0;
+
+    cache_incr(io, s1);
     
     for (i = j = 0; format[i]; i++) {
 	if (format[i] != '%') {
@@ -425,8 +427,11 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
 	if (format[i] == '*') {
 	    if (pair == 0)
 		pair = sequence_get_pair(io, s1);
-	    if (pair > 0 && !s2)
+	    if (pair > 0 && !s2) {
 		s2 = get_seq(io, pair);
+		cache_incr(io, s2);
+		cache_decr(io, s1);
+	    }
 	    s = s2 ? s2 : s1;
 	    i++;
 	} else {
@@ -639,6 +644,8 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
     }
  bail_out:
     status_buf[j] = 0;
+
+    cache_decr(io, s);
 
     return status_buf;
 }

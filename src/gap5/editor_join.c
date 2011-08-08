@@ -817,6 +817,9 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     if (!cl || !cr)
 	return -1;
 
+    cache_incr(io, cl);
+    cache_incr(io, cr);
+
     /* Force joins at the top-level IO */
     while (io->base)
 	io = io->base;
@@ -843,8 +846,6 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     cache_incr(io, binp);
     cache_incr(io, binl);
     cache_incr(io, binr);
-    cache_incr(io, cl);
-    cache_incr(io, cr);
     binp = cache_rw(io, binp);
     binl = cache_rw(io, binl);
     binr = cache_rw(io, binr);
@@ -902,8 +903,6 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     cache_incr(io, binp);
     cache_incr(io, binl);
     cache_incr(io, binr);
-    cache_incr(io, cl);
-    cache_incr(io, cr);
 
     binp = cache_rw(io, binp);
     binl = cache_rw(io, binl);

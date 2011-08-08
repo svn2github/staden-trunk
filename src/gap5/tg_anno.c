@@ -242,6 +242,7 @@ range_t *anno_get_range(GapIO *io, tg_rec anno_ele, tg_rec *contig, int rel) {
     /* Find the position and orientation of this bin relative to the contig */
     offset1 = r->start;
     offset2 = r->end;
+    r2 = *r; /* Copy now as loop below could push *r out of our cache */
     for (;;) {
         if (bin->flags & BIN_COMPLEMENTED) {
             offset1 = bin->size-1 - offset1;
@@ -260,7 +261,6 @@ range_t *anno_get_range(GapIO *io, tg_rec anno_ele, tg_rec *contig, int rel) {
 
     assert(bin->parent_type == GT_Contig);
 
-    r2 = *r;
     r2.start = offset1;
     r2.end   = offset2;
 

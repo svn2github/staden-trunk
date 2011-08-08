@@ -763,16 +763,27 @@ int sequence_get_template_info(GapIO *io, seq_t *s1,
 
     /* Fetch contig, location and orientation for both sequences */
     s2 = cache_search(io, GT_Seq, paired);
-    if (-1 == sequence_get_position(io, s1->rec, &c1, &st1, &en1, &o1))
+    cache_incr(io, s1);
+    cache_incr(io, s2);
+    if (-1 == sequence_get_position(io, s1->rec, &c1, &st1, &en1, &o1)) {
+	cache_decr(io, s1);
+	cache_decr(io, s2);
 	return -1;
-    if (-1 == sequence_get_position(io, s2->rec, &c2, &st2, &en2, &o2))
+    }
+    if (-1 == sequence_get_position(io, s2->rec, &c2, &st2, &en2, &o2)) {
+	cache_decr(io, s1);
+	cache_decr(io, s2);
 	return -1;
+    }
 
     o1 ^= (s1->len < 0);
     o2 ^= (s2->len < 0);
 
-    if (c1 != c2)
+    if (c1 != c2) {
+	cache_decr(io, s1);
+	cache_decr(io, s2);
 	return TEMPLATE_SPANNING;
+    }
 
     dist = MAX(MAX(st1, en1), MAX(st2, en2)) -
 	MIN(MIN(st1, en1), MIN(st2, en2));
@@ -800,6 +811,9 @@ int sequence_get_template_info(GapIO *io, seq_t *s1,
     if (library)
 	*library = lib_rec;
     
+    cache_decr(io, s1);
+    cache_decr(io, s2);
+
     /* If no library, we have guess work on orientation and distance */
     if (!lib_rec) {
 	if (o1 == o2)
@@ -844,6 +858,7 @@ int sequence_get_template_info(GapIO *io, seq_t *s1,
 
 int sequence_orient_pos(GapIO *io, seq_t **s, int pos, int *comp) {
     int swapped;
+    cache_incr(io, *s);
     sequence_get_position(io, (*s)->rec, NULL, NULL, NULL, &swapped);
 
     if (((*s)->len > 0) ^ swapped) {
@@ -855,6 +870,8 @@ int sequence_orient_pos(GapIO *io, seq_t **s, int pos, int *comp) {
 
     if (comp)
 	*comp = swapped;
+
+    cache_decr(io, *s);
 
     return pos;
 }
