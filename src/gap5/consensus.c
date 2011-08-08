@@ -199,9 +199,21 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		    cache_incr(io, s);
 		    valid = 1;
 		} else {
-		    /* This is due to failure to call invalidate_consensus */
-		    fprintf(stderr, "Cached consensus rec #%"PRIrec
-			    " appears to be invalid\n", s->rec);
+		    /*
+		     * This can happen when we have overlapping bins.
+		     * A former call here could compute the consensus,
+		     * but bin_add_range can put it in another choice.
+		     * When this happens the consensus may not span the
+		     * entire bin, in which case we'll recompute it
+		     * again here.
+		     *
+		     * This has proven more reliable than attempting
+		     * to coerce bin_add_range to add to specific
+		     * bins.
+		     */
+		    //fprintf(stderr, "Cached consensus rec #%"PRIrec
+		    //	    " appears to be invalid\n", s->rec);
+		    valid = 0;
 		}
 	    }
 	    if (!valid) {
@@ -217,8 +229,10 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		/* Load existing sequence, or fill out in-memory new struct */
 		if (cons_r && !io->read_only) {
 		    gio_debug(io, 1,
-			      "Recomputing cached cons from %d..%d +%d\n",
-			      cons_r->start, cons_r->end, r[i].start);
+			      "Recomputing cached cons from %d..%d +%d "
+			      "Bin #%"PRIrec"\n",
+			      cons_r->start, cons_r->end, r[i].start,
+			      bin->rec);
 
 		    s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
 		    if (!s)
