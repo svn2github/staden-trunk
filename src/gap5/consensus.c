@@ -130,6 +130,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
      * a certain degree of editing without switching bins commonly.
      */
     c = (contig_t *)cache_search(io, GT_Contig, contig);
+    cache_incr(io, c);
     //contig_dump_ps(io, &c, "/tmp/tree.ps");
     r = contig_bins_in_range(io, &c, start, end,
 			     CSIR_SORT_BY_X | CSIR_LEAVES_ONLY,
@@ -148,6 +149,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	right = MIN(r[i].start-1, end);
 
 	bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
+	cache_incr(io, bin);
 
 	if (r[i].start > left) {
 	    gio_debug(io, 1, "Filling missing region %d..%d\n", left, right);
@@ -165,7 +167,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	if (1) {
 	    seq_t *s, *dup_s = NULL, seq;
 	    range_t *cons_r = NULL;
-	    int n;
+	    int n, valid;
 	    int bstart, bend; /* consensus start/end in this bin */
 
 	    /*
@@ -186,13 +188,23 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	    bstart = r[i].start;
 	    bend   = r[i].end - 1;
 
+	    valid = 0;
 	    if (cons_r && (bin->flags & BIN_CONS_VALID)) {
 		//bstart = cons_r->start;
 		//bend   = cons_r->end;
 		s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
-		cache_incr(io, s);
 
-	    } else {
+		/* Double check sizes */
+		if (cons_r->start == 0 && cons_r->end == bin->size-1) {
+		    cache_incr(io, s);
+		    valid = 1;
+		} else {
+		    /* This is due to failure to call invalidate_consensus */
+		    fprintf(stderr, "Cached consensus rec #%"PRIrec
+			    " appears to be invalid\n", s->rec);
+		}
+	    }
+	    if (!valid) {
 		/* Not cached, or is cached but needs updating */
 		range_t r2, *r_out;
 		tg_rec recno;
@@ -213,7 +225,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			goto load_failed;
 		    s = cache_rw(io, s);
 
-		    if (cons_r->start != bstart || cons_r->end   != bend) {
+		    if (cons_r->start != 0 || cons_r->end != bin->size-1) {
 			size_t extra_len =
 			    (s->name       ? strlen(s->name)       : 0)+1 +
 			    (s->trace_name ? strlen(s->trace_name) : 0)+1 +
@@ -227,6 +239,13 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			    : -(bend - bstart + 1);
 			s = cache_item_resize(s, sizeof(*s) + extra_len);
 			sequence_reset_ptr(s);
+
+			bin = cache_rw(io, bin);
+			bin->flags |= BIN_BIN_UPDATED | BIN_RANGE_UPDATED;
+			cons_r->start = 0;
+			cons_r->end = bin->size-1;
+			bin->start_used = 0;
+			bin->end_used = bin->size-1;
 		    }
 
 		    if ((s->len < 0) ^ r[i].comp) {
@@ -314,7 +333,10 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		    r2.flags    = GRANGE_FLAG_TYPE_SINGLE;
 		    r2.flags   |= GRANGE_FLAG_ISCONS;
 			
+		    cache_decr(io, bin);
 		    bin = bin_add_range(io, &c, &r2, &r_out, &comp, 0);
+		    cache_incr(io, bin);
+
 		    /*
 		     * Not a valid assertion if we uncomment the bstart/bend
 		     * settings above.
@@ -400,9 +422,12 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	    }
 	}
 
+	cache_decr(io, bin);
 	left = r[i].end;
     }
     if (r) free(r);
+
+    cache_decr(io, c);
 
     if (end > left) {
 	//printf("Filling missing region %d..%d\n", left, end);
