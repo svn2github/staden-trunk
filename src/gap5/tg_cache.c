@@ -607,7 +607,7 @@ int cache_create(GapIO *io) {
     //    if (NULL == (h = HacheTableCreate(131072, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 #ifdef WAS_CACHE_REF_DEBUG
     /* Test smaller cache to stress-test ref counting bugs */
-    if (NULL == (h = HacheTableCreate(64, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
+    if (NULL == (h = HacheTableCreate(8, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 	return -1;
 #else
     if (NULL == (h = HacheTableCreate(1024, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
