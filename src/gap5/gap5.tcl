@@ -541,7 +541,7 @@ set rawdata_note 1
 set maxseq 10000000
 set debug_level 0
 
-set GAP_VERSION "1.2.13$svn_version"
+set GAP_VERSION "1.2.14$svn_version"
 
 switch $licence(type) {
     f		{}
