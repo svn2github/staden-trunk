@@ -1650,7 +1650,15 @@ tcl_import_reads(ClientData clientData,
 
     /* Initialise io */
     args.io->iface->setopt(args.io->dbh, OPT_COMP_MODE, args.a.comp_mode);
-    args.a.tmp = args.a.no_tree ? NULL : bttmp_file_open();
+    if (args.a.no_tree) {
+	args.a.tmp = bttmp_file_open();
+	if (!args.a.tmp) {
+	    fprintf(stderr, "Failed to open temporary file\n");
+	    return TCL_ERROR;
+	}
+    } else {
+	args.a.tmp = NULL;
+    }
 
 
     /* Load data */

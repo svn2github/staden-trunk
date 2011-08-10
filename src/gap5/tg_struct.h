@@ -172,7 +172,8 @@ typedef struct {
  * backwards compatible manner when editing an old DB.
  */
 //#define DB_VERSION 1 /* 1.2.6 */
-#define DB_VERSION 2 /* 1.2.12 */
+//#define DB_VERSION 2 /* 1.2.12, annotation range fixes */
+#define DB_VERSION 3 /* 1.2.14, added template_name_len in seq_t */
 
 /* g-layer equivalent of database_t : this is as it's written on disc */
 typedef struct { 
@@ -244,6 +245,7 @@ typedef struct {
     unsigned int format:2;
     uint8_t mapping_qual; /* REMOVE? In GRange already. Same for parent_rec */
     int name_len;
+    int template_name_len;   /* if name comes from <template><suffix>  */
     int trace_name_len;
     int alignment_len;
     int aux_len;

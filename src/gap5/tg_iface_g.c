@@ -2901,6 +2901,8 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 
 	    if (nranges) {
 		bin->rng = ArrayCreate(sizeof(GRange), nranges);
+		if (!bin->rng)
+		    return NULL;
 		
 		if (ArrayBase(GRange, bin->rng))
 		    free(ArrayBase(GRange, bin->rng));
@@ -3966,6 +3968,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     int sam_aux = 0;
     int first_seq = 0;
     int wide_recs = 0;
+    int tname_lens = 0;
     uint32_t i32;
     uint64_t i64;
 
@@ -3992,13 +3995,19 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     }
 
     g_assert(buf[0] == GT_SeqBlock, NULL);
-    g_assert((buf[1] & 0x3f) <= 7, NULL); /* format */
+    if (io->db_vers >= 3) {
+	g_assert((buf[1] & 0x3f) <= 15, NULL); /* format */
+    } else {
+	g_assert((buf[1] & 0x3f) <= 7, NULL); /* format */
+    }
     if ((buf[1] & 0x3f) >= 1)
 	reorder_by_read_group = 1;
     if ((buf[1] & 0x3f) & 2)
 	sam_aux = 1;
     if ((buf[1] & 0x3f) & 4)
 	wide_recs = 1;
+    if ((buf[1] & 0x3f) & 8)
+	tname_lens = 1;
 
     /* Ungzip it too */
     if (1) {
@@ -4107,6 +4116,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	    if (!in[i].bin) continue;
 
 	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
+	    if (tname_lens)
+		cp += u72int(cp, (uint32_t *)&in[i].template_name_len);
 	    in[l].idx = i;
 	    l = i;
 
@@ -4116,6 +4127,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 		    continue;
 		
 		cp += u72int(cp, (uint32_t *)&in[j].name_len);
+		if (tname_lens)
+		    cp += u72int(cp, (uint32_t *)&in[j].template_name_len);
 		in[j].parent_rec = -in[j].parent_rec;
 
 		/* Thread a linked list of reordered records through .idx */
@@ -4141,6 +4154,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	    }
 
 	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
+	    if (tname_lens)
+		cp += u72int(cp, (uint32_t *)&in[i].template_name_len);
 	    in[l].idx = i;
 	    l = i;
 
@@ -4150,6 +4165,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 		    continue;
 
 		cp += u72int(cp, (uint32_t *)&in[j].name_len);
+		if (tname_lens)
+		    cp += u72int(cp, (uint32_t *)&in[j].template_name_len);
 		in[j].parent_rec = -in[j].parent_rec;
 		in[l].idx = j;
 		l = j;
@@ -4174,6 +4191,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	    }
 
 	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
+	    if (tname_lens)
+		cp += u72int(cp, (uint32_t *)&in[i].template_name_len);
 	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
 		if (!in[j].bin) continue;
 		if ((in[j].parent_rec && in[j].parent_rec != in[i].parent_rec)
@@ -4181,6 +4200,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 		    continue;
 		
 		cp += u72int(cp, (uint32_t *)&in[j].name_len);
+		if (tname_lens)
+		    cp += u72int(cp, (uint32_t *)&in[j].template_name_len);
 		in[j].parent_rec = -in[j].parent_rec;
 	    }
 
@@ -4191,6 +4212,15 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	    if (!in[i].bin) continue;
 	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
+	    if (tname_lens)
+		cp += u72int(cp, (uint32_t *)&in[i].template_name_len);
+	}
+    }
+
+    if (!tname_lens) {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    in[i].template_name_len = in[i].name_len;
 	}
     }
 
@@ -4440,6 +4470,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     int nparts = 19;
     int first_seq = -1;
     int wide_recs = sizeof(tg_rec) > sizeof(uint32_t);
+    int tname_lens = io->db_vers >= 3 ? 1 : 0;
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
@@ -4467,7 +4498,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	out_size[6] ++;   /* parent type */
 	out_size[7] ++;   /* format */
 	out_size[8] ++;   /* m.qual */
-	out_size[9] += 5; /* name len */
+	out_size[9] += 10;/* name len + template name len */
 	out_size[10]+= 5; /* trace name len */
 	out_size[11]+= 5; /* alignment len */
 	out_size[12]+= s->name_len+1;
@@ -4530,6 +4561,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 #ifndef REORDER_BY_READ_GROUP
 	/* Name */
 	out[9] += int2u7(s->name_len, out[9]);
+	if (tname_lens)
+	    out[9] += int2u7(s->template_name_len, out[9]);
 	memcpy(out[12], s->name, s->name_len);
 	out[12] += s->name_len;
 #endif
@@ -4636,6 +4669,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	memcpy(out[16], s->conf, ABS(s->len)); out[16] += ABS(s->len);
 
 	out[9] += int2u7(s->name_len, out[9]);
+	if (tname_lens)
+	    out[9] += int2u7(s->template_name_len, out[9]);
 	memcpy(out[12], s->name, s->name_len);
 	out[12] += s->name_len;
 
@@ -4652,6 +4687,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	    memcpy(out[16], s2->conf, ABS(s2->len)); out[16] += ABS(s2->len);
 
 	    out[9] += int2u7(s2->name_len, out[9]);
+	    if (tname_lens)
+		out[9] += int2u7(s2->template_name_len, out[9]);
 	    memcpy(out[12], s2->name, s2->name_len);
 	    out[12] += s2->name_len;
 
@@ -4732,6 +4769,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     fmt[1] = (have_sam_aux ? 2 : 1) | (io->comp_mode << 6); /* format */
     if (wide_recs)
 	fmt[1] |= (1<<2);
+    if (tname_lens)
+	fmt[1] |= (1<<3);
     vec[0].buf = fmt;      vec[0].len = 2;
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
     

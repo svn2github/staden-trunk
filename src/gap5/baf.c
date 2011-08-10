@@ -367,6 +367,7 @@ int construct_seq_from_block(tg_args *a,seq_t *s, baf_block *b, char **tname) {
 	s->pos -= -s->len - s->right;
 
     s->name_len = strlen(name);
+    s->template_name_len = strlen(*tname);
     s->trace_name_len = strlen(trace_name);
     s->alignment_len = strlen(alignment);
 

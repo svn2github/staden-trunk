@@ -1060,7 +1060,7 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
     char tname[1024];
     library_t *lib = NULL;
     int new = 0;
-    char *name;
+    char *name, *suffix;
     int name_len;
     char *aux;
     int i, flags;
@@ -1084,6 +1084,8 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
 	LB = bio->fn;
 	stech = STECH_UNKNOWN;
     }
+
+    suffix = bam_aux_find(b, "FS");
 
     hd.p = NULL;
     hi = HacheTableAdd(bio->libs, (char *)LB, strlen(LB), hd, &new);
@@ -1135,12 +1137,16 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
     s.parent_type = 0;
     s.parent_rec = 0;
     if (bio->a->data_type & DATA_NAME) {
-	s.name_len = name_len;
+	s.template_name_len = name_len;
+	s.name_len = name_len + (suffix ? strlen(suffix) : 0);;
 	s.name = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, name);
+	if (suffix)
+	    strcat(s.name, suffix);
     } else {
 	char *n = "";
 	s.name_len = 0;
+	s.template_name_len = 0;
 	s.name = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, n);
     }
@@ -1185,7 +1191,7 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
 
     strcpy(tname, name);
 
-    if (name_len >= 2 && name[name_len-2] == '/') {
+    if (!suffix && name_len >= 2 && name[name_len-2] == '/') {
 	tname[name_len-2] = 0;
 
 	/* Check validity of name vs bit-fields */
@@ -1268,7 +1274,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     char *LB;
     HacheData hd;
     int new = 0;
-    char *name;
+    char *name, *suffix;
     int name_len;
     char *aux;
     char *filter[] = {"RG"};
@@ -1288,6 +1294,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	LB = bio->fn;
 	stech = STECH_UNKNOWN;
     }
+
+    suffix = bam_aux_find(b, "FS");
 
     hd.p = NULL;
     hi = HacheTableAdd(bio->libs, (char *)LB, strlen(LB), hd, &new);
@@ -1360,12 +1368,16 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     s.parent_type = 0;
     s.parent_rec = 0;
     if (bio->a->data_type & DATA_NAME) {
-	s.name_len = name_len;
+	s.template_name_len = name_len;
+	s.name_len = name_len + (suffix ? strlen(suffix) : 0);
 	s.name = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, name);
+	if (suffix)
+	    strcat(s.name, suffix);
     } else {
 	char *n = "";
 	s.name_len = 0;
+	s.template_name_len = 0;
 	s.name = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, n);
     }
@@ -1411,7 +1423,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 
     strcpy(tname, name);
 
-    if (name_len >= 2 && name[name_len-2] == '/') {
+    if (!suffix && name_len >= 2 && name[name_len-2] == '/') {
 	tname[name_len-2] = 0;
 
 	/* Check validity of name vs bit-fields */

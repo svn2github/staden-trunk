@@ -1088,7 +1088,16 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	seq.alignment_len  = 0;
 	
 	if (template_name == NULL) {
+	    seq.template_name_len = seq.name_len;
 	    template_name = name;
+	} else {
+	    seq.template_name_len = strlen(template_name);
+	    if (strncmp(name, template_name, seq.template_name_len)) {
+		fprintf(stderr, "Template name '%s' must be a prefix of the"
+			" sequence name '%s'. Ignoring it.\n",
+			template_name, name);
+		seq.template_name_len = seq.name_len;
+	    }
 	}
 	
 	// seq.data freed by save_range_sequence

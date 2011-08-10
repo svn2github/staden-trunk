@@ -565,6 +565,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 			   int fixmates, tg_rec crec, contig_t *c, int offset){
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec), *sorig = s;
     int len = s->len < 0 ? -s->len : s->len, olen = len;
+    int lenQ = 0;
 
     char *tname, *cp;
     int i, j, flag, tname_len, pos;
@@ -593,7 +594,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
     /*--- Reserve enough memory */
     if (len > qalloc) {
-	qalloc = len;
+	qalloc = len+1; /* Minimum of 1 byte */
 	Q = realloc(Q, qalloc);
 	S = realloc(S, qalloc);
     }
@@ -611,6 +612,8 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	if (v < '!') v = '!';
 	if (v > '~') v = '~';
 	Q[j] = v;
+	if (s->conf[i])
+	    lenQ = 1;
 
 	if (s->seq[i] == '-')
 	    S[j++] = 'n';
@@ -619,18 +622,24 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	/* else gap */
     }
     len = j;
+    if (lenQ) {
+	lenQ = len;
+    } else { 
+	lenQ = 1;
+	Q[0] = '*';
+    }
 
 
     /*--- Best guess at template name */
     tname = s->name;
-    tname_len = s->name_len;
+    tname_len = s->template_name_len;
 
     if (tname_len == 0)
 	tname = false_name(io, s, 0, &tname_len);
 
-    if (cp = strchr(s->name, '/'))
-	tname_len = (int)(cp-s->name);
-
+    else if (tname_len == s->name_len)
+	if (cp = strchr(s->name, '/'))
+	    tname_len = (int)(cp-s->name);
 
 
     /*--- Compute SAM flag field */
@@ -847,7 +856,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 		    iend,
 		    isize,
 		    len, S,
-		    len, Q);
+		    lenQ, Q);
 
 
     /*--- Aux strings */
@@ -862,8 +871,14 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	    sprintf(rg_buf, "\tRG:Z:rg#%"PRIrec, lib->rec);
 
 	dstring_append(ds, rg_buf);
-    } else {
-	*rg_buf = 0;
+    }
+
+    if (tname_len != s->name_len) {
+	sprintf(rg_buf, "\tFS:Z:%.*s",
+		s->name_len - tname_len,
+		s->name + tname_len);
+	
+	dstring_append(ds, rg_buf);
     }
 
     if (s->aux_len) {
@@ -1166,10 +1181,14 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
     fprintf(fp, "QR=%d\n", s->right);
     fprintf(fp, "PR=%d\n",
 	    (s->flags & SEQ_END_MASK) == SEQ_END_FWD ? 0 : 1);
-    /* Best guess at template name */
-    if ((cp = strchr(name, '.')) ||
-	(cp = strchr(name, '/')))
-	fprintf(fp, "TN=%.*s\n", (int)(cp-name), name);
+    if (s->template_name_len == s->name_len) {
+	/* Best guess at template name */
+	if ((cp = strchr(name, '.')) ||
+	    (cp = strchr(name, '/')))
+	    fprintf(fp, "TN=%.*s\n", (int)(cp-name), name);
+    } else {
+	fprintf(fp, "TN=%.*s\n", s->template_name_len, name);
+    }
     if (s->trace_name_len)
 	fprintf(fp,"TR=%.*s\n", s->trace_name_len, s->trace_name);
     if (s->alignment_len)
@@ -1347,10 +1366,14 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
     //fprintf(fp, "Insert_size %d %d\n", fixme, fixme);
 
-    /* Best guess at template name */
-    if ((cp = strchr(name, '.')) ||
-	(cp = strchr(name, '/')))
-	fprintf(fp, "Template %.*s\n", (int)(cp-name), name);
+    if (s->template_name_len == s->name_len) {
+	/* Best guess at template name */
+	if ((cp = strchr(name, '.')) ||
+	    (cp = strchr(name, '/')))
+	    fprintf(fp, "Template %.*s\n", (int)(cp-name), name);
+    } else {
+	    fprintf(fp, "Template %.*s\n", s->template_name_len, name);
+    }
 
     /* Insert size and ligation information if available */
     if (s->parent_type == GT_Library) {
@@ -1742,7 +1765,12 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 	fprintf(fp, "\nQA %d %d %d %d\n",
 		s->left, s->right, s->left, s->right);
 
-	fprintf(fp, "DS CHROMAT_FILE: %s PHD_FILE: %s.phd.1 TIME: Thu Jan 01 00:00:01 GMT 1970\n", s->name, s->name);
+	if (s->template_name_len != s->name_len) {
+	    fprintf(fp, "DS CHROMAT_FILE: %s PHD_FILE: %s.phd.1 TEMPLATE: %.*s TIME: Thu Jan 01 00:00:01 GMT 1970\n",
+		    s->name, s->name, s->template_name_len, s->name);
+	} else {
+	    fprintf(fp, "DS CHROMAT_FILE: %s PHD_FILE: %s.phd.1 TIME: Thu Jan 01 00:00:01 GMT 1970\n", s->name, s->name);
+	}
 
 	if (s != origs)
 	    free(s);
