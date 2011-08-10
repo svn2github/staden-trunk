@@ -105,7 +105,9 @@ GapIO *gio_open(char *fn, int ro, int create) {
     io->iface->setopt(io->dbh, OPT_COMP_MODE, COMP_MODE_ZLIB);
 
     /* Copy the name */
-    if (NULL == (cp = strrchr(fn, '/')))
+    if ((cp = strrchr(fn, '/')))
+	cp++;
+    else
 	cp = fn;
     io->name = strdup(cp);
 
