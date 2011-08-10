@@ -154,11 +154,12 @@ DisplayContext *getTDisplay(edview *xx, char *file, int allow_dup,
 
     /* 'fre' now holds the context number allocated */
     for (i = 0; i < MAXCONTEXTS; i++)
-	if (!contexts[i].used)
+	if (!contexts[i].used || !*contexts[i].path)
 	    break;
     context_list[fre] = i;
     dc = &contexts[i];
     strncpy(dc->file, file, FILE_NAME_LENGTH);
+    *dc->path = 0; /* ensure it can be reused if we fail to fully initialise */
     dc->used = 1;
     dc->complemented = 0;
     dc->mini_trace = mini_trace;

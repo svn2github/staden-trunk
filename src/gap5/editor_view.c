@@ -2882,6 +2882,11 @@ void edDisplayTrace(edview *xx) {
 
 	for (i = 0; i < nr; i++) {
 	    s = get_seq(xx->io, r[i].rec);
+	    /* For now don't try to bring up mass-sequencing data from cons */
+	    if (s->seq_tech == STECH_SOLEXA ||
+		s->seq_tech == STECH_SOLID)
+		continue;
+
 	    tman_manage_trace("ANY", sequence_get_name(&s), xx->cursor_pos,
 			      0, 0, /* left/right clips */
 			      s->len < 0, /* complemented */
