@@ -109,10 +109,10 @@ proc InitListContigs {io parent {csh_win {}}} {
 	-command "CreateTemplateDisplay $io $crec"
     if {!$read_only} {
 	$w.m add command -label "Complement contig" \
-	    -command "complement_contig -io $io -contigs $crec"
+	    -command "complement_contig -io $io -contigs =$crec"
     }
-    $w.m add command -label "List notes" \
-	-command "NoteSelector $io contig $crec"
+#    $w.m add command -label "List notes" \
+#	-command "NoteSelector $io contig $crec"
     tk_popup $w.m [expr $X-20] [expr $Y-10]
 }
 
