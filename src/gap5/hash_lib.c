@@ -129,13 +129,13 @@ int init_hash8n (
 
     if ( HASH_JOB_DIAG & job ) {
 
-	if ( ! ((*h)->diag = (int *) xmalloc ( sizeof(int)*(max_seq+max_diagonal) ))) 
+	if ( ! ((*h)->diag = (int *) xmalloc ( sizeof(int)*(max_seq+max_diagonal+DSZ) ))) 
 	    return -2;
     }
 
     if ( HASH_JOB_HIST & job ) {
 
-	if(!((*h)->hist = (int *) xmalloc(sizeof(int) * (max_seq+max_diagonal)))) 
+	if(!((*h)->hist = (int *) xmalloc(sizeof(int) * (max_seq+max_diagonal+DSZ)))) 
 	    return -2;
     }
 
