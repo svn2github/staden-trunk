@@ -56,6 +56,8 @@ typedef struct {
     char type;
 } cache_key_t;
 
+cached_item *cache_master(cached_item *ci);
+
 /*
  * Allocates and initialises a new cached_item object from a type, view and
  * HacheItem.
@@ -536,8 +538,12 @@ static void cache_unload(void *clientdata, HacheData hd) {
 	construct_key(ci->rec, ci->type, &k);
 	hi_base = HacheTableQuery(io->base->cache, (char *)&k, sizeof(k));
 
-	if (hi_base)
+	if (hi_base) {
 	    unlock = 0;
+
+	    /* But do decrememnt the reference count of the base */
+	    HacheTableDecRef(hi_base->h, hi_base);
+	}
     }
 
     unload_counts[ci->type]++;
@@ -652,6 +658,7 @@ void cache_destroy(GapIO *io) {
  */
 int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
     int ret;
+    cached_item *mi = cache_master(ci);
 
     switch(ci->type) {
     case GT_Database:
@@ -712,6 +719,8 @@ int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
     default:
 	return -1;
     }
+
+    mi->lock_mode = ci->lock_mode;
 
     /*
      * Bump reference count to indicate we cannot expire this record.
@@ -787,7 +796,9 @@ int cache_flush(GapIO *io) {
      */
     if (io->base) {
 	for (i = 0; i < h->nbuckets; i++) {
-	    HacheItem *next;
+	    HacheItem *next, *parent_hi;
+	    int ref_count;
+
 	    for (hi = h->bucket[i]; hi; hi = next) {
 		HacheData data;
 		cached_item *ci = hi->data.p;
@@ -860,21 +871,41 @@ int cache_flush(GapIO *io) {
 		 * for how to program long-duration windows. (Don't trust
 		 * cache_incr.)
 		 */
-		/* FIXME: not implemented! Need to think on this more. */
+
+		/* Find parent version */
+		parent_hi = HacheTableQuery(io->base->cache,
+					    ci->hi->key,
+					    ci->hi->key_len);
+		ref_count = parent_hi->ref_count;
 
 		/* Purge from parent */
 		HacheTableRemove(io->base->cache,
 				 ci->hi->key, ci->hi->key_len, 0);
 
-		/* Move this item to parent */
+		/* Move this item to parent; Add() sets ref_count to 1 */
 		data.p = ci;
 		ci->hi = HacheTableAdd(io->base->cache, 
 				       ci->hi->key, ci->hi->key_len,
 				       data, NULL);
-		HacheTableIncRef(ci->hi->h, ci->hi);
+
+		if (ci->updated) {
+		    /* Force it to be in h->in_use */
+		    HacheTableIncRef(ci->hi->h, ci->hi);
+		    HacheTableDecRef(ci->hi->h, ci->hi);
+		}
 
 		/* Remove from this hache */
 		HacheTableRemove(io->cache, ci->hi->key, ci->hi->key_len, 0);
+
+		/*
+		 * One ref count is from us, the child I/O, so assume others
+		 * are due to other child I/Os locking the same parent object.
+		 * Fix parent ref_count.
+		 */
+		//ci->hi->ref_count += ref_count-1;
+		while (--ref_count) {
+		    HacheTableIncRef(ci->hi->h, ci->hi);
+		}
 	    }
 	}
 
@@ -1012,7 +1043,8 @@ int cache_flush(GapIO *io) {
 	if (ret == 0) {
 	    ci->updated = 0;
 	    HacheTableDecRef(io->cache, ci->hi);
-	    cache_upgrade(io, ci, G_LOCK_RO);
+	    if (ci->hi->ref_count == 0)
+		cache_upgrade(io, ci, G_LOCK_RO);
 	}
 
 	//	gettimeofday(&tp1, NULL);
@@ -1791,6 +1823,8 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	ci_new = (cached_item *)malloc(sizeof(*ci) + ci->data_size);
 	memcpy(ci_new, ci, sizeof(*ci) + ci->data_size);
 	hd.p = ci_new;
+
+	/* HacheTableAdd leaves hi_new with ref_count==1 */
 	hi_new = HacheTableAdd(io->cache, hi_old->key, hi_old->key_len,
 			       hd, NULL);
 	ci_new->hi = hi_new;
@@ -2016,7 +2050,7 @@ void *cache_rw(GapIO *io, void *data) {
     if (io->read_only)
 	return NULL;
 
-    if (io->base && mi->lock_mode < G_LOCK_RW) {
+    if (io->base && io->base->cache == mi->hi->h) {
 	ci = cache_dup(io, ci);
 	mi = cache_master(ci);
 	data = &ci->data;
@@ -2025,6 +2059,7 @@ void *cache_rw(GapIO *io, void *data) {
     /* Ensure it's locked RW */
     if (mi->lock_mode < G_LOCK_RW) {
 	if (-1 == cache_upgrade(io, mi, G_LOCK_RW)) {
+	    ci->lock_mode = mi->lock_mode;
 	    fprintf(stderr, "lock denied for rec %"PRIrec"\n", mi->rec);
 	    return NULL;
 	}

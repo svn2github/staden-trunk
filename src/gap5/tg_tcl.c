@@ -1494,8 +1494,10 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
 	base = *Tcl_GetString(objv[3]);
-	Tcl_GetIntFromObj(interp, objv[4], &conf);	
+	Tcl_GetIntFromObj(interp, objv[4], &conf);
+	cache_decr(ts->io, ts->seq);
 	sequence_replace_base(ts->io, &ts->seq, pos, base, conf, 1);
+	cache_incr(ts->io, ts->seq);
 	break;
     }
 
@@ -1517,8 +1519,10 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	Tcl_GetIntFromObj(interp, objv[2], &left);
 	Tcl_GetIntFromObj(interp, objv[3], &right);
+	cache_decr(ts->io, ts->seq);
 	sequence_set_left (ts->io, &ts->seq, left);
 	sequence_set_right(ts->io, &ts->seq, right);
+	cache_incr(ts->io, ts->seq);
 
 	break;
     }
@@ -1534,7 +1538,9 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	Tcl_GetIntFromObj(interp, objv[2], &dist);
+	cache_decr(ts->io, ts->seq);
 	sequence_move_annos(ts->io, &ts->seq, dist);
+	cache_incr(ts->io, ts->seq);
 
 	break;
     }
