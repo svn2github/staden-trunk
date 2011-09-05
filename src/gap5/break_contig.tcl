@@ -50,11 +50,13 @@ proc BC_OK_Pressed {io t id holes pos} {
 	return
     }
 
-    break_contig \
-	-io $io \
-	-contig $crec \
-	-pos $pos \
-	-break_holes [set $t.RemoveHoles]
+    if {[catch {break_contig \
+		    -io $io \
+		    -contig $crec \
+		    -pos $pos \
+		    -break_holes [set $t.RemoveHoles]} err]} {
+	verror ERR_WARN break_contig $err
+    }
     ContigSelector $io
     ContigInitReg $io
 
