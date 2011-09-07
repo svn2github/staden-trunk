@@ -1028,6 +1028,22 @@ proc editor_pane {top w above ind arg_array} {
     upvar $arg_array opt
     global gap5_defs
 
+    set hei [keylget gap5_defs CONTIG_EDITOR.MAX_HEIGHT]
+    set fn_height [font metrics sheet_font -linespace]
+    set lines [expr {int([winfo screenheight $top]/$fn_height)}]
+
+    if {[info exists opt(Lock)]} {
+	incr lines -9; # guess
+	if {$hei > $lines/2} {
+	    set hei [expr {int($lines/2)}]
+	}
+    } else {
+	incr lines -6; # guess
+	if {$hei > $lines} {
+	    set hei $lines
+	}
+    }
+
     if {$above != 0} {
 	set above 1
 	set jogrow 0
@@ -1061,8 +1077,8 @@ proc editor_pane {top w above ind arg_array} {
 	set dis_mode 0
     }
     set ed [editor $ed \
-		-width 80 \
-		-height 16 \
+		-width  [keylget gap5_defs CONTIG_EDITOR.SEQ_WIDTH] \
+		-height $hei \
 		-xscrollcommand "display_pos_set $ed \[$ed xview\];
                                  $w.seq.x set" \
 		-yscrollcommand "$w.seq.y set" \
@@ -1111,7 +1127,7 @@ proc editor_pane {top w above ind arg_array} {
     set edname $w.name.sheet
     ednames $edname \
 	-width 15 \
-	-height 16 \
+	-height $hei \
 	-xscrollcommand "$w.name.x set" \
 	-bd 0 \
 	-fg black \
@@ -1161,7 +1177,7 @@ proc editor_pane {top w above ind arg_array} {
     grid $w.name.x     - -row $scrollrow -sticky nsew
     grid $w.name.pos $w.name.pos_type -row $jogrow    -sticky nsew
 
-    $w.name configure -width [expr {11*[font measure sheet_font A]}]
+    $w.name configure -width [expr {[keylget gap5_defs CONTIG_EDITOR.NAMES_WIDTH]*[font measure sheet_font A]}]
 
     grid rowconfigure $w.seq $textrow -weight 1
     grid columnconfigure $w.seq 0 -weight 1
@@ -2850,12 +2866,10 @@ proc editor_oligo_add {ed w} {
 	    set r_en [expr {$pos-$len-$cl}]
 	}
 
-	puts $read->$rec->$r_st..$r_en
-
 	# Ideal case
 	if {[set ${w}(start)] >= $r_st && [set ${w}(end)] <= $r_en} {
 	    set use_rec $rec
-	    set offset -$pos
+	    set offset [expr {-$pos}]
 	    break;
 	}
 
@@ -2864,7 +2878,7 @@ proc editor_oligo_add {ed w} {
 	set r_en [expr {$pos+abs($len)-1}]
 	if {[set ${w}(start)] >= $r_st && [set ${w}(end)] <= $r_en} {
 	    set use_rec $rec
-	    set offset -$pos
+	    set offset [expr {-$pos}]
 	}
     }
 
@@ -2900,6 +2914,13 @@ proc save_editor_settings {w} {
     upvar \#0 $w opt
     global gap5_defs env
 
+    set name $w.ed1.pane.name.sheet
+    set name_wid [lindex [$name configure -width] 4]
+
+    set ed $opt(curr_editor)
+    set ed_wid [lindex [$ed configure -width] 4]
+    set ed_hei [lindex [$ed configure -height] 4]
+
     set C CONTIG_EDITOR
     keylset gap5_defs $C.DISAGREEMENTS    $opt(Disagreements)
     keylset gap5_defs $C.DISAGREE_MODE    $opt(DisagreeMode)
@@ -2908,6 +2929,9 @@ proc save_editor_settings {w} {
     keylset gap5_defs $C.PACK_SEQUENCES   $opt(PackSequences)
     keylset gap5_defs $C.SHOW_QUALITY     $opt(Quality)
     keylset gap5_defs $C.SHOW_CUTOFFS     $opt(Cutoffs)
+    keylset gap5_defs $C.NAMES_WIDTH      $name_wid
+    keylset gap5_defs $C.MAX_HEIGHT	  $ed_hei
+    keylset gap5_defs $C.SEQ_WIDTH	  $ed_wid
 
     # Write to the .gaprc file
     update_defs gap5_defs $env(HOME)/.gap5rc \
@@ -2917,7 +2941,10 @@ proc save_editor_settings {w} {
 	$C.DISAGREE_QUAL    \
 	$C.PACK_SEQUENCES   \
 	$C.SHOW_QUALITY     \
-	$C.SHOW_CUTOFFS     
+	$C.SHOW_CUTOFFS     \
+	$C.NAMES_WIDTH	    \
+	$C.MAX_HEIGHT       \
+	$C.SEQ_WIDTH
 }
 
 #-----------------------------------------------------------------------------
