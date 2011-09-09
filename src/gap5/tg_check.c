@@ -17,14 +17,6 @@
 /* Enable debugging, which may help track down the location of some errors */
 //#define DEBUG_CHECK
 
-/*
- * Enable to check if annos are in bins equal to or lower than their seqs.
- * This is both slow and also not currently something we can assert given
- * that joining contigs can produce overlapping child bins and that in turn
- * can mean new tags take a different branch when storing the tag.
- */
-//#define ANNO_LOWER_CHECK
-
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
@@ -210,11 +202,9 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
  * Checks a anno_ele struct is consistent, both internally and with the
  * range that points to it.
  */
-static int check_anno(GapIO *io, bin_index_t *bin, range_t *r
-#ifdef ANNO_LOWER_CHECK
-		      ,HacheTable *rec_hash
-#endif
-		      ) {
+static int check_anno(GapIO *io, bin_index_t *bin, range_t *r,
+		      HacheTable *rec_hash, int db_vers,
+		      int valid_ctg_start, int valid_ctg_end) {
     int err = 0;
     anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
 
@@ -237,15 +227,16 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r
 	break;
 
     case GT_Seq: {
-#ifdef ANNO_LOWER_CHECK
-	HacheItem *hi = HacheTableQuery(rec_hash, (char *)&a->obj_rec,
-					sizeof(a->obj_rec));
-	if (!hi) {
-	    vmessage("Anno %"PRIrec": attached to seq %"PRIrec" in a "
-		     "lower bin?\n", a->rec, a->obj_rec);
-	    err++;
+	/* Check if annotation is in the same bin as seq */
+	if (rec_hash && db_vers >= 3) {
+	    HacheItem *hi = HacheTableQuery(rec_hash, (char *)&a->obj_rec,
+					    sizeof(a->obj_rec));
+	    if (!hi || hi->data.i != a->bin) {
+		vmessage("Anno %"PRIrec": attached to seq %"PRIrec" held "
+			 "within a different bin.\n", a->rec, a->obj_rec);
+		err++;
+	    }
 	}
-#endif
 
 	if (!(r->flags & GRANGE_FLAG_TAG_SEQ)) {
 	    vmessage("Anno %"PRIrec": range flags indicate contig, but anno "
@@ -296,8 +287,6 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r
 	}
 
 	if (a->obj_type == GT_Contig) {
-	    contig_t *c;
-
 	    ocontig = a->obj_rec;
 	    if (ocontig && ocontig != acontig) {
 		/* Previously an error, but removed assumptions on this */
@@ -305,13 +294,8 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r
 			 "GT_Contig is deprecated\n", a->rec);
 	    }
 	    ocontig = acontig;
-	    c = cache_search(io, GT_Contig, ocontig);
-	    if (!c) {
-		cache_decr(io, a);
-		return err+1;
-	    }
-	    ostart = c->start;
-	    oend = c->end;
+	    ostart  = valid_ctg_start;
+	    oend    = valid_ctg_end;
 	} else {
 	    if (-1 == bin_get_item_position(io, a->obj_type, a->obj_rec,
 					    &ocontig, &ostart, &oend, NULL,
@@ -403,7 +387,7 @@ static void bin_shift_children(GapIO *io, bin_index_t *bin, int delta) {
  * Ensures that the parent bin is large enough to cover this bin. Grow it
  * if necessary.
  */
-static void grow_bin(GapIO *io, bin_index_t *bin) {
+void grow_bin(GapIO *io, bin_index_t *bin) {
     bin_index_t *parent;
 
     cache_incr(io, bin);
@@ -512,10 +496,8 @@ static void grow_bin(GapIO *io, bin_index_t *bin) {
  */
 static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		    int level, HacheTable *lib_hash,
-#ifdef ANNO_LOWER_CHECK
-		    HacheTable *rec_hash,
-#endif
-		    bin_stats *bs) {
+		    HacheTable *rec_hash, bin_stats *bs,
+		    int valid_ctg_start, int valid_ctg_end) {
     bin_index_t *bin;
     int i, f_a, f_b, err = 0;
     bin_stats child_stats;
@@ -553,25 +535,25 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 
     cache_incr(io, bin);
 
-#ifdef ANNO_LOWER_CHECK
     /* Add recs to the rec_hash */
-    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
-	range_t *r = arrp(range_t, bin->rng, i);
-	HacheData hd;
-	int new;
+    if (rec_hash) {
+	for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
+	    HacheData hd;
+	    int new;
 
-	if (r->flags & GRANGE_FLAG_UNUSED)
-	    continue;
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
 
-	hd.i = r->flags;
-	HacheTableAdd(rec_hash, (char *)&r->rec, sizeof(r->rec), hd, &new);
-	if (!new) {
-	    vmessage("Rec %"PRIrec" occurs more than once in a bin tree\n",
-		     r->rec);
-	    err++;
+	    hd.i = bin->rec;
+	    HacheTableAdd(rec_hash, (char *)&r->rec, sizeof(r->rec), hd, &new);
+	    if (!new) {
+		vmessage("Rec %"PRIrec" occurs more than once in a bin tree\n",
+			 r->rec);
+		err++;
+	    }
 	}
     }
-#endif
 
     /* Recurse */
     for (i = 0; i < 2; i++) {
@@ -645,10 +627,8 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	err += bin_walk(io, fix, bin->child[i],
 			NMIN(ch->pos, ch->pos + ch->size-1) /* offset */,
 			complement, level, lib_hash,
-#ifdef ANNO_LOWER_CHECK
-			rec_hash,
-#endif
-			&child_stats);
+			rec_hash, &child_stats,
+			valid_ctg_start, valid_ctg_end);
 
 	bs->nseq  += child_stats.nseq;
 	bs->nanno += child_stats.nanno;
@@ -791,11 +771,8 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    case GRANGE_FLAG_ISANNO:
 		bs->nanno++;
 		if (level > 1)
-#ifdef ANNO_LOWER_CHECK
-		    err += check_anno(io, bin, r, rec_hash);
-#else
-		    err += check_anno(io, bin, r);
-#endif
+		    err += check_anno(io, bin, r, rec_hash, db_vers,
+				      valid_ctg_start, valid_ctg_end);
 		break;
 
 	    case GRANGE_FLAG_ISREFPOS:
@@ -930,20 +907,22 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	}
     }
 
-#ifdef ANNO_LOWER_CHECK
     /* Remove items from the rec hash */
-    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
-	range_t *r = arrp(range_t, bin->rng, i);
+    if (rec_hash) {
+	for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
 
-	if (r->flags & GRANGE_FLAG_UNUSED)
-	    continue;
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
 
-	if (HacheTableRemove(rec_hash, (char *)&r->rec, sizeof(r->rec), 0)) {
-	    vmessage("Failed to remove rec %"PRIrec" from rec_hash\n", r->rec);
-	    err++;
+	    if (HacheTableRemove(rec_hash, (char *)&r->rec,
+				 sizeof(r->rec), 0)) {
+		vmessage("Failed to remove rec %"PRIrec" from rec_hash\n",
+			 r->rec);
+		err++;
+	    }
 	}
     }
-#endif
 
     cache_decr(io, bin);
 
@@ -965,11 +944,14 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
     bin_stats bs;
     int err = 0;
     bin_index_t *bin;
-#ifdef ANNO_LOWER_CHECK
-    HacheTable *rec_hash;
+    HacheTable *rec_hash = NULL;
+    int valid_ctg_start, valid_ctg_end;
 
-    rec_hash = HacheTableCreate(65536, HASH_POOL_ITEMS | HASH_DYNAMIC_SIZE);
-#endif
+    consensus_valid_range(io, crec, &valid_ctg_start, &valid_ctg_end);
+
+    if (level > 1)
+	rec_hash = HacheTableCreate(65536,
+				    HASH_POOL_ITEMS | HASH_DYNAMIC_SIZE);
 
     if (!cache_exists(io, GT_Contig, crec)) {
 	vmessage("Record %"PRIrec" is not a contig, but in contig order\n",
@@ -999,13 +981,10 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 	}
     }
 
-#ifdef ANNO_LOWER_CHECK
     err += bin_walk(io, fix, c->bin, contig_offset(io, &c), 0, level,
-		    lib_hash, rec_hash, &bs);
-#else
-    err += bin_walk(io, fix, c->bin, contig_offset(io, &c), 0, level,
-		    lib_hash, &bs);
-#endif
+		    lib_hash, rec_hash, &bs,
+		    valid_ctg_start, valid_ctg_end);
+
     if (bs.cstart != c->start ||
 	bs.cend   != c->end) {
 	vmessage("Contig %"PRIrec": used start/end range are incorrect\n",
@@ -1019,9 +998,8 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
     }
     
     cache_decr(io, c);
-#ifdef ANNO_LOWER_CHECK
-    HacheTableDestroy(rec_hash, 0);
-#endif
+    if (rec_hash)
+	HacheTableDestroy(rec_hash, 0);
 
     return err;
 }
@@ -1280,6 +1258,7 @@ int check_database(GapIO *io, int fix, int level) {
     HacheTable *hash = NULL;
 
     vfuncheader("Check Database");
+    vmessage("--DB version: %d\n", io->db->version);
 
     /* Check cache matches disk */
     if (level > 1) {

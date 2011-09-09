@@ -115,12 +115,7 @@ static void remove_empty_bins(GapIO *io, tg_rec contig) {
 
 	    bin_get_position(io, bin, &cdummy, &offset, &comp);
 	    assert(cdummy == contig);
-
-	    if (comp) {
-		bin->pos = offset - (bin->size-1);
-	    } else {
-		bin->pos = offset;
-	    }
+	    bin->pos = offset;
 	    bin->parent = contig;
 	    bin->parent_type = GT_Contig;
 	    bin->flags |= BIN_BIN_UPDATED;
@@ -150,11 +145,12 @@ static void remove_empty_bins(GapIO *io, tg_rec contig) {
 int contig_visible_start(GapIO *io, tg_rec crec) {
     rangec_t *r;
     contig_iterator *ci;
-    int seq_start = 0;
+    int seq_start = 0, seq_clipped_start;
     contig_t *c = cache_search(io, GT_Contig, crec);
 
-    cache_incr(io, c);
+    consensus_valid_range(io, crec, &seq_clipped_start, NULL);
 
+    cache_incr(io, c);
     ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST | CITER_ISTART,
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANY);
@@ -178,10 +174,18 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANNO);
     while (ci && (r = contig_iter_next(io, ci))) {
-	if (r->start >= seq_start)
+	if (r->start >= seq_clipped_start)
 	    break;
 
-	if (r->end < seq_start) {
+	/*
+	 * Why did we also clip sequence tags (to seq_start) before?
+	 * The only time this would have an effect is surely when the tags
+	 * started off outside of the sequence to start with, ie the
+	 * database was already inconsistent.
+	 */
+	if (r->flags & GRANGE_FLAG_TAG_SEQ) continue;
+
+	if (r->end < seq_clipped_start) {
 	    bin_remove_item(io, &c, GT_AnnoEle, r->rec);
 	} else {
 	    bin_index_t *bin;
@@ -190,12 +194,13 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
 
 	    bin_remove_item(io, &c, GT_AnnoEle, r->rec);
 	
-	    R.start    = seq_start;
+	    R.start    = seq_clipped_start;
 	    R.end      = MIN(r->end, c->end);
 	    R.rec      = r->rec;
 	    R.mqual    = r->mqual;
 	    R.pair_rec = r->pair_rec;
 	    R.flags    = r->flags;
+
 	    bin = bin_add_range(io, &c, &R, &R_out, NULL, 0);
 
 	    /* With luck the bin & index into bin haven't changed */
@@ -225,8 +230,10 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
 int contig_visible_end(GapIO *io, tg_rec crec) {
     rangec_t *r;
     contig_iterator *ci;
-    int seq_end = 0;
+    int seq_end = 0, seq_clipped_end;
     contig_t *c = cache_search(io, GT_Contig, crec);
+
+    consensus_valid_range(io, crec, NULL, &seq_clipped_end);
 
     cache_incr(io, c);
     ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
@@ -247,15 +254,23 @@ int contig_visible_end(GapIO *io, tg_rec crec) {
     }
     contig_iter_del(ci);
 
-    /* Trim annotations to visible portion */
+    /* Trim annotations to visible/clipped portion */
     ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANNO);
     while (ci && (r = contig_iter_prev(io, ci))) {
-	if (r->end <= seq_end)
+	if (r->end <= seq_clipped_end)
 	    break;
 
-	if (r->start > seq_end) {
+	/*
+	 * Why did we also clip sequence tags (to seq_end) before?
+	 * The only time this would have an effect is surely when the tags
+	 * started off outside of the sequence to start with, ie the
+	 * database was already inconsistent.
+	 */
+	if (r->flags & GRANGE_FLAG_TAG_SEQ) continue;
+
+	if (r->start > seq_clipped_end) {
 	    bin_remove_item(io, &c, GT_AnnoEle, r->rec);
 	    continue;
 	} else {
@@ -266,11 +281,12 @@ int contig_visible_end(GapIO *io, tg_rec crec) {
 	    bin_remove_item(io, &c, GT_AnnoEle, r->rec);
 	
 	    R.start    = MAX(r->start, c->start);
-	    R.end      = seq_end;
+	    R.end      = seq_clipped_end;
 	    R.rec      = r->rec;
 	    R.mqual    = r->mqual;
 	    R.pair_rec = r->pair_rec;
 	    R.flags    = r->flags;
+
 	    bin = bin_add_range(io, &c, &R, &R_out, NULL, 0);
 
 	    /* With luck the bin & index into bin haven't changed */

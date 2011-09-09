@@ -26,4 +26,10 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
  */
 int check_database(GapIO *io, int fix, int level);
 
+/*
+ * Ensures that the parent bin is large enough to cover this bin. Grow it
+ * if necessary.
+ */
+void grow_bin(GapIO *io, bin_index_t *bin);
+
 #endif /* _TG_CHECK_H_ */
