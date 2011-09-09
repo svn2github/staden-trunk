@@ -637,7 +637,8 @@ tg_pair_t *create_pair(int queue) {
     
 tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
 			   tg_pair_t *pair, int is_pair, char *tname,
-			   contig_t *c, tg_args *a, int flags, library_t *lib) {
+			   contig_t *c, tg_args *a, int flags, library_t *lib,
+			   tg_rec *bin_rec) {
     range_t r, *r_out;
     tg_rec recno;
     bin_index_t *bin;
@@ -660,6 +661,8 @@ tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
 
     /* Add the range to a bin, and see which bin it was */
     bin = bin_add_range(io, &c, &r, &r_out, &comp, 1);
+    if (bin_rec)
+	*bin_rec = bin->rec;
 
     /* Save sequence */
     if (a->data_type == DATA_BLANK) {

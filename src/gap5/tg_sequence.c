@@ -630,9 +630,9 @@ int sequence_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {
  */
 int sequence_get_position2(GapIO *io, tg_rec snum, tg_rec *contig,
 			   int *start, int *end, int *orient,
-			   range_t *r_out, seq_t **s_out) {
+			   tg_rec *brec, range_t *r_out, seq_t **s_out) {
     return bin_get_item_position(io, GT_Seq, snum,
-				 contig, start, end, orient, NULL,
+				 contig, start, end, orient, brec,
 				 r_out, (void **)s_out);
 }
 
@@ -1425,11 +1425,13 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
     tg_rec contig;
     rangec_t *r;
     int nr, i;
+    tg_rec brec = 0;
 
     /* Find the position and contig this sequence currently covers */
     cache_incr(io, *s);
-    if (0 != sequence_get_position(io, (*s)->rec,
-				   &contig, &start, &end, &orient)) {
+    if (0 != sequence_get_position2(io, (*s)->rec,
+				    &contig, &start, &end, &orient,
+				    &brec, NULL, NULL)) {
 	cache_decr(io, *s);
 	return -1;
     }
@@ -1473,7 +1475,7 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
 	R.mqual    = r[i].mqual;
 	R.pair_rec = r[i].pair_rec;
 	R.flags    = r[i].flags;
-	bin = bin_add_range(io, &c, &R, &R_out, NULL, 0);
+	bin = bin_add_to_range(io, &c, brec, &R, &R_out, NULL, 0);
 	cache_incr(io, bin);
 
 	/* With luck the bin & index into bin haven't changed */
@@ -1494,5 +1496,67 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
 
     cache_decr(io, *s);
 
+    return 0;
+}
+
+/*
+ * If we've done something that changed the bin a sequence is within without
+ * also moving the tags to the new bin, eg by changing its size or location,
+ * then this function will check annotations and ensure they're in the same
+ * bin as the sequence they belong to.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_fix_anno_bins(GapIO *io, seq_t **s) {
+    tg_rec brec;
+    int start, end, orient;
+    tg_rec contig;
+    contig_t *c;
+    rangec_t *r;
+    int nr, i;
+
+    if (0 != sequence_get_position2(io, (*s)->rec, &contig, &start, &end,
+				    &orient, &brec, NULL, NULL)) {
+	return -1;
+    }
+
+    assert(brec == (*s)->bin);
+
+    /* Identify annotations spanning this region. */
+    c = cache_search(io, GT_Contig, contig);
+    r = (rangec_t *)contig_anno_in_range(io, &c, start-1, end+1, 0, &nr);
+
+
+    /* Check and update if needed */
+    for (i = 0; i < nr; i++) {
+	anno_ele_t *a;
+	range_t R, *R_out;
+	bin_index_t *bin;
+
+	assert((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO);
+
+	if (r[i].pair_rec != (*s)->rec)
+	    continue;
+
+	a = cache_search(io, GT_AnnoEle, r[i].rec);
+	if (a->bin == brec)
+	    continue;
+
+	/* In incorrect bin - fix it */
+	fprintf(stderr, "Fixing bin for anno %"PRIrec"\n", r[i].rec);
+	a = cache_rw(io, a);
+
+	bin_remove_item(io, &c, GT_AnnoEle, r[i].rec);
+	R.start    = r[i].start;
+	R.end      = r[i].end;
+	R.rec      = r[i].rec;
+	R.mqual    = r[i].mqual;
+	R.pair_rec = r[i].pair_rec;
+	R.flags    = r[i].flags;
+	bin = bin_add_to_range(io, &c, brec, &R, &R_out, NULL, 0);
+	a->bin = bin->rec;
+    }
+    
     return 0;
 }

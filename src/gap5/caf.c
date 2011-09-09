@@ -894,6 +894,7 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
     char lib_name[1024], lig_name[1024], *lig_str;
     HacheItem *hi;
     int min_size = 0, max_size = 0;
+    tg_rec brec;
 
     *lib_name = 0;
     *lig_name = 0;
@@ -1137,7 +1138,8 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	if (pair) is_pair = 1;
 	
 	recno = save_range_sequence(io, &seq, seq.mapping_qual, pair,
-				    is_pair, template_name, *c, a, flags, lib);
+				    is_pair, template_name, *c, a, flags, lib,
+				    &brec);
 					
 	if (trace_name) {
 	    free(trace_name);
@@ -1188,7 +1190,7 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);
 	    
-	    bin = bin_add_range(io, c, &r, NULL, NULL, 0);
+	    bin = bin_add_to_range(io, c, brec, &r, NULL, NULL, 0);
 	    e->bin = bin->rec;
 	    
 	    if (annotation[i].text) free(annotation[i].text);

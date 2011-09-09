@@ -431,7 +431,8 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 			    c,    /* contig */
 			    a,    /* args */
 			    GRANGE_FLAG_TYPE_SINGLE,
-			    NULL  /* library */
+			    NULL, /* library */
+			    NULL  /* bin return rec */
 			    );
 			 
 	if ((++nseqs & 0xff) == 0) {

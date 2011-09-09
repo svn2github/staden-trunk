@@ -709,7 +709,7 @@ static void update_consensus_tags(GapIO *io, int cnum, MALIGN *malign) {
  * the same region. (Functionality first, efficiency later.)
  */
 static void tag_shift_for_insert(GapIO *io, tg_rec crec, tg_rec srec,
-				 int start, int end, int pos) {
+				 int start, int end, int pos, tg_rec brec) {
     contig_iterator *ci;
     rangec_t *r;
     contig_t *c = cache_search(io, GT_Contig, crec);;
@@ -736,7 +736,7 @@ static void tag_shift_for_insert(GapIO *io, tg_rec crec, tg_rec srec,
 	r2.rec      = r->rec;
 	r2.pair_rec = r->pair_rec;
 	r2.flags    = r->flags;
-	bin = bin_add_range(io, &c, &r2, &r_out, NULL, 0);
+	bin = bin_add_to_range(io, &c, brec, &r2, &r_out, NULL, 0);
 
 	a = cache_search(io, GT_AnnoEle, r->rec);
 	if (a->bin != bin->rec /*||
@@ -752,7 +752,7 @@ static void tag_shift_for_insert(GapIO *io, tg_rec crec, tg_rec srec,
 }
 
 static void tag_shift_for_delete(GapIO *io, tg_rec crec, tg_rec srec,
-				 int start, int end, int pos) {
+				 int start, int end, int pos, tg_rec brec) {
     contig_iterator *ci;
     rangec_t *r;
     contig_t *c = cache_search(io, GT_Contig, crec);;
@@ -787,7 +787,7 @@ static void tag_shift_for_delete(GapIO *io, tg_rec crec, tg_rec srec,
 	    cache_deallocate(io, a);
 	    continue;
 	}
-	bin = bin_add_range(io, &c, &r2, &r_out, NULL, 0);
+	bin = bin_add_to_range(io, &c, brec, &r2, &r_out, NULL, 0);
 
 	a = cache_search(io, GT_AnnoEle, r->rec);
 	if (a->bin != bin->rec /*||
@@ -904,7 +904,8 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 		if (s->seq[i] == '*') {
 		    i++;
 		    tag_shift_for_delete(io, cnum, rnum, cl->mseg->offset,
-					 cl->mseg->length, i+np--);
+					 cl->mseg->length, i+np--,
+					 s->bin);
 		    /*
 		    if (io_length(io, rnum) < 0) {
 			tag_shift_for_delete(io, rnum, r.length - i + 1);
@@ -934,7 +935,8 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 		    newconf[j] = MIN(ql, qr); /* min conf of neighbours */
 		    j++;
 		    tag_shift_for_insert(io, cnum, rnum, cl->mseg->offset,
-					 cl->mseg->length, i+ ++np);
+					 cl->mseg->length, i+ ++np,
+					 s->bin);
 		    /*
 		    if (io_length(io, rnum) < 0) {
 			tag_shift_for_insert(io, rnum, r.length - i + 1);
@@ -954,7 +956,8 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 		if (s->seq[i] == '*') {
 		    i++;
 		    tag_shift_for_delete(io, cnum, rnum, cl->mseg->offset,
-					 cl->mseg->length, i+np--);
+					 cl->mseg->length, i+np--,
+					 s->bin);
 		    /*
 		    if (io_length(io, rnum) < 0) {
 			tag_shift_for_delete(io, rnum, r.length - i + 1);
@@ -1041,6 +1044,8 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 	free(s);
 
 	if (update_range) {
+	    int bin_changed = 0;
+
 	    /* Get old range and pair data */
 	    s = sorig;
 	    bin = cache_search(io, GT_Bin, s->bin);
@@ -1065,12 +1070,21 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 		    s->left  = ABS(s->len) - (s->right-1);
 		    s->right = ABS(s->len) - (tmp-1);
 		}
+
+		bin_changed = 1;
 	    }
 	
 	    /* Update seq bin & bin_index fields */
 	    s = cache_rw(io, s);
 	    s->bin = bin->rec;
 	    s->bin_index = r_out - ArrayBase(range_t, bin->rng);
+
+	    if (bin_changed) {
+		if (-1 == sequence_fix_anno_bins(io, &s)) {
+		    verror(ERR_WARN, "update_io",
+			   "sequence_fix_anno_bins() failure");
+		}
+	    }
 	}
     }
 

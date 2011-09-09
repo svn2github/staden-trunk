@@ -28,6 +28,18 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 			   int delay_nseq);
 
 /*
+ * As per bin_add_range() but add the range to a specific bin.
+ * We use this for annotations to keep them in the same bin as their
+ * associated sequence.
+ *
+ * Returns the bin we added the range to on success
+ *         NULL on failure
+ */
+bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
+			      range_t **r_out, int *complemented,
+			      int delay_nseq);
+
+/*
  * A bit like bin_get_track, but this is designed to auto-generate and
  * update the track as desired. The expectation is that this will always
  * succeed and anything else is a fatal error.

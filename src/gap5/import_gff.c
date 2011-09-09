@@ -255,6 +255,7 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
     anno_ele_t *e;
     contig_t *c;
     char type_a[5];
+    tg_rec seq_bin;
 
     r.flags = GRANGE_FLAG_ISANNO;
     r.start = gff->start;
@@ -336,6 +337,8 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 		r.end = r.start;
 	}
 
+	seq_bin = 0;
+
     } else if ((rec = sequence_index_query(io, gff->seqid)) >= 0) {
 	int s_start, s_end, s_orient;
 	tg_rec s_contig;
@@ -375,7 +378,8 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 	}
 
 	/* Adjust start coord to absolute contig positions */
-	sequence_get_position(io, rec, &s_contig, &s_start, &s_end, &s_orient);
+	sequence_get_position2(io, rec, &s_contig, &s_start, &s_end, &s_orient,
+			       &seq_bin, NULL, NULL);
 	r.start += s_start;
 	r.end   += s_start;
 	c = cache_search(io, GT_Contig, s_contig);
@@ -391,7 +395,10 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
     e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
     e = cache_rw(io, e);
 	
-    bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
+    if (seq_bin)
+	bin = bin_add_to_range(io, &c, seq_bin, &r, NULL, NULL, 0);
+    else
+	bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
     e->bin = bin->rec;
 
     return 0;
@@ -489,6 +496,7 @@ int tcl_import_gff(ClientData clientData, Tcl_Interp *interp,
     };
     int res;
 
+    vfuncheader("Import GFF");
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 

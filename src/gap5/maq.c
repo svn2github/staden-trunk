@@ -236,7 +236,7 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
 	if (pair && !(m128.flag & PAIRFLAG_NOMATCH)) is_pair = 1;
 
 	save_range_sequence(io, &seq, seq.mapping_qual, pair, is_pair, tname,
-			    c, a, flags, lib);
+			    c, a, flags, lib, NULL);
 
 	if (((j+1) & 0xffff) == 0) {
 	    static struct timeval last, curr;

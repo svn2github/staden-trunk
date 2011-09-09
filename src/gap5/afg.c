@@ -485,7 +485,8 @@ static int store_contig(FILE *fp, char *fn, GapIO *io, tg_args *a,
 	if (pair) is_pair = 1;
 	
 	recno = save_range_sequence(io, &seq, seq.mapping_qual, pair,
-				    is_pair, template_name, c, a, flags, NULL);
+				    is_pair, template_name, c, a, flags, NULL,
+				    NULL);
 
 	
 	if (read) free(read);

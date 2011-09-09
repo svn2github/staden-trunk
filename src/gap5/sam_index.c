@@ -1064,7 +1064,7 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
     int name_len;
     char *aux;
     int i, flags;
-    tg_rec recno;
+    tg_rec recno, bin_rec;
     int paired, is_pair = 0;
     char *filter[] = {"RG"};
     int stech;
@@ -1223,7 +1223,8 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
     flags |= GRANGE_FLAG_ISUMSEQ;
 
     recno = save_range_sequence(bio->io, &s, s.mapping_qual, bio->pair,
-    				is_pair, tname, bio->c, bio->a, flags, lib);
+    				is_pair, tname, bio->c, bio->a, flags, lib,
+				&bin_rec);
 
 
 #ifdef SAM_AUX_AS_TAG
@@ -1243,7 +1244,7 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
 	e = cache_rw(bio->io, e);
 	
-	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
+	bin = bin_add_to_range(bio->io, &bio->c, bin_rec, &r, NULL, NULL, 0);
 	e->bin = bin->rec;
     }
 #endif
@@ -1264,7 +1265,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     bam_seq_t *b;
     seq_t s;
     HacheItem *hi;
-    tg_rec recno;
+    tg_rec recno, bin_rec;
     int i, paired;
     int is_pair = 0;
     int flags;
@@ -1453,7 +1454,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     if (bio->pair) is_pair = 1;
 
     recno = save_range_sequence(bio->io, &s, s.mapping_qual, bio->pair,
-    				is_pair, tname, bio->c, bio->a, flags, lib);
+    				is_pair, tname, bio->c, bio->a, flags, lib,
+				&bin_rec);
 
 
 #ifdef SAM_AUX_AS_TAG
@@ -1473,7 +1475,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
 	e = cache_rw(bio->io, e);
 	
-	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
+	bin = bin_add_to_range(bio->io, &bio->c, bin_rec, &r, NULL, NULL, 0);
 	e->bin = bin->rec;
     }
 #endif
@@ -1543,7 +1545,12 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
 	e = cache_rw(bio->io, e);
 
-	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
+	if (aux_key[1] == 's') {
+	    bin = bin_add_to_range(bio->io, &bio->c, bin_rec, &r,
+				   NULL, NULL, 0);
+	} else {
+	    bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
+	}
 	e->bin = bin->rec;
     }
 

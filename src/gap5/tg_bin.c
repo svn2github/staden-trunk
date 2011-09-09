@@ -622,6 +622,11 @@ int bin_empty(bin_index_t *bin) {
  * Returns the bin we added the range to on success
  *         NULL on failure
  */
+static tg_rec last_bin = 0;
+static int incr_svalue = 0;
+static int incr_rvalue = 0;
+static int incr_avalue = 0;
+#if 0
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 			   range_t **r_out, int *complemented,
 			   int delay_nseq) {
@@ -629,10 +634,6 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     bin_index_t *bin;
     range_t *r2;
     int nr, offset, comp;
-    static tg_rec last_bin = 0;
-    static int incr_svalue = 0;
-    static int incr_rvalue = 0;
-    static int incr_avalue = 0;
 
     /* Tidy-up operation when adding ranges in bulk */
     if (delay_nseq == -1) {
@@ -756,6 +757,175 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     }
 
     return bin;
+}
+#endif
+
+/*
+ * As per bin_add_range() but add the range to a specific bin.
+ * We use this for annotations to keep them in the same bin as their
+ * associated sequence.
+ *
+ * We share the same last_bin and incr_*value variables as used by
+ * bin_add_range() above.
+ *
+ * Returns the bin we added the range to on success
+ *         NULL on failure
+ */
+bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
+			      range_t **r_out, int *complemented,
+			      int delay_nseq) {
+
+    bin_index_t *bin;
+    range_t *r2;
+    int nr, offset, comp;
+
+    /* Tidy-up operation when adding ranges in bulk */
+    if (delay_nseq == -1) {
+	if (last_bin && (incr_svalue || incr_rvalue)) {
+	    bin = cache_search(io, GT_Bin, last_bin);
+	    bin_incr_nseq(io, bin, incr_svalue);
+	    bin_incr_nrefpos(io, bin, incr_rvalue);
+	    bin_incr_nanno(io, bin, incr_avalue);
+	}
+	last_bin = 0;
+	incr_svalue = incr_rvalue = incr_avalue = 0;
+
+	return NULL;
+    }
+
+    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	if (contig_get_start(c) == contig_get_end(c)
+	    && contig_get_start(c) == 0) {
+	    contig_set_start(io, c, r->start);
+	    contig_set_end(io, c, r->end);
+	}
+	if (contig_get_start(c) > r->start)
+	    contig_set_start(io, c, r->start);
+
+	if (contig_get_end(c) < r->end)
+	    contig_set_end(io, c, r->end);
+    }
+
+    if (brec) {
+	tg_rec ctg;
+
+	if (!(bin = cache_search(io, GT_Bin, brec)))
+	    return NULL;
+	cache_incr(io, bin); /* prevent bin_get_pos() purging it */
+
+	bin_get_position(io, bin, &ctg, &offset, &comp);
+	if (r->start < offset || r->end > offset + bin->size) {
+	    fprintf(stderr, "Range will not fit inside requested bin\n");
+	}
+    } else {
+	if (!(bin = bin_for_range(io, c, r->start, r->end, 1, &offset,
+				  &comp))) //complemented)))
+	    return NULL;
+    }
+
+    if (complemented)
+	*complemented = comp;
+
+    if (!(bin = cache_rw(io, bin)))
+	return NULL;
+    if (brec)
+	cache_decr(io, bin);
+
+    /* Adjust start/end used in bin */
+    if (!bin_empty(bin)) {
+	if (comp) {
+	    if (bin->start_used > bin->size-1 - (r->end - offset))
+		bin->start_used = bin->size-1 - (r->end - offset);
+	    if (bin->end_used   < bin->size-1 - (r->start - offset))
+		bin->end_used   = bin->size-1 - (r->start - offset);
+	} else {
+	    if (bin->start_used > r->start - offset)
+		bin->start_used = r->start - offset;
+	    if (bin->end_used   < r->end - offset)
+		bin->end_used   = r->end - offset;
+	}
+    } else {
+	/* Initial case */
+	if (comp) {
+	    bin->start_used = bin->size-1 - (r->end - offset);
+	    bin->end_used   = bin->size-1 - (r->start - offset);
+	} else {
+	    bin->start_used = r->start - offset;
+	    bin->end_used   = r->end - offset;
+	}
+    }
+    
+    /* Update Range array */
+    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+    bin->flags &= ~BIN_CONS_VALID;
+    if (!bin->rng)
+	bin->rng = ArrayCreate(sizeof(range_t), 0);
+
+    nr = next_range(io, bin);
+    r2 = arrp(range_t, bin->rng, nr);
+
+    *r2 = *r; /* struct copy */
+    r2->start -= offset;
+    r2->end -= offset;
+
+    if (comp) {
+	int tmp = r2->start;
+	r2->start = bin->size-1 - r2->end;
+	r2->end   = bin->size-1 - tmp;
+    }
+
+    if (r_out)
+	*r_out = r2;
+
+    /* Update nseq in bins, delaying this to avoid needless writes */
+    if (delay_nseq == 1 && bin->rec != last_bin
+	&& (incr_svalue || incr_rvalue)) {
+	bin_index_t *b2 = cache_search(io, GT_Bin, last_bin);
+	bin_incr_nseq(io, b2, incr_svalue);
+	bin_incr_nrefpos(io, b2, incr_rvalue);
+	bin_incr_nanno(io, b2, incr_avalue);
+	incr_svalue = incr_rvalue = incr_avalue = 0;
+	last_bin = bin->rec;
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	if (delay_nseq == 0) {
+	    bin_incr_nseq(io, bin, 1);
+	} else {
+	    incr_svalue++;
+	    last_bin = bin->rec;
+	}
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+	if (delay_nseq == 0) {
+	    bin_incr_nrefpos(io, bin, 1);
+	} else {
+	    incr_rvalue++;
+	    last_bin = bin->rec;
+	}
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	if (delay_nseq == 0) {
+	    bin_incr_nanno(io, bin, 1);
+	} else {
+	    incr_avalue++;
+	    last_bin = bin->rec;
+	}
+    }
+
+    return bin;
+}
+
+/*
+ * Original version. As per bin_add_to_range but can add to any bin instead
+ * of a specific one.
+ */
+bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
+			   range_t **r_out, int *complemented,
+			   int delay_nseq) {
+    return bin_add_to_range(io, c, 0, r, r_out, complemented, delay_nseq);
 }
 
 /*
@@ -1057,16 +1227,18 @@ int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec) {
 int bin_get_position(GapIO *io, bin_index_t *bin, tg_rec *contig, int *pos,
 		     int *comp_p) {
     tg_rec bnum;
-    int offset = 0;
+    int offset1 = 0, offset2 = bin->size-1;
     int comp = 0;
 
     /* Find the position of this bin relative to the contig itself */
     for (;;) {
 	if (bin->flags & BIN_COMPLEMENTED) {
-	    offset = bin->size-1 - offset;
+	    offset1 = bin->size-1 - offset1;
+	    offset2 = bin->size-1 - offset2;
 	    comp ^= 1;
 	}
-	offset += bin->pos;
+	offset1 += bin->pos;
+	offset2 += bin->pos;
 
 	if (bin->parent_type != GT_Bin)
 	    break;
@@ -1078,7 +1250,7 @@ int bin_get_position(GapIO *io, bin_index_t *bin, tg_rec *contig, int *pos,
     assert(bin->parent_type == GT_Contig);
     *contig = bin->parent;
 
-    *pos = offset;
+    *pos = MIN(offset1, offset2);
     if (comp_p)
 	*comp_p = comp;
 

@@ -854,7 +854,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	    int old_comp = bin_get_orient(tc->io, s->bin);
 	    int new_comp = bin_get_orient(tc->io, bin->rec);
 
-	    //printf("New seq bin %d->%d\n", s->bin, bin->rec);
+	    //printf("New seq bin (%d)%d->(%d)%d\n",
+	    //	   old_comp, s->bin, new_comp, bin->rec);
 
 	    /* Bin number changed - update seq too */
 	    s = cache_rw(tc->io, s);
@@ -865,9 +866,10 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	    if (new_comp != old_comp) {
 		int tmp;
 		s->len *= -1;
-		tmp = s->left;
-		s->left  = ABS(s->len) - (s->right-1);
-		s->right = ABS(s->len) - (tmp-1);
+		s->flags ^= SEQ_COMPLEMENTED;
+		//tmp = s->left;
+		//s->left  = ABS(s->len) - (s->right-1);
+		//s->right = ABS(s->len) - (tmp-1);
 	    }
 	}
 	break;
@@ -921,9 +923,10 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	    if (new_comp != old_comp) {
 		int tmp;
 		s->len *= -1;
-		tmp = s->left;
-		s->left  = ABS(s->len) - (s->right-1);
-		s->right = ABS(s->len) - (tmp-1);
+		s->flags ^= SEQ_COMPLEMENTED;
+		//tmp = s->left;
+		//s->left  = ABS(s->len) - (s->right-1);
+		//s->right = ABS(s->len) - (tmp-1);
 	    }
 	}
 
@@ -940,6 +943,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	bin_index_t *bin;
 	Tcl_WideInt obj_rec;
 	int obj_type;
+	tg_rec seq_bin;
 
 	/* Parse args */
 	if (objc < 4 || objc > 7) {
@@ -989,7 +993,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	if (obj_type == GT_Seq) {
 	    int st, en;
 	    cache_incr(tc->io, a);
-	    sequence_get_position(tc->io, obj_rec, NULL, &st, &en, NULL);
+	    sequence_get_position2(tc->io, obj_rec, NULL, &st, &en, NULL,
+				   &seq_bin, NULL, NULL);
 	    cache_decr(tc->io, a);
 
 	    start += st;
@@ -1007,7 +1012,11 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	if (GT_Seq == obj_type)
 	    r.flags |= GRANGE_FLAG_TAG_SEQ;
 
-	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL, 0);
+	if (seq_bin)
+	    bin = bin_add_to_range(tc->io, &tc->contig, seq_bin,
+				   &r, &r_out, NULL, 0);
+	else
+	    bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL, 0);
 
 
 	/* The move may have changed bin, if so update anno pointer too */
@@ -1411,7 +1420,8 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	int pos, dir;
 	range_t r;
 	seq_t *s;
-	sequence_get_position2(ts->io, rec, &cnum, &pos, NULL, &dir, &r, &s);
+	sequence_get_position2(ts->io, rec, &cnum, &pos, NULL, &dir, NULL,
+			       &r, &s);
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), (s->len < 0) ^ dir);
 	cache_decr(ts->io, s);
 	break;

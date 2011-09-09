@@ -792,7 +792,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	range_t pair_r;
 
 	sequence_get_position2(io, fi->r.pair_rec, &other_c, &other_st,
-			       &other_en, &other_dir, &pair_r, &pair_s);
+			       &other_en, &other_dir, NULL, &pair_r, &pair_s);
 
 	comp = (pair_s->len >= 0) ^ other_dir;
 	cache_decr(io, pair_s);

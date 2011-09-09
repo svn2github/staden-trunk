@@ -285,6 +285,10 @@ static int bin_plus_children_empty(bin_index_t *bin) {
 
     for (i = 0; i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
+
+	if (r->flags & (GRANGE_FLAG_ISCONS | GRANGE_FLAG_ISREF))
+	    continue;
+
 	if (!(r->flags & GRANGE_FLAG_UNUSED))
 	    return 0;
     }
@@ -677,7 +681,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 	    r.pair_rec = pos[i].anno[j].pair_rec;
 	    r.flags    = pos[i].anno[j].flags;
 	    
-	    bin = bin_add_range(io, &c_new, &r, &r_out, NULL, 0);
+	    bin = bin_add_to_range(io, &c_new, s->bin, &r, &r_out, NULL, 0);
 	    a = cache_search(io, GT_AnnoEle, pos[i].anno[j].rec);
 	    a = cache_rw(io, a);
 	    a->bin = bin->rec;

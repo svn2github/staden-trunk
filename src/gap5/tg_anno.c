@@ -38,13 +38,15 @@ tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
     contig_t *c;
     tg_rec crec;
     bin_index_t *bin;
+    tg_rec seq_bin = 0;
 
     /* Find contig for obj_rec/obj_type */
     if (obj_type == GT_Contig) {
 	crec = obj_rec;
     } else {
 	int st, en;
-	sequence_get_position(io, obj_rec, &crec, &st, &en, NULL);
+	sequence_get_position2(io, obj_rec, &crec, &st, &en, NULL,
+			       &seq_bin, NULL, NULL);
 
 	start += st;
 	end += st;
@@ -65,7 +67,10 @@ tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
     e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
     e = cache_rw(io, e);
 
-    bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
+    if (seq_bin)
+	bin = bin_add_to_range(io, &c, seq_bin, &r, NULL, NULL, 0);
+    else
+	bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
     e->bin = bin->rec;
 
     return r.rec;

@@ -406,7 +406,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     tg_rec last_cnt_rec = 0;
     int last_cnt_pos = 0;
     int last_obj_orient = 0;
-    
+    tg_rec brec = -1;
     
 	
     printf("Loading %s...\n", fn);
@@ -482,7 +482,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    if (pair) is_pair = 1;
 		
 	    recno = save_range_sequence(io, &seq, seq.mapping_qual, pair,
-					is_pair, tname, c, a, flags, NULL);
+					is_pair, tname, c, a, flags, NULL,
+					&brec);
 
 	    /* For anno */
 	    last_obj_type = GT_Seq;
@@ -561,7 +562,10 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);
 	
-	    bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
+	    if (anno_obj_type == GT_Contig)
+		bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
+	    else
+		bin = bin_add_to_range(io, &c, brec, &r, NULL, NULL, 0);
 	    e->bin = bin->rec;
 
 	    ntags++;

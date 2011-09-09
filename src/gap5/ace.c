@@ -533,7 +533,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    save_range_sequence(io, &seq, ACE_MQUAL, pair,
 				(pair && *ai->ds.tname),
 				ai->ds.tname, c, a, GRANGE_FLAG_TYPE_SINGLE,
-				NULL);
+				NULL, NULL);
 	    seq_count++;
 	    nseqs++;
 

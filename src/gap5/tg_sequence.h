@@ -62,7 +62,7 @@ int sequence_get_position(GapIO *io, tg_rec snum, tg_rec *contig,
 			  int *start, int *end, int *orient);
 int sequence_get_position2(GapIO *io, tg_rec snum, tg_rec *contig,
 			   int *start, int *end, int *orient,
-			   range_t *r_out, seq_t **s_out);
+			   tg_rec *brec, range_t *r_out, seq_t **s_out);
 int sequence_get_orient(GapIO *io, tg_rec snum);
 tg_rec sequence_get_contig(GapIO *io, tg_rec snum);
 tg_rec sequence_get_pair(GapIO *io, seq_t *s);
@@ -135,6 +135,17 @@ int  sequence_copy(seq_t *s, seq_t *f);
  *        -1 on failure
  */
 int sequence_move_annos(GapIO *io, seq_t **s, int dist);
+
+/*
+ * If we've done something that changed the bin a sequence is within without
+ * also moving the tags to the new bin, eg by changing its size or location,
+ * then this function will check annotations and ensure they're in the same
+ * bin as the sequence they belong to.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_fix_anno_bins(GapIO *io, seq_t **s);
 
 #define TEMPLATE_ERR		-1 /* Unknown due to error */
 #define TEMPLATE_SINGLE		0

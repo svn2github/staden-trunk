@@ -51,7 +51,8 @@ tg_rec save_sequence(GapIO *io, seq_t *seq, bin_index_t *bin, range_t *r_out);
 
 tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
 			   tg_pair_t *pair, int is_pair, char *tname,
-			   contig_t *c, tg_args *a, int flags, library_t *lib);
+			   contig_t *c, tg_args *a, int flags, library_t *lib,
+			   tg_rec *bin_rec);
 
 void create_new_contig(GapIO *io, contig_t **c, char *cname, int merge);
 
