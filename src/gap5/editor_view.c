@@ -1879,6 +1879,9 @@ int showCursor(edview *xx, int x_safe, int y_safe) {
 	    return 0;
 	i = hi->data.i;
 
+	if (!xx->r)
+	    return 0;
+
 	y_pos = xx->r[i].y;
 	if (y_pos == -1) {
 	    y_pos = 0; /* tag on consensus */
