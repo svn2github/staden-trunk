@@ -113,18 +113,27 @@ int contig_offset(GapIO *io, contig_t **c) {
  * This edits all sequences stacked up above pos and also updates the bin
  * structure accordingly.
  *
+ * Note this code uses some bizarre hybrid of coordinate systems. The original
+ * code manipulates offset, comp and pos such that pos changes to be the
+ * position relative to that bin. This works fine for working out what should
+ * be moved or inserted to. This is passed around in pos / offset / comp.
+ *
+ * However the hash table for monitoring sequence ranges and whether
+ * annotations need moving has to span bins, so it needs an absolute
+ * position and offset computed against that absolute pos. These get passed
+ * around in apos / aoffset.
+ *
  * Returns >=0 for success (0 => no insertion made, 1 => insert done)
  *          -1 for failure
  */
 static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
-			       int pos, int start_of_contig,
-			       int offset, char base, int conf,
+			       int pos, int apos, int start_of_contig,
+			       int offset, int aoffset, char base, int conf,
 			       int comp, HacheTable *hash) {
     int i, ins = 0, check_used = 0;
     bin_index_t *bin;
     HacheData hd;
-
-    hd.i = 1;
+    int f_a, f_b;
 
     bin = get_bin(io, bnum);
     cache_incr(io, bin);
@@ -138,6 +147,14 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	pos = offset + bin->size - pos;
     } else {
 	pos -= offset;
+    }
+
+    if (comp) {
+	f_a = -1;
+	f_b = aoffset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = aoffset;
     }
 
     /* FIXME: add end_used (or start_used if complemented?) check here,
@@ -158,29 +175,73 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    (!start_of_contig &&
 	     pos <= MAX(r->start, r->end)   &&
 	     pos >  MIN(r->start, r->end))) {
+	    //printf("pos overlap obj #%"PRIrec" %d in %d..%d\n",
+	    //	   r->rec, pos,
+	    //	   MIN(r->start, r->end),
+	    //	   MAX(r->start, r->end));
 	    /* Insert */
 	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
 		(r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		/* ISCONS? skip perhaps as we invalidate them anyway */
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
+		int no_ins;
+
 		if (ABS(r->end - r->start) + 1 != ABS(s->len)) {
 		    verror(ERR_WARN, "contig_insert_base2", 
 			   "Range start/end are inconsistent with seq len. ");
 		}
 
+		no_ins = 0;
 		if (base) {
-		    sequence_insert_base(io, &s, pos - MIN(r->start, r->end),
-					 base, conf, 0);
-		    r->end++;
-		    ins = 1;
-		} else {
-		    /* Shift instead, but only if in cutoff data */
-		    if (comp ^ (s->len < 0)) {
+		    int r_start, r_end;
+		    if (/*comp ^ */(s->len < 0)) {
+			r_start = MIN(r->end - (s->right-1),
+				      r->end - (s->left-1));
+			r_end = MAX(r->end - (s->right-1),
+				    r->end - (s->left-1));
+		    } else {
+			r_start = MIN(r->start + s->left-1,
+				      r->start + s->right-1);
+			r_end = MAX(r->start + s->right-1,
+				    r->start + s->left-1);
+		    }
+		    if (pos <= r_start || pos > r_end)
+			no_ins = 1;
+
+		    // printf("Rec %"PRIrec" visible %d..%d abs %d..%d\n",
+		    //	   r->rec, r_start, r_end,
+		    //	   NORM(r_start), NORM(r_end));
+
+		    if (!no_ins) {
+			//printf("INS %"PRIrec" at %d\n", r->rec,
+			//       pos - MIN(r->start, r->end));
+			sequence_insert_base(io, &s,
+					     pos - MIN(r->start, r->end),
+					     base, conf, 0);
+			if (hash) {
+			    //printf("1 Mov %"PRIrec"\n", r->rec);
+			    hd.i = MAX(NMIN(r_start, r_end), apos);
+			    HacheTableAdd(hash, (char *)&r->rec,
+					  sizeof(r->rec), hd, NULL);
+			}
+			//printf("1 %"PRIrec"->end++\n", r->rec);
+			r->end++;
+			ins = 1;
+		    }
+		}
+
+		if (!base || no_ins) {
+		    /* Shift instead, but only if in left-cutoff data */ 
+		    if (/*comp ^ */ (s->len < 0)) {
 			if (MIN(r->end - (s->right-1), r->end - (s->left-1))
 			    >= pos) {
-			    if (hash)
+			    if (hash) {
+				//printf("2 Mov %"PRIrec"\n", r->rec);
+				hd.i = comp ? INT_MAX : INT_MIN;
 				HacheTableAdd(hash, (char *)&r->rec,
 					      sizeof(r->rec), hd, NULL);
+			    }
+			    //printf("2 %"PRIrec"->start/end++\n", r->rec);
 			    r->start++;
 			    r->end++;
 			    ins = 1;
@@ -188,9 +249,13 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    } else {
 			if (MIN(r->start + s->left-1, r->start + s->right-1)
 			    >= pos) {
-			    if (hash)
+			    if (hash) {
+				//printf("3 Mov %"PRIrec"\n", r->rec);
+				hd.i = comp ? INT_MAX : INT_MIN;
 				HacheTableAdd(hash, (char *)&r->rec,
 					      sizeof(r->rec), hd, NULL);
+			    }
+			    //printf("3 %"PRIrec"->start/end++\n", r->rec);
 			    r->start++;
 			    r->end++;
 			    ins = 1;
@@ -198,7 +263,8 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    }
 		}
 	    } else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-		if (base) {
+		if (base && !(r->flags & GRANGE_FLAG_TAG_SEQ)) {
+		    //printf("grow anno %"PRIrec"\n", r->rec);
 		    r->end++;
 		    ins = 1;
 		}
@@ -207,55 +273,34 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    bin->flags |= BIN_RANGE_UPDATED;
 
 	} else if (MIN(r->start, r->end) >= pos) {
-	    if (!hash || (r->flags&GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+	    //printf("pos to left of obj #%"PRIrec" %d %d..%d\n", 
+	    //	   r->rec, pos,
+	    //	   MIN(r->start, r->end),
+	    //	   MAX(r->start, r->end));
+	    if ( (r->flags&GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		/* Move */
+		//printf("4 %"PRIrec"->start/end++\n", r->rec);
 		r->start++;
 		r->end++;
 		ins = 1;
 		check_used = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
 
-		if (hash)
+		if (hash) {
+		    //printf("4 Mov %"PRIrec"\n", r->rec);
+		    hd.i = comp ? INT_MAX : INT_MIN;
 		    HacheTableAdd(hash, (char *)&r->rec,
 				  sizeof(r->rec), hd, NULL);
-	    }
-	}
-    }
-
-    /*
-     * Loop again through contents if hash is non-null and move tags. Seq
-     * tags move if their sequence moved. Consensus tags always move if
-     * they're to the right.
-     *
-     * Assumption: a tag is in the same bin or a lower bin than the
-     * sequence it belongs to. This is valid given tags are never
-     * larger than the sequence they belong to, but does this hold true
-     * after all possible types of editing?  Eg bin A children B,C.
-     * Seq+tag put in bin A as they straddle B/C. Seq (& tag) then manually
-     * reduced in size by deleting data. They're still in A of course.
-     * Then we move seq A, which has the effect of taking it out of the
-     * contig and putting it back in at a new location; now B or C.
-     * We're safe provided the same logic is also applied to the tag, which
-     * I believe it should be. Need to test.
-     */
-    if (ins && hash) {
-	for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
-	    range_t *r = arrp(range_t, bin->rng, i);
-
-	    if (r->flags & GRANGE_FLAG_UNUSED)
-		continue;
-
-	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
-		continue;
-
-	    if ( (!(r->flags & GRANGE_FLAG_TAG_SEQ) &&
-		  MIN(r->start, r->end) >= pos)
-		||
-		 HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec))){
+		}
+	    } else if (!(r->flags & GRANGE_FLAG_TAG_SEQ)) {
+		/* Consensus tag */
 		r->start++;
 		r->end++;
+		ins = 1;
+		check_used = 1;
+		bin->flags |= BIN_RANGE_UPDATED;
 	    }
-	}
+	} /* else pos to right of object */
     }
 
     /* Adjust the bin dimensions */
@@ -300,9 +345,10 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 
 	    if (pos >= MIN(ch->pos, ch->pos + ch->size-1) &&
 		pos <= MAX(ch->pos, ch->pos + ch->size-1)) {
-		ins |= contig_insert_base2(io, crec, bin->child[i], pos,
+		ins |= contig_insert_base2(io, crec, bin->child[i], pos, apos,
 					   start_of_contig,
 					   MIN(ch->pos, ch->pos + ch->size-1),
+					   NMIN(ch->pos, ch->pos + ch->size-1),
 					   base, conf, comp, hash);
 		/* Children to the right of this one need pos updating too */
 	    } else if (pos < MIN(ch->pos, ch->pos + ch->size-1)) {
@@ -311,6 +357,8 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    cache_decr(io, bin);
 		    return -1;
 		}
+
+		//printf("Mov bin %"PRIrec"\n", ch->rec);
 
 		ch->pos++;
 		if (ch->nseqs)
@@ -325,6 +373,162 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     return ins;
 }
 
+/*
+ * Second pass on contig_insert_base(). 
+ *
+ * As tags can be in bins equal to, above or below the seqs we have to defer
+ * tag shifting until we've fully walked the bin hierarchy, and then adjust
+ * the tags in a second pass. The first pass filled out the hash table
+ * indicating for each sequence at which point tags should be moved.
+ */
+static int contig_insert_tag2(GapIO *io, tg_rec crec, tg_rec bnum,
+			      int pos, int apos, int start_of_contig,
+			      int offset, int aoffset,
+			      int comp, HacheTable *hash) {
+    int i;
+    bin_index_t *bin;
+    HacheData hd;
+    int f_a, f_b;
+
+    bin = get_bin(io, bnum);
+    cache_incr(io, bin);
+
+    if (!(bin = cache_rw(io, bin)))
+	return -1;
+
+    /* Normalise pos for complemented bins */
+    if (bin->flags & BIN_COMPLEMENTED) {
+	comp ^= 1;
+	pos = offset + bin->size - pos;
+    } else {
+	pos -= offset;
+    }
+
+    if (comp) {
+	f_a = -1;
+	f_b = aoffset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = aoffset;
+    }
+
+    //printf("Bin %"PRIrec" => pos=%d, offset=%d, comp=%d\n",
+    //	   bin->rec, pos, offset, comp);
+
+    /*
+     * Loop again through contents if hash is non-null and move tags. Seq
+     * tags move if their sequence moved. Consensus tags always move if
+     * they're to the right.
+     *
+     * Assumption: a tag is in the same bin or a lower bin than the
+     * sequence it belongs to. This is valid given tags are never
+     * larger than the sequence they belong to, but does this hold true
+     * after all possible types of editing?  Eg bin A children B,C.
+     * Seq+tag put in bin A as they straddle B/C. Seq (& tag) then manually
+     * reduced in size by deleting data. They're still in A of course.
+     * Then we move seq A, which has the effect of taking it out of the
+     * contig and putting it back in at a new location; now B or C.
+     * We're safe provided the same logic is also applied to the tag, which
+     * I believe it should be. Need to test.
+     */
+    //printf("Pass 2\n");
+    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	range_t *r = arrp(range_t, bin->rng, i);
+	HacheItem *hi;
+
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
+	    continue;
+
+	hi = HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec));
+	if (hi) {
+	    //printf("Tag #%"PRIrec" in hash.  %d..%d (%d..%d) vs pos %d\n",
+	    //	   r->rec, r->start, r->end,
+	    //	   NMIN(r->start, r->end),
+	    //	   NMAX(r->start, r->end),
+	    //	   hi->data.i);
+
+	    if (comp) {
+		if (NMAX(r->start, r->end) <= (int64_t)hi->data.i) {
+		    //puts("mov2");
+		    r->start++;
+		    r->end++;
+		} else if (NMIN(r->start, r->end) <= (int64_t)hi->data.i) {
+		    //puts("grow2");
+		    r->end++;
+		}
+	    } else {
+		if (NMIN(r->start, r->end) >= (int64_t)hi->data.i) {
+		    //puts("mov1");
+		    r->start++;
+		    r->end++;
+		} else if (NMAX(r->start, r->end) >= (int64_t)hi->data.i) {
+		    //puts("grow1");
+		    r->end++;
+		}
+	    }
+
+	    bin->flags |= BIN_RANGE_UPDATED;
+	}
+    }
+
+    /* Correct the bin dimensions */
+    if (1) {
+	if (bin->rng && ArrayMax(bin->rng)) {
+	    int start = INT_MAX;
+	    int end   = INT_MIN;
+	    for (i = 0; i < ArrayMax(bin->rng); i++) {
+		range_t *r = arrp(range_t, bin->rng, i);
+	    
+		if (r->flags & GRANGE_FLAG_UNUSED)
+		    continue;
+
+		if (start > r->start)
+		    start = r->start;
+		if (end   < r->end)
+		    end   = r->end;
+	    }
+
+	    if (start != INT_MAX) {
+		bin->start_used = start;
+		bin->end_used = end;
+	    } else {
+		bin->start_used = 0;
+		bin->end_used = 0;
+	    }
+	    bin->flags |= BIN_BIN_UPDATED;
+	}
+    }
+
+    /* Recurse */
+    if (bin->child[0] || bin->child[1]) {
+	bin_index_t *ch = NULL;
+
+	/* Find the correct child node */
+       	for (i = 0; i < 2; i++) {
+	    if (!bin->child[i])
+		continue;
+
+	    ch = get_bin(io, bin->child[i]);
+
+	    if (pos >= MIN(ch->pos, ch->pos + ch->size-1) &&
+		pos <= MAX(ch->pos, ch->pos + ch->size-1)) {
+		contig_insert_tag2(io, crec, bin->child[i], pos, apos,
+				   start_of_contig,
+				   MIN(ch->pos, ch->pos + ch->size-1),
+				   NMIN(ch->pos, ch->pos + ch->size-1),
+				   comp, hash);
+	    }
+	}
+    }
+
+    cache_decr(io, bin);
+
+    return 0;
+}
+
 int contig_insert_base_common(GapIO *io, contig_t **c,
 			      int pos, char base, int conf) {
     contig_t *n;
@@ -337,10 +541,18 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
     int dir;
     HacheTable *hash = NULL;
     int ret;
+    int cstart, cend;
 
     if (pos < (*c)->start || pos > (*c)->end)
 	return 0;
+    
+    consensus_valid_range(io, (*c)->rec, &cstart, &cend);
 
+    if (pos-1 < cstart || pos > cend) {
+	puts("Do nothing");
+	return 0;
+    }
+    
     if (!(n = cache_rw(io, *c)))
 	return -1;
     *c = n;
@@ -353,13 +565,18 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 	 * to know which seqs moved and which didn't so we can correctly
 	 * move annotations.
 	 */
-	hash = HacheTableCreate(4096, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS
-				| HASH_ALLOW_DUP_KEYS | HASH_DYNAMIC_SIZE);
     }
+    hash = HacheTableCreate(4096, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS
+			    | HASH_ALLOW_DUP_KEYS | HASH_DYNAMIC_SIZE);
 
-    ret = contig_insert_base2(io, n->rec, contig_get_bin(c), pos,
+    ret = contig_insert_base2(io, n->rec, contig_get_bin(c), pos, pos,
 			      pos == n->start,
-			      contig_offset(io, c), base, conf, 0, hash);
+			      contig_offset(io, c), contig_offset(io, c),
+			      base, conf, 0, hash);
+    ret |= contig_insert_tag2(io, n->rec, contig_get_bin(c), pos, pos,
+			      pos == n->start,
+			      contig_offset(io, c), contig_offset(io, c),
+			      0, hash);
     if (1 != ret)
 	return 0;
 
@@ -441,7 +658,26 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 	bin_add_range(io, c, &r, NULL, NULL, 0);
     }
 
+    /*
+     * Inserting a base *may* grow the contig, but only if the
+     * right-most sequence has been inserted into (the right-most base
+     * may be a sequence that has cutoff data as 'pos').
+     *
+     * Similarly inserting a base *may* shrink the contig if the
+     * left-most read is in left-cutoff data at pos.
+     *
+     * For safety, we simply have to recompute start/end.
+     */
+
+    /* Best guess */
     contig_set_end(io, c, contig_get_end(c)+1);
+
+    /* Verify */
+    consensus_unclipped_range(io, (*c)->rec, &cstart, &cend);
+    if (contig_get_start(c) != cstart)
+	contig_set_start(io, c, cstart);
+    if (contig_get_end(c) != cend)
+	contig_set_end(io, c, cend);
 
     if (hash)
 	HacheTableDestroy(hash, 0);
@@ -483,25 +719,15 @@ static int bin_delete(GapIO *io, bin_index_t *bin) {
     return 0;
 }
 
-/*
- * Recursive part of the algorithm to delete columns of bases in data
- * overlapping pos and shift data left in the same bin that is to the right 
- * of pos, or optionally when shift==1 to only perform the shift portion
- * of the algorithm.
- *
- * Returns 0 or 1 on success (indicating whether or not we actually
- *                            had to perform any contig shifting)
- *         -1 on failure.
- */
 static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
-			       int pos, int offset, int shift, int comp,
-			       HacheTable *hash) {
-    int i;
+			       int pos, int apos, int start_of_contig,
+			       int offset, int aoffset,
+			       int base, int comp, HacheTable *hash) {
+    int i, ins = 0, check_used = 0;
     bin_index_t *bin;
-    int reduced = 0, ret = 0, deleted = 0;
     HacheData hd;
-
-    hd.i = 1;
+    int f_a, f_b;
+    int min_r = INT_MAX, max_r = INT_MIN;
 
     bin = get_bin(io, bnum);
     cache_incr(io, bin);
@@ -511,13 +737,26 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 
     /* Normalise pos for complemented bins */
     if (bin->flags & BIN_COMPLEMENTED) {
-	pos = offset + bin->size - pos - 1;
 	comp ^= 1;
+	pos = offset + bin->size - pos - 1;
     } else {
 	pos -= offset;
     }
 
-    /* Perform the deletion into objects first */
+    if (comp) {
+	f_a = -1;
+	f_b = aoffset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = aoffset;
+    }
+
+    /* FIXME: add end_used (or start_used if complemented?) check here,
+     * so we can shortcut looping through the bin if we're deleteing beyond
+     * any of the bin contents.
+     */
+
+    /* Perform the delete into objects first */
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
 
@@ -525,153 +764,241 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    continue;
 
 	if (MAX(r->start, r->end) >= pos && MIN(r->start, r->end) <= pos) {
-	    if (MIN(r->start, r->end) == MAX(r->start, r->end) && !shift) {
-		/* Remove object entirely */
-		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS) {
-		    fprintf(stderr, "Delete sequence/tag #%"PRIrec"\n",
-			    r->rec);
-		}
-		r->flags |= GRANGE_FLAG_UNUSED;
-		r->rec = bin->rng_free;
-
-		bin->rng_free = i;
-		bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
-		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
-		    bin_incr_nrefpos(io, bin, -1);
-		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
-		    bin_incr_nseq(io, bin, -1);
-		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
-		    bin_incr_nanno(io, bin, -1);
-		
-		deleted = 1;
-	    } else if (!shift) {
-		/* Delete */
-		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
-		    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
-		    seq_t *s = cache_search(io, GT_Seq, r->rec);
-		    sequence_delete_base(io, &s,
-					 pos - MIN(r->start, r->end),
-					 0);
-		}
-
-		r->end--;
-		bin->flags |= BIN_RANGE_UPDATED;
-		reduced = 1;
-	    } else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-		/* Shift on overlapping object: check cutoffs */
+	    //printf("pos overlap obj %d/#%"PRIrec" %d in %d..%d\n",
+	    //	   r->flags & GRANGE_FLAG_ISMASK, r->rec, pos,
+	    //	   MIN(r->start, r->end),
+	    //	   MAX(r->start, r->end));
+	    /* Delete */
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISREFPOS &&
+		(r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+		/* ISCONS? skip perhaps as we invalidate them anyway */
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
-		if (comp ^ (s->len < 0)) {
-		    if (MIN(r->end - (s->right-1), r->end - (s->left-1))
-			>= pos) {
-			r->start--;
-			r->end--;
-			bin->flags |= BIN_RANGE_UPDATED;
-			reduced = 1;
-			if (hash)
-			    HacheTableAdd(hash, (char *)&r->rec,
-					  sizeof(r->rec), hd, NULL);
+		int no_ins;
+
+		if (ABS(r->end - r->start) + 1 != ABS(s->len)) {
+		    verror(ERR_WARN, "contig_delete_base2", 
+			   "Range start/end are inconsistent with seq len. ");
+		}
+
+		no_ins = 0;
+		if (base) {
+		    int r_start, r_end;
+		    if (/*comp ^ */(s->len < 0)) {
+			r_start = MIN(r->end - (s->right-1),
+				      r->end - (s->left-1));
+			r_end = MAX(r->end - (s->right-1),
+				    r->end - (s->left-1));
+		    } else {
+			r_start = MIN(r->start + s->left-1,
+				      r->start + s->right-1);
+			r_end = MAX(r->start + s->right-1,
+				    r->start + s->left-1);
 		    }
-		} else {
-		    if (MIN(r->start + s->left-1, r->start + s->right-1)
-			>= pos) {
-			r->start--;
-			r->end--;
-			bin->flags |= BIN_RANGE_UPDATED;
-			reduced = 1;
-			if (hash)
-			    HacheTableAdd(hash, (char *)&r->rec,
-					  sizeof(r->rec), hd, NULL);
+		    if (pos <= r_start || pos > r_end)
+			no_ins = 1;
+
+		    // printf("Rec %"PRIrec" visible %d..%d abs %d..%d\n",
+		    //	   r->rec, r_start, r_end,
+		    //	   NORM(r_start), NORM(r_end));
+
+		    if (!no_ins) {
+			if (r->start == r->end) {
+			    /* Remove completely */
+			    r->flags |= GRANGE_FLAG_UNUSED;
+			    r->rec = bin->rng_free;
+
+			    bin->rng_free = i;
+			    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+			    bin_incr_nseq(io, bin, -1);
+			} else {
+			    //printf("DEL %"PRIrec" at %d\n", r->rec,
+			    //       pos - MIN(r->start, r->end));
+			    sequence_delete_base(io, &s,
+						 pos - MIN(r->start, r->end),
+						 0);
+			    if (hash) {
+				//printf("1 Mov %"PRIrec"\n", r->rec);
+				hd.i = MAX(NMIN(r_start, r_end), apos);
+				HacheTableAdd(hash, (char *)&r->rec,
+					      sizeof(r->rec), hd, NULL);
+			    }
+			    //printf("1 %"PRIrec"->end--\n", r->rec);
+			    r->end--;
+			    ins = 1;
+			}
 		    }
+		}
+
+		if (!base || no_ins) {
+		    /* Shift instead, but only if in left-cutoff data */ 
+		    if (/*comp ^ */ (s->len < 0)) {
+			if (MIN(r->end - (s->right-1), r->end - (s->left-1))
+			    >= pos) {
+			    if (hash) {
+				//printf("2 Mov %"PRIrec"\n", r->rec);
+				hd.i = comp ? INT_MAX : INT_MIN;
+				HacheTableAdd(hash, (char *)&r->rec,
+					      sizeof(r->rec), hd, NULL);
+			    }
+			    //printf("2 %"PRIrec"->start/end--\n", r->rec);
+			    r->start--;
+			    r->end--;
+			    ins = 1;
+			}
+		    } else {
+			if (MIN(r->start + s->left-1, r->start + s->right-1)
+			    >= pos) {
+			    if (hash) {
+				//printf("3 Mov %"PRIrec"\n", r->rec);
+				hd.i = comp ? INT_MAX : INT_MIN;
+				HacheTableAdd(hash, (char *)&r->rec,
+					      sizeof(r->rec), hd, NULL);
+			    }
+			    //printf("3 %"PRIrec"->start/end--\n", r->rec);
+			    r->start--;
+			    r->end--;
+			    ins = 1;
+			}
+		    }
+		}
+	    } else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+		if (base && !(r->flags & GRANGE_FLAG_TAG_SEQ)) {
+		    /* Shrink consensus tags */
+		    if (r->start == r->end) {
+			r->flags |= GRANGE_FLAG_UNUSED;
+			r->rec = bin->rng_free;
+
+			bin->rng_free = i;
+			bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+			bin_incr_nanno(io, bin, -1);
+			
+		    } else {
+			r->end--;
+		    }
+		    ins = 1;
 		}
 	    }
+	    
+	    bin->flags |= BIN_RANGE_UPDATED;
 
 	} else if (MIN(r->start, r->end) >= pos) {
-	    if (!shift || (r->flags&GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO){
+	    //printf("pos to left of obj #%"PRIrec" %d %d..%d\n", 
+	    //	   r->rec, pos,
+	    //	   MIN(r->start, r->end),
+	    //	   MAX(r->start, r->end));
+	    if ( (r->flags&GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		/* Move */
+		//printf("4 %"PRIrec"->start/end--\n", r->rec);
 		r->start--;
 		r->end--;
+		ins = 1;
+		check_used = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
-		reduced = 1;
 
-		if (hash)
+		if (hash) {
+		    //printf("4 Mov %"PRIrec"\n", r->rec);
+		    hd.i = comp ? INT_MAX : INT_MIN;
 		    HacheTableAdd(hash, (char *)&r->rec,
 				  sizeof(r->rec), hd, NULL);
+		}
+	    } else if (!(r->flags & GRANGE_FLAG_TAG_SEQ)) {
+		/* Move consensus tags */
+		r->start--;
+		r->end--;
+		ins = 1;
+		check_used = 1;
+		bin->flags |= BIN_RANGE_UPDATED;
 	    }
-	}
+	} /* else pos to right of object */
     }
 
-    /*
-     * Loop again through contents if hash is non-null and move tags. Seq
-     * tags move if their sequence moved. Consensus tags always move if
-     * they're to the right.  See contig_insert_base2() for more details.
-     */
+    /* Move the annotations too */
+    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	range_t *r = arrp(range_t, bin->rng, i);
+	HacheItem *hi;
 
-    if (reduced && hash) {
-	for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
-	    range_t *r = arrp(range_t, bin->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
 
-	    if (r->flags & GRANGE_FLAG_UNUSED)
-		continue;
+	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+	    continue;
+	}
 
-	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
-		continue;
+	hi = HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec));
+	if (!hi)
+	    continue;
 
-	    if ( (!(r->flags & GRANGE_FLAG_TAG_SEQ) &&
-		  MIN(r->start, r->end) >= pos)
-		||
-		 HacheTableSearch(hash, (char *)&r->pair_rec, sizeof(tg_rec))){
+	//printf("Rec %"PRIrec" hd.i=%ld comp=%d NORM=%d,%d\n",
+	//       r->rec, (long)hd.i, comp,
+	//       NORM(r->start), NORM(r->end));
+
+	if (comp) {
+	    if (NMAX(r->start, r->end) <= (int64_t)hi->data.i-1) {
+		//puts("mov2");
 		r->start--;
+		r->end--;
+	    } else if (NMIN(r->start, r->end) <= (int64_t)hi->data.i-1) {
+		//puts("grow2");
+		r->end--;
+	    }
+	} else {
+	    if (NMIN(r->start, r->end) >= (int64_t)hi->data.i) {
+		//puts("mov1");
+		r->start--;
+		r->end--;
+	    } else if (NMAX(r->start, r->end) >= (int64_t)hi->data.i) {
+		//puts("grow1");
 		r->end--;
 	    }
 	}
+
+	bin->flags |= BIN_RANGE_UPDATED;
     }
 
+    /* Check new extents */
+    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	range_t *r = arrp(range_t, bin->rng, i);
+
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	if (min_r > r->start && r->start >= 0)
+	    min_r = r->start;
+	if (max_r < r->end)
+	    max_r = r->end;
+    }
+    
     /* Adjust the bin dimensions */
-    if (reduced || deleted || !shift) {
-	ret = 1;
-	if (--bin->size <= 0) {
-	    /* Remove object entirely */
-	    fprintf(stderr, "Delete bin bin-%"PRIrec"\n", bin->rec);
-	    bin->size = 0;
-	    bin_delete(io, bin);
-	} else {
-	    if (bin->rng && ArrayMax(bin->rng)) {
-		if (deleted &&
-		    (pos == bin->start_used || pos == bin->end_used)) {
-		    /* Something was removed, so full recalc */
-		    int start = INT_MAX;
-		    int end   = INT_MIN;
-
-		    for (i = 0; i < ArrayMax(bin->rng); i++) {
-			range_t *r = arrp(range_t, bin->rng, i);
-
-			if (r->flags & GRANGE_FLAG_UNUSED)
-			    continue;
-
-			if (start > r->start)
-			    start = r->start;
-			if (end   < r->end)
-			    end   = r->end;
-		    }
-
-		    if (start == INT_MAX) {
-			bin->start_used = bin->end_used = 0;
+    if (ins || base) {
+	if (bin->size != max_r+1) {
+	    if (--bin->size <= 0) {
+		fprintf(stderr, "Delete bin bin-%"PRIrec"\n", bin->rec);
+		bin->size = 0;
+		bin_delete(io, bin);
+	    } else {
+		ins = 1;
+		if (bin->rng && ArrayMax(bin->rng)) {
+		    if (min_r != INT_MAX) {
+			bin->start_used = min_r;
+			bin->end_used = max_r;
 		    } else {
-			bin->start_used = start;
-			bin->end_used = end;
-		    }
-		} else {
-		    if (pos < bin->start_used)
-			bin->start_used--;
-		    if (pos <= bin->end_used)
-			bin->end_used--;
-		    if (bin->end_used < bin->start_used) {
-			/* Now empty */
-			bin->start_used = bin->end_used = 0;
+			bin->start_used = 0;
+			bin->end_used = 0;
 		    }
 		}
+		bin->flags |= BIN_BIN_UPDATED;
 	    }
-	    bin->flags |= BIN_BIN_UPDATED;
+	} else {
+	    /*
+	     * Bin didn't shrink, which means we have something stretching
+	     * to the right hand edge that wasn't deleted from nor was moved.
+	     * (Ie it overlapped pos, but in right hand cutoff data).
+	     *
+	     * However not shrinking the bin can cause this bin to become
+	     * larger (or at least beyond the edges of) its parent bin.
+	     * Fix this now.
+	     */
+	    grow_bin(io, bin);
 	}
     }
 
@@ -683,14 +1010,16 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
        	for (i = 0; i < 2; i++) {
 	    if (!bin->child[i])
 		continue;
+
 	    ch = get_bin(io, bin->child[i]);
 
 	    if (pos >= MIN(ch->pos, ch->pos + ch->size-1) &&
 		pos <= MAX(ch->pos, ch->pos + ch->size-1)) {
-		ret |= contig_delete_base2(io, crec, bin->child[i], pos,
+		ins |= contig_delete_base2(io, crec, bin->child[i], pos, apos,
+					   start_of_contig,
 					   MIN(ch->pos, ch->pos + ch->size-1),
-					   shift, comp, hash);
-
+					   NMIN(ch->pos, ch->pos + ch->size-1),
+					   base, comp, hash);
 		/* Children to the right of this one need pos updating too */
 	    } else if (pos < MIN(ch->pos, ch->pos + ch->size-1)) {
 		ch = get_bin(io, bin->child[i]);
@@ -699,7 +1028,11 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    return -1;
 		}
 
+		//printf("Mov bin %"PRIrec"\n", ch->rec);
+
 		ch->pos--;
+		if (ch->nseqs)
+		    ins=1;
 		ch->flags |= BIN_BIN_UPDATED;
 	    }
 	}
@@ -707,7 +1040,134 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 
     cache_decr(io, bin);
 
-    return ret;
+    return ins;
+}
+
+
+static int contig_delete_base_fix(GapIO *io, tg_rec crec, tg_rec bnum,
+				  int pos, int offset, int comp) {
+    int i, r = 0;
+    bin_index_t *bin;
+    int f_a, f_b;
+    contig_t *c = cache_search(io, GT_Contig, crec);
+
+    bin = get_bin(io, bnum);
+    cache_incr(io, bin);
+    cache_incr(io, c);
+
+    if (!(bin = cache_rw(io, bin)))
+	return -1;
+
+    /* Normalise pos for complemented bins */
+    if (bin->flags & BIN_COMPLEMENTED)
+	comp ^= 1;
+
+    if (comp) {
+	f_a = -1;
+	f_b = offset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = offset;
+    }
+
+    /* Find objects now moved to -ve coords in bins, and re-home them */
+    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	range_t *r = arrp(range_t, bin->rng, i), r2, *r_out;
+	HacheItem *hi;
+
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	if (r->start < 0) {
+	    bin_index_t *new_bin;
+
+	    printf("Bin %"PRIrec" obj %"PRIrec" with start %d. Loc %d..%d\n",
+		   bin->rec, r->rec, r->start,
+		   NORM(r->start), NORM(r->end));
+
+	    /* Convert range coords to absolute locations */
+	    r2 = *r;
+	    r2.start = NORM(r2.start);
+	    r2.end = NORM(r2.end);
+	    if (r2.start > r2.end) {
+		int t = r2.start;
+		r2.start = r2.end;
+		r2.end = t;
+		r2.flags ^= GRANGE_FLAG_COMP1;
+	    }
+
+	    /* Remove from old bin */
+	    bin_remove_item_from_bin(io, &c, &bin, 0, r->rec);
+
+	    /* Add back in new location */
+	    new_bin = bin_add_range(io, &c, &r2, &r_out, NULL, 0);
+	    cache_incr(io, new_bin);
+
+	    /* Fix any back references from the object */
+	    switch (r2.flags & GRANGE_FLAG_ISMASK) {
+	    case GRANGE_FLAG_ISANNO: {
+		anno_ele_t *a = cache_search(io, GT_AnnoEle, r2.rec);
+		a = cache_rw(io, a);
+		a->bin = new_bin->rec;
+		break;
+	    }
+
+	    case GRANGE_FLAG_ISCONS:
+	    case GRANGE_FLAG_ISSEQ: {
+		seq_t *s = cache_search(io, GT_Seq, r2.rec);
+		int old_comp = bin_get_orient(io, s->bin);
+		int new_comp = bin_get_orient(io, new_bin->rec);
+		s = cache_rw(io, s);
+
+		s->bin = new_bin->rec;
+		s->bin_index = r_out - ArrayBase(range_t, new_bin->rng);
+
+		printf("Old bin comp=%d new bin comp=%d\n",
+		       old_comp, new_comp);
+
+		if (new_comp != old_comp) {
+		    int tmp;
+		    s->len *= -1;
+		    s->flags ^= SEQ_COMPLEMENTED;
+		    //tmp = s->left;
+		    //s->left  = ABS(s->len) - (s->right-1);
+		    //s->right = ABS(s->len) - (tmp-1);
+		}
+
+		/* Also move annotations */
+		sequence_fix_anno_bins(io, &s);
+		break;
+	    }
+	    }
+
+	    cache_decr(io, new_bin);
+	}
+    }
+
+    if (bin->child[0] || bin->child[1]) {
+	bin_index_t *ch = NULL;
+
+	/* Find the correct child node */
+       	for (i = 0; i < 2; i++) {
+	    if (!bin->child[i])
+		continue;
+
+	    ch = get_bin(io, bin->child[i]);
+
+	    if (pos >= NMIN(ch->pos, ch->pos + ch->size-1) &&
+		pos <= NMAX(ch->pos, ch->pos + ch->size-1)) {
+		r |= contig_delete_base_fix(io, crec, bin->child[i], pos,
+					    NMIN(ch->pos,
+						 ch->pos + ch->size-1),
+					    comp);
+	    }
+	}
+    }
+
+    cache_decr(io, bin);
+    cache_decr(io, c);
+
+    return r;
 }
 
 int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
@@ -718,6 +1178,14 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
     int cur_del = 0;
     int done = 0, reduced;
     HacheTable *hash = NULL;
+    int cstart, cend;
+
+    consensus_valid_range(io, (*c)->rec, &cstart, &cend);
+
+    if (pos-1 < cstart || pos > cend) {
+	puts("Do nothing");
+	return 0;
+    }
 
     if (!(n = cache_rw(io, *c)))
 	return -1;
@@ -825,15 +1293,39 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
      * When shifting only we need to track which sequences moved so we can
      * move annotations too. See comments in insertion code for why.
      */
-    if (shift)
-	hash = HacheTableCreate(4096, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS
-				| HASH_ALLOW_DUP_KEYS | HASH_DYNAMIC_SIZE);
+    hash = HacheTableCreate(4096, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS
+			    | HASH_ALLOW_DUP_KEYS | HASH_DYNAMIC_SIZE);
 
-    reduced = contig_delete_base2(io, n->rec, contig_get_bin(c), pos,
-				  contig_offset(io, c), shift, 0, hash);
+    reduced = contig_delete_base2(io, n->rec, contig_get_bin(c), pos, pos,
+				  pos == n->start,
+				  contig_offset(io, c), contig_offset(io, c),
+				  !shift, 0, hash);
 
-    if (reduced == 1)
-	contig_set_end(io, c, contig_get_end(c)-1);
+    /*
+     * Deletion can move objects left if the deleted coord is in the left
+     * hand cutoff of a sequence. This in turn can push a sequence to
+     * negative coords within the bin.
+     *
+     * We can't fix this in real time very easily as we may move the sequence
+     * to a bin we haven't yet visited, causing it to then be found later on
+     * in the recursive algorithm and moved yet again. Instead we have a
+     * second pass fixing up these issues when they occur.
+     */
+    contig_delete_base_fix(io, n->rec, contig_get_bin(c),
+			   pos, contig_offset(io, c), 0);
+
+    /*
+     * Deleting a base can change contig dimensions in unexpected ways, as
+     * sometimes it moves sequences and other times it deletes from sequences,
+     * depending on whether we're in cutoff data or not.
+     *
+     * The easiest solution is just recalculate both ends.
+     */
+    consensus_unclipped_range(io, (*c)->rec, &cstart, &cend);
+    if (contig_get_start(c) != cstart)
+	contig_set_start(io, c, cstart);
+    if (contig_get_end(c) != cend)
+	contig_set_end(io, c, cend);
 
     if (hash)
 	HacheTableDestroy(hash, 0);
@@ -3187,8 +3679,8 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 		scale * (*c)->end,    level*(H+G)+H+20);
     }
 
-    fprintf(gv, "\n%g f\n", 5 * pow(0.8, -level));
-    fprintf(gv, "%g w\n", 2 * pow(0.8, -level));
+    //fprintf(gv, "\n%g f\n", 5 * pow(0.8, -level));
+    //fprintf(gv, "%g w\n", 2 * pow(0.8, -level));
 
     for (i = -level; i < 100; i++) {
 	double p1 = scale * offset;
@@ -3198,7 +3690,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     }
     level = -i;
 
-    if (level < -20)
+    if (level < -200)
 	goto skip;
 
     /* linking lines */
