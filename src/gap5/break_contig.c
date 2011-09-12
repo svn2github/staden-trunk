@@ -148,9 +148,9 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
     int seq_start = 0, seq_clipped_start;
     contig_t *c = cache_search(io, GT_Contig, crec);
 
+    cache_incr(io, c);
     consensus_valid_range(io, crec, &seq_clipped_start, NULL);
 
-    cache_incr(io, c);
     ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST | CITER_ISTART,
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANY);
@@ -233,9 +233,9 @@ int contig_visible_end(GapIO *io, tg_rec crec) {
     int seq_end = 0, seq_clipped_end;
     contig_t *c = cache_search(io, GT_Contig, crec);
 
+    cache_incr(io, c);
     consensus_valid_range(io, crec, NULL, &seq_clipped_end);
 
-    cache_incr(io, c);
     ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
 				 CITER_CSTART, CITER_CEND,
 				 GRANGE_FLAG_ISANY);
