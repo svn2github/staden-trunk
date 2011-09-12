@@ -11,6 +11,7 @@
 #include "dis_readings.h"
 #include "misc.h"
 #include "break_contig.h"
+#include "bitmap.h"
 
 /*-----------------------------------------------------------------------------
  * Databse checking code.
@@ -135,6 +136,21 @@ typedef struct {
     rangec_t *anno;   /* Annotation ranges */
     int n_anno;
 } r_pos_t;
+
+/*
+ * Source and destination maps for contigs. This allows us to work out
+ * which contigs are best to move consensus annotations too based on size
+ * of overlap. Alternatively if we choose to implement duplication of
+ * consensus annotations later then we'll also need this information.
+ */
+typedef struct {
+    tg_rec src;
+    int src_start;
+    int src_end;
+    tg_rec dest;
+    int dest_start;
+    int dest_end;
+} contig_map;
 
 
 /*
@@ -330,12 +346,6 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 	return -1;
     }
 
-    if (empty_contigs_only) {
-	cache_decr(io, c);
-	return 0;
-    }
-
-
     /* Hole at left end */
     if (c->start == start) {
 	iter = contig_iter_new(io, contig, 1, CITER_FIRST, start, end);
@@ -363,6 +373,12 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 	}
     }
 
+    if (empty_contigs_only) {
+	cache_decr(io, c);
+	return 0;
+    }
+
+
     /* Make sure start/end are within clipped contig coordinates */
     consensus_valid_range(io, contig, &contig_start, &contig_end);
     if (start < contig_start)
@@ -384,7 +400,7 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
     }
 
     last = end;
-    while (r = contig_iter_prev(io, iter)) {
+    while (iter && (r = contig_iter_prev(io, iter))) {
 	seq_t *s = cache_search(io, GT_Seq, r->rec);
 	int cstart, cend;
 
@@ -408,7 +424,8 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 	    int r;
 
 	    vmessage("GAP from %d..%d; breaking.\n", cend, last);
-	    r = break_contig(io, contig, last, 0);
+	    if (!empty_contigs_only)
+		r = break_contig(io, contig, last, 0);
 
 	    /* Who knows what impact break_contig has - restart to be safe */
 	    contig_iter_del(iter);
@@ -424,7 +441,8 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 	if (last > cstart)
 	    last = cstart;
     }
-    contig_iter_del(iter);
+    if (iter)
+	contig_iter_del(iter);
 
     cache_decr(io, c);
 
@@ -516,6 +534,8 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
     for (i = npos-1; i >= 0; i--) {
 	if (pos[i].contig != contig ||
 	    pos[i].end < start) {
+	    contig_visible_start(io, contig); // Also trims end-tags
+	    contig_visible_end(io, contig);
 	    remove_contig_holes(io, contig, start, end, !remove_holes);
 	    contig = pos[i].contig;
 	    start  = pos[i].start;
@@ -525,6 +545,9 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
 		start = pos[i].start;
 	}
     }
+
+    contig_visible_start(io, contig); // Also trims end-tags
+    contig_visible_end(io, contig);
     remove_contig_holes(io, contig, start, end, !remove_holes);
 
     return 0;
@@ -595,7 +618,8 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
  * Returns 0 on success
  *        -1 on failure
  */
-static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
+static int create_contig_from(GapIO *io, r_pos_t *pos, int npos,
+			      Array cmap) {
     int i;
     contig_t *c_old, *c_new;
     char name[8192];
@@ -604,11 +628,14 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
     int offset;
     bin_index_t *bin;
     int old_comp;
+    int dest_start = INT_MAX, dest_end = INT_MIN;
+    int src_start = INT_MAX, src_end = INT_MIN;
+    contig_map *map;
 
     if (npos <= 0)
 	return -1;
 
-    vmessage("\n=== new contig ===");
+    vmessage("\n=== new contig ===\n");
     for (i = 0; i < npos; i++) {
 	vmessage("%d\tCtg %"PRIrec"\t%d..%d\tseq %"PRIrec"\n",
 		 i, pos[i].contig, pos[i].start, pos[i].end, pos[i].rec);
@@ -647,6 +674,17 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 	r = pos[i].rng;
 	r.start = pos[i].start - offset;
 	r.end   = pos[i].end - offset;
+
+	if (src_start > pos[i].start)
+	    src_start = pos[i].start;
+	if (src_end < pos[i].end)
+	    src_end = pos[i].end;
+
+	if (dest_start > r.start)
+	    dest_start = r.start;
+	if (dest_end < r.end)
+	    dest_end = r.end;
+
 	r.y     = 0;
 	if (old_comp)
 	    r.flags ^= GRANGE_FLAG_COMP1;
@@ -689,6 +727,16 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
 	}
     }
 
+    ArrayRef(cmap, ArrayMax(cmap));
+    map = arrp(contig_map, cmap, ArrayMax(cmap)-1);
+    map->src        = c_old->rec;
+    map->src_start  = src_start;
+    map->src_end    = src_end;
+
+    map->dest       = c_new->rec;
+    map->dest_start = dest_start;
+    map->dest_end   = dest_end;
+
     cache_decr(io, c_old);
     cache_decr(io, c_new);
 
@@ -699,7 +747,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos) {
  * Moves a bunch of reads to a new contig. We determine the set of reads
  * based on overlaps. Calls create_contig_from to do the grunt work.
  */
-static int move_reads(GapIO *io, r_pos_t *pos, int npos) {
+static int move_reads(GapIO *io, r_pos_t *pos, int npos, Array cmap) {
     int i, start, end;
     tg_rec contig;
     int i_start, err = 0;
@@ -714,7 +762,7 @@ static int move_reads(GapIO *io, r_pos_t *pos, int npos) {
     for (i = 1; i < npos; i++) {
 	if (pos[i].contig != contig ||
 	    pos[i].start > end) {
-	    if (create_contig_from(io, &pos[i_start], i - i_start))
+	    if (create_contig_from(io, &pos[i_start], i - i_start, cmap))
 		err = 1;
 	    i_start = i;
 	    contig  = pos[i].contig;
@@ -725,10 +773,199 @@ static int move_reads(GapIO *io, r_pos_t *pos, int npos) {
 		end = pos[i].end;
 	}
     }
-    if (create_contig_from(io, &pos[i_start], i - i_start))
+    if (create_contig_from(io, &pos[i_start], i - i_start, cmap))
 	err = 1;
 
     return err;
+}
+
+
+static Bitmap contig_hole_bitmap(GapIO *io, tg_rec contig,
+				 int start, int end) {
+    contig_iterator *iter;
+    rangec_t *r;
+    Bitmap hole = BitmapCreate(end - start + 1);
+    int last;
+
+    iter = contig_iter_new(io, contig, 0,
+			   CITER_LAST | CITER_ICLIPPEDEND,
+			   start, end);
+    if (!iter)
+	return NULL;
+
+    last = end+1;
+    while (r = contig_iter_prev(io, iter)) {
+	seq_t *s = cache_search(io, GT_Seq, r->rec);
+	int cstart, cend;
+		
+	if (!s)
+	    return NULL;
+
+	if ((s->len < 0) ^ r->comp) {
+	    cstart = r->start + ABS(s->len) - (s->right-1) - 1;
+	    cend   = r->start + ABS(s->len) - (s->left-1) - 1;
+	} else {
+	    cstart = r->start + s->left-1;
+	    cend   = r->start + s->right-1;
+	}
+
+	if (cend < last) {
+	    int i;
+	    for (i = cend+1; i < last; i++)
+		if (i >= start && i <= end)
+		    BIT_SET(hole, i-start);
+	}
+	if (last > cstart)
+	    last = cstart;
+    }
+
+    if (start < last) {
+	int i;
+	for (i = start; i < last; i++)
+	    if (i >= start && i <= end)
+		BIT_SET(hole, i-start);
+    }
+
+    contig_iter_del(iter);
+
+    return hole;
+}
+
+/*
+ * Tidies up consensus annotations by copying them to their most appropriate
+ * new contig. Tags which entirely fit within a new contig get moved.
+ * Others get copied, but we still need to trim annotations from the source
+ * if they're overlapping or in some rare cases are completely in holes
+ * (we had an internal hole before, but it's now on the contig end).
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int copy_contig_anno(GapIO *io, Array cmap) {
+    int n = ArrayMax(cmap), i, j, k;
+
+    for (i = 0; i < n; i++) {
+	contig_map *map = arrp(contig_map, cmap, i);
+	rangec_t *rc;
+	int nr;
+	contig_t *c, *new_c;
+	Bitmap hole = NULL;
+	
+	//printf("Mapped %"PRIrec" @ %d..%d -> %"PRIrec" @ %d..%d\n",
+	//       map->src,  map->src_start,  map->src_end,
+	//       map->dest, map->dest_start, map->dest_end);
+
+	/* Find annotations spanning this source region */
+	c = cache_search(io, GT_Contig, map->src);
+	cache_incr(io, c);
+	rc = contig_anno_in_range(io, &c, map->src_start, map->src_end,
+				  0, &nr);
+
+	/* Trim to only consensus tags */
+	for (k = j = 0; j < nr; j++) {
+	    if (rc[j].flags & GRANGE_FLAG_TAG_SEQ)
+		continue;
+
+	    /*
+	     * This looks odd, but it's here because a straight
+	     * "rc[k++] = rc[j]" is not technically legal C and neither
+	     * does Valgrind like it.
+	     *
+	     * The problem arises that structure assignment may be
+	     * implemented using memcpy (c9x draft 6.2.6.1) and memcpy
+	     * has undefined behaviour when given overlapping objects
+	     * (section 7.21.2.1). Hence an asignment of rc[0] = rc[0]
+	     * generates a memcpy with src==dest which is undefined.
+	     * Grrr.
+	     */
+	    if (k != j)
+		rc[k++] = rc[j];
+	    else
+		k++;
+	}
+	nr = k;
+
+	if (!nr) {
+	    if (rc)
+		free(rc);
+	    cache_decr(io, c);
+	    continue;
+	}
+
+	/* Produce a bitmap of hole or no-hole for source contig */
+	hole = contig_hole_bitmap(io, c->rec, map->src_start, map->src_end);
+
+	new_c = cache_search(io, GT_Contig, map->dest);
+	cache_incr(io, new_c);
+
+	/* Duplicate them onto the destination contig */
+	for (j = 0; j < nr; j++) {
+	    range_t new_r;
+	    rangec_t *r = &rc[j];
+	    anno_ele_t *a;
+	    bin_index_t *bin;
+	    int in_hole = 1;
+	    int k_start, k_end;
+
+	    if (r->start < map->src_start ||
+		r->end   > map->src_end) {
+		in_hole = 0;
+	    } else {
+		for (k = r->start; k <= r->end; k++) {
+		    if (BIT_CHK(hole, k - map->src_start) == 0) {
+			in_hole = 0;
+			break;
+		    }
+		}
+	    }
+
+	    //if (in_hole) {
+	    //	printf("  Mov tag %"PRIrec" pos %d..%d\n",
+	    //	       r->rec, r->start, r->end);
+	    //} else {
+	    //	printf("  Dup tag %"PRIrec" pos %d..%d\n",
+	    //	       r->rec, r->start, r->end);
+	    //}
+
+	    a = cache_search(io, GT_AnnoEle, r->rec);
+
+	    new_r.start    = r->start - map->src_start + map->dest_start;
+	    new_r.end      = r->end   - map->src_start + map->dest_start;
+	    new_r.flags    = r->flags;
+	    new_r.mqual    = r->mqual;
+	    new_r.pair_rec = 0;
+
+	    if (in_hole) {
+		new_r.rec  = a->rec;
+		bin_remove_item(io, &c, GT_AnnoEle, r->rec);
+	    } else {
+		new_r.rec  = anno_ele_new(io, 0, GT_Contig, 0, 0,
+					  r->mqual, a->comment);
+	    }
+
+	    if (new_r.start < map->dest_start)
+		new_r.start = map->dest_start;
+	    if (new_r.end   > map->dest_end)
+		new_r.end   = map->dest_end;
+
+	    bin = bin_add_range(io, &new_c, &new_r, NULL, NULL, 0);
+
+	    a = cache_search(io, GT_AnnoEle, new_r.rec);
+	    a = cache_rw(io, a);
+	    a->bin = bin->rec;
+	}
+
+	cache_decr(io, c);
+	cache_decr(io, new_c);
+
+	if (rc)
+	    free(rc);
+
+	if (hole)
+	    BitmapDestroy(hole);
+    }
+
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -763,6 +1000,7 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
     int i,err = 0;
     r_pos_t *pos;
     HacheTable *dup_hash;
+    Array cmap;
 
     vfuncheader("Disassemble_readings");
     //    check_contig_bins(io);
@@ -785,7 +1023,9 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
      * 3c. move==2: produce 1 new contig for each overlapping set of
      *              disassembled reads.
      *
-     * 4. Check for holes within the "source" contigs. We use the
+     * 4. Move/copy any consensus annotations.
+     *
+     * 5. Check for holes within the "source" contigs. We use the
      *    initial table for this, along with regions to look around.
      *
      */
@@ -800,6 +1040,8 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
      */
     dup_hash = HacheTableCreate(8192, HASH_DYNAMIC_SIZE |
 				      HASH_NONVOLATILE_KEYS);
+    cmap = ArrayCreate(sizeof(contig_map), 0);
+
     for (i = 0; i < nreads; i++) {
 	HacheData hd;
 	int n;
@@ -848,7 +1090,7 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
     case 1:
 	/* 3b. produce new contigs/bins for each read. */
 	for (i = 0; i < nreads; i++) {
-	    if (create_contig_from(io, &pos[i], 1))
+	    if (create_contig_from(io, &pos[i], 1, cmap))
 		err = 1;
 	}
 	break;
@@ -856,7 +1098,7 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
     case 2:
 	/* 3c. produce 1 new contig for each overlapping set of
 	       disassembled reads. */
-	if (move_reads(io, pos, nreads))
+	if (move_reads(io, pos, nreads, cmap))
 	    err = 1;
 	break;
 
@@ -868,7 +1110,10 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 
     cache_flush(io);
 
-    /* Part 4: fix holes in source contigs */
+    /* Part 4: Move/copy any consensus annotations. */
+    copy_contig_anno(io, cmap);
+
+    /* Part 5: fix holes in source contigs */
     if (fix_holes(io, pos, nreads, remove_holes))
 	/* Too late to undo, so keep going! */
 	err = 1;
@@ -881,6 +1126,8 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 	if (pos[i].anno)
 	    free(pos[i].anno);
     free(pos);
+
+    ArrayDestroy(cmap);
 
     return err ? -1 : 0;
 }
