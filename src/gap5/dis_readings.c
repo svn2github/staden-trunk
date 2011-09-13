@@ -131,6 +131,9 @@ typedef struct {
     tg_rec contig;
     int start;
     int end;
+    int clipped_start;
+    int clipped_end;
+    int comp;
     tg_rec rec;       /* sequence record */
     range_t rng;      /* rng in original bin */
     rangec_t *anno;   /* Annotation ranges */
@@ -145,10 +148,10 @@ typedef struct {
  */
 typedef struct {
     tg_rec src;
-    int src_start;
+    int src_start; /* clipped */
     int src_end;
     tg_rec dest;
-    int dest_start;
+    int dest_start; /* unclipped, but we know clipped starts at bp 1 */
     int dest_end;
 } contig_map;
 
@@ -183,7 +186,7 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
     bin_index_t *bin;
     seq_t *seq;
     tg_rec brec;
-    int i, j;
+    int i, j, comp;
 
     //printf("%soving record #%d\n", remove ? "Rem" : "M", rec);
 
@@ -192,13 +195,21 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
 			      &pos->contig,
 			      &pos->start,
 			      &pos->end,
-			      NULL, /* orient */
+			      &pos->comp,
 			      &brec,
 			      &pos->rng,
 			      (void **)&seq)) {
 	return -1;
     }
     /* seq already has cache_incr on it */
+
+    if ((seq->len < 0) ^ pos->comp) {
+	pos->clipped_start = pos->start + ABS(seq->len) - (seq->right-1) - 1;
+	pos->clipped_end   = pos->start + ABS(seq->len) - (seq->left-1) - 1;
+    } else {
+	pos->clipped_start = pos->start + seq->left-1;
+	pos->clipped_end   = pos->start + seq->right-1;
+    }
 
     /* Find annotations in this region */
     c = cache_search(io, GT_Contig, pos->contig);
@@ -665,7 +676,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos,
 
 
     /* Add in the sequences */
-    offset = pos[0].start - 1;
+    offset = pos[0].clipped_start - 1;
     for (i = 0; i < npos; i++) {
 	range_t r, *r_out;
 	seq_t *s;
@@ -675,10 +686,10 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos,
 	r.start = pos[i].start - offset;
 	r.end   = pos[i].end - offset;
 
-	if (src_start > pos[i].start)
-	    src_start = pos[i].start;
-	if (src_end < pos[i].end)
-	    src_end = pos[i].end;
+	if (src_start > pos[i].clipped_start)
+	    src_start = pos[i].clipped_start;
+	if (src_end < pos[i].clipped_end)
+	    src_end = pos[i].clipped_end;
 
 	if (dest_start > r.start)
 	    dest_start = r.start;
@@ -686,7 +697,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos,
 	    dest_end = r.end;
 
 	r.y     = 0;
-	if (old_comp)
+	if (pos[i].comp)
 	    r.flags ^= GRANGE_FLAG_COMP1;
 
 	bin = bin_add_range(io, &c_new, &r, &r_out, NULL, 0);
@@ -695,7 +706,7 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos,
 	s = cache_rw(io, s);
 	s->bin = bin->rec;
 	s->bin_index = r_out - ArrayBase(range_t, bin->rng);
-	if (old_comp) {
+	if (pos[i].comp) {
 	    s->len = -s->len;
 	    s->flags ^= SEQ_COMPLEMENTED;
 	}
@@ -850,10 +861,14 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 	int nr;
 	contig_t *c, *new_c;
 	Bitmap hole = NULL;
+
+	/* Convert dest from unclipped to clipped */
+	map->dest_start = 1;
+	map->dest_end = map->src_end - map->src_start + 1;
 	
-	//printf("Mapped %"PRIrec" @ %d..%d -> %"PRIrec" @ %d..%d\n",
-	//       map->src,  map->src_start,  map->src_end,
-	//       map->dest, map->dest_start, map->dest_end);
+	printf("Mapped %"PRIrec" @ %d..%d -> %"PRIrec" @ %d..%d\n",
+	       map->src,  map->src_start,  map->src_end,
+	       map->dest, map->dest_start, map->dest_end);
 
 	/* Find annotations spanning this source region */
 	c = cache_search(io, GT_Contig, map->src);
@@ -919,13 +934,13 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 		}
 	    }
 
-	    //if (in_hole) {
-	    //	printf("  Mov tag %"PRIrec" pos %d..%d\n",
-	    //	       r->rec, r->start, r->end);
-	    //} else {
-	    //	printf("  Dup tag %"PRIrec" pos %d..%d\n",
-	    //	       r->rec, r->start, r->end);
-	    //}
+	    if (in_hole) {
+	    	printf("  Mov tag %"PRIrec" pos %d..%d\n",
+	    	       r->rec, r->start, r->end);
+	    } else {
+	    	printf("  Dup tag %"PRIrec" pos %d..%d\n",
+	    	       r->rec, r->start, r->end);
+	    }
 
 	    a = cache_search(io, GT_AnnoEle, r->rec);
 
