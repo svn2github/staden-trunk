@@ -203,6 +203,28 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
     }
     /* seq already has cache_incr on it */
 
+    /* Catch 0 length reads as these can cause bugs to occur */
+    if (seq->right < seq->left) {
+	seq = cache_rw(io, seq);
+
+	if (seq->left > 1)
+	    seq->left--;
+	else
+	    seq->right++;
+
+	if ((seq->len < 0) ^ pos->comp) {
+	    pos->clipped_start =
+		pos->start + ABS(seq->len) - (seq->right-1) - 1;
+	    pos->clipped_end   =
+		pos->start + ABS(seq->len) - (seq->left-1) - 1;
+	} else {
+	    pos->clipped_start =
+		pos->start + seq->left-1;
+	    pos->clipped_end   =
+		pos->start + seq->right-1;
+	}
+    }
+
     if ((seq->len < 0) ^ pos->comp) {
 	pos->clipped_start = pos->start + ABS(seq->len) - (seq->right-1) - 1;
 	pos->clipped_end   = pos->start + ABS(seq->len) - (seq->left-1) - 1;
@@ -518,6 +540,8 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
 		     int remove_holes) {
     int i, start, end;
     tg_rec contig;
+    int cstart, cend;
+    contig_t *c;
 
     if (npos == 0)
 	return 0;
@@ -542,11 +566,19 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
     contig = pos[npos-1].contig;
     start  = pos[npos-1].start;
     end    = pos[npos-1].end;
+    c = cache_search(io, GT_Contig, contig);
+    cend = MAX(c->end, end);
+    contig_visible_end(io, contig, cend);
+    
     for (i = npos-1; i >= 0; i--) {
+	if (pos[i].contig != contig) {
+	    // Also trims end-tags
+	    c = cache_search(io, GT_Contig, contig);
+	    cstart = MIN(c->start, start);
+	    contig_visible_start(io, contig, cstart); 
+	}
 	if (pos[i].contig != contig ||
 	    pos[i].end < start) {
-	    contig_visible_start(io, contig); // Also trims end-tags
-	    contig_visible_end(io, contig);
 	    remove_contig_holes(io, contig, start, end, !remove_holes);
 	    contig = pos[i].contig;
 	    start  = pos[i].start;
@@ -557,8 +589,9 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
 	}
     }
 
-    contig_visible_start(io, contig); // Also trims end-tags
-    contig_visible_end(io, contig);
+    c = cache_search(io, GT_Contig, contig);
+    cstart = MIN(c->start, start);
+    contig_visible_start(io, contig, cstart); // Also trims end-tags
     remove_contig_holes(io, contig, start, end, !remove_holes);
 
     return 0;

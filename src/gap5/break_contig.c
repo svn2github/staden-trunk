@@ -141,8 +141,13 @@ static void remove_empty_bins(GapIO *io, tg_rec contig) {
  * Compute the visible statr position of a contig. This isn't just the extents
  * of start_used / end_used in the bins as this can included invisible
  * data such as cached consensus sequences.
+ *
+ * 'from' is the starting point to search from in a contig iterator.
+ * Specify CITER_CSTART if you don't know what this is, otherwise if the
+ * contig has been edited (eg shrunk) then you may want to specify an older
+ * start coord in order to correctly trim all data.
  */
-int contig_visible_start(GapIO *io, tg_rec crec) {
+int contig_visible_start(GapIO *io, tg_rec crec, int from) {
     rangec_t *r;
     contig_iterator *ci;
     int seq_start = 0, seq_clipped_start;
@@ -171,7 +176,7 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
 
     /* Trim annotations to visible portion */
     ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST | CITER_ISTART,
-				 CITER_CSTART, CITER_CEND,
+				 from, CITER_CEND,
 				 GRANGE_FLAG_ISANNO);
     while (ci && (r = contig_iter_next(io, ci))) {
 	if (r->start >= seq_clipped_start)
@@ -227,7 +232,7 @@ int contig_visible_start(GapIO *io, tg_rec crec) {
  * of start_used / end_used in the bins as this can included invisible
  * data such as cached consensus sequences.
  */
-int contig_visible_end(GapIO *io, tg_rec crec) {
+int contig_visible_end(GapIO *io, tg_rec crec, int to) {
     rangec_t *r;
     contig_iterator *ci;
     int seq_end = 0, seq_clipped_end;
@@ -256,7 +261,7 @@ int contig_visible_end(GapIO *io, tg_rec crec) {
 
     /* Trim annotations to visible/clipped portion */
     ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
-				 CITER_CSTART, CITER_CEND,
+				 CITER_CSTART, to,
 				 GRANGE_FLAG_ISANNO);
     while (ci && (r = contig_iter_prev(io, ci))) {
 	if (r->end <= seq_clipped_end)
@@ -1348,12 +1353,12 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 			 contig_offset(io, &cl), 0, cl->rec, cr->rec, 0, 0);
 
     /* Recompute end positions */
-    left_end    = contig_visible_end(io, cl->rec);
-    right_start = contig_visible_start(io, cr->rec);
+    left_end    = contig_visible_end(io, cl->rec, CITER_CEND);
+    right_start = contig_visible_start(io, cr->rec, CITER_CSTART);
 
     /* Also do other ends, simply to tidy up end tags */
-    contig_visible_start(io, cl->rec);
-    contig_visible_end(io, cr->rec);
+    contig_visible_start(io, cl->rec, CITER_CSTART);
+    contig_visible_end(io, cr->rec, CITER_CEND);
 
     //if (cl->bin) contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
     //if (cr->bin) contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
