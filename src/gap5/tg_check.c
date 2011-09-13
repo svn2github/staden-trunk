@@ -388,7 +388,7 @@ static void bin_shift_children(GapIO *io, bin_index_t *bin, int delta) {
  * if necessary.
  */
 void grow_bin(GapIO *io, bin_index_t *bin) {
-    bin_index_t *parent;
+    bin_index_t *parent = bin;
 
     cache_incr(io, bin);
 
