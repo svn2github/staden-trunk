@@ -794,7 +794,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			r_end = MAX(r->start + s->right-1,
 				    r->start + s->left-1);
 		    }
-		    if (pos <= r_start || pos > r_end)
+		    if (pos < r_start || pos > r_end)
 			no_ins = 1;
 
 		    // printf("Rec %"PRIrec" visible %d..%d abs %d..%d\n",
@@ -804,6 +804,13 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    if (!no_ins) {
 			if (r->start == r->end) {
 			    /* Remove completely */
+			    if (hash) {
+				//printf("1 Mov %"PRIrec"\n", r->rec);
+				hd.i = MAX(NMIN(r_start, r_end), apos);
+				HacheTableAdd(hash, (char *)&r->rec,
+					      sizeof(r->rec), hd, NULL);
+			    }
+
 			    r->flags |= GRANGE_FLAG_UNUSED;
 			    r->rec = bin->rng_free;
 
@@ -928,27 +935,37 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	if (!hi)
 	    continue;
 
-	//printf("Rec %"PRIrec" hd.i=%ld comp=%d NORM=%d,%d\n",
-	//       r->rec, (long)hd.i, comp,
-	//       NORM(r->start), NORM(r->end));
+	printf("Rec %"PRIrec" hd.i=%ld comp=%d NORM=%d,%d\n",
+	       r->rec, (long)hd.i, comp,
+	       NORM(r->start), NORM(r->end));
 
-	if (comp) {
-	    if (NMAX(r->start, r->end) <= (int64_t)hi->data.i-1) {
-		//puts("mov2");
-		r->start--;
-		r->end--;
-	    } else if (NMIN(r->start, r->end) <= (int64_t)hi->data.i-1) {
-		//puts("grow2");
-		r->end--;
-	    }
+	if (r->start == r->end && NORM(r->start) == (int64_t)hi->data.i) {
+	    puts("del1/2");
+	    r->flags |= GRANGE_FLAG_UNUSED;
+	    r->rec = bin->rng_free;
+
+	    bin->rng_free = i;
+	    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+	    bin_incr_nanno(io, bin, -1);
 	} else {
-	    if (NMIN(r->start, r->end) >= (int64_t)hi->data.i) {
-		//puts("mov1");
-		r->start--;
-		r->end--;
-	    } else if (NMAX(r->start, r->end) >= (int64_t)hi->data.i) {
-		//puts("grow1");
-		r->end--;
+	    if (comp) {
+		if (NMAX(r->start, r->end) < (int64_t)hi->data.i) {
+		    puts("mov2");
+		    r->start--;
+		    r->end--;
+		} else if (NMIN(r->start, r->end) <= (int64_t)hi->data.i) {
+		    puts("shrink2");
+		    r->end--;
+		}
+	    } else {
+		if (NMIN(r->start, r->end) > (int64_t)hi->data.i) {
+		    puts("mov1");
+		    r->start--;
+		    r->end--;
+		} else if (NMAX(r->start, r->end) >= (int64_t)hi->data.i) {
+		    puts("shrink1");
+		    r->end--;
+		}
 	    }
 	}
 
@@ -1293,7 +1310,7 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
      * When shifting only we need to track which sequences moved so we can
      * move annotations too. See comments in insertion code for why.
      */
-    hash = HacheTableCreate(4096, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS
+    hash = HacheTableCreate(4096, /*HASH_NONVOLATILE_KEYS | */HASH_POOL_ITEMS
 			    | HASH_ALLOW_DUP_KEYS | HASH_DYNAMIC_SIZE);
 
     reduced = contig_delete_base2(io, n->rec, contig_get_bin(c), pos, pos,
@@ -3068,10 +3085,10 @@ static int range_populate(GapIO *io, contig_iterator *ci,
 	if (start > c->end)
 	    return -1;
 
-	if (start < c->start)
-	    start = c->start;
-	if (end > c->end)
-	    end = c->end;
+	//if (start < c->start)
+	//    start = c->start;
+	//if (end > c->end)
+	//    end = c->end;
     }
 
     ci->cnum = cnum;
