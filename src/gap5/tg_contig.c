@@ -935,12 +935,12 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	if (!hi)
 	    continue;
 
-	printf("Rec %"PRIrec" hd.i=%ld comp=%d NORM=%d,%d\n",
-	       r->rec, (long)hd.i, comp,
-	       NORM(r->start), NORM(r->end));
+	//printf("Rec %"PRIrec" hd.i=%ld comp=%d NORM=%d,%d\n",
+	//       r->rec, (long)hd.i, comp,
+	//       NORM(r->start), NORM(r->end));
 
 	if (r->start == r->end && NORM(r->start) == (int64_t)hi->data.i) {
-	    puts("del1/2");
+	    //puts("del1/2");
 	    r->flags |= GRANGE_FLAG_UNUSED;
 	    r->rec = bin->rng_free;
 
@@ -950,20 +950,20 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	} else {
 	    if (comp) {
 		if (NMAX(r->start, r->end) < (int64_t)hi->data.i) {
-		    puts("mov2");
+		    //puts("mov2");
 		    r->start--;
 		    r->end--;
 		} else if (NMIN(r->start, r->end) <= (int64_t)hi->data.i) {
-		    puts("shrink2");
+		    //puts("shrink2");
 		    r->end--;
 		}
 	    } else {
 		if (NMIN(r->start, r->end) > (int64_t)hi->data.i) {
-		    puts("mov1");
+		    //puts("mov1");
 		    r->start--;
 		    r->end--;
 		} else if (NMAX(r->start, r->end) >= (int64_t)hi->data.i) {
-		    puts("shrink1");
+		    //puts("shrink1");
 		    r->end--;
 		}
 	    }
@@ -1338,6 +1338,8 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
      *
      * The easiest solution is just recalculate both ends.
      */
+    contig_visible_start(io, (*c)->rec, CITER_CSTART);
+    contig_visible_end(io, (*c)->rec, CITER_CEND);
     consensus_unclipped_range(io, (*c)->rec, &cstart, &cend);
     if (contig_get_start(c) != cstart)
 	contig_set_start(io, c, cstart);

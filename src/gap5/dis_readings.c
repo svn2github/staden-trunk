@@ -899,9 +899,9 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 	map->dest_start = 1;
 	map->dest_end = map->src_end - map->src_start + 1;
 	
-	printf("Mapped %"PRIrec" @ %d..%d -> %"PRIrec" @ %d..%d\n",
-	       map->src,  map->src_start,  map->src_end,
-	       map->dest, map->dest_start, map->dest_end);
+	//printf("Mapped %"PRIrec" @ %d..%d -> %"PRIrec" @ %d..%d\n",
+	//       map->src,  map->src_start,  map->src_end,
+	//       map->dest, map->dest_start, map->dest_end);
 
 	/* Find annotations spanning this source region */
 	c = cache_search(io, GT_Contig, map->src);
@@ -967,13 +967,13 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 		}
 	    }
 
-	    if (in_hole) {
-	    	printf("  Mov tag %"PRIrec" pos %d..%d\n",
-	    	       r->rec, r->start, r->end);
-	    } else {
-	    	printf("  Dup tag %"PRIrec" pos %d..%d\n",
-	    	       r->rec, r->start, r->end);
-	    }
+	    //if (in_hole) {
+	    //	printf("  Mov tag %"PRIrec" pos %d..%d\n",
+	    //	       r->rec, r->start, r->end);
+	    //} else {
+	    //	printf("  Dup tag %"PRIrec" pos %d..%d\n",
+	    //	       r->rec, r->start, r->end);
+	    //}
 
 	    a = cache_search(io, GT_AnnoEle, r->rec);
 
