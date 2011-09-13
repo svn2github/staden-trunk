@@ -368,22 +368,24 @@ int edview_search_cons_discrep(edview *xx, int dir, int strand, char *value) {
 int edview_search_name(edview *xx, int dir, int strand, char *value)
 {
     tg_rec rec, *rp, cnum = -1, best_rec;
-    int best_pos;
+    int best_pos, best_off;
     int nr, i;
     rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
-    int start, end;
+    int start, end, cstart;
     contig_iterator *iter;
 
     /* Check for #num where num is a sequence record in this contig */
     if (*value == '#') {
 	char *endp;
 	int64_t v = strtol64(value+1, &endp, 10);
+
 	rec = v;
 
 	if (*endp == '\0' && cache_exists(xx->io, GT_Seq, rec)) {
-	    sequence_get_position(xx->io, rec, &cnum, NULL, NULL, NULL);
+	    sequence_get_clipped_position(xx->io, rec, &cnum,
+					  &start, NULL, &cstart, NULL, NULL);
 	    if (cnum == xx->cnum) {
-		edSetCursorPos(xx, GT_Seq, rec, 0, 1);
+		edSetCursorPos(xx, GT_Seq, rec, cstart - start, 1);
 		return 0;
 	    }
 	}
@@ -398,11 +400,13 @@ int edview_search_name(edview *xx, int dir, int strand, char *value)
 	end      = xx->contig->end;
 	ifunc    = contig_iter_next;
 	best_pos = end + 1;
+	best_off = 0;
     } else {
 	start    = xx->contig->start;
 	end      = xx->cursor_apos - 1;
 	ifunc    = contig_iter_prev;
 	best_pos = start - 1;
+	best_off = 0;
     }
 
     iter = contig_iter_new_by_type(xx->io, xx->cnum, 1,
@@ -437,11 +441,13 @@ int edview_search_name(edview *xx, int dir, int strand, char *value)
 
 	/* From name index */
 	rec = rp[i++];
-	sequence_get_position(xx->io, rec, &cnum, &start, &end, NULL);
+	sequence_get_clipped_position(xx->io, rec, &cnum, &start, &end,
+				      &cstart, NULL, NULL);
 	if (cnum == xx->cnum) {
-	    if ((dir  && best_pos > start && start > xx->cursor_apos) ||
-		(!dir && best_pos < start && start < xx->cursor_apos)) {
-		best_pos = start;
+	    if ((dir  && best_pos > cstart && cstart > xx->cursor_apos) ||
+		(!dir && best_pos < cstart && cstart < xx->cursor_apos)) {
+		best_pos = cstart;
+		best_off = cstart - start;
 		best_rec = rec;
 	    }
 	}
@@ -473,7 +479,7 @@ int edview_search_name(edview *xx, int dir, int strand, char *value)
 	free(rp);
     
     if (best_rec != -1) {
-	edSetCursorPos(xx, GT_Seq, best_rec, 0, 1);
+	edSetCursorPos(xx, GT_Seq, best_rec, best_off, 1);
 	return 0;
     }
 

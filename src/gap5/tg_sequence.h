@@ -63,6 +63,11 @@ int sequence_get_position(GapIO *io, tg_rec snum, tg_rec *contig,
 int sequence_get_position2(GapIO *io, tg_rec snum, tg_rec *contig,
 			   int *start, int *end, int *orient,
 			   tg_rec *brec, range_t *r_out, seq_t **s_out);
+int sequence_get_clipped_position(GapIO *io, tg_rec snum, tg_rec *contig,
+				  int *start, int *end,
+				  int *clipped_start, int *clipped_end,
+				  int *orient);
+
 int sequence_get_orient(GapIO *io, tg_rec snum);
 tg_rec sequence_get_contig(GapIO *io, tg_rec snum);
 tg_rec sequence_get_pair(GapIO *io, seq_t *s);

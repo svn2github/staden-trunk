@@ -644,6 +644,44 @@ int sequence_get_position(GapIO *io, tg_rec snum, tg_rec *contig,
 }
 
 /*
+ * As per sequence_get_position() but we also return the clipped/visible
+ * start and end coordinate too.
+ */
+int sequence_get_clipped_position(GapIO *io, tg_rec snum, tg_rec *contig,
+				  int *start, int *end,
+				  int *clipped_start, int *clipped_end,
+				  int *orient) {
+    int st2, en2, or2;
+    seq_t *s;
+
+    if (0 != sequence_get_position2(io, snum, contig, &st2, &en2, &or2,
+				    NULL, NULL, &s))
+	return -1;
+
+    if (start)
+	*start = st2;
+    if (end)
+	*end = en2;
+    if (orient)
+	*orient = or2;
+
+    if ((s->len < 0) ^ or2) {
+	en2 = st2 + ABS(s->len) - s->left;
+	st2 = st2 + ABS(s->len) - s->right;
+    } else {
+	en2 = st2 + s->right-1;
+	st2 = st2 + s->left-1;
+    }
+
+    if (clipped_start)
+	*clipped_start = st2;
+    if (clipped_end)
+	*clipped_end = en2;
+
+    return 0;
+}
+
+/*
  * Invalidates the cached consensus for this sequence.
  *
  * Returns 0 on success

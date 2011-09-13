@@ -1847,7 +1847,10 @@ int showCursor(edview *xx, int x_safe, int y_safe) {
 
     /* X position */
     if (!x_safe) {
-	int w = xx->displayWidth > 10 ? 10 : xx->displayWidth;
+	//int w = xx->displayWidth > 50 ? 50 : xx->displayWidth;
+	int w = xx->displayWidth >= 20
+	    ? xx->displayWidth-10
+	    : xx->displayWidth/2;
 	if (xx->cursor_apos < xx->displayPos) {
 	    set_displayPos(xx, xx->cursor_apos + 1 - w);
 	    do_x = 1;
