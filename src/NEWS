@@ -1,3 +1,83 @@
+Sep 14th 2011
+-------------
+
+Gap5 Updates
+============
+
+*	Searching by sequence name or #number in the editor now
+        positions the editing cursor on the first used base instead of
+        the first base (whether or not in cutoff data).
+
+*	Any case where the editor cursor goes off screen due to using
+        left/right arrow keys or performing a search now scrolls the
+        editor so the last 10 characters are now the first 10
+        characters, meaning it jumps by almost one screen
+        full. Previously it scrolled such that 10 more characters
+        would appear. 
+
+*	We now disallow tags at the ends of contigs in the "cutoff"
+        portion of a contig. Ie where sequence cutoff data resides,
+        but no more non-cutoff bases exist. It is still permitted to
+        have tags within a "hole" inside a contig, just not at the
+        ends.
+
+*	The contig editor width and height and the horizontal position
+        of the name / sequence split pane is now remembered if the
+        Settings -> Save Settings menu item is used.
+
+Gap5 Fixes
+==========
+
+*	Many fixes to Disassemble Readings, including data
+        corruptions, tag misplacements, and occasionally incorrectly
+        complementing sequence data causing misalignments.
+
+*	Major overhaul of insertion and deletion of pads in the
+        consensus. These used to insert to or delete from every
+        sequence overlapping that point regardless of whether that
+	position was in the sequence cutoff data. Now we only edit
+        sequences that overlap in used non-cutoff data.
+
+*	Several more fixes to Break Contig including reference
+        counting errors (which usually showed up as assertion
+        failures). Also fixed tag misplacement errors here too.
+
+*	Internal change to storage of annotations. If attached to a
+        sequence they now should always be placed in the same internal
+        contig-bin as their associated sequence. This fixes a number
+        of bugs and simplifies some algorithms. Older databases are
+        not restricted in this manner and so the change is backwards
+        compatible.
+
+*	Moving sequences could sometimes cause them to flip
+        orientation.
+
+*	Avoided a crash while making a join in the Join Editor. I'm
+        not sure of the exact cause, however sometimes we received a
+        message to move the cursor after the join but with no data
+        found at that point now.
+
+*	Sequences imported via Assembly -> Import... now have their
+        sequence names indexed, meaning we can search for them by
+        name.
+
+*	Fixed some reference counting bugs while using the Contig
+        Editor and Join Editors. These typically showed up as crashes
+        and assertion failures.
+
+*	Removed a memory overrun when running Find Internal Joins or
+        Find Repeats with lots of small contigs.
+
+*	Complement Contig via the List Contigs window now works.
+
+*	The program now knows the proper filename of the database when
+        opened using the File -> Open dialogue and browsing to another
+        directory. This was causing errors in Check Database.
+
+
+Aug 11th 2011
+-------------
+
 Aug 1st 2011
 ------------
 
