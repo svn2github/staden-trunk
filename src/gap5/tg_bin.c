@@ -1120,8 +1120,15 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 		bin->end_used   = end;
 	    }
 
-	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 		new_contig_range = 1;
+		/*
+		if (seq_start > r->start)
+		    seq_start = r->start;
+		if (seq_end < r->end)
+		    seq_end = r->end;
+		*/
+	    }
 	}
 
 	/* Remove from bin */
@@ -1168,7 +1175,12 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
 	}
 
-	if (start <= (*c)->start || end >= (*c)->end) {
+	/*
+	 * FIXME: this isn't entirely catching all situations right now
+	 * so we always redo both clip points just incase. It's less
+	 * efficient, but robust.
+	 */
+	if (1 || start <= (*c)->start || end >= (*c)->end) {
 	    /*
 	     * Seq is at very end of contig. So we need to do find the
 	     * new start/end and correct it.
@@ -1178,8 +1190,10 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 
 	    (*c) = cache_rw(io, *c);
 
-	    ns = start <= (*c)->start ? &new_start : NULL;
-	    ne = end   >= (*c)->end   ? &new_end   : NULL;
+	    //ns = start <= (*c)->start ? &new_start : NULL;
+	    //ne = end   >= (*c)->end   ? &new_end   : NULL;
+	    ns = &new_start;
+	    ne = &new_end;
 
 	    if (-1 != consensus_unclipped_range(io, (*c)->rec, ns, ne)) {
 		if (ns) (*c)->start = *ns;
