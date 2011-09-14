@@ -96,31 +96,40 @@ proc test_join {io} {
 #    $io2 close
 }
 
-proc test_insertions {io} {
+proc test_insertions {io {cycle 0}} {
     set crec [random_contig $io]
     puts "/// inserting to contig $crec ///"
     set c [$io get_contig $crec]
-    set l [$c get_length]
-    set s [$c get_start]
-    set e [$c get_end]
-    for {set i 0} {$i < 100} {incr i; incr l 1} {
+    set l [$c get_visible_length]
+    set s [$c get_visible_start]
+    set e [$c get_visible_end]
+    set end 100
+    #if {$cycle == 67} {set end 50}
+    for {set i 0} {$i < $end} {incr i; incr l 1} {
 	set p [expr {int(rand()*$l)+$s}]
 	#puts "   ///Ins $p/$s..$e"
 	$c insert_base $p * 11
+	#$io flush
+	#if {[$io check 0 2] != 0} exit
     }
     $c delete
 }
 
-proc test_deletions {io} {
+proc test_deletions {io {cycle 0}} {
     set crec [random_contig $io]
     puts "/// deleting from contig $crec ///"
     set c [$io get_contig $crec]
-    set l [$c get_length]
-    set s [$c get_start]
-    for {set i 0} {$i < 100 && $l > 10} {incr i; incr l -1} {
+    set l [$c get_visible_length]
+    set s [$c get_visible_start]
+    set e [$c get_visible_end]
+    set end 100
+    #if {$cycle == 40} {set end 21}
+    for {set i 0} {$i < $end && $l > 10} {incr i; incr l -1} {
 	set p [expr {int(rand()*$l)+$s}]
-	# puts "   ///Del $p/$s+$l"
+	puts "   ///Del $p/$s..$e"
 	$c delete_base $p
+	#$io flush
+	#if {[$io check 0 2] != 0} exit
     }
     $c delete
 }
@@ -130,8 +139,8 @@ proc test_tag_creation {io} {
     puts "/// creating tags in contig $crec ///"
 
     set c [$io get_contig $crec]
-    set cstart [$c get_start]
-    set cend   [$c get_end]
+    set cstart [$c get_visible_start]
+    set cend   [$c get_visible_end]
     set crec   [$c get_rec]
     
     # Get sequence list
@@ -142,8 +151,10 @@ proc test_tag_creation {io} {
     }
     $c delete
 
+    if {$seqs == ""} return
+
     # Create tags
-    for {set i 0} {$i < 100} {incr i} {
+    for {set i 0} {$i < 50} {incr i} {
 	if {rand() > 0.5} {
 	    set msg ""
 	} else {
@@ -211,6 +222,9 @@ proc test_tag_deletion {io} {
 }
 
 proc test_clipping {io} {
+    # Skip for now
+    return;
+
     set crec [random_contig $io]
     puts "/// Adjusting seq clips in contig $crec ///"
 
@@ -245,6 +259,56 @@ proc test_clipping {io} {
 	$s set_clips $l $r
 	$s delete
     }
+}
+
+proc test_disassembly {io} {
+    set crec [random_contig $io]
+    puts "/// Disassembly from contig $crec ///"
+
+    set c [$io get_contig $crec]
+    set cstart [$c get_start]
+    set cend   [$c get_end]
+    set crec   [$c get_rec]
+    
+    # Get sequence list
+    set seqs ""
+    foreach l [$c seqs_in_range $cstart $cend] {
+	lappend seqs [lindex $l 2]
+    }
+    $c delete
+
+    set nseq [llength $seqs]
+    if {$nseq/2 > 100} {
+	set ndel 100
+    } else {
+	set ndel [expr {$nseq/2}]
+    }
+
+    if {$ndel == 0} {
+	return
+    }
+
+    # Pick ndel reads from seq list
+    set srec {}
+    for {set i 0} {$i < $ndel} {incr i} {
+	set s [expr {int(rand()*$nseq)}]
+	lappend srec #[lindex $seqs $s]
+	set seqs [lreplace $seqs $s $s]
+	incr nseq -1
+    }
+
+    set opt1 [expr {rand()>0.5}]
+    set opt2 [expr {rand()>0.5}]
+    puts "Disassembling opt $opt1, $opt2, $srec"
+
+    # Disassemble them
+    set r [disassemble_readings \
+	       -io $io \
+	       -readings $srec \
+	       -move 2 \
+	       -remove_holes $opt1 \
+	       -duplicate_tags $opt2]
+    puts "Disassemble returned $r"
 }
 
 proc test_consensus {io} {
@@ -309,7 +373,9 @@ if {[llength $argv] > 2} {
 
 # Perform N edits and keep checking.
 for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
-    set r [expr int(rand()*9)]
+    set r [expr int(rand()*10)]
+    #if {$r != 3} continue
+
     puts "///$cycle r=$r"
 
     # Other tests to do:
@@ -318,12 +384,13 @@ for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
 	0 { test_complement $io }
 	1 { test_break $io }
 	2 { test_join $io }
-	3 { test_insertions $io }
-	4 { test_deletions $io }
+	3 { test_insertions $io $cycle }
+	4 { test_deletions $io $cycle }
 	5 { test_tag_creation $io }
 	6 { test_tag_deletion $io }
 	7 { test_clipping $io }
 	8 { test_consensus $io }
+	9 { test_disassembly $io }
     }
 
     $io flush
