@@ -1131,6 +1131,10 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    }
 	}
 
+	/* Errors when called from break_contig. */
+	//if (r->start < seq_start || r->end > seq_end)
+	//    new_contig_range = 1;
+
 	/* Remove from bin */
 	r->flags |= GRANGE_FLAG_UNUSED;
 	r->rec = (tg_rec)bin->rng_free;
@@ -1180,7 +1184,7 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	 * so we always redo both clip points just incase. It's less
 	 * efficient, but robust.
 	 */
-	if (1 || start <= (*c)->start || end >= (*c)->end) {
+	if (start <= (*c)->start || end >= (*c)->end) {
 	    /*
 	     * Seq is at very end of contig. So we need to do find the
 	     * new start/end and correct it.
@@ -1190,10 +1194,10 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 
 	    (*c) = cache_rw(io, *c);
 
-	    //ns = start <= (*c)->start ? &new_start : NULL;
-	    //ne = end   >= (*c)->end   ? &new_end   : NULL;
-	    ns = &new_start;
-	    ne = &new_end;
+	    ns = start <= (*c)->start ? &new_start : NULL;
+	    ne = end   >= (*c)->end   ? &new_end   : NULL;
+	    //ns = &new_start;
+	    //ne = &new_end;
 
 	    if (-1 != consensus_unclipped_range(io, (*c)->rec, ns, ne)) {
 		if (ns) (*c)->start = *ns;

@@ -269,8 +269,26 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
 	cache_decr(io, c);
 	return -1;
     }
+
+    /* FIXME: optimise by only calling this once per contig rather
+     * than once per read.
+     */
+    {
+	int ns, ne;
+	if (-1 != consensus_unclipped_range(io, c->rec, &ns, &ne)) {
+	    printf("Old range=%d..%d new range=%d..%d\n",
+		   c->start, c->end, ns, ne);
+	    if (c->start != ns || c->end != ne) {
+		c = cache_rw(io, c);
+		c->start = ns;
+		c->end   = ne;
+	    }
+	}
+    }
+
     cache_decr(io, seq);
     cache_decr(io, c);
+
 
     /* For read-pairs, unlink with rest of template */
     if (remove && pos->rng.pair_rec) {
