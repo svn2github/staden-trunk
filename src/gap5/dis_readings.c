@@ -709,7 +709,12 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos,
 
 
     /* Add in the sequences */
-    offset = pos[0].clipped_start - 1;
+    offset = INT_MAX;
+    for (i = 0; i < npos; i++) {
+	if (offset > pos[i].clipped_start)
+	    offset = pos[i].clipped_start;
+    }
+    offset--;
     for (i = 0; i < npos; i++) {
 	range_t r, *r_out;
 	seq_t *s;
