@@ -12,7 +12,7 @@
 #echo 'Setting up the Staden software environment...'
 
 #-- Check for valid root
-if test "x$STADENROOT" == "x" -o ! -e "$STADENROOT/share/staden/staden.profile"
+if test "x$STADENROOT" = "x" -o ! -e "$STADENROOT/share/staden/staden.profile"
 then
     echo "STADENROOT environment variable not set or is invalid" 1>&2
     echo "Please set and re-source this file." 1>&2
