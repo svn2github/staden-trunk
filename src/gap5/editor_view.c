@@ -428,9 +428,10 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
 	    if (pair == 0)
 		pair = sequence_get_pair(io, s1);
 	    if (pair > 0 && !s2) {
-		s2 = get_seq(io, pair);
-		cache_incr(io, s2);
-		cache_decr(io, s1);
+		if ((s2 = get_seq(io, pair)) != NULL) {
+		    cache_incr(io, s2);
+		    cache_decr(io, s1);
+		}
 	    }
 	    s = s2 ? s2 : s1;
 	    i++;

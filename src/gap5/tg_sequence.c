@@ -801,6 +801,13 @@ int sequence_get_template_info(GapIO *io, seq_t *s1,
 
     /* Fetch contig, location and orientation for both sequences */
     s2 = cache_search(io, GT_Seq, paired);
+    if (!s2) {
+	verror(ERR_WARN, "sequence_get_template_info",
+	       "Sequence %s/#%"PRIrec" has a link to pair #"PRIrec
+	       " which appears to no longer exist.",
+	       s1->name, s1->rec, paired);
+	return TEMPLATE_SINGLE;
+    }
     cache_incr(io, s1);
     cache_incr(io, s2);
     if (-1 == sequence_get_position(io, s1->rec, &c1, &st1, &en1, &o1)) {

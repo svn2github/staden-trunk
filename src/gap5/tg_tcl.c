@@ -1590,8 +1590,9 @@ static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
     sequence_update_string(res);
 
     /* Register the string form as a new command */
-    cache_incr(io, s);
-    if (NULL == Tcl_CreateObjCommand(interp, res->bytes, sequence_cmd,
+    if (s) cache_incr(io, s);
+    if (!s ||
+	NULL == Tcl_CreateObjCommand(interp, res->bytes, sequence_cmd,
 				     (ClientData)ts,
 				     (Tcl_CmdDeleteProc *)_cmd_delete))
 	return TCL_ERROR;
