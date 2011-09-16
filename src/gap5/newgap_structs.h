@@ -295,63 +295,6 @@ typedef struct {
 
 typedef struct {
     GapIO *io;
-    int id;
-    char *filename;
-    char *frame;
-    char *plot;
-    char *inlist;
-    int num_items;
-    char *contig;
-    int tick_ht;
-    int tick_wd;
-    char *tick_fill;
-    int yoffset;
-} single_enz_arg;
-
-typedef struct {
-    GapIO *io;
-    char *filename;
-    char *frame;
-    char *win_name;
-    char *plot;
-    char *win_ruler;
-    char *inlist;
-    int num_items;
-    char *contigs;
-    int text_offset;
-    char *text_fill;
-    int tick_ht;
-    int tick_wd;
-    char *tick_fill;
-    int cursor_wd;
-    char *cursor_fill;
-    int yoffset;
-} renz_arg;
-
-typedef struct {
-    int item;
-    GapIO *io;
-    int id;
-    tg_rec contig;
-} enz_name_arg;
-
-typedef struct {
-    int enzyme;
-    GapIO *io;
-    int id;
-    tg_rec contig;
-} enz_info_arg;
-
-typedef struct {
-    GapIO *io;
-    char *contigs;
-    int id;
-    char *enz_list;
-    char *id_list;
-} enz_tag_arg;
-
-typedef struct {
-    GapIO *io;
     char *frame;
     char *names;
     char *plot;
@@ -460,14 +403,6 @@ typedef struct {
     GapIO *io;
     int id;
 } resize_arg;
-
-typedef struct {
-    GapIO *io;
-    int id;
-    int cx;
-    int cy;
-    int cnum;
-} t_cursor_arg;
 
 typedef struct {
     GapIO *io;

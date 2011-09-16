@@ -441,8 +441,8 @@ proc contig_register_callback {ed type id args} {
 	    # EDIT: Removed " || $arg(id) == 0"
 	    if {[set ${ed}(reg)] != $arg(sent_by) && \
 		    ($arg(id) == [$ed cursor_id])} {
-		if {[$ed contig_rec] == $arg(seq)} {
-		    $ed set_cursor 17 $arg(seq) $arg(abspos)
+		if {[$ed contig_rec] == $arg(seq) || $arg(seq) == -1} {
+		    $ed set_cursor 17 [$ed contig_rec] $arg(abspos)
 		} else {
 		    $ed set_cursor 18 $arg(seq) $arg(pos)
 		}

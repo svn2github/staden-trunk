@@ -125,7 +125,7 @@ add_separator	{View.S3}
 add_command	{View.Database information}	 8 10 {PrintDatabaseInfo \$io}
 add_command	{View.Template Display}		 8 10 {TemplateDisplay \$io}
 #add_command	{View.Show relationships}	 8 10 {ShowRelationships \$io}
-#add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
+add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
 #add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
 #add_command	{View.Quality plot}		 8 10 {QualityPlotDisplay \$io}
 #add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io conf}

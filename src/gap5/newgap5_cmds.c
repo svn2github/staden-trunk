@@ -2075,6 +2075,7 @@ NewGap_Init(Tcl_Interp *interp) {
 		      tcl_load_alignment_matrix, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "load_genetic_code",
 			 tcl_load_genetic_code, (ClientData)NULL, NULL);
+
     Tcl_CreateObjCommand(interp, "contig_order_to_number",
 			 tcl_contig_order_to_number,
 			 (ClientData) NULL,
@@ -2208,6 +2209,7 @@ NewGap_Init(Tcl_Interp *interp) {
     Editor_Init(interp);
     EdNames_Init(interp);
     GRange_Init(interp);
+    REnz_Init(interp);
 
     return TCL_OK;
 

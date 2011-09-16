@@ -86,7 +86,6 @@ proc canvas_cursor_drag {io cnum canvwin cursorid regid px} {
 # Use for creating a new editor at pixel position 'px', or for moving
 # an existing editor (and cursor) to 'px'.
 proc canvas_cursor_editor {io cnum regid px canvwin} {
-
     # Get the new cursor position in base coordinates
     set x [canvas_to_world -io $io -id $regid -x [$canvwin canvasx $px] \
 	-cnum $cnum]
@@ -101,15 +100,16 @@ proc canvas_cursor_editor {io cnum regid px canvwin} {
     foreach item [$canvwin find withtag cursor] {
 	regsub {.*cursor_([^ ]*|$f).*} [$canvwin gettags $item] {\1} c
 
-	# We've now got a cursor id, check if the editor is using it
-	# This is done somewhat crudely by checking if the cursor
-	# is 'private'.
-	set clist [query_cursor -io $io -cursorid $c]
-	if {[keylget clist private] != 0 &&
-	    [keylget clist contig] == $cnum} {
-	    set found 1
-	    break
-	}
+#	# We've now got a cursor id, check if the editor is using it
+#	# This is done somewhat crudely by checking if the cursor
+#	# is 'private'.
+#	set clist [query_cursor -io $io -cursorid $c]
+#	if {[keylget clist private] != 0 &&
+#	    [keylget clist contig] == $cnum} {
+#	    set found 1
+#	    break
+#	}
+	set found 1
     }
 
     if {$found} {
@@ -119,7 +119,7 @@ proc canvas_cursor_editor {io cnum regid px canvwin} {
         contig_notify -io $io -cnum $cnum -type CURSOR_NOTIFY -args "$l"
     } else {
 	# Otherwise create a new editor
-	edit_contig -io $io -contig =$cnum -pos $x
+	edit_contig -io $io -contig $cnum -pos $x
     }
 }
 

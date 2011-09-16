@@ -143,6 +143,8 @@ GAP5=\
 	find_oligo.o \
 	import_gff.o \
 	shuffle_pads.o \
+	restriction_enzymes.o \
+	gap_canvas_box.o \
 	$(GOBJS) \
 	$(TG_IO) \
 	$(CEDITOR) \
