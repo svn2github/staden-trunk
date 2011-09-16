@@ -812,12 +812,14 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     reg_length rl;
     reg_join rj;
 
-    cl = cache_search(io, GT_Contig, clrec);
-    cr = cache_search(io, GT_Contig, crrec);
-    if (!cl || !cr)
+    if (!(cl = cache_search(io, GT_Contig, clrec)))
 	return -1;
-
     cache_incr(io, cl);
+
+    if (!(cr = cache_search(io, GT_Contig, crrec))) {
+	cache_decr(io, cl);
+	return -1;
+    }
     cache_incr(io, cr);
 
     /* Force joins at the top-level IO */
@@ -841,11 +843,14 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     /* Optimisation, hang binr off binl if it fits */
     binp_id = bin_new(io, 0, 0, cl->rec, GT_Contig);
     binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
-    binl = (bin_index_t *)cache_search(io, GT_Bin, above);
-    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
     cache_incr(io, binp);
+
+    binl = (bin_index_t *)cache_search(io, GT_Bin, above);
     cache_incr(io, binl);
+
+    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
     cache_incr(io, binr);
+
     binp = cache_rw(io, binp);
     binl = cache_rw(io, binl);
     binr = cache_rw(io, binr);
@@ -898,10 +903,12 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     /* Object writeable copies of our objects */
     binp_id = bin_new(io, 0, 0, cl->rec, GT_Contig);
     binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
-    binl = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cl));
-    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
     cache_incr(io, binp);
+
+    binl = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cl));
     cache_incr(io, binl);
+
+    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
     cache_incr(io, binr);
 
     binp = cache_rw(io, binp);

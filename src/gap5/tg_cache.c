@@ -5,6 +5,8 @@
 #include <sys/time.h>
 #include <time.h>
 
+//#undef CACHE_REF_PURGE
+
 #ifdef CACHE_REF_DEBUG
 /*  So tg_gio.h doesn't redefine prototypes */
 #   define WAS_CACHE_REF_DEBUG
@@ -1283,6 +1285,27 @@ void cache_dump(GapIO *io) {
     }
 }
 
+#if CACHE_REF_PURGE
+void cache_nuke(GapIO *io) {
+    HacheTable *h = io->cache;
+    int i;
+
+    for (i = 0; i < h->nbuckets; i++) {
+	HacheItem *hi, *next;
+	for (hi = h->bucket[i]; hi; hi = next) {
+	    cached_item *ci = hi->data.p;
+	    next = hi->next;
+
+	    if (ci->updated || ci->hi->ref_count)
+		continue;
+
+	    memset((char *)&ci->data, 'q', ci->data_size);
+	    HacheTableDel(h, hi, 0);
+	}
+    }
+}
+#endif
+
 /*
  * Loads an in item into the cache (if not present) and returns it.
  * The query parameters are the object type (GT_*) and the record number.
@@ -1299,6 +1322,10 @@ void *cache_search(GapIO *io, int type, tg_rec rec) {
     cache_key_t k;
     HacheItem *hi;
     
+#if CACHE_REF_PURGE
+    cache_nuke(io);
+#endif
+
     switch (type) {
     case GT_Seq:
 	sub_rec = rec & (SEQ_BLOCK_SZ-1);

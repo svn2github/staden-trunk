@@ -1339,6 +1339,7 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     gio_debug(io, 1, "to %d\n", cpos);
 
     cl = (contig_t *)cache_search(io, GT_Contig, crec);
+    cache_incr(io, cl);
 
     //contig_dump_ps(io, &cl, "/tmp/tree.ps");
 
@@ -1366,8 +1367,10 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 	sprintf(cname_end, "#%d", cid++);
     } while (contig_index_query(io, cname) > 0);
 
-    if (!(cr = contig_new(io, cname)))
+    if (!(cr = contig_new(io, cname))) {
+	cache_decr(io, cl);
 	return -1;
+    }
     cl = cache_rw(io, cl);
     cr = cache_rw(io, cr);
     if (0 != contig_index_update(io, cname, strlen(cname), cr->rec))
@@ -1377,7 +1380,6 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     gio_debug(io, 1, "Existing left bin = %"PRIrec", right bin = %"PRIrec"\n",
 	      cl->bin, cr->bin);
 
-    cache_incr(io, cl);
     cache_incr(io, cr);
 
     bin = get_bin(io, cl->bin);

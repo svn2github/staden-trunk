@@ -53,6 +53,7 @@ tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
     }
 
     c = (contig_t *)cache_search(io, GT_Contig, crec);
+    cache_incr(io, c);
 
     r.start    = start;
     r.end      = end;
@@ -73,6 +74,7 @@ tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
 	bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
     e->bin = bin->rec;
 
+    cache_decr(io, c);
     return r.rec;
 }
 

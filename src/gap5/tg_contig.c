@@ -2260,9 +2260,12 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
     rangec_t *r = NULL;
     int alloc = 0;
 
+    cache_incr(io, *c);
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   0, 0);
+    cache_decr(io, *c);
+
     if (r) {
 	if (job & CSIR_PAIR)
 	    pair_rangec(io, r, *count);
@@ -2351,9 +2354,11 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
     int alloc = 0;
     
 
+    cache_incr(io, *c);
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISSEQ);
+    cache_decr(io, *c);
 				   
     if (r) {
 	if (job & CSIR_PAIR) {
@@ -2403,9 +2408,11 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
     rangec_t *r = NULL;
     int alloc = 0;
 
+    cache_incr(io, *c);
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISANNO);
+    cache_decr(io, *c);
 
     if (r) {
 	if (job & CSIR_SORT_BY_XEND)
@@ -2428,9 +2435,11 @@ rangec_t *contig_refpos_in_range(GapIO *io, contig_t **c, int start, int end,
     rangec_t *r = NULL;
     int alloc = 0;
 
+    cache_incr(io, *c);
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISREFPOS);
+    cache_decr(io, *c);
 
     if (r) {
 	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
@@ -2558,8 +2567,10 @@ rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
     rangec_t *r = NULL;
     int alloc = 0;
 
+    cache_incr(io, *c);
     *count = contig_cons_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0);
+    cache_decr(io, *c);
 
     if (job & CSIR_SORT_BY_XEND)
 	qsort(r, *count, sizeof(*r), sort_range_by_x_end);
@@ -2650,10 +2661,12 @@ rangec_t *contig_bins_in_range(GapIO *io, contig_t **c, int start, int end,
     rangec_t *r = NULL;
     int alloc = 0;
 
+    cache_incr(io, *c);
     *count = contig_bins_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c),
 				   &r, &alloc, 0, 0, min_size,
 				   job & CSIR_LEAVES_ONLY);
+    cache_decr(io, *c);
     
     if (job & CSIR_SORT_BY_XEND)
 	qsort(r, *count, sizeof(*r), sort_range_by_x_end);
