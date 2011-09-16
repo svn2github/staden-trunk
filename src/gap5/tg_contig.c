@@ -577,6 +577,10 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 			      pos == n->start,
 			      contig_offset(io, c), contig_offset(io, c),
 			      0, hash);
+
+    contig_visible_start(io, (*c)->rec, CITER_CSTART);
+    contig_visible_end(io, (*c)->rec, CITER_CEND);
+
     if (1 != ret)
 	return 0;
 
@@ -3187,8 +3191,18 @@ contig_iterator *contig_iter_new_by_type(GapIO *io, tg_rec cnum,
 	break;
     }
 
-    ci->cstart = start == CITER_CSTART ? c->start : start;
-    ci->cend   =   end == CITER_CEND   ? c->end   : end;
+    /*
+     * Generic bug fix - sorry! Expand c->start/end by +/- a small amount
+     * so that when we've been inserting or deleting bases we correctly
+     * include this data. The problem here is we often use iterators to find
+     * the contig extents after munging the contig in some way so we can
+     * correct c->start/c->end, but this is a catch-22 situation.
+     *
+     * Ideally we should pick an outer limit to iterate over by looking at
+     * bin dimensions, and then work in from there.
+     */
+    ci->cstart = start == CITER_CSTART ? c->start - 50 : start;
+    ci->cend   =   end == CITER_CEND   ? c->end   + 50 : end;
 
     if ((whence & CITER_FL_MASK) == CITER_FIRST) {
 	start = ci->cstart;
