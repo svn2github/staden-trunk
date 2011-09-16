@@ -177,10 +177,19 @@ int contig_visible_start(GapIO *io, tg_rec crec, int from) {
     /* Trim annotations to visible portion */
     ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST | CITER_ISTART,
 				 from, CITER_CEND,
-				 GRANGE_FLAG_ISANNO);
+				 GRANGE_FLAG_ISANY);
     while (ci && (r = contig_iter_next(io, ci))) {
 	if (r->start >= seq_clipped_start)
 	    break;
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+	    if (r->end < seq_clipped_start) {
+		bin_remove_refpos(io, crec, r->end);
+	    }
+	    continue;
+	} else if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+	    continue;
+	}
 
 	/*
 	 * Why did we also clip sequence tags (to seq_start) before?
@@ -262,10 +271,19 @@ int contig_visible_end(GapIO *io, tg_rec crec, int to) {
     /* Trim annotations to visible/clipped portion */
     ci = contig_iter_new_by_type(io, crec, 1, CITER_LAST | CITER_IEND,
 				 CITER_CSTART, to,
-				 GRANGE_FLAG_ISANNO);
+				 GRANGE_FLAG_ISANY);
     while (ci && (r = contig_iter_prev(io, ci))) {
 	if (r->end <= seq_clipped_end)
 	    break;
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+	    if (r->start > seq_clipped_end) {
+		bin_remove_refpos(io, crec, r->start);
+	    }
+	    continue;
+	} else if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+	    continue;
+	}
 
 	/*
 	 * Why did we also clip sequence tags (to seq_end) before?
@@ -1132,13 +1150,14 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
  * very end could yield a zero-read contig, which causes inconsistencies.
  * We just abort if so.
  *
- * Returns 0 for OK
+ * Returns 0 for OK (and modifies cpos to pos of next seq),
  *        -1 to abort/error
  */
-int break_check_counts(GapIO *io, tg_rec crec, int cpos) {
+int break_check_counts(GapIO *io, tg_rec crec, int *cpos_p) {
     contig_iterator *ci;
     rangec_t *r;
     int left_ok = 0, right_ok = 0;
+    int cpos = *cpos_p, new_cpos;
 
     /* Check left end */
     ci = contig_iter_new(io, crec, 1, CITER_LAST | CITER_ISTART,
@@ -1176,9 +1195,15 @@ int break_check_counts(GapIO *io, tg_rec crec, int cpos) {
     if (!ci)
 	return -1;
 
+    new_cpos = INT_MIN;
     while (r = contig_iter_next(io, ci)) {
-	seq_t *s = cache_search(io, GT_Seq, r->rec);
+	seq_t *s;
 	int cstart;
+
+	if (new_cpos != INT_MIN && r->start >= new_cpos)
+	    break;
+
+	s = cache_search(io, GT_Seq, r->rec);
 	if (!s)
 	    return -1;
 
@@ -1188,11 +1213,16 @@ int break_check_counts(GapIO *io, tg_rec crec, int cpos) {
 	    cstart = r->start + s->left-1;
 	}
 
+	if (cstart >= cpos && new_cpos < cstart)
+	    new_cpos = cstart;
+
 	if (cstart >= cpos) {
 	    right_ok = 1;
-	    break;
+	    //break;
 	}
     }
+    
+    *cpos_p = new_cpos;
 
     if (!right_ok) {
 	contig_iter_del(ci);
@@ -1294,12 +1324,19 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     int do_comp = 0;
     HacheTable *h;
 
-   if (break_check_counts(io, crec, cpos) == -1) {
-       verror(ERR_WARN, "break_contig",
-	      "Breaking at %d would create a contig with no sequences. Abort",
-	      cpos);
-       return -1;
-   }
+    /*
+     * Check we have at least 1 seq in each half. Also move cpos to be the
+     * first base of the right hand contig (and on the right hand edge of
+     * any hole if cpos is within one).
+     */
+    gio_debug(io, 1, "Moved break point from %d ", cpos);
+    if (break_check_counts(io, crec, &cpos) == -1) {
+	verror(ERR_WARN, "break_contig",
+	       "Breaking at %d would create a contig with no sequences. Abort",
+	       cpos);
+	return -1;
+    }
+    gio_debug(io, 1, "to %d\n", cpos);
 
     cl = (contig_t *)cache_search(io, GT_Contig, crec);
 
