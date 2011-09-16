@@ -545,6 +545,9 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    if (r->flags & GRANGE_FLAG_UNUSED)
 		continue;
 
+	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+		continue;
+
 	    hd.i = bin->rec;
 	    HacheTableAdd(rec_hash, (char *)&r->rec, sizeof(r->rec), hd, &new);
 	    if (!new) {
@@ -913,6 +916,9 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    range_t *r = arrp(range_t, bin->rng, i);
 
 	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
+
+	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
 		continue;
 
 	    if (HacheTableRemove(rec_hash, (char *)&r->rec,

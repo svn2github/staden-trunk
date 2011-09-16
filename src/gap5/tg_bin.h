@@ -128,6 +128,14 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec);
 
 /*
+ * Removes the refpos marker at a specific position in the contig.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_remove_refpos(GapIO *io, tg_rec crec, int pos);
+
+/*
  * Finds the contig number and position of a record number.
  *
  * If non-NULL r_out is filled with the associated range_t struct.

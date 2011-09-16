@@ -1233,6 +1233,57 @@ int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec) {
     return bin_remove_item_from_bin(io, c, &bin, type, rec);
 }
 
+/*
+ * Removes the refpos marker at a specific position in the contig.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_remove_refpos(GapIO *io, tg_rec crec, int pos) {
+    tg_rec bin_rec;
+    int bin_idx;
+    rangec_t rc;
+    range_t *r;
+    bin_index_t *bin;
+
+    if (find_refpos_marker(io, crec, pos, &bin_rec, &bin_idx, &rc) != 0)
+	return -1;
+
+
+    assert((rc.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS);
+
+    bin = cache_search(io, GT_Bin, bin_rec);
+    bin = cache_rw(io, bin);
+    r = arrp(range_t, bin->rng, bin_idx);
+
+    r->flags |= GRANGE_FLAG_UNUSED;
+    r->rec = bin->rng_free;
+    bin->rng_free = bin_idx;
+    bin_incr_nrefpos(io, bin, -1);
+    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+
+    if (bin->start_used == r->start || bin->end_used == r->end) {
+	int i;
+	int start = INT_MAX, end = INT_MIN;
+
+	for (i = 0; i < ArrayMax(bin->rng); i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
+
+	    if (start > r->start)
+		start = r->start;
+	    if (end   < r->end)
+		end   = r->end;
+	}
+
+	bin->start_used = start;
+	bin->end_used = end;
+    }
+
+    return 0;
+}
+
 
 /*
  * Finds the contig number and position of the start of a bin.
