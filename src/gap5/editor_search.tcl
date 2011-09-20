@@ -270,6 +270,18 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     grid $bf -sticky nsew
     grid columnconfigure $of 0 -weight 1
 
+    # Bindings
+    catch {
+	bind $w <Key-Next> "
+	    set $w.Direction forward
+            do_search $w \"$com\"
+	"
+	bind $w <Key-Prior> "
+	    set $w.Direction backward
+            do_search $w \"$com\"
+        "
+    }
+
     # Init
     if {$init_d} {
 	set $w.Direction [keylget gap5_defs CONTIG_EDITOR.SEARCH.DEFAULT_DIRECTION]
