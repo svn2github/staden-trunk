@@ -1163,12 +1163,24 @@ proc editor_pane {top w above ind arg_array} {
 #    set $w.name.PosType P
 
     # The jog control for scrolling the editor
-    set posh [font metrics [$w.name.pos cget -font] -linespace]
-    incr posh -2
+    set posh1 [font metrics [$w.name.pos cget -font] -linespace]
+    incr posh1 [expr {2*([$w.name.pos cget -borderwidth]+
+			[$w.name.pos cget -highlightthickness]+
+			1)}]
+    set posh2 [font metrics [$w.name.pos_type cget -font] -linespace]
+    incr posh2 [expr {2*([$w.name.pos_type cget -borderwidth]+
+			[$w.name.pos_type cget -highlightthickness]+
+			[$w.name.pos_type cget -pady]+
+			1)}]
+    set posh [expr {$posh1>$posh2?$posh1:$posh2}]
+
+    incr posh -8;# 4 lots of jog borderwidth
     jog $w.seq.jog \
 	-orient horiz \
 	-command "jog_editor $w.seq.sheet" \
-	-repeatinterval 50 -width $posh
+	-repeatinterval 50 -width $posh \
+	-borderwidth 2 \
+	-highlightthickness 0
 
     # Pack it all in the paned window
     grid rowconfigure $w.name $textrow -weight 1
