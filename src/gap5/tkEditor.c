@@ -480,7 +480,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"cursor_id",     "get_cursor",	  "search",      "get_xy",
 	"decr_contig",   "incr_contig",   "select_oligo","show_cursor",
 	"reference_pos", "next_difference", "prev_difference", "ref_count",
-	NULL
+	"set_trace_lock", NULL
     };
     enum options {
 	_CONFIGURE,      _INIT,          _IO,            _REDRAW,
@@ -494,7 +494,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_SELECT,	 _EDIT_ANNOTATION,  _CLEAR_VISIBILITY_CACHE,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	 _GET_XY,
 	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO,  _SHOW_CURSOR,
-	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE, _REF_COUNT
+	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE, _REF_COUNT,
+	_SET_TRACE_LOCK
     };
 
     if (argc < 2) {
@@ -1238,6 +1239,24 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     case _PREV_DIFFERENCE:
 	edPrevDifference(ed->xx);
 	break;
+
+    case _SET_TRACE_LOCK: {
+	int lock;
+
+        if (argc != 2 && argc != 3) {
+            Tcl_AppendResult(interp, "wrong # args: should be \"",
+                             argv[0], " set_trace_lock ?value?\"",
+                             (char *) NULL);
+            goto fail;
+        }
+
+        if (argc == 2) {
+            tman_set_lock(ed->xx, !tman_get_lock(ed->xx));
+        } else {
+            Tcl_GetBoolean(interp, argv[2], &lock);
+            tman_set_lock(ed->xx, lock);
+        }
+    }
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));

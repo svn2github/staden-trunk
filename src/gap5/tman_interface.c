@@ -163,9 +163,9 @@ int tman_get_trace_position(edview *xx, tman_dc *dc, int pos, int *end) {
 
     num = origpos(xx, seq, p) - 1;
 
-    //    if (s->len < 0)
-    //	num = origpos(xx, seq, 1) - num - 1;
-    
+    if (sequence_get_orient(xx->io, seq))
+    	num = origpos(xx, seq, 1) - num;
+
     num -= dc->derivative_offset;
     
     if (end)
@@ -1063,6 +1063,7 @@ void edScrollTraces(edview *xx, char *path, char *command) {
     int count;
     tg_rec seq;
     int scroll_mode = TK_SCROLL_UNITS;
+    int seq_len = 1000; /* FIXME */
 
     /* Find trace number */
     dc = trace_path_to_dc(path);
@@ -1164,6 +1165,9 @@ void edScrollTraces(edview *xx, char *path, char *command) {
 	}
     }
 
+    if (t->comp)
+	i = t->Ned - i + 1;
+
     seq = ed->derivative_seq ? ed->derivative_seq : ed->seq;
     if (ed->derivative_seq) {
 	/*
@@ -1199,7 +1203,8 @@ void edScrollTraces(edview *xx, char *path, char *command) {
 	seq = ed->seq;
 	pos = ed->pos;
 	s = (seq_t *)cache_search(xx->io, GT_Seq, seq);
-	comp = s->len < 0;
+	comp = sequence_get_orient(xx->io, seq);
+	seq_len = ABS(s->len);
     }
 
     orig = i;

@@ -15,6 +15,9 @@
 #include "tagdb.h"
 #include "active_tags.h"
 #include "io_utils.h"
+#include "depad_seq_tree.h"
+#include "align.h"
+#include "align_lib.h"
 
 /*
  * Use this if you wish to make the cached consensus visible as its own
@@ -143,6 +146,8 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
 	hd.p = xx;
 	HacheTableAdd(edview_hash, (char *)&contig, sizeof(tg_rec), hd, NULL);
     }
+
+    xx->trace_hash = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
     
     return xx;
 }
@@ -162,6 +167,18 @@ void edview_destroy(edview *xx) {
     
     if (xx->rec_hash)
 	HacheTableDestroy(xx->rec_hash, 0);
+
+    if (xx->trace_hash) {
+	HacheIter *iter = HacheTableIterCreate();
+	HacheItem *hi;
+
+	while (hi = HacheTableIterNext(xx->trace_hash, iter)) {
+	    if (hi->data.p)
+		read_deallocate(hi->data.p);
+	}
+	HacheTableDestroy(xx->trace_hash, 0);
+	HacheTableIterDestroy(iter);
+    }
 
     cache_decr(xx->io, xx->contig);
 
@@ -188,6 +205,7 @@ edview *edview_find(GapIO *io, tg_rec contig) {
 	if (!xx->link && xx->cnum == contig)
 	    return xx;
     }
+    HacheTableIterDestroy(iter);
 
     return NULL;
 }
@@ -2871,7 +2889,7 @@ void edDisplayTrace(edview *xx) {
 	s = get_seq(xx->io, xx->cursor_rec);
 	tman_manage_trace("ANY", sequence_get_name(&s), xx->cursor_pos,
 			  0, 0, /* left/right clips */
-			  s->len < 0, /* complemented */
+			  sequence_get_orient(xx->io, xx->cursor_rec),
 			  1, /* base spacing */
 			  sequence_get_name(&s),
 			  xx, xx->cursor_rec, 0, 0);
@@ -3287,4 +3305,184 @@ int edPrevDifference(edview *xx) {
     edSetCursorPos(xx->link->xx[1], GT_Contig, xx->link->xx[1]->cnum, pos1, 1);
 
     return 0;
+}
+
+int depad_and_opos(char *str, int len, char *depad, int *opos) {
+    int i, j;
+    for (i = j = 0; i < len; i++) {
+	opos[i] = j;
+	if (str[i] != '*') {
+	    depad[j++] = str[i];
+	}
+    }
+    
+    return j;
+}
+
+/* Compute original positions array via alignments */
+int origpos(edview *xx, tg_rec srec, int pos) {
+    seq_t *s = cache_search(xx->io, GT_Seq, srec);
+    int tpos;
+    OVERLAP *overlap = NULL;
+    ALIGN_PARAMS *params = NULL;
+    int *opos = NULL, op;
+    Read *r;
+    char *fn;
+    align_int *S;
+    char *depadded;
+    int ulen, dlen, i, j, k, mis = 0;
+    char *seq_out = NULL, *trace_out = NULL;
+    int seq_out_len, trace_out_len, new_i = 1;
+    HacheData hd;
+    HacheItem *hi;
+    int seq_comp;
+
+    if (!s)
+	return pos+1;
+
+    seq_comp = sequence_get_orient(xx->io, srec);
+
+    /* Fetch trace */
+    hi = HacheTableSearch(xx->trace_hash, (char *)&srec, sizeof(srec));
+    if (hi) {
+	if (hi->data.i == -1) {
+	    /* Previously tried and failed */
+	    return pos+1;
+	} else {
+	    r = hi->data.p;
+	}
+    } else {
+	fn = s->trace_name && *s->trace_name
+	    ? s->trace_name
+	    : s->name;
+	
+	if (!(r = read_reading(fn, TT_ANYTR))) {
+	    hd.i = -1;
+	    HacheTableAdd(xx->trace_hash, (char *)&srec, sizeof(srec), hd,
+			  NULL);
+
+	    return pos+1;
+	}
+
+	hd.p = r;
+	HacheTableAdd(xx->trace_hash, (char *)&srec, sizeof(srec), hd, NULL);
+    }
+
+    /* Depad seq and do simple match to trace */
+    ulen = ABS(s->len);
+    depadded = malloc(ulen);
+    opos = malloc(ulen*sizeof(*opos));
+
+    dlen = depad_and_opos(s->seq, ulen, depadded, opos);
+
+    if (dlen == r->NBases) {
+	mis = 0;
+	for (i = 0; i < dlen; i++) {
+	    if (r->base[i] == '-')
+		r->base[i] = 'N';
+	    if (r->base[i] != depadded[i])
+		mis = 1;
+	}
+    } else {
+	mis = 1;
+	for (i = 0; i < r->NBases; i++) {
+	    if (r->base[i] == '-')
+		r->base[i] = 'N';
+	}
+    }
+
+    if (!mis) {
+	op = seq_comp
+	    ? opos[ABS(s->len) - pos]+1
+	    : opos[pos]+1;
+	free(depadded);
+	free(opos);
+	return op;
+    }
+
+    /* Not identical, so align it fully */
+    //printf("Mismatch %d so align\n", mis);
+    //printf("%.*s\n", dlen, depadded);
+    //printf("%.*s\n", r->NBases, r->base);
+
+    /* Align it within a tight band */
+    overlap = create_overlap();
+    init_overlap(overlap, depadded, r->base, dlen, r->NBases);
+
+    params = create_align_params();
+    set_align_params(params,
+		     10,               // band
+		     0,                // gap_open
+		     0,                // gap_extend
+		     EDGE_GAPS_COUNT,  // edge_mode
+		     0,                // job
+		     0,                // seq1_start
+		     0,                // seq2_start
+		     '.',              // new_pad_sym
+		     '*',              // old_pad_sym
+		     0);               // set_job
+
+    affine_align(overlap, params);
+    destroy_alignment_params (params);
+
+    //print_overlap(overlap,stdout);
+	
+    seq_out_len = overlap->seq_out_len;
+    seq_out = overlap->seq1_out;
+    trace_out = overlap->seq2_out;
+
+
+    /*
+     * Rewrite the opos[] array to map to trace coords now.
+     *
+     * i = offset in orig padded seq (unaligned, but with pads in editor)
+     * j = offset in aligned seq (orig vs trace, aligned to match)
+     * k = corresponding trace base (unaligned).
+     */
+    i = j = k = 0;
+    while (i < ulen && j < seq_out_len && k < r->NBases) {
+	opos[i] = k;
+
+	//printf("%d:%c %d:%c %d:%c %d:%c\n",
+	//       i, s->seq[i],
+	//       j, seq_out[j],
+	//       j, trace_out[j],
+	//       k, r->base[k]);
+
+	if (s->seq[i] == '*') {
+	    if (seq_out[j] == '.') {
+		if (trace_out[j] != '.')
+		    k++;
+		i++; j++;
+	    } else {
+		i++;
+	    }
+	} else {
+	    if (seq_out[j] == '.') {
+		if (trace_out[j] != '.')
+		    k++;
+		j++;
+	    } else {
+		if (trace_out[j] != '.')
+		    k++;
+		i++; j++;
+	    }
+	}
+    }
+    while (i < ulen)
+	opos[i++] = k;
+
+    if (depadded)
+	free(depadded);
+
+    if (overlap)
+	destroy_overlap(overlap);
+
+    //printf("2 Origpos %d=%d\n", pos, s->opos[pos]+1);
+    op = seq_comp
+	? opos[ABS(s->len) - pos]+1
+	: opos[pos]+1;
+    free(opos);
+
+    return op;
 }

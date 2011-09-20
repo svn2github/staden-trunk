@@ -38,9 +38,6 @@
 /* For optimising redisplayDisagreements to remove flicker */
 #define ED_DISP_NO_DIFFS	(1<<12)
 
-/* Orig positions not implemented yet */
-#define origpos(xx, seq, pos) ((pos)+1)
-
 /* Flags not implemented yet */
 #define DB_Flags(xx, seq) (0)
 #define DB_setFlags(xx, seq, flags) (0)
@@ -116,6 +113,9 @@ typedef struct _edview {
     tg_rec select_seq;
     int    select_start;
     int    select_end;
+
+    /* Traces recently loaded */
+    HacheTable *trace_hash;
 } edview;
 
 typedef struct _EdLink {

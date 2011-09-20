@@ -3062,7 +3062,7 @@ bind Editor <<select>> {
 	unset _sel
 	return
     } else {
-	eval %W set_cursor $_sel 0
+	eval %W set_cursor $_sel 1
 	update_brief %W
     }
     unset _sel

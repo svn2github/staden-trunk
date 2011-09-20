@@ -731,7 +731,7 @@ proc trace_regrid {w c ys} {
 }
 
 proc trace_scroll {e tr args} {
-   $e trace_scroll $tr $args
+    $e trace_scroll $tr $args
 }
 
 
