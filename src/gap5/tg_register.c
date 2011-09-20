@@ -235,6 +235,8 @@ void broadcast_event(GapIO *io, HacheTable *h,
 	    contig_reg_remove(io, cr, iter, &next);
 	}
     }
+
+    HacheTableIterDestroy(iter);
 }
 
 /*
