@@ -198,6 +198,7 @@ set auto_index(UpdateContigLimits) [list source [file join $dir select_contig.tc
 set auto_index(ShowRelationshipsDialog) [list source [file join $dir show_relationships.tcl]]
 
 set auto_index(ShufflePads) [list source [file join $dir shuffle_pads.tcl]]
+set auto_index(RemovePadColumns) [list source [file join $dir shuffle_pads.tcl]]
 
 set auto_index(StopCodonDisplay) [list source [file join $dir stop_codon.tcl]]
 set auto_index(CodonReplot) [list source [file join $dir stop_codon.tcl]]

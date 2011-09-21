@@ -475,6 +475,7 @@ int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 			consensus_t *cons) {
     int i;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
+    cache_incr(io, c);
 
     /* Compute in small ranges */
     for (i = start; i <= end; i += CONS_BLOCK_SIZE) {
@@ -493,6 +494,7 @@ int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 					     &cons[i-start])) {
 	    if (r)
 		free(r);
+	    cache_decr(io, c);
 	    return -1;
 	}
 
@@ -500,6 +502,7 @@ int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 	    free(r);
     }
 
+    cache_decr(io, c);
     return 0;
 }
 
@@ -1081,6 +1084,17 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
     if (NULL == (perfect = (char *)calloc(len, sizeof(char))))
 	return -1;
 
+    if (flags & CONS_COUNTS) {
+	for (i = 0; i < len; i++) {
+	    cons[i].counts[0] = 0;
+	    cons[i].counts[1] = 0;
+	    cons[i].counts[2] = 0;
+	    cons[i].counts[3] = 0;
+	    cons[i].counts[4] = 0;
+	    cons[i].counts[5] = 0;
+	}
+    }
+
     for (i = 0; i < nr; i++) {
 	int sp = r[i].start;
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r[i].rec);
@@ -1148,6 +1162,10 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 		sumsE[sp-start+j] += qe;
 		sumsC[sp-start+j][base_l] += 1 - qe;
 	    }
+
+	    if (flags & CONS_COUNTS)
+		cons[sp-start+j].counts[base_l]++;
+
 
 	    switch (base_l) {
 	    case 0:

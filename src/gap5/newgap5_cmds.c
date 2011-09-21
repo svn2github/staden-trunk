@@ -1850,6 +1850,32 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+int tcl_remove_pad_columns(ClientData clientData, Tcl_Interp *interp,
+			   int objc, Tcl_Obj *CONST objv[])
+{
+    shuffle_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(shuffle_arg, io)},
+	{"-contigs",	ARG_STR, 1, "*",   offsetof(shuffle_arg, inlist)},
+	{"-percent_pad",ARG_INT, 1, "100", offsetof(shuffle_arg, band)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+    int rargc;
+    contig_list_t *rargv;
+    
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    vfuncheader("Remove Pad Columns");
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    remove_pad_columns(args.io, rargc, rargv, args.band);
+
+    xfree(rargv);
+
+    return TCL_OK;
+}
+
 typedef struct {
     GapIO *io;
     char *contigs;
@@ -2184,6 +2210,8 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "remove_pad_columns", tcl_remove_pad_columns,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "break_contig_holes", tcl_break_contig_holes,

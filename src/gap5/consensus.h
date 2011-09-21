@@ -6,8 +6,9 @@
 #define CONS_NO_END_N   1
 #define CONS_SCORES     2
 #define CONS_DISCREP    4
+#define CONS_COUNTS     8
 
-#define CONS_ALL        7
+#define CONS_ALL        15
 
 typedef struct {
     /* the most likely base call - we never call N here */
@@ -27,6 +28,9 @@ typedef struct {
 
     /* Sequence depth */
     int depth;
+
+    /* Individual base type counts */
+    int counts[6];
 
     /* Discrepancy search score */
     float discrep;

@@ -78,6 +78,7 @@
 #include "align_lib.h"
 #include "text_output.h"
 #include "shuffle_pads.h"
+#include "consensus.h"
 
 typedef struct {
     int pos;
@@ -1286,6 +1287,74 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
     }
 
     ArrayDestroy(indels);
+
+    return 0;
+}
+
+/*
+ * ----------------------------------------------------------------------
+ * Remove Pad Columns. Sometimes we don't want to realign data, we just
+ * want to remove (aligned) columns of pads.
+ * ----------------------------------------------------------------------
+ */
+int remove_pad_columns(GapIO *io, int ncontigs, contig_list_t *contigs,
+		       int percent_pad) {
+    int i;
+    consensus_t *cons = NULL;
+    size_t max_alloc = 0;
+
+    for (i = 0; i < ncontigs; i++) {
+	tg_rec cnum = contigs[i].contig;
+	size_t len, j;
+	int ndel = 0;
+	contig_t *c;
+
+	vmessage("Processing contig %d of %d (#%"PRIrec")\n",
+		 i+1, ncontigs, cnum);
+	UpdateTextOutput();
+
+	c = cache_search(io, GT_Contig, cnum);
+	if (!c)
+	    return -1;
+
+	cache_incr(io, c);
+	
+	len = contigs[i].end - contigs[i].start + 1;
+	if (max_alloc < len) {
+	    max_alloc = len;
+	    cons = realloc(cons, max_alloc * sizeof(*cons));
+	}
+	
+	if (0 != calculate_consensus(io, cnum,
+				     contigs[i].start, contigs[i].end,
+				     cons)) {
+	    free(cons);
+	    cache_decr(io, c);
+	    return -1;
+	}
+
+	for (j = 0; j < len; j++) {
+	    if (cons[j].call != 4)
+		continue;
+
+	    if (100 * cons[j].counts[4] / cons[j].depth < percent_pad)
+		continue;
+
+	    vmessage("  Removing column %d %d%% pad (%d of %d), conf. %f)\n",
+		     j+contigs[i].start,
+		     100 * cons[j].counts[4] / cons[j].depth,
+		     cons[j].counts[4], cons[j].depth,
+		     cons[j].scores[cons[j].call]);
+
+	    contig_delete_base(io, &c, contigs[i].start + j - ndel);
+	    ndel++;
+	}
+
+	cache_decr(io, c);
+    }
+
+    if (cons)
+	free(cons);
 
     return 0;
 }

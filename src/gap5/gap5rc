@@ -400,6 +400,7 @@ set_def FINDOLIGO.WIN		.find_oligos
 set_def FIND_PROBES.WIN		.suggest_probes
 set_def LIST_CONFIDENCE.WIN	.list_confidence
 set_def SHUFFLE_PADS.WIN	.shuffle_pads
+set_def REMOVE_PAD_COLUMNS.WIN	.remove_pad_columns
 
 #-----------------------------------------------------------------------------
 # Tag type lists.
@@ -1005,6 +1006,10 @@ set_def CHECK_ASSEMBLY.USED.WINSIZE.VALUE	50
 # Shuffle Pads
 set_def SHUFFLE_PADS.INFILE		$defs_c_in
 set_def SHUFFLE_PADS.BAND_SIZE		8
+
+# Remove Pad Columns
+set_def REMOVE_PAD_COLUMNS.INFILE		$defs_c_in
+set_def REMOVE_PAD_COLUMNS.PERCENT_PAD		100
 
 # Find oligos
 set_def FINDOLIGO.INFILE		$defs_c_in
