@@ -180,6 +180,7 @@ int stech_guess_by_name(char *str) {
 bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
     int i;
     bio_seq_t *s;
+    int seq_offset;
 
     static struct char2 {
 	char c1;
@@ -218,38 +219,43 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
     s->conf = (char *)realloc(s->conf, (int)(s->alloc_len * 1.2));
 
     //    printf("New seq %p / %p => %p,%p\n", p, s, s->seq, s->conf);
-    
+
+    seq_offset = p->seq_offset;
+    if (p->first_del)
+	seq_offset++;
+
+
     /* left hand cutoff data */
     if (p->ref_skip) {
 	/* 2nd or more portion of a sequence with 'N' cigar ops */
 	i = 0;
 	s->seq_len = 0;
-    } else if (p->seq_offset >= 0) {
+    } else if (seq_offset >= 0) {
 	unsigned char *seq  = (unsigned char *)bam_seq(p->b);
 	unsigned char *qual = (unsigned char *)bam_qual(p->b);
 	char *sp = s->seq;
 	char *qp = s->conf;
 
 	if (bio->a->data_type & DATA_SEQ) {
-	    for (i = 0; i < p->seq_offset; i+=2) {
+	    for (i = 0; i < seq_offset; i+=2) {
 		unsigned char coded = *seq++;
 		*sp++ = lc2[coded].c1;
 		*sp++ = lc2[coded].c2;
 	    }
 	} else {
-	    for (i = 0; i < p->seq_offset; i++)
+	    for (i = 0; i < seq_offset; i++)
 		*sp++ = 'N';
 	}
 
 	if (bio->a->data_type & DATA_QUAL) {
-	    for (i = 0; i < p->seq_offset; i++)
+	    for (i = 0; i < seq_offset; i++)
 		*qp++ = *qual++;
 	} else {
-	    for (i = 0; i < p->seq_offset; i++)
+	    for (i = 0; i < seq_offset; i++)
 		*qp++ = 0;
 	}
 
-	i = p->seq_offset;
+	i = seq_offset;
 	s->seq_len = i;
 
 	/* Equiv to:
@@ -258,7 +264,7 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
 	 *    s->conf[i] = qual[i];
 	 * }
 	 */
-    } else if (p->seq_offset == 0) {
+    } else if (seq_offset == 0) {
 	i = 0;
     } else {
 	/*

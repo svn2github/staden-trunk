@@ -11,6 +11,12 @@
  * sam/bam samfile_t pointer and a callback function. The callback function
  * is called once per column of aligned data (so once per base in an
  * insertion).
+ *
+ * Current known issues.
+ * 1) zero length matches, ie 2S2S cause failures.
+ * 2) Insertions at starts of sequences get included in the soft clip, so
+ *    2S2I2M is treated as if it's 4S2M
+ * 3) From 1 and 2 above, 1S1I2S becomes 2S2S which fails.
  */
 
 /*
@@ -53,6 +59,9 @@ static void init_tab(void) {
 static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
     bam_seq_t *b = p->b;
     enum cigar_op op = p->cigar_op;
+
+    if (p->first_del)
+	p->first_del = 0;
 
     *is_insert = 0;
 
@@ -204,6 +213,11 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	p->eof = 0;
     }
 
+    /* Starting with an indel needs a minor fudge */
+    if (p->start && p->cigar_op == BAM_CDEL) {
+	p->first_del = 1;
+    }
+
     /* Check if next op is an insertion of some sort */
     if (p->cigar_len == 0) {
 	if (p->cigar_ind < bam_cigar_len(b)) {
@@ -235,7 +249,6 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
     
     return 1;
 }
-
 
 /*
  * Loops through a set of supplied ranges producing columns of data.
@@ -317,6 +330,8 @@ int pileup_loop(bam_file_t *fp,
 	while (col < pos && phead) {
 	    int v, ins, depth = 0;
 
+	    //printf("Col=%d pos=%d nth=%d\n", col, pos, nth);
+
 	    /* Pileup */
 	    is_insert = 0;
 	    for (p = phead; p; p = p->next) {
@@ -396,6 +411,7 @@ int pileup_loop(bam_file_t *fp,
 	    p->cigar_ind  = 0;
 	    p->cigar_op   = 'X';
 	    p->seq_offset = -1;
+	    p->first_del  = 0;
 	    p->b_strand   = bam_strand(p->b) ? 1 : 0;
 	    p->b_qual     = (unsigned char *)bam_qual(p->b);
 	    p->b_seq      = (unsigned char *)bam_seq(p->b);

@@ -21,6 +21,8 @@ typedef struct pileup {
     int  cigar_op;        // Current cigar operation
     int  cigar_len;       // Remaining length of this cigar op
 
+    int  first_del;       // Used when first base is a deletion
+
     int  eof;		  // True if this sequence has finished
     int  qual;            // Current qual (for active seq only)
     char base;		  // Current base (for active seq only)

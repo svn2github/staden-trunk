@@ -43,6 +43,13 @@ proc ExportSequences {io} {
     global $f.FixMates
     set $f.FixMates 0
 
+    checkbutton $f.depad \
+	-text "Use depadded coordinates (SAM only)" \
+	-variable $f.Depad \
+	-anchor w
+    global $f.Depad
+    set $f.Depad 0
+
     #--- OK/cancel/help
     okcancelhelp $f.ok \
 	-ok_command "ExportSequences2 $io $f" \
@@ -52,7 +59,7 @@ proc ExportSequences {io} {
 	-relief groove
 
     #--- Packing
-    pack $f.infile $f.id $f.format $f.outfile $f.fixmates $f.ok \
+    pack $f.infile $f.id $f.format $f.outfile $f.fixmates $f.depad $f.ok \
 	-side top -fill both
 }
 
@@ -71,7 +78,7 @@ proc ExportSequences_format {io f} {
 }
 
 proc ExportSequences2 {io f} {
-    global $f.FixMates
+    global $f.FixMates $f.Depad
 
     set format [lindex "x sam ace caf baf fastq fasta" [radiolist_get $f.format]]
     if {[lorf_in_get $f.infile] == 4} {
@@ -93,7 +100,7 @@ proc ExportSequences2 {io f} {
     }
 
     export_contigs -io $io -contigs $list -format $format -outfile $fn \
-	-fixmates [set $f.FixMates]
+	-fixmates [set $f.FixMates] -depad [set $f.Depad]
     destroy $f
 }
 

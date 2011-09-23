@@ -28,7 +28,7 @@
 
 
 static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
-			  char *fn, int fixmates);
+			  char *fn, int fixmates, int depad);
 static int export_tags(GapIO *io, int cc, contig_list_t *cv, int format,
 		       int consensus, int unpadded, char *fn);
 
@@ -41,6 +41,7 @@ typedef struct {
     char  *format;
     char  *outfile;
     int    fixmates;
+    int    depad;
 } ec_arg;
 
 int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
@@ -55,6 +56,7 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
 	{"-format",	ARG_STR, 1, "baf",    offsetof(ec_arg, format)},
 	{"-outfile",    ARG_STR, 1, "out.baf",offsetof(ec_arg, outfile)},
 	{"-fixmates",   ARG_INT, 1, "0",      offsetof(ec_arg, fixmates)},
+	{"-depad",      ARG_INT, 1, "1",      offsetof(ec_arg, depad)},
 	{NULL,	    0,	     0, NULL, 0}
     };
 
@@ -79,7 +81,7 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
     active_list_contigs(args.io, args.inlist, &rargc, &rargv);
 
     res = export_contigs(args.io, rargc, rargv, format_code, args.outfile,
-			 args.fixmates);
+			 args.fixmates, args.depad);
 
     free(rargv);
 
@@ -555,21 +557,244 @@ static int export_header_sam(GapIO *io, FILE *fp,
     return 0;
 }
 
+static char *sam_padded_cigar(char *seq, int left, int right, int olen) {
+    static char *cigar = NULL;
+    static int cg_alloc = 0;
+    int i, j;
+    char *cp = cigar;
+    int op = 'S', oplen = 0, cglen = 0;
+
+    for (i = j = 0; i < olen; i++) {
+	//printf("%c %c\n", s->seq[i], cons[pos+i-c->start]);
+	if (cp - cigar + 50 > cg_alloc) {
+	    ptrdiff_t d = cp-cigar;
+	    cg_alloc += 100;
+	    cigar = realloc(cigar, cg_alloc);
+	    cp = cigar + d;
+	}
+
+	if (seq[i] == '*') {
+	    //if (op != 'S') {
+		if (op != 'D' && oplen > 0) {
+		    cp += sprintf(cp, "%d%c", oplen, op);
+		    cglen += oplen;
+		    oplen = 0;
+		}
+		op = 'D';
+		oplen++;
+	     //}
+	    /* else, gap in soft-clips.
+	     * Right now this causes tview to fail an assertion though.
+	     */
+	} else if (i < left) {
+	    if (op != 'S' && oplen) {
+		cp += sprintf(cp, "%d%c", oplen, op);
+		if (op != 'D') cglen += oplen;
+		oplen = 0;
+	    }
+	    op = 'S';
+	    oplen++;
+	} else if (i >= left && i < right) {
+	    if (op != 'M' && oplen) {
+		cp += sprintf(cp, "%d%c", oplen, op);
+		if (op != 'D') cglen += oplen;
+		oplen = 0;
+	    }
+	    op = 'M';
+	    oplen++;
+	} else {
+	    if (op != 'S' && oplen) {
+		/* Switching from deletion to 'S' breaks tview */
+		if (op != 'D') {
+		    cp += sprintf(cp, "%d%c", oplen, op);
+		    if (op != 'D') cglen += oplen;
+		}
+		oplen = 0;
+	    }
+	    op = 'S';
+	    oplen++;
+	}
+
+	j++;
+    }
+    if (oplen > 0) {
+	if (cp - cigar + 50 > cg_alloc) {
+	    ptrdiff_t d = cp-cigar;
+	    cg_alloc += 100;
+	    cigar = realloc(cigar, cg_alloc);
+	    cp = cigar + d;
+	}
+
+	cp += sprintf(cp, "%d%c", oplen, op);
+	if (op != 'D') cglen += oplen;
+    }
+
+    //assert(cglen == len);
+
+    /* Sam cannot handle gaps at the end of sequences */
+    if (*(cp-1) == 'D') {
+	cp-=2;
+	while(*cp >= '0' && *cp <= '9')
+	    cp--;
+	cp++;
+	*cp = 0;
+    }
+
+    return cigar;
+}
+
+static char *sam_depadded_cigar(char *seq, int left, int right, int olen,
+				char *cons) {
+    static char *cigar = NULL;
+    static int cg_alloc = 0;
+    int i, j;
+    char *cp = cigar;
+    int op = 'S', oplen = 0, cglen = 0;
+    int last_op = 0, last_oplen = 0;
+    char *last_cp = NULL;
+
+    for (i = j = 0; i < olen; i++) {
+	//printf("%2d %c %c\n", i, seq[i], 
+	//       i >= left && i < right ? cons[j] : '.');
+	if (cp - cigar + 50 > cg_alloc) {
+	    ptrdiff_t d = cp-cigar;
+	    ptrdiff_t d2 = last_cp ? last_cp-cigar : 0;
+	    cg_alloc += 100;
+	    cigar = realloc(cigar, cg_alloc);
+	    cp = cigar + d;
+	    if (last_cp)
+		last_cp = cigar + d2;
+	}
+
+	if (seq[i] == '*' && i >= left && i < right && cons[j] == '*') {
+	    /* gap in both so skip unless we're neighbouring I/D */
+	    if (op != 'P' && oplen) {
+		/* May need to merge next op with previous op */
+		last_op    = op;
+		last_oplen = oplen;
+		last_cp    = cp;
+		cp += sprintf(cp, "%d%c", oplen, op);
+		if (op != 'D') cglen += oplen;
+		oplen = 0;
+	    }
+	    op = 'P';
+	    oplen++;
+	} else if (seq[i] == '*' && i >= left & i < right) {
+	    /* gap is seq only */
+	    //if (op != 'S') {
+		if (op != 'D' && oplen > 0) {
+		    if (op == 'P' && last_op == 'D') {
+			oplen = last_oplen;
+
+			cp    = last_cp;
+		    } else {
+			cp += sprintf(cp, "%d%c", oplen, op);
+			cglen += oplen;
+			oplen = 0;
+		    }
+		}
+		op = 'D';
+		oplen++;
+	     //}
+	} else if (seq[i] == '*') {
+	    /* else, gap in soft-clips - remove as SAM cannot represent this */
+	} else if (i < left) {
+	    if (op != 'S' && oplen) {
+		cp += sprintf(cp, "%d%c", oplen, op);
+		if (op != 'D') cglen += oplen;
+		oplen = 0;
+	    }
+	    op = 'S';
+	    oplen++;
+	} else if (i >= left && i < right) {
+	    if (cons[j] == '*') {
+		/* Insertion */
+		if (op != 'I' && oplen) {
+		    cp += sprintf(cp, "%d%c", oplen, op);
+		    if (op != 'D') cglen += oplen;
+		    oplen = 0;
+		}
+		op = 'I';
+		oplen++;
+	    } else {
+		if (op != 'M' && oplen) {
+		    if (op == 'P' && last_op == 'M') {
+			oplen = last_oplen;
+			cp    = last_cp;
+		    } else {
+			cp += sprintf(cp, "%d%c", oplen, op);
+			if (op != 'D') cglen += oplen;
+			oplen = 0;
+		    }
+		}
+		op = 'M';
+		oplen++;
+	    }
+	} else {
+	    if (op != 'S' && oplen) {
+		/* Switching from deletion to 'S' breaks tview */
+		if (op != 'D') {
+		    cp += sprintf(cp, "%d%c", oplen, op);
+		    if (op != 'D') cglen += oplen;
+		}
+		oplen = 0;
+	    }
+	    op = 'S';
+	    oplen++;
+	}
+
+	if (i >= left)
+	    j++;
+    }
+    if (oplen > 0) {
+	if (cp - cigar + 50 > cg_alloc) {
+	    ptrdiff_t d = cp-cigar;
+	    cg_alloc += 100;
+	    cigar = realloc(cigar, cg_alloc);
+	    cp = cigar + d;
+	}
+
+	cp += sprintf(cp, "%d%c", oplen, op);
+	if (op != 'D') cglen += oplen;
+    }
+
+    //assert(cglen == len);
+
+    /* Sam cannot handle gaps at the end of sequences */
+    if (*(cp-1) == 'D') {
+	cp-=2;
+	while(*cp >= '0' && *cp <= '9')
+	    cp--;
+	cp++;
+	*cp = 0;
+    }
+
+    //puts(cigar);
+
+    return cigar;
+}
+
 /*
  * Exports a single sam sequence, marrying up annotations to the appropriate
  * sequences and adding these in auxillary tags.
  *
  * We use Zs:Z:type|pos|len|comment and Zc:Z: for these.
+ *
+ * Depad indicates whether we wish to output in depadded consensus coordinates.
+ * If true, we use cons to identify where the pads are. For efficiency we
+ * keep track of the number of pads seen so far up to base 'pad_to', and
+ * update these fields as we go (with an assumption data is in sorted order).
  */
 static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
-			   int fixmates, tg_rec crec, contig_t *c, int offset){
+			   int fixmates, tg_rec crec, contig_t *c, int offset,
+			   int depad, char *cons, int *npad, int *pad_to){
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec), *sorig = s;
     int len = s->len < 0 ? -s->len : s->len, olen = len;
     int lenQ = 0;
 
     char *tname, *cp;
     int i, j, flag, tname_len, pos;
-    int left, right, op, oplen, cglen;
+    int left, right;
     int iend, isize;
     char *mate_ref;
     library_t *lib = NULL;
@@ -696,92 +921,30 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	   }
     }
 
-
-    /*--- Generate cigar string. */
+    /* Find depadded coord */
     pos = fi->r.start;
-    cp = cigar;
     left  = s->left-1;
     right = s->right;
     pos += left;
 	
-    op = 'S'; oplen = 0;
-    cglen = 0;
-
-    for (i = j = 0; i < olen; i++) {
-	//printf("%c %c\n", s->seq[i], cons[pos+i-c->start]);
-	if (cp - cigar + 50 > cg_alloc) {
-	    ptrdiff_t d = cp-cigar;
-	    cg_alloc += 100;
-	    cigar = realloc(cigar, cg_alloc);
-	    cp = cigar + d;
+    if (depad) {
+	/* pos is currently padded */
+	for (i = *pad_to; i < pos; i++) {
+	    if (cons[i - (c->start)] == '*')
+		(*npad)++;
 	}
+	*pad_to = i;
 
-	if (s->seq[i] == '*') {
-	    if (op != 'S') {
-		if (op != 'D' && oplen > 0) {
-		    cp += sprintf(cp, "%d%c", oplen, op);
-		    cglen += oplen;
-		    oplen = 0;
-		}
-		op = 'D';
-		oplen++;
-	    }
-	    /* else, gap in soft-clips.
-	     * Right now this causes tview to fail an assertion though.
-	     */
-	} else if (i < left) {
-	    if (op != 'S' && oplen) {
-		cp += sprintf(cp, "%d%c", oplen, op);
-		if (op != 'D') cglen += oplen;
-		oplen = 0;
-	    }
-	    op = 'S';
-	    oplen++;
-	} else if (i >= left && i < right) {
-	    if (op != 'M' && oplen) {
-		cp += sprintf(cp, "%d%c", oplen, op);
-		if (op != 'D') cglen += oplen;
-		oplen = 0;
-	    }
-	    op = 'M';
-	    oplen++;
-	} else {
-	    if (op != 'S' && oplen) {
-		/* Switching from deletion to 'S' breaks tview */
-		if (op != 'D') {
-		    cp += sprintf(cp, "%d%c", oplen, op);
-		    if (op != 'D') cglen += oplen;
-		}
-		oplen = 0;
-	    }
-	    op = 'S';
-	    oplen++;
-	}
-
-	j++;
-    }
-    if (oplen > 0) {
-	if (cp - cigar + 50 > cg_alloc) {
-	    ptrdiff_t d = cp-cigar;
-	    cg_alloc += 100;
-	    cigar = realloc(cigar, cg_alloc);
-	    cp = cigar + d;
-	}
-
-	cp += sprintf(cp, "%d%c", oplen, op);
-	if (op != 'D') cglen += oplen;
+	pos -= *npad;
     }
 
-    assert(cglen == len);
 
-    /* Sam cannot handle gaps at the end of sequences */
-    if (*(cp-1) == 'D') {
-	cp-=2;
-	while(*cp >= '0' && *cp <= '9')
-	    cp--;
-	cp++;
-	*cp = 0;
-    }
+    /*--- Generate cigar string. */
+    if (depad)
+	cigar = sam_depadded_cigar(s->seq, left, right, olen,
+				   &cons[pos - c->start + *npad]);
+    else
+	cigar = sam_padded_cigar(s->seq, left, right, olen);
 
 
     /*--- Compute insert sizes */
@@ -951,7 +1114,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
 static int export_contig_sam(GapIO *io, FILE *fp,
 			     tg_rec crec, int start, int end,
-			     int fixmates) {
+			     int fixmates, int depad) {
     contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
 						  start, end,
 						  GRANGE_FLAG_ISANY);
@@ -960,29 +1123,25 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     char *Q = NULL, *S = NULL;
     char *cigar = NULL;
     int offset, ustart, uend;
-#if 0
-    char *cons;
-    int last_start;
-#endif
+    char *cons = NULL;
     /* Seq fragment and tag queues */
     fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
     fifo_t *fi;
     int last_start = 0;
+    int npads = 0, pad_to;;
 
     c = (contig_t *)cache_search(io, GT_Contig, crec);
     cache_incr(io, c);
+    pad_to = c->start;
 
-#if 0
-    {
+    if (depad) {
 	int first = c->start;
 	int last = c->end;
 	int len = last-first+1;
-	last_start = c->start;
 
 	cons = (char *)xmalloc(len);
 	calculate_consensus_simple(io, crec, first, last, cons, NULL);
     }
-#endif
 
     /* Sam can only have coordinates from 1 onwards, so shift if needed */
     consensus_valid_range(io, crec, &ustart, &uend);
@@ -1020,7 +1179,8 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	while (fi = fifo_queue_head(fq)) {
 	    if (fi->r.end < last_start) {
 		fifo_queue_pop(fq);
-		sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset);
+		sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
+			       depad, cons, &npads, &pad_to);
 		free(fi);
 	    } else {
 		break;
@@ -1031,7 +1191,8 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     /* Flush the rest of queues */
     while (fi = fifo_queue_head(fq)) {
 	fifo_queue_pop(fq);
-	sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset);
+	sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
+		       depad, cons, &npads, &pad_to);
 	free(fi);
     }
 
@@ -1044,6 +1205,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     if (Q) free(Q);
     if (S) free(S);
     if (cigar) free(cigar);
+    if (cons) free(cons);
 
     return 0;
 }
@@ -1786,7 +1948,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 }
 
 static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
-			  char *fn, int fixmates) {
+			  char *fn, int fixmates, int depad) {
     int i;
     FILE *fp;
     
@@ -1815,7 +1977,7 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 	switch (format) {
 	case FORMAT_SAM:
 	    export_contig_sam(io, fp, cv[i].contig, cv[i].start, cv[i].end,
-			      fixmates);
+			      fixmates, depad);
 	    break;
 
 	case FORMAT_FASTQ:
