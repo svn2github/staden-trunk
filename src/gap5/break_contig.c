@@ -1195,12 +1195,12 @@ int break_check_counts(GapIO *io, tg_rec crec, int *cpos_p) {
     if (!ci)
 	return -1;
 
-    new_cpos = INT_MIN;
+    new_cpos = INT_MAX;
     while (r = contig_iter_next(io, ci)) {
 	seq_t *s;
 	int cstart;
 
-	if (new_cpos != INT_MIN && r->start >= new_cpos)
+	if (new_cpos != INT_MAX && r->start >= new_cpos)
 	    break;
 
 	s = cache_search(io, GT_Seq, r->rec);
@@ -1213,7 +1213,7 @@ int break_check_counts(GapIO *io, tg_rec crec, int *cpos_p) {
 	    cstart = r->start + s->left-1;
 	}
 
-	if (cstart >= cpos && new_cpos < cstart)
+	if (cstart >= cpos && new_cpos > cstart)
 	    new_cpos = cstart;
 
 	if (cstart >= cpos) {
