@@ -1617,7 +1617,7 @@ int consensus_unpadded_pos(GapIO *io, tg_rec contig, int pos, int *upos) {
 	if (cons[i] == '*')
 	    np++;
     }
-    *upos = pos - np + c->start;
+    *upos = pos - np;
     free(cons);
 
     return 0;
