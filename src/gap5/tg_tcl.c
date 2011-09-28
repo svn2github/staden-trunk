@@ -1104,7 +1104,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     case CHECK: {
-	int fix = 0, level = 2;
+	int fix = 0, level = 2, fixed = 0;
 	int ret;
 
 	if (objc >= 3)
@@ -1112,8 +1112,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	if (objc >= 4)
 	    Tcl_GetIntFromObj(interp, objv[3], &level);
 	
-	ret = check_contig(tc->io, tc->contig->rec, fix, level, NULL);
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(ret));
+	ret = check_contig(tc->io, tc->contig->rec, fix, level, NULL, &fixed);
+	vTcl_SetResult(interp, "%d %d", ret, fixed);
 	break;
     }
     }

@@ -37,7 +37,7 @@ typedef struct {
  * range that points to it.
  */
 static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
-		     HacheTable *lib_hash, int is_cons) {
+		     HacheTable *lib_hash, int is_cons, int *fixed) {
     int err = 0;
     int i, len;
     seq_t *s = cache_search(io, GT_Seq, r->rec);
@@ -65,6 +65,7 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	    r->rec      = 0;
 	    r->flags    = GRANGE_FLAG_UNUSED;
 	    bin->flags |= BIN_RANGE_UPDATED;
+	    if (fixed) (*fixed)++;
 	}
 	return 1;
     }
@@ -77,6 +78,7 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	if (fix) {
 	    s = cache_rw(io, s);
 	    s->bin_index = r - ArrayBase(range_t, bin->rng);
+	    if (fixed) if (fixed) (*fixed)++;
 	}
     }
 
@@ -86,6 +88,7 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	if (fix) {
 	    s = cache_rw(io, s);
 	    s->bin = bin->rec;
+	    if (fixed) (*fixed)++;
 	}
     }
     if (r->end - r->start + 1 != ABS(s->len)) {
@@ -100,6 +103,7 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 		r->end = ABS(s->len)-1 + r->start;
 	    }
 	    bin->flags |= BIN_RANGE_UPDATED;
+	    if (fixed) (*fixed)++;
 	}
     }
 
@@ -113,6 +117,7 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 		s->left = 1;
 	    if (s->right > ABS(s->len))
 		s->right = s->len;
+	    if (fixed) (*fixed)++;
 	}
     }
 
@@ -124,6 +129,7 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	if (fix) {
 	    s = cache_rw(io, s);
 	    s->left = s->right;
+	    if (fixed) (*fixed)++;
 	}
     }
 
@@ -134,6 +140,7 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	if (fix) {
 	    s = cache_rw(io, s);
 	    s->mapping_qual = r->mqual;
+	    if (fixed) (*fixed)++;
 	}
     }
 
@@ -497,7 +504,7 @@ void grow_bin(GapIO *io, bin_index_t *bin) {
 static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		    int level, HacheTable *lib_hash,
 		    HacheTable *rec_hash, bin_stats *bs,
-		    int valid_ctg_start, int valid_ctg_end) {
+		    int valid_ctg_start, int valid_ctg_end, int *fixed) {
     bin_index_t *bin;
     int i, f_a, f_b, err = 0;
     bin_stats child_stats;
@@ -572,6 +579,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bin = cache_rw(io, bin);
 		bin->flags |= BIN_BIN_UPDATED;
 		bin->child[i] = 0;
+		if (fixed) (*fixed)++;
 	    }
 	    continue;
 	}
@@ -589,6 +597,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		ch = cache_rw(io, ch);
 		ch->parent = bin->rec;
 		ch->parent_type = GT_Bin;
+		if (fixed) (*fixed)++;
 	    }
 	}
 
@@ -602,6 +611,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bin->flags |= BIN_BIN_UPDATED;
 		bin->child[i] = 0;
 		continue;
+		if (fixed) (*fixed)++;
 	    }
 
 	} else  {
@@ -614,6 +624,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		err++;
 		if (fix) {
 		    grow_bin(io, bin);
+		    if (fixed) (*fixed)++;
 		}
 	    }
 
@@ -631,7 +642,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 			NMIN(ch->pos, ch->pos + ch->size-1) /* offset */,
 			complement, level, lib_hash,
 			rec_hash, &child_stats,
-			valid_ctg_start, valid_ctg_end);
+			valid_ctg_start, valid_ctg_end, fixed);
 
 	bs->nseq  += child_stats.nseq;
 	bs->nanno += child_stats.nanno;
@@ -666,6 +677,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bin = cache_rw(io, bin);
 		bin->rng_free = -1;
 		bin->flags |= BIN_BIN_UPDATED;
+		if (fixed) (*fixed)++;
 	    } else {
 		goto skip_checks;
 	    }
@@ -693,6 +705,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 			bin->rng_free = -1;
 			bin->flags |= BIN_BIN_UPDATED;
 		    }
+		    if (fixed) (*fixed)++;
 		}
 		break;
 	    }
@@ -706,6 +719,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		    bin = cache_rw(io, bin);
 		    r->rec = -1;
 		    bin->flags |= BIN_RANGE_UPDATED;
+		    if (fixed) (*fixed)++;
 		}
 		break;
 	    }
@@ -725,6 +739,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 			bin->rng_free = -1;
 			bin->flags |= BIN_BIN_UPDATED;
 		    }
+		    if (fixed) (*fixed)++;
 		}
 		break;
 	    }
@@ -762,7 +777,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bs->nseq++;
 		nthis_seq++;
 		if (level > 1)
-		    err += check_seq(io, fix, bin, r, lib_hash, 0);
+		    err += check_seq(io, fix, bin, r, lib_hash, 0, fixed);
 
 		if (cstart > r->start)
 		    cstart = r->start;
@@ -786,7 +801,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 
 	    case GRANGE_FLAG_ISCONS:
 		if (level > 1)
-		    err += check_seq(io, fix, bin, r, NULL, 1);
+		    err += check_seq(io, fix, bin, r, NULL, 1, fixed);
 		break;
 
 	    case GRANGE_FLAG_ISUMSEQ:
@@ -813,6 +828,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    bin = cache_rw(io, bin);
 	    bin->flags |= BIN_BIN_UPDATED;
 	    bin->nseqs = bs->nseq;
+	    if (fixed) (*fixed)++;
 	}
 	err++;
     }
@@ -823,6 +839,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    bin = cache_rw(io, bin);
 	    bin->flags |= BIN_BIN_UPDATED;
 	    bin->nanno = bs->nanno;
+	    if (fixed) (*fixed)++;
 	}
 	err++;
     } else if (fix && db_vers == 1 && bin->nanno != bs->nanno) {
@@ -830,6 +847,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	bin = cache_rw(io, bin);
 	bin->flags |= BIN_BIN_UPDATED;
 	bin->nanno = bs->nanno;
+	if (fixed) (*fixed)++;
     }
     if (db_vers > 1 && bin->nrefpos != bs->nref) {
 	vmessage("bin %"PRIrec": nrefpos does not match observed counts\n",
@@ -838,6 +856,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    bin = cache_rw(io, bin);
 	    bin->flags |= BIN_BIN_UPDATED;
 	    bin->nrefpos = bs->nref;
+	    if (fixed) (*fixed)++;
 	}
 	err++;
     } else if (fix && db_vers == 1 && bin->nrefpos != bs->nref) {
@@ -845,6 +864,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	bin = cache_rw(io, bin);
 	bin->flags |= BIN_BIN_UPDATED;
 	bin->nrefpos = bs->nref;
+	if (fixed) (*fixed)++;
     }
 
 
@@ -863,6 +883,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bin->flags |= BIN_BIN_UPDATED;
 		bin->start_used = start;
 		bin->end_used = end;
+		if (fixed) (*fixed)++;
 	    }
 	}
 
@@ -893,6 +914,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 
 		/* Now check it hasn't outgrown the parent too */
 		grow_bin(io, bin);
+		if (fixed) (*fixed)++;
 	    }
 	}
 
@@ -906,6 +928,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		bin->flags |= BIN_BIN_UPDATED;
 		bin->start_used = 0;
 		bin->end_used = 0;
+		if (fixed) (*fixed)++;
 	    }
 	}
     }
@@ -945,7 +968,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
  *         0 on success.
  */
 int check_contig(GapIO *io, tg_rec crec, int fix, int level,
-		 HacheTable *lib_hash) {
+		 HacheTable *lib_hash, int *fixed) {
     contig_t *c;
     bin_stats bs;
     int err = 0;
@@ -983,13 +1006,14 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 		bin = cache_rw(io, bin);
 		bin->parent = crec;
 		bin->parent_type = GT_Contig;
+		if (fixed) (*fixed)++;
 	    }
 	}
     }
 
     err += bin_walk(io, fix, c->bin, contig_offset(io, &c), 0, level,
 		    lib_hash, rec_hash, &bs,
-		    valid_ctg_start, valid_ctg_end);
+		    valid_ctg_start, valid_ctg_end, fixed);
 
     if (bs.cstart != c->start ||
 	bs.cend   != c->end) {
@@ -1000,6 +1024,7 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 	    c = cache_rw(io, c);
 	    c->start = bs.cstart;
 	    c->end   = bs.cend;
+	    if (fixed) (*fixed)++;
 	}
     }
     
@@ -1260,7 +1285,7 @@ int check_database(GapIO *io, int fix, int level) {
     database_t *db;
     ArrayStruct *contig_order, *library;
     int i;
-    int err = 0;
+    int err = 0, fixed = 0;
     HacheTable *hash = NULL;
 
     vfuncheader("Check Database");
@@ -1298,6 +1323,7 @@ int check_database(GapIO *io, int fix, int level) {
 	    cache_rw(io, io->contig_order);
 	    ArrayMax(io->contig_order) = io->db->Ncontigs;
 	    ArrayMax(contig_order) = io->db->Ncontigs;
+	    fixed++;
 	}
     }
 
@@ -1357,6 +1383,7 @@ int check_database(GapIO *io, int fix, int level) {
     if (fix && io->db->version == 1) {
 	io->db = cache_rw(io, io->db);
 	io->iface->vers(io->dbh, 2);
+	fixed++;
     }
 
     /* Check each contig in turn */
@@ -1365,7 +1392,7 @@ int check_database(GapIO *io, int fix, int level) {
 	vmessage("--Checking contig #%"PRIrec" (%d of %d)\n",
 		 crec, i+1, (int)ArrayMax(contig_order));
 	UpdateTextOutput();
-	err += check_contig(io, crec, fix, level, hash);
+	err += check_contig(io, crec, fix, level, hash, &fixed);
     }
 
     if (fix && io->db->version == 1)
@@ -1374,6 +1401,8 @@ int check_database(GapIO *io, int fix, int level) {
     HacheTableDestroy(hash, 0);
 
     vmessage("\n*** Total number of errors: %d ***\n", err);
+    if (fix)
+	vmessage("*** Attempted to fix:       %d ***\n", fixed);
 
     return err;
 }

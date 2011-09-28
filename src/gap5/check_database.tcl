@@ -71,6 +71,7 @@ proc CheckDatabase2 {io w} {
 	set nc [llength $list]
 	set idx 1
 	set err 0
+	set fixed 0
 	foreach c $list {
 	    set crec [db_info get_contig_num $io $c]
 	    if {$crec == 0} {
@@ -78,7 +79,9 @@ proc CheckDatabase2 {io w} {
 	    } else {
 		vmessage "--Checking contig $c/#$crec ($idx of $nc)"
 		set c [$io get_contig $crec]
-		incr err [$c check]
+		foreach {err_inc fixed_inc} [$c check $fix] break
+		incr err $err_inc
+		incr fixed $fixed_inc
 		$c delete
 		update
 		update idletasks
@@ -87,6 +90,9 @@ proc CheckDatabase2 {io w} {
 	}
 
 	vmessage "\n*** Total number of errors: $err ***"
+	if {$fix} {
+	    vmessage "*** Attempted to fix      : $fixed ***"
+	}
     }
 
     $io flush
