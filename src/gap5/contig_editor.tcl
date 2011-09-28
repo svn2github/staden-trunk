@@ -702,7 +702,19 @@ proc contig_editor {w args} {
     } else {
 	set opt(-reading) 0
     }
-    if {![info exists opt(-pos)]} { set opt(-pos) 1 }
+    if {![info exists opt(-pos)]} {
+	if {$opt(-reading) != 0} {
+	    set s [$opt(-io) get_sequence $opt(-reading)]
+	    foreach {cl cr} [$s get_clips] break;
+	    if {[$s get_orient]} {
+		set cl [expr {abs([$s get_length])-$cr}]
+	    }
+	    $s delete
+	    set opt(-pos) [expr {$cl-1}]
+	} else {
+	    set opt(-pos) 1
+	}
+    }
     if {$join} {
 	set opt(contig2) $opt(-contig2)
 	set opt(io2) [io_child $opt(-io) $opt(-contig2)]
@@ -716,7 +728,19 @@ proc contig_editor {w args} {
 	} else {
 	    set opt(-reading2) 0
 	}
-	if {![info exists opt(-pos2)]}     { set opt(-pos2) 1 }
+	if {![info exists opt(-pos2)]}     {
+	    if {$opt(-reading2) != 0} {
+		set s [$opt(-io) get_sequence $opt(-reading2)]
+		foreach {cl cr} [$s get_clips] break;
+		if {[$s get_orient]} {
+		    set cl [expr {abs([$s get_length])-$cr}]
+		}
+		$s delete
+		set opt(-pos2) [expr {$cl-1}]
+	    } else {
+		set opt(-pos2) 1
+	    }
+	}
     }
 
     # Create the window layout
