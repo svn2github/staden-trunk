@@ -1498,6 +1498,8 @@ tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
 	    k = 0;
 	}
     }
+    if (out[j-1] == '\n')
+	j--;
 
     Tcl_SetObjResult(interp, Tcl_NewStringObj(out, j));
     free(out);
