@@ -186,6 +186,35 @@ rangec_t *contig_iter_next(GapIO *io, contig_iterator *ci);
 rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci);
 
 /*
+ * Given an iterator from start..end we'll find sequences that may cover
+ * e_start..e_end where e_start and e_end may possibly be larger than start
+ * to end. Pictorially:
+ *
+ *                start      end
+ *A-------------- |          |
+ *B      -----    |          |
+ *C   ---------------------  |
+ *D   |         -----------------------------
+ *E   |                        --------     |
+ *F   |                            ---------------------
+ *    |                                     |
+ *    e_start                               e_end
+ *
+ * The original query can fetch back seqs C & D, but annotations entirely
+ * outside this could be missed if we're doing GRANGE_FLAG_ISANY queries.
+ *
+ * So we expand the range to e_start to e_end to pick up annotations.
+ * NOTE: the caller then need to manually filter the start/end range
+ * itself to avoid then picking up seqs B and E which aren't in the
+ * original range.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int iterator_expand_range(GapIO *io, tg_rec crec, int start, int end,
+			  int *e_start, int *e_end);
+
+/*
  * Queries and/or creates a track of a given type from a region of the
  * contig at a require resolution (bpv = bases per value).
  *

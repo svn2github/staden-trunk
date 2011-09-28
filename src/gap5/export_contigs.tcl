@@ -11,7 +11,7 @@ proc ExportSequences {io} {
     #--- contig identifier widget
     contig_id $f.id -io $io
 
-    lorf_in $f.infile [keylget gap5_defs CONSENSUS.INFILE] \
+    lorf_in $f.infile [keylget gap5_defs EXPORT.INFILE] \
         "{contig_id_configure $f.id -state disabled}
          {contig_id_configure $f.id -state disabled}
          {contig_id_configure $f.id -state disabled}
@@ -24,7 +24,7 @@ proc ExportSequences {io} {
     #--- formats
     radiolist $f.format \
 	-title "Select format" \
-	-default 1 \
+	-default [keylget gap5_defs EXPORT.FORMAT] \
 	-orient horizontal \
 	-buttons [list \
 	     [list sam   -command "ExportSequences_format $io $f"] \
@@ -41,14 +41,14 @@ proc ExportSequences {io} {
 	-variable $f.FixMates \
 	-anchor w
     global $f.FixMates
-    set $f.FixMates 0
+    set $f.FixMates [keylget gap5_defs EXPORT.FIX_MATES] \
 
     checkbutton $f.depad \
 	-text "Use depadded coordinates (SAM only)" \
 	-variable $f.Depad \
 	-anchor w
     global $f.Depad
-    set $f.Depad 0
+    set $f.Depad [keylget gap5_defs EXPORT.DEPAD] \
 
     #--- OK/cancel/help
     okcancelhelp $f.ok \

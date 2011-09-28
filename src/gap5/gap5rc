@@ -840,6 +840,12 @@ set_def CONTIGS_TO_LIST.INFILE		       $defs_c_in
 set_def CONTIGS_TO_LIST.OUTFILE		       $defs_f_or_l_out
 set_def CONTIGS_TO_LIST.OUTFILE.WHICH.NAME     "Save reading names in"
 
+#Export Sequences
+set_def EXPORT.INFILE				$defs_c_in
+set_def EXPORT.FORMAT				1
+set_def EXPORT.FIX_MATES			0
+set_def EXPORT.DEPAD				1
+
 #calculate consensus
 set_def CONSENSUS.INFILE			$defs_c_in
 set_def CONSENSUS.SELMASK.NAME			"Select mode"

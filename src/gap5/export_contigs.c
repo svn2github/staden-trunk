@@ -574,7 +574,7 @@ static char *sam_padded_cigar(char *seq, int left, int right, int olen) {
 	}
 
 	if (seq[i] == '*') {
-	    //if (op != 'S') {
+	    if (op != 'S' || i == left) {
 		if (op != 'D' && oplen > 0) {
 		    cp += sprintf(cp, "%d%c", oplen, op);
 		    cglen += oplen;
@@ -582,7 +582,7 @@ static char *sam_padded_cigar(char *seq, int left, int right, int olen) {
 		}
 		op = 'D';
 		oplen++;
-	     //}
+	    }
 	    /* else, gap in soft-clips.
 	     * Right now this causes tview to fail an assertion though.
 	     */
@@ -1115,9 +1115,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 static int export_contig_sam(GapIO *io, FILE *fp,
 			     tg_rec crec, int start, int end,
 			     int fixmates, int depad) {
-    contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
-						  start, end,
-						  GRANGE_FLAG_ISANY);
+    contig_iterator *ci;
     rangec_t *r;
     contig_t *c;
     char *Q = NULL, *S = NULL;
@@ -1128,7 +1126,15 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
     fifo_t *fi;
     int last_start = 0;
-    int npads = 0, pad_to;;
+    int npads = 0, pad_to;
+    int expanded_start, expanded_end;
+
+    iterator_expand_range(io, crec, start, end,
+			  &expanded_start, &expanded_end);
+
+    ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
+				 expanded_start, expanded_end,
+				 GRANGE_FLAG_ISANY);
 
     c = (contig_t *)cache_search(io, GT_Contig, crec);
     cache_incr(io, c);
@@ -1154,6 +1160,9 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	    seq_t *s;
 	    fifo_t *fi, *fl;
+
+	    if (r->end < start || r->start > end)
+		continue;
 
 	    fi = fifo_queue_push(fq, r);
 
@@ -1410,15 +1419,20 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
 
 static int export_contig_baf(GapIO *io, FILE *fp,
 			     tg_rec crec, int start, int end) {
-    contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
-						  start, end,
-						  GRANGE_FLAG_ISANY);
+    contig_iterator *ci;
     rangec_t *r;
     char *q = NULL, *S = NULL;
     contig_t *c;
     fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
     fifo_t *fi;
     int last_start = 0;
+    int expanded_start, expanded_end;
+
+    iterator_expand_range(io, crec, start, end,
+			  &expanded_start, &expanded_end);
+    ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
+				 expanded_start, expanded_end,
+				 GRANGE_FLAG_ISANY);
 
     /* Contig record */
     c = (contig_t *)cache_search(io, GT_Contig, crec);
@@ -1428,6 +1442,9 @@ static int export_contig_baf(GapIO *io, FILE *fp,
     while (r = contig_iter_next(io, ci)) {
 	/* Add new items to fifo */
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	    if (r->end < start || r->start > end)
+		continue;
+
 	    fifo_queue_push(fq, r);
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
@@ -1645,9 +1662,7 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
 static int export_contig_caf(GapIO *io, FILE *fp,
 			     tg_rec crec, int start, int end) {
-    contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
-						  start, end,
-						  GRANGE_FLAG_ISANY);
+    contig_iterator *ci;
     rangec_t *r;
     char *q = NULL, *S = NULL;
     contig_t *c;
@@ -1660,11 +1675,22 @@ static int export_contig_caf(GapIO *io, FILE *fp,
     char *cons;
     float *qual;
     int i, wrap;
+    int expanded_start, expanded_end;
+
+    iterator_expand_range(io, crec, start, end,
+			  &expanded_start, &expanded_end);
+
+    ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
+				 expanded_start, expanded_end,
+				 GRANGE_FLAG_ISANY);
 
     /* Seq/tag records */
     while (r = contig_iter_next(io, ci)) {
 	/* Add new items to fifo */
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	    if (r->end < start || r->start > end)
+		continue;
+
 	    fifo_queue_push(fq, r);
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {

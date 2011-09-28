@@ -3333,6 +3333,74 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
     }
 }
 
+/*
+ * Given an iterator from start..end we'll find sequences that may cover
+ * e_start..e_end where e_start and e_end may possibly be larger than start
+ * to end. Pictorially:
+ *
+ *                start      end
+ *A-------------- |          |
+ *B      -----    |          |
+ *C   ---------------------  |
+ *D   |         -----------------------------
+ *E   |                        --------     |
+ *F   |                            ---------------------
+ *    |                                     |
+ *    e_start                               e_end
+ *
+ * The original query can fetch back seqs C & D, but annotations entirely
+ * outside this could be missed if we're doing GRANGE_FLAG_ISANY queries.
+ *
+ * So we expand the range to e_start to e_end to pick up annotations.
+ * NOTE: the caller then need to manually filter the start/end range
+ * itself to avoid then picking up seqs B and E which aren't in the
+ * original range.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int iterator_expand_range(GapIO *io, tg_rec crec, int start, int end,
+			  int *e_start, int *e_end) {
+    int nr, i;
+    rangec_t *r;
+    contig_t *c = cache_search(io, GT_Contig, crec);
+
+    if (!c)
+	return -1;
+
+    cache_incr(io, c);
+
+    if (e_start) {
+	r = contig_seqs_in_range(io, &c, start, start, 0, &nr);
+	*e_start = start;
+
+	if (r) {
+	    int i;
+	    for (i = 0; i < nr; i++) {
+		if (*e_start > r[i].start)
+		    *e_start = r[i].start;
+	    }
+	    free(r);
+	}
+    }
+
+    if (e_end) {
+	r = contig_seqs_in_range(io, &c, end, end, 0, &nr);
+	*e_end = end;
+
+	if (r) {
+	    int i;
+	    for (i = 0; i < nr; i++) {
+		if (*e_end < r[i].end)
+		    *e_end = r[i].end;
+	    }
+	    free(r);
+	}
+    }
+
+    return 0;
+}
+
 /* ---------------------------------------------------------------------------
  * Track implementation
  */
