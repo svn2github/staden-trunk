@@ -84,8 +84,9 @@ proc InitContigGlobals { io } {
     set name [$c get_name]
     set length [$c get_length]
 
-    set LREG 1
-    set RREG $length
+    set LREG [$c get_visible_start]
+    set RREG [$c get_visible_end]
+
     set CurContig "$name"
     set NGELS 1
 }

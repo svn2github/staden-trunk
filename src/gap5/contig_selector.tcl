@@ -1376,13 +1376,17 @@ proc ContigParams { io } {
     }
 
     if {$cnum != -1} {
-	set LREG 1
-	set RREG [c_length $io $cnum]
+	set c [$io get_contig $cnum]
+	set LREG [$c get_visible_start]
+	set RREG [$c get_visible_end]
+	$c delete
     } else {
 	set longest [db_info longest_contig $io]
 	set CurContig [left_gel $io $longest]
-	set LREG
-	set RREG [c_length $io $longest]
+	set c [$io get_contig $longest]
+	set LREG [$c get_visible_start]
+	set RREG [$c get_visible_end]
+	$c delete
     }
 }
 
