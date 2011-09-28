@@ -703,7 +703,7 @@ proc contig_editor {w args} {
 	set opt(-reading) 0
     }
     if {![info exists opt(-pos)]} {
-	if {$opt(-reading) != 0} {
+	if {$opt(-reading) != 0 && $opt(-reading) != $opt(-contig)} {
 	    set s [$opt(-io) get_sequence $opt(-reading)]
 	    foreach {cl cr} [$s get_clips] break;
 	    if {[$s get_orient]} {
@@ -729,7 +729,7 @@ proc contig_editor {w args} {
 	    set opt(-reading2) 0
 	}
 	if {![info exists opt(-pos2)]}     {
-	    if {$opt(-reading2) != 0} {
+	    if {$opt(-reading2) != 0 && $opt(-reading2) != $opt(-contig2)} {
 		set s [$opt(-io) get_sequence $opt(-reading2)]
 		foreach {cl cr} [$s get_clips] break;
 		if {[$s get_orient]} {
@@ -1145,7 +1145,7 @@ proc editor_pane {top w above ind arg_array} {
 
     # X and y scrollbars
     scrollbar $w.seq.x -orient horiz -repeatinterval 10
-    scrollbar $w.seq.y -orient vert 
+    scrollbar $w.seq.y -orient vert  -repeatinterval 10
 
     # Names panel
     set edname $w.name.sheet
