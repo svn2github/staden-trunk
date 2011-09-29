@@ -2,7 +2,7 @@
 #define _BTREE2_H_
 
 /* The order of the tree. Keep even for now */
-//#define BTREE_MAX 100
+//#define BTREE_MAX 4
 #define BTREE_MAX 4000
 #define BTREE_MIN (BTREE_MAX/2)
 
@@ -52,6 +52,7 @@ btree_node_t *btree_node_decode2(unsigned char *buf, int fmt);
 
 int btree_insert(btree_t *t, char *str, BTRec value);
 int btree_delete(btree_t *t, char *str);
+int btree_delete_rec(btree_t *t, char *str, BTRec rec);
 BTRec btree_search(btree_t *t, char *str, int prefix);
 BTRec *btree_search_all(btree_t *t, char *str, int prefix, int *nhits);
 

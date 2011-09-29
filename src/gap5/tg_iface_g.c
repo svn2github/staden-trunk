@@ -1200,7 +1200,10 @@ int btree_node_put(void *cd, btree_node_t *n) {
 }
 
 void btree_node_del(void *cd, btree_node_t *n) {
+    cached_item *ci = n->cache;
+
     /* FIXME: deallocate disk storage space too */
+    ci->forgetme = 1;
     btree_del_node(n);
 }
 
@@ -1219,6 +1222,9 @@ void btree_flush(g_io *io, HacheTable *h) {
 	    if (!ci->updated)
 		continue;
 	    
+	    if (ci->forgetme)
+		continue;
+
 	    n = (btree_node_t *)(ci->data);
 	    if (0 == btree_write(io, n)) {
 		ci->updated = 0;
@@ -1253,10 +1259,11 @@ void btree_destroy(g_io *io, HacheTable *h) {
 	for (hi = h->bucket[i]; hi; hi = hi->next) {
 	    cached_item *ci = hi->data.p;
 	    btree_node_t *n = (btree_node_t *)ci->data;
-	    assert(ci->updated == 0);
+	    assert(ci->updated == 0 || ci->forgetme);
 	    unlock(io, ci->view);
+	    if (!ci->forgetme)
+		btree_del_node(n);
 	    free(ci);
-	    btree_del_node(n);
 	}
     }
 
@@ -1893,13 +1900,16 @@ static int io_contig_index_add(void *dbh, char *name, tg_rec rec) {
     return io->contig_name_tree->root->rec;
 }
 
-static int io_contig_index_del(void *dbh, char *name) {
+static int io_contig_index_del(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
     if (!io->contig_name_tree)
 	return -1;
 
-    return btree_delete(io->contig_name_tree, name);
+    if (rec)
+	return btree_delete_rec(io->contig_name_tree, name, rec);
+    else
+	return btree_delete(io->contig_name_tree, name);
 }
 
 /* ------------------------------------------------------------------------
@@ -3892,6 +3902,8 @@ static tg_rec io_seq_index_query(void *dbh, char *name, int prefix) {
     if (!io->seq_name_tree)
 	return -1;
 
+    btree_print(io->seq_name_tree, io->seq_name_tree->root, 0);
+
     return btree_search(io->seq_name_tree, name, prefix);
 }
 
@@ -3922,13 +3934,16 @@ static int io_seq_index_add(void *dbh, char *name, tg_rec rec) {
     return io->seq_name_tree->root->rec;
 }
 
-static int io_seq_index_del(void *dbh, char *name) {
+static int io_seq_index_del(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
     if (!io->seq_name_tree)
 	return -1;
 
-    return btree_delete(io->seq_name_tree, name);
+    if (rec)
+	return btree_delete_rec(io->seq_name_tree, name, rec);
+    else
+	return btree_delete(io->seq_name_tree, name);
 }
 
 /* ------------------------------------------------------------------------

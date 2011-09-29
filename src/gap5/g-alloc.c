@@ -898,7 +898,7 @@ void heap_check(dheap_t *h) {
 
 	    if (len & 1) {
 		printf("%8"PRIu64"+%6"PRIu32" free prev=%5"PRIu64" "
-		       "next=%5"PRIu64"d\n",
+		       "next=%5"PRIu64"\n",
 		       offset, len & ~1, prev, next);
 	    } else {
 		printf("%8"PRId64"+%6"PRIu32" used %3d %-13s  %s\n",

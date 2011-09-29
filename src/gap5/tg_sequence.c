@@ -710,6 +710,9 @@ tg_rec sequence_get_contig(GapIO *io, tg_rec snum) {
     tg_rec bnum;
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
 
+    if (!s)
+	return -1;
+
     /* Bubble up bins until we hit the root */
     for (bnum = s->bin; bnum; bnum = bin->parent) {
 	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);

@@ -276,8 +276,8 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
     {
 	int ns, ne;
 	if (-1 != consensus_unclipped_range(io, c->rec, &ns, &ne)) {
-	    printf("Old range=%d..%d new range=%d..%d\n",
-		   c->start, c->end, ns, ne);
+	    //printf("Old range=%d..%d new range=%d..%d\n",
+	    //       c->start, c->end, ns, ne);
 	    if (c->start != ns || c->end != ne) {
 		c = cache_rw(io, c);
 		c->start = ns;
@@ -635,7 +635,8 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
     /* Remove from relevant seq_block array */
     cache_item_remove(io, GT_Seq, pos->rec);
 
-    io->iface->seq.index_del(io->dbh, s->name);
+    /* Remove name,rec pair from b+tree */
+    io->iface->seq.index_del(io->dbh, s->name, s->rec);
 
     /* Deallocate seq struct itself */
     if (!(b = cache_search(io, GT_Bin, s->bin))) {
@@ -657,9 +658,6 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
 
     //Already achieved via cache_item_remove
     //cache_rec_deallocate(io, GT_Seq, pos->rec);
-
-
-    /* TODO: remove from btree name index */
 
     /* Remove annotations too */
     c = cache_search(io, GT_Contig, pos->contig);

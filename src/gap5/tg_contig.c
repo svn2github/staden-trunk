@@ -3682,7 +3682,7 @@ int contig_destroy(GapIO *io, tg_rec rec) {
 	return -1;
 
     if (c->name)
-	io->iface->contig.index_del(io->dbh, c->name);
+	io->iface->contig.index_del(io->dbh, c->name, rec);
 
     /* Remove from contig order */
     io->contig_order = cache_rw(io, io->contig_order);

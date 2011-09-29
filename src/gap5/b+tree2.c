@@ -542,6 +542,9 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
     return 0;
 }
 
+/*
+ * Deletes the first item it finds with string 'str'
+ */
 int btree_delete(btree_t *t, char *str) {
     btree_node_t *n;
     int ind;
@@ -549,7 +552,35 @@ int btree_delete(btree_t *t, char *str) {
     n = btree_find_recurse(t, str, &ind);
     if (!n || !n->keys[ind] || 0 != strcmp(n->keys[ind], str))
 	return 0; /* No match */
+
     return btree_delete_key(t, n, ind, str);
+}
+
+/*
+ * Deletes a specific pairing of (str,rec).
+ */
+int btree_delete_rec(btree_t *t, char *str, BTRec rec) {
+    btree_node_t *n;
+    int ind;
+
+    n = btree_find_recurse(t, str, &ind);
+    if (!n || !n->keys[ind] || 0 != strcmp(n->keys[ind], str))
+	return 0; /* No match */
+
+    /* n->keys[ind] is a hit, so search from here on finding rec */
+    while (strcmp(n->keys[ind], str) == 0) {
+	/* Found it? If so remove */
+	if (n->chld[ind] == rec)
+	    return btree_delete_key(t, n, ind, str);
+
+	/* Otherwise increment to next potential match */
+	if (++ind >= n->used) {
+	    n = n->next ? btree_node_get(t->cd, n->next) : NULL;
+	    ind = 0;
+	}
+    }
+
+    return 0;
 }
 
 #define INDENT (depth ? printf("%*c", depth, ' ') : 0)
