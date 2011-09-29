@@ -726,7 +726,8 @@ static int bin_delete(GapIO *io, bin_index_t *bin) {
 static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			       int pos, int apos, int start_of_contig,
 			       int offset, int aoffset,
-			       int base, int comp, HacheTable *hash) {
+			       int base, int comp, HacheTable *hash,
+			       int bcall) {
     int i, ins = 0, check_used = 0;
     bin_index_t *bin;
     HacheData hd;
@@ -824,9 +825,9 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			} else {
 			    //printf("DEL %"PRIrec" at %d\n", r->rec,
 			    //       pos - MIN(r->start, r->end));
-			    sequence_delete_base(io, &s,
-						 pos - MIN(r->start, r->end),
-						 0);
+			    sequence_delete_base2(io, &s,
+						  pos - MIN(r->start, r->end),
+						  0, bcall);
 			    if (hash) {
 				//printf("1 Mov %"PRIrec"\n", r->rec);
 				hd.i = MAX(NMIN(r_start, r_end), apos);
@@ -1040,7 +1041,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 					   start_of_contig,
 					   MIN(ch->pos, ch->pos + ch->size-1),
 					   NMIN(ch->pos, ch->pos + ch->size-1),
-					   base, comp, hash);
+					   base, comp, hash, bcall);
 		/* Children to the right of this one need pos updating too */
 	    } else if (pos < MIN(ch->pos, ch->pos + ch->size-1)) {
 		ch = get_bin(io, bin->child[i]);
@@ -1191,7 +1192,8 @@ static int contig_delete_base_fix(GapIO *io, tg_rec crec, tg_rec bnum,
     return r;
 }
 
-int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
+int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift,
+			      int base) {
     contig_t *n;
     int bin_idx;
     tg_rec bin_rec;
@@ -1320,7 +1322,7 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
     reduced = contig_delete_base2(io, n->rec, contig_get_bin(c), pos, pos,
 				  pos == n->start,
 				  contig_offset(io, c), contig_offset(io, c),
-				  !shift, 0, hash);
+				  !shift, 0, hash, base);
 
     /*
      * Deletion can move objects left if the deleted coord is in the left
@@ -1357,7 +1359,11 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift) {
 }
 
 int contig_delete_base(GapIO *io, contig_t **c, int pos) {
-    return contig_delete_base_common(io, c, pos, 0) >= 0 ? 0 : -1;
+    return contig_delete_base_common(io, c, pos, 0, 0) >= 0 ? 0 : -1;
+}
+
+int contig_delete_pad(GapIO *io, contig_t **c, int pos) {
+    return contig_delete_base_common(io, c, pos, 0, '*') >= 0 ? 0 : -1;
 }
 
 /*
@@ -1376,7 +1382,7 @@ int contig_shift_base(GapIO *io, contig_t **c, int pos, int dir) {
     if (dir > 0)
 	return contig_insert_base_common(io, c, pos, 0, 0);
     else
-	return contig_delete_base_common(io, c, pos+1, 1);
+	return contig_delete_base_common(io, c, pos+1, 1, 0);
 }
 
 contig_t *contig_new(GapIO *io, char *name) {
@@ -4267,4 +4273,31 @@ int reference_to_padded_pos2(GapIO *io, tg_rec cnum, int ref_id, int ref_pos,
     }
 
     return -1;
+}
+
+
+/* 
+ * Moves an entire contig by a relative amount left (-ve) or right (+ve).
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int move_contig(GapIO *io, tg_rec crec, int distance) {
+    contig_t *c;
+    bin_index_t *bin;
+ 
+    if (!(c = cache_search(io, GT_Contig, crec)))
+	return -1;
+    if (!(c = cache_rw(io, c)))
+	return -1;
+
+    if (!(bin = cache_search(io, GT_Bin, contig_get_bin(&c))))
+	return -1;
+    if (!(bin = cache_rw(io, bin)))
+	return -1;
+
+    bin->pos += distance;
+    c->start += distance;
+    c->end   += distance;
+
+    return 0;
 }

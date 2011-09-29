@@ -1295,8 +1295,12 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 
 /*
  * Delete position 'pos' of a sequence, where pos starts from 0
+ *
+ * If check_base is not zero we also double check that the base being removed
+ * is the base-type we think it is.
  */
-int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
+int sequence_delete_base2(GapIO *io, seq_t **s, int pos, int contig_orient,
+			  int check_base) {
     seq_t *n;
     int comp = 0;
     size_t extra_len = sequence_extra_len(*s);
@@ -1316,6 +1320,15 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
 	pos = n->len < 0
 	    ? -n->len - pos -1
 	    : pos;
+    }
+
+    if (check_base && n->seq[pos] != check_base) {
+	verror(ERR_WARN, "sequence_delete_base2",
+	       "Attempt to delete base '%c' in "
+	       "sequence %"PRIrec", but sequence "
+	       "base is '%c'",
+	       check_base, n->rec, n->seq[pos]);
+    	return -1;
     }
 
     if (n->len < 0)
@@ -1349,6 +1362,14 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
 
     return 0;
 }
+
+/*
+ * Delete position 'pos' of a sequence, where pos starts from 0
+ */
+int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
+    return sequence_delete_base2(io, s, pos, contig_orient, 0);
+}
+
 
 /*
  * Updates the range_t struct associated with this seq_t to ensure it is

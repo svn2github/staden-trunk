@@ -293,4 +293,11 @@ int padded_to_reference_array(GapIO *io, tg_rec cnum,
 			      int padded_start, int padded_end,
 			      int *ref_pos, int *ref_id);
 
+/* 
+ * Moves an entire contig by a relative amount left (-ve) or right (+ve).
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int move_contig(GapIO *io, tg_rec crec, int distance);
+
 #endif /* _TG_CONTIG_H_ */

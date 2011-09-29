@@ -253,7 +253,7 @@ static void remove_pads(GapIO *io, MALIGN *malign, contig_t *c) {
 
 	/* We have a column of pads, so remove it */
 	//printf("Remove pad at %d\n", i+1-removed);
-	contig_delete_base(io, &c, i+1-removed);
+	contig_delete_pad(io, &c, i+1-removed);
 
 	removed++;
     }
@@ -844,7 +844,7 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 	    }
 	} else {
 	    for (j = 0; j < -id->size; j++) {
-		contig_delete_base(io, &c, id->pos+1);
+		contig_delete_pad(io, &c, id->pos+1);
 	    }
 	}
     }
@@ -1196,7 +1196,6 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 	//  MALIGN *malign = build_malign(io, cnum, start, start + 1000);
 	MALIGN *malign;
 	int c_start, c_shift;
-	bin_index_t *root_bin = NULL;
 
 	vmessage("Shuffling pads for contig %s\n", get_contig_name(io, cnum));
 
@@ -1212,19 +1211,11 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 		   "Failure in consensus_valid_range()");
 	    return -1;
 	}
-	printf("Contig starts at base %d\n", c_start);
+	//printf("Contig starts at base %d\n", c_start);
 	c_shift = 1-c_start;
 	if (c_shift != 0) {
-	    contig_t *c = cache_search(io, GT_Contig, cnum);
-
-	    if (!c)
+	    if (move_contig(io, cnum, c_shift) != 0)
 		return -1;
-	    if (!(root_bin = cache_search(io, GT_Bin, contig_get_bin(&c))))
-		return -1;
-
-	    printf("Shifting by %d\n", c_shift);
-	    root_bin = cache_rw(io, root_bin);
-	    root_bin->pos += c_shift;
 	}
 
 	malign = build_malign(io, cnum);
@@ -1252,7 +1243,7 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 	}
 
 	/* Remove pad columns */
-	{
+	if (new_score < orig_score) {
 	    contig_t *c;
 	    c = cache_search(io, GT_Contig, cnum);
 	    cache_incr(io, c);
@@ -1272,15 +1263,15 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 	 * can end up causing holes. We break the contig in this case to
 	 * avoid minor database inconsistencies.
 	 */
-	puts("remove_contig_holes()");
 	// remove_contig_holes(io, cnum);
 
 	/* reassign_confidence_values(io, cnum); */
       //}
 
 	/* Shift contig back */
-	if (root_bin) {
-	    root_bin->pos -= c_shift;
+	if (c_shift != 0) {
+	    if (move_contig(io, cnum, -c_shift) != 0)
+		return -1;
 	}
 
 	cache_flush(io);
