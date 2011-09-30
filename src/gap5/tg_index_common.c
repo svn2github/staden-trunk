@@ -393,9 +393,28 @@ void create_new_contig(GapIO *io, contig_t **c, char *cname, int merge) {
 	cache_decr(io, *c);
     }	    
 
-    if (!merge || (NULL == (*c = find_contig_by_name(io, cname)))) {
-    	*c = contig_new(io, cname);
-	contig_index_update(io, cname, strlen(cname), (*c)->rec);
+    if (merge) {
+	if (NULL == (*c = find_contig_by_name(io, cname)))  {
+	    *c = contig_new(io, cname);
+	    contig_index_update(io, cname, strlen(cname), (*c)->rec);
+	}
+    } else {
+	char cname2[1024];
+	int cname_count = 0;
+
+	/* Not merging, so avoid duplicating contig name */
+	strncpy(cname2, cname, 1024);
+	while ((*c = find_contig_by_name(io, cname2))) {
+	    sprintf(cname2, "%s:%d", cname, ++cname_count);
+	}
+
+	if (strcmp(cname, cname2)) {
+	    vmessage("Contig name '%s' already existed; renaming to '%s'\n",
+		     cname, cname2);
+	}
+
+	*c = contig_new(io, cname2);
+	contig_index_update(io, cname2, strlen(cname2), (*c)->rec);
     }
     
     cache_incr(io, *c);
