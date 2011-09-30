@@ -8,6 +8,7 @@
 #include "misc.h"
 #include "io_utils.h"
 #include "consensus.h"
+#include "io_lib/hash_table.h"
 
 #define unimp(m) (printf("%s(): unimplemented function\n", #m), -1)
 #define outmoded(m) printf("%s(): outmoded concept\n", #m);
@@ -396,6 +397,7 @@ static int lget_contig_num_base(GapIO *io,
 				int *rargc, contig_list_t **rargv) { /* OUT */
     int i, j, count=0;
     char *p;
+    HashTable *h;
 
     /* allocate: +1 ensures that we never alloc zero bytes */
     if (NULL == (*rargv = (contig_list_t *)xmalloc(1 + listArgc *
@@ -467,9 +469,23 @@ static int lget_contig_num_base(GapIO *io,
 	}
     }
 
-    /* Remove duplicates? */
-    //fprintf(stderr, "FIXME: remove duplicates in lget_contig_num");
-    /* FIXME: to do */
+
+    /* Remove duplicates */
+    h = HashTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_POOL_ITEMS);
+    for (i = j = 0; j < listArgc; j++) {
+	HashData hd;
+	int new;
+
+	hd.i = 1;
+	HashTableAdd(h, (char *)&(*rargv)[j].contig, sizeof(tg_rec),
+		     hd, &new);
+
+	if (new) {
+	    (*rargv)[i++] = (*rargv)[j];
+	}
+    }
+    HashTableDestroy(h, 0);
+    listArgc = i;
 
     /*
      * Handle case when we've failed to find some; we just shuffle down to
