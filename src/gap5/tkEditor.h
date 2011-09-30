@@ -44,6 +44,8 @@ typedef struct {
     int stack_mode; /* 0 => 1 line per seq. 1 => multiples per line */
     int hide_annos; /* 0 => display, 1 => hide */
     int pos_type;   /* 'P'added, 'R'eference, 'U'npadded (unimplemented) */
+    int group_primary;
+    int group_secondary;
 } Editor;
 
 #define TKSHEET(ed)   ((tkSheet *)(ed))

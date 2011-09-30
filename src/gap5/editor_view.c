@@ -135,6 +135,8 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
 	xx->cursor = create_contig_cursor(io->base, contig, 1, xx->reg_id);
     edSetApos(xx);
     xx->displayPos = xx->cursor_apos;
+    
+    edview_set_sort_order(xx);
 
     /* Add to our global hash table */
     {
@@ -927,19 +929,20 @@ int edview_visible_items(edview *xx, int start, int end) {
 	: CSIR_ALLOCATE_Y_SINGLE;
 
     /* sort... */
-    mode |= CSIR_SORT_BY_SEQ_TECH;
-
+    mode |= CSIR_DEFAULT;
+    
     /* Always reload for now as we can't spot edits yet */
     if (xx->r && xx->r_start == start && xx->r_end == end)
 	return 0;
-
+	
     /* Query sequences */
     if (xx->r)
 	free(xx->r);
     xx->r_start = start;
     xx->r_end = end;
-    xx->r = contig_items_in_range(xx->io, &xx->contig, start, end,
-				  CSIR_SORT_BY_Y | mode, &xx->nr);
+    xx->r = contig_items_in_range_with_pos(xx->io, &xx->contig, start, end,
+				  CSIR_SORT_BY_Y | mode, CSIR_DEFAULT,
+				  xx->cursor_apos, &xx->nr);
     if (!xx->r)
 	return -1;
 
@@ -3305,6 +3308,12 @@ int edPrevDifference(edview *xx) {
     edSetCursorPos(xx->link->xx[1], GT_Contig, xx->link->xx[1]->cnum, pos1, 1);
 
     return 0;
+}
+
+void edview_set_sort_order(edview *xx) {
+    contig_set_default_sort(xx->ed->group_primary, xx->ed->group_secondary);
+    
+    if (xx->r) xx->r_start = xx->r_end; // force re-calc in edview_visible_items
 }
 
 int depad_and_opos(char *str, int len, char *depad, int *opos) {

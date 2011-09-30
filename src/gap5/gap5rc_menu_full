@@ -341,12 +341,12 @@ add_command     {Commands.Find primer-walk}	3 2 {editor_oligo_dialog \[curr_ed $
 ### add_radio	{Settings.Consensus algorithm.Confidence values}	1 0 \
 ### 	{$w.ConsensusAlgorithm} 2 {editor_change_consensus_algorithm $e $w}
 ### 
-### # Group Readings
-### add_cascade	{Settings.Group Readings}		1 0
-### add_radio       {Settings.Group Readings.By Position}   1 0 {$w.GroupBy}\
-### 	0 {$e set_grouping \[set $w.GroupBy\]}
-### add_radio       {Settings.Group Readings.By Strand}     1 0 {$w.GroupBy}\
-### 	2 {$e set_grouping \[set $w.GroupBy\]}
+### Group Readings
+### add_cascade {Settings.Group Readings}  	     1 0
+### add_radio	 {Settings.Group Readings.By Position}   1 0 {$w.GroupBy}\
+###     0 {$e set_grouping \[set $w.GroupBy\]}
+### add_radio	 {Settings.Group Readings.By Strand}	 1 0 {$w.GroupBy}\
+###     2 {$e set_grouping \[set $w.GroupBy\]}
 ### add_radio       {Settings.Group Readings.By Name}       1 0 {$w.GroupBy}\
 ### 	4 {$e set_grouping \[set $w.GroupBy\]}
 ### add_radio       {Settings.Group Readings.By Number}     1 0 {$w.GroupBy}\
@@ -357,8 +357,40 @@ add_command     {Commands.Find primer-walk}	3 2 {editor_oligo_dialog \[curr_ed $
 ### 	3 {$e set_grouping \[set $w.GroupBy\]}
 ### add_radio       {Settings.Group Readings.By Set}        1 0 {$w.GroupBy}\
 ### 	6 {$e set_grouping \[set $w.GroupBy\]}
-### 
-### add_separator	{Settings.S1}
+###
+# Group Reading  - gap5
+add_cascade        {Settings.Group Readings} 1 0
+add_check   	{Settings.Group Readings.Primary}	1 0 {${w}(GroupByPrimary)} \
+	{editor_group_by $w}
+add_radio   	{Settings.Group Readings.     By technology}  	   1 0 {${w}(GroupPrimary)} \
+    1 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     By clipped start}    1 0 {${w}(GroupPrimary)} \
+    2 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     By start}  	   1 0 {${w}(GroupPrimary)} \
+    3 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     By template}  	   1 0 {${w}(GroupPrimary)} \
+    4 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     By strand}  	   1 0 {${w}(GroupPrimary)} \
+    5 {editor_group_by $w}
+#add_radio   	{Settings.Group Readings.     By base}  	   1 0 {${w}(GroupPrimary)} \
+#    6 {editor_group_by $w}
+add_check   	{Settings.Group Readings.Secondary}	1 0 {${w}(GroupBySecondary)} \
+	{editor_group_by $w}
+add_radio   	{Settings.Group Readings.     2nd by technology}  	   1 0 {${w}(GroupSecondary)} \
+    1 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     2nd by clipped start}    1 0 {${w}(GroupSecondary)} \
+    2 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     2nd by start}  	   1 0 {${w}(GroupSecondary)} \
+    3 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     2nd by template} 	   1 0 {${w}(GroupSecondary)} \
+    4 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     2nd by strand} 	   1 0 {${w}(GroupSecondary)} \
+    5 {editor_group_by $w}
+#add_radio   	{Settings.Group Readings.     2nd by base} 	   1 0 {${w}(GroupSecondary)} \
+#    6 {editor_group_by $w}
+
+ 
+add_separator	{Settings.S1}
 add_check	{Settings.Highlight Disagreements}	1 0 {${w}(Disagreements)}\
 	{editor_disagreements $w}
 add_radio	{Settings.    By dots}			1 0 {${w}(DisagreeMode)} \

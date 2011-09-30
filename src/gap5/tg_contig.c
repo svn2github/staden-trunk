@@ -1644,14 +1644,15 @@ static int sort_range_by_x_clipped(const void *v1, const void *v2) {
     const rangec_t *r2 = (const rangec_t *)v2;
     int d;
     int r1_start, r2_start;
-
+    
     /* Use clipped coordinate in seqs */
     if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
-	if ((s->len < 0) ^ r1->comp)
+	if ((s->len < 0) ^ r1->comp) {
 	    r1_start = r1->start + ABS(s->len) - (s->right-1) - 1;
-	else
+	} else {
 	    r1_start = r1->start + s->left-1;
+	}
     } else {
 	r1_start = r1->start;
     }
@@ -1768,6 +1769,341 @@ static int sort_range_by_y(const void *v1, const void *v2) {
     if (r1->start != r2->start)
     	return r1->start - r2->start;
     return (r1->flags & GRANGE_FLAG_ISMASK) - (r2->flags & GRANGE_FLAG_ISMASK);
+}
+
+/**********************************************************************
+* TRY A NEW SORTING SYSTEM
+***********************************************************************/
+
+/* Variables for holding sort related values,
+   not the prettiest of solutions having it here.
+*/
+static int (*primary)(const void *, const void *);
+static int (*secondary)(const void *, const void *);
+static int p_sort;
+static int s_sort;
+static int absolute_pos;
+
+
+// empty sort
+static int no_sort(const void *v1, const void *v2) {
+    return 0;
+}
+
+
+// the sort types
+static int simple_sort_range_by_x(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+
+    return r1->start - r2->start;
+}
+
+
+static int simple_sort_range_by_x_end(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+
+    return r1->end - r2->end;
+}
+
+
+static int simple_sort_range_by_x_clipped(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    int r1_start, r2_start;
+    
+    /* Use clipped coordinate in seqs */
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
+	if ((s->len < 0) ^ r1->comp) {
+	    r1_start = r1->start + ABS(s->len) - (s->right-1) - 1;
+	} else {
+	    r1_start = r1->start + s->left-1;
+	}
+    } else {
+	r1_start = r1->start;
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	seq_t *s = cache_search(sort_io, GT_Seq, r2->rec);
+	if ((s->len < 0) ^ r2->comp)
+	    r2_start = r2->start + ABS(s->len) - (s->right-1) - 1;
+	else
+	    r2_start = r2->start + s->left-1;
+    } else {
+	r2_start = r2->start;
+    }
+
+    return r1_start - r2_start;
+}
+
+
+static int simple_sort_range_by_x_clipped_end(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    int r1_end, r2_end;
+
+    /* Use clipped coordinate in seqs */
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
+	if ((s->len < 0) ^ r1->comp)
+	    r1_end = r1->start + ABS(s->len) - (s->left-1) - 1;
+	else
+	    r1_end = r1->start + s->right-1;
+    } else {
+	r1_end = r1->end;
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	seq_t *s = cache_search(sort_io, GT_Seq, r2->rec);
+	if ((s->len < 0) ^ r2->comp)
+	    r2_end = r2->start + ABS(s->len) - (s->left-1) - 1;
+	else
+	    r2_end = r2->start + s->right-1;
+    } else {
+	r2_end = r2->end;
+    }
+
+    return r1_end - r2_end;
+}
+
+
+static int simple_sort_range_by_template(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    
+    char template1[2048];
+    char template2[2048];
+    
+    memset(template1, '\0', 2048);
+    memset(template2, '\0', 2048);
+    
+    /* use template name if exists, otherwise by name */
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	seq_t *s1 = cache_search(sort_io, GT_Seq, r1->rec);
+	
+	if (s1->template_name_len > 0) {
+	    strncpy(template1, s1->name, s1->template_name_len);
+	    template1[s1->template_name_len] = '\0';
+	} else if (s1->name_len > 0) {
+	    strcpy(template1, s1->name);
+	} else {
+	    return 0;
+	}
+    }
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	seq_t *s2 = cache_search(sort_io, GT_Seq, r2->rec);
+	
+	if (s2->template_name_len > 0) {
+	    strncpy(template2, s2->name, s2->template_name_len);
+	    template2[s2->template_name_len] = '\0';
+	} else if (s2->name_len > 0) {
+    	    strcpy(template2, s2->name);	    
+	} else {
+	    return 0;
+	}
+    }
+    
+    return strcmp(template1, template2);
+}
+
+
+static int simple_sort_by_base(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    char b1, b2;
+    
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
+	int strand1 = (r1->flags & GRANGE_FLAG_COMP1) ^ r1->comp;
+	
+	fprintf(stderr, "ap %d s %d e %d l %d d %d\n", absolute_pos, r1->start, r1->end, s->len, strand1); 
+	
+	
+	
+	if (absolute_pos >= r1->start && absolute_pos <= r1->end) {
+	    int tpos = absolute_pos - (r1->start - s->pos);
+	    int i;
+	    
+	    b1 = s->seq[absolute_pos - (r1->start - s->pos)];
+	    fprintf(stderr, "b1 %c len %d\n", b1,  absolute_pos - (r1->start - s->pos));
+	    
+	    
+	    for (i = 0; i <= tpos; i++) {
+	    	fprintf(stderr, "%c", s->seq[i]);
+	    }
+	    
+	    fprintf(stderr, "\n"); 
+	    
+	} else {
+	    return -1;
+	} 
+    }
+    
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	seq_t *s = cache_search(sort_io, GT_Seq, r2->rec);
+	
+	if (absolute_pos >= r2->start && absolute_pos <= r2->end) {
+	    int tpos = absolute_pos - (r1->start - s->pos);
+	    int i;
+	    b2 = s->seq[absolute_pos - (r2->start - s->pos)];
+
+	    for (i = -2; i <= 2; i++) {
+	    	fprintf(stderr, "%c", s->seq[tpos + i]);
+	    }
+	    
+	    fprintf(stderr, "\n"); 
+	} else {
+	    return -1;
+	} 
+    }
+    
+    // fprintf(stderr, "%c %c\n", b1, b2);
+    
+    return b1 - b2;
+}
+
+
+static int simple_sort_by_strand(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    
+    int strand1 = 0;
+    int strand2 = 0;
+    
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	strand1 = (r1->flags & GRANGE_FLAG_COMP1) ^ r1->comp;
+    }
+    
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	strand2 = (r2->flags & GRANGE_FLAG_COMP1) ^ r2->comp;
+    }
+    
+    return strand1 - strand2;
+}
+
+
+static int simple_sort_range_by_tech_x(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+
+    return r1->seq_tech - r2->seq_tech;
+}
+
+
+static int simple_sort_range_by_y(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+
+    return r1->y - r2->y;
+}
+
+
+static int chosen_sort(const void *v1, const void *v2) {
+    
+    int ret;
+    
+    if ((ret = (*primary)(v1, v2))) {
+    	return ret;
+    } else if ((ret = (*secondary)(v1, v2))) {
+    	return ret;
+    } else {
+    	return sort_range_by_x(v1, v2);
+    }
+}
+
+
+void contig_set_default_sort(int pri, int sec) {
+
+    switch (pri) {
+    	case 1:
+	    p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
+	break;
+	
+	case 2:
+	    p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
+	break;
+	
+	case 3:
+	    p_sort = CSIR_SORT_BY_X;
+	break;
+	
+	case 4:
+	    p_sort = CSIR_SORT_BY_TEMPLATE;
+	break;
+	
+	case 5:
+	    p_sort = CSIR_SORT_BY_STRAND;
+	break;
+
+	case 6:
+	    p_sort = CSIR_SORT_BY_BASE;
+	break;
+
+	default:
+	    p_sort = CSIR_SORT_BY_Y;
+    }
+    
+    switch (sec) {
+   	case 1:
+	    s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
+	break;
+	
+	case 2:
+	    s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
+	break;
+	
+	case 3:
+	    s_sort = CSIR_SORT_BY_X;
+	break;
+	
+	case 4:
+	    s_sort = CSIR_SORT_BY_TEMPLATE;
+	break;
+	
+	case 5:
+	    s_sort = CSIR_SORT_BY_STRAND;
+	break;
+
+	case 6:
+	    s_sort = CSIR_SORT_BY_BASE;
+	break;
+
+	default:
+	    s_sort = CSIR_SORT_BY_Y;
+    }
+}
+
+
+// temporary one to see if things work
+static int (*set_sort(int job))(const void *, const void *) {
+
+
+    if (job & CSIR_SORT_BY_TEMPLATE) {
+	return simple_sort_range_by_template;
+    } else if (job & CSIR_SORT_BY_STRAND) {
+    	return simple_sort_by_strand;
+    } else if (job & CSIR_SORT_BY_BASE) {
+    	return simple_sort_by_base;
+    } else if (job & CSIR_SORT_BY_XEND) {
+	if (job & CSIR_SORT_BY_CLIPPED) {
+	    return simple_sort_range_by_x_clipped_end;
+	} else {
+	    return simple_sort_range_by_x_end;
+	}
+    } else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
+    	if (job & CSIR_SORT_BY_SEQ_TECH) {
+	    return simple_sort_range_by_tech_x;
+	} else if (job & CSIR_SORT_BY_CLIPPED) {
+	    return simple_sort_range_by_x_clipped;
+	} else if (job & CSIR_SORT_BY_X || !(job & CSIR_DEFAULT)) {
+	    return simple_sort_range_by_x;
+	} 
+    }
+    
+    return no_sort;
 }
 
 
@@ -2134,7 +2470,7 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
     int i, n, f_a, f_b;
     bin_index_t *bin = get_bin(io, bin_num);
     range_t *l;
-
+    
     cache_incr(io, bin);
     if (bin->flags & BIN_COMPLEMENTED) {
 	complement ^= 1;
@@ -2261,198 +2597,141 @@ void update_range_y(GapIO *io, rangec_t *r, int count) {
 }
 
 
-rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
-				int job, int *count) {
-    rangec_t *r = NULL;
-    int alloc = 0;
+static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c, int start, int end,
+				int first, int second, int *count, int mask, int val) {
 
-    cache_incr(io, *c);
-    *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
-				   contig_offset(io, c), &r, &alloc, 0, 0,
-				   0, 0);
-    cache_decr(io, *c);
-
-    if (r) {
-	if (job & CSIR_PAIR)
-	    pair_rangec(io, r, *count);
-
-	if (job & CSIR_SORT_BY_SEQ_TECH) {
-	    int i;
-
-	    /* FIXME: Move seq_tech into bin range flags? */
-	    for (i = 0; i < *count; i++) {
-		if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-		    seq_t *s = cache_search(io, GT_Seq, r[i].rec);
-		    r[i].seq_tech = s->seq_tech;
-		} else {
-		    r[i].seq_tech = -1;
-		}
-	    }
-	}
-
-	if (job & CSIR_SORT_BY_XEND) {
-	    sort_io = io;
-	    if (job & CSIR_SORT_BY_CLIPPED)
-		qsort(r, *count, sizeof(*r), sort_range_by_x_clipped_end);
-	    else
-		qsort(r, *count, sizeof(*r), sort_range_by_x_end);
-	} else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
-	    if (job & CSIR_SORT_BY_SEQ_TECH) {
-		qsort(r, *count, sizeof(*r), sort_range_by_tech_x);
-	    } else {
-		sort_io = io;
-		if (job & CSIR_SORT_BY_CLIPPED)
-		    qsort(r, *count, sizeof(*r), sort_range_by_x_clipped);
-		else
-		    qsort(r, *count, sizeof(*r), sort_range_by_x);
-	    }
-	}
-
-	if (job & CSIR_ALLOCATE_Y) {
-	    if (job & CSIR_SORT_BY_SEQ_TECH) {
-		int i = 0, j, n = *count;
-		int last, start, max_y, shift = 0;
-
-		do {
-		    start = i;
-
-		    /* Find first real sequence (non-tag) seq_tech */
-		    for (last = r[i].seq_tech; last == -1 && i < n; i++)
-			last = r[i].seq_tech;
-
-		    /* Break into continuous technology fragment */
-		    while (i < n && (r[i].seq_tech == last ||
-				     r[i].seq_tech == -1))
-			   i++;
-
-		    /* Allocate Y and shift down */
-		    compute_ypos(&r[start], i - start, job & CSIR_ALLOCATE_Y);
-#ifdef KEEP_Y
-		    update_range_y(io, &r[start], i-start);
-#endif
-
-		    for (max_y = 0, j = start; j < i; j++) {
-			r[j].y += shift;
-			if (max_y < r[j].y)
-			    max_y = r[j].y;
-		    }
-		    shift = max_y+1;
-		} while (i < n);
-	    } else {
-		compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
-#ifdef KEEP_Y
-		update_range_y(io, r, *count);
-#endif
-	    }
-	    compute_ypos_tags(r, *count);
-	}
-
-	if (job & CSIR_SORT_BY_Y)
-	    qsort(r, *count, sizeof(*r), sort_range_by_y);
-    }
-
-    return r;
-}
-
-rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
-			       int job, int *count) {
     rangec_t *r = NULL;
     int alloc = 0;
     
-
     cache_incr(io, *c);
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
-				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISSEQ);
-    cache_decr(io, *c);
+				   mask, val);
 				   
     if (r) {
+    	int job;
+    
+    	if (first & CSIR_DEFAULT) {
+	    first |= p_sort;
+	}
+	
+	if (second & CSIR_DEFAULT ) {
+	    second |= s_sort;
+	}
+	
+	job = first | second;
+    
 	if (job & CSIR_PAIR) {
 	    pair_rangec(io, r, *count);
 	}
+	
+	if (job & (CSIR_DEFAULT | CSIR_SORT_BY_XEND | CSIR_SORT_BY_CLIPPED |
+	    CSIR_SORT_BY_X | CSIR_SORT_BY_Y | CSIR_ALLOCATE_Y |
+	    CSIR_SORT_BY_SEQ_TECH)) {
+	    
+	    if (job & CSIR_SORT_BY_SEQ_TECH) {
+		int i;
 
-	if (job & CSIR_SORT_BY_XEND) {
+		/* FIXME: Move seq_tech into bin range flags? */
+		for (i = 0; i < *count; i++) {
+		    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+			seq_t *s = cache_search(io, GT_Seq, r[i].rec);
+			r[i].seq_tech = s->seq_tech;
+		    } else {
+			r[i].seq_tech = -1;
+		    }
+		}
+	    }
+	    
 	    sort_io = io;
-	    if (job & CSIR_SORT_BY_CLIPPED)
-		qsort(r, *count, sizeof(*r), sort_range_by_x_clipped_end);
-	    else
-		qsort(r, *count, sizeof(*r), sort_range_by_x_end);
-	} else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
-	    sort_io = io;
-	    if (job & CSIR_SORT_BY_CLIPPED)
-		qsort(r, *count, sizeof(*r), sort_range_by_x_clipped);
-	    else
-		qsort(r, *count, sizeof(*r), sort_range_by_x);
-	}
+	    
+	    primary   = set_sort(first);
+	    secondary = set_sort(second);
+	    
+	    qsort(r, *count, sizeof(*r), chosen_sort);
 
-	if (job & CSIR_ALLOCATE_Y) {
-	    compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
-	}
+	    if (job & CSIR_ALLOCATE_Y) {
+		if (job & CSIR_SORT_BY_SEQ_TECH) {
+		    int i = 0, j, n = *count;
+		    int last, start, max_y, shift = 0;
 
-	if (job & CSIR_SORT_BY_Y) {
-	    qsort(r, *count, sizeof(*r), sort_range_by_y);
+		    do {
+			start = i;
+
+			/* Find first real sequence (non-tag) seq_tech */
+			for (last = r[i].seq_tech; last == -1 && i < n; i++)
+			    last = r[i].seq_tech;
+
+			/* Break into continuous technology fragment */
+			while (i < n && (r[i].seq_tech == last ||
+					 r[i].seq_tech == -1))
+			       i++;
+
+			/* Allocate Y and shift down */
+			compute_ypos(&r[start], i - start, job & CSIR_ALLOCATE_Y);
+
+			for (max_y = 0, j = start; j < i; j++) {
+			    r[j].y += shift;
+			    if (max_y < r[j].y)
+				max_y = r[j].y;
+			}
+			shift = max_y+1;
+		    } while (i < n);
+		} else {
+		    compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+		}
+	    }
+    	
+	    if (job & CSIR_SORT_BY_Y)
+ 	    	qsort(r, *count, sizeof(*r), sort_range_by_y); 
 	}
     } else {
 	// count -1 on memory error
 	if (*count == -1) {
-	    verror(ERR_WARN, "tg_contig", "Out of memory - unable to get sequences\n");
+	    verror(ERR_WARN, "tg_contig", "Out of memory - unable to get objects\n");
 	}
     }
-
-#ifdef KEEP_Y
-    if (job & CSIR_ALLOCATE_Y)
-	update_range_y(io, r, *count);
-#endif
-
+    
+    cache_decr(io, *c);
     return r;
 }
 
+
+rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
+				int first_order, int second_order, int *count) {
+    
+    return contig_objects_in_range(io, c, start, end, first_order, second_order, count, 0, 0);
+}
+
+
+rangec_t *contig_items_in_range_with_pos(GapIO *io, contig_t **c, int start, int end,
+				int first_order, int second_order, int pos, int *count) {
+				
+    absolute_pos = pos;
+    
+    return contig_objects_in_range(io, c, start, end, first_order, second_order, count, 0, 0);
+}
+
+rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
+			       int job, int *count) {
+    
+    return contig_objects_in_range(io, c, start, end, job, 0, count,
+    	    GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISSEQ);
+}
 
 
 rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count) {
-    rangec_t *r = NULL;
-    int alloc = 0;
 
-    cache_incr(io, *c);
-    *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
-				   contig_offset(io, c), &r, &alloc, 0, 0,
+    return contig_objects_in_range(io, c, start, end, job, 0, count,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISANNO);
-    cache_decr(io, *c);
-
-    if (r) {
-	if (job & CSIR_SORT_BY_XEND)
-	    qsort(r, *count, sizeof(*r), sort_range_by_x_end);
-	else if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
-	    qsort(r, *count, sizeof(*r), sort_range_by_x);
-
-	if (job & CSIR_ALLOCATE_Y)
-	    compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
-
-	if (job & CSIR_SORT_BY_Y)
-	    qsort(r, *count, sizeof(*r), sort_range_by_y);
-    }
-
-    return r;
 }
 
 rangec_t *contig_refpos_in_range(GapIO *io, contig_t **c, int start, int end,
 				 int job, int *count) {
-    rangec_t *r = NULL;
-    int alloc = 0;
 
-    cache_incr(io, *c);
-    *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
-				   contig_offset(io, c), &r, &alloc, 0, 0,
-				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISREFPOS);
-    cache_decr(io, *c);
-
-    if (r) {
-	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
-	    qsort(r, *count, sizeof(*r), sort_range_by_x);
-    }
-
-    return r;
+    return contig_objects_in_range(io, c, start, end, job, 0, count,
+ 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISREFPOS);
 }
 
 
@@ -3086,7 +3365,7 @@ static int range_prev_by_type(GapIO *io, tg_rec cnum, int start, int type) {
 static int range_populate(GapIO *io, contig_iterator *ci,
 			  tg_rec cnum, int start, int end) {
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
-
+    
     if (ci->r) {
 	free(ci->r);
 	ci->r = NULL;
@@ -3130,7 +3409,7 @@ static int range_populate(GapIO *io, contig_iterator *ci,
 				       ci->sort_mode, &ci->nitems);
     else
 	ci->r = contig_items_in_range(io, &c, start, end,
-				      ci->sort_mode, &ci->nitems);
+				      ci->sort_mode, 0, &ci->nitems);
 
     ci->index = 0;
     return 0;

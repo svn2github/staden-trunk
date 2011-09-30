@@ -296,4 +296,7 @@ int edJoinMismatch(edview *xx, int *len, int *mismatch);
 int edNextDifference(edview *xx);
 int edPrevDifference(edview *xx);
 
+/* Set the group_by/sort settings */
+void edview_set_sort_order(edview *xx);
+
 #endif /* _EDITOR_VIEW_H_ */

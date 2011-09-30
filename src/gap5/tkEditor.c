@@ -232,7 +232,13 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_INT,
          "-pos_type", "posType", "PosType",
          "0", offset(pos_type), 0, NULL},
-    {TK_CONFIG_END,
+    {TK_CONFIG_INT,
+         "-group_by_primary", "groupByPrimary", "GroupByPrimary",
+         "0", offset(group_primary), 0, NULL},
+    {TK_CONFIG_INT,
+         "-group_by_secondary", "groupBySecondary", "GroupBySecondary",
+         "0", offset(group_secondary), 0, NULL},
+   {TK_CONFIG_END,
 	 (char *)NULL,	(char *)NULL,	(char *)NULL,	(char *) NULL,
          0,	0,	NULL},
 };
@@ -480,7 +486,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"cursor_id",     "get_cursor",	  "search",      "get_xy",
 	"decr_contig",   "incr_contig",   "select_oligo","show_cursor",
 	"reference_pos", "next_difference", "prev_difference", "ref_count",
-	"set_trace_lock", NULL
+	"set_sort_order", "set_trace_lock", NULL
     };
     enum options {
 	_CONFIGURE,      _INIT,          _IO,            _REDRAW,
@@ -495,7 +501,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	 _GET_XY,
 	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO,  _SHOW_CURSOR,
 	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE, _REF_COUNT,
-	_SET_TRACE_LOCK
+	_SET_SORT_ORDER, _SET_TRACE_LOCK
     };
 
     if (argc < 2) {
@@ -1238,6 +1244,10 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     case _PREV_DIFFERENCE:
 	edPrevDifference(ed->xx);
+	break;
+	
+    case _SET_SORT_ORDER:
+	edview_set_sort_order(ed->xx);
 	break;
 
     case _SET_TRACE_LOCK: {

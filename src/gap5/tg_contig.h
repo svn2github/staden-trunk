@@ -61,15 +61,18 @@ contig_t *contig_new(GapIO *io, char *name);
 #define get_bin(io, bnum) ((bin_index_t *)cache_search((io), GT_Bin, (bnum)))
 
 rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
-				int job, int *count);
-rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
-			       int job, int *count);
+				int first_order, int second_order, int *count);
+rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end, int job, int *count);
 rangec_t *contig_bins_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int min_size, int *count);
 rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count);
 rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count);
+rangec_t *contig_items_in_range_with_pos(GapIO *io, contig_t **c, int start, int end,
+				int first_order, int second_order, int pos, int *count);
+			       
+void contig_set_default_sort(int primary, int secondary);
 
 #define CSIR_PAIR                  (1<<0)
 #define CSIR_ALLOCATE_Y_SINGLE     (1<<1)
@@ -86,7 +89,10 @@ rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 
 #define CSIR_COUNT_ONLY            (1<<5)
 #define CSIR_LEAVES_ONLY           (1<<6)
-
+#define CSIR_DEFAULT               (1<<10)
+#define CSIR_SORT_BY_TEMPLATE      (1<<11)
+#define CSIR_SORT_BY_STRAND        (1<<12)
+#define CSIR_SORT_BY_BASE          (1<<13)
 
 
 /* ---------------------------------------------------------------------- */

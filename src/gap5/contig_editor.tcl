@@ -672,18 +672,22 @@ proc contig_editor {w args} {
     }
 
     set opt(win) $w
-    set opt(Disagreements)   [keylget gap5_defs CONTIG_EDITOR.DISAGREEMENTS]
-    set opt(DisagreeMode)    [keylget gap5_defs CONTIG_EDITOR.DISAGREE_MODE]
-    set opt(DisagreeCase)    [keylget gap5_defs CONTIG_EDITOR.DISAGREE_CASE]
-    set opt(DisagreeQuality) [keylget gap5_defs CONTIG_EDITOR.DISAGREE_QUAL]
-    set opt(PackSequences)   [keylget gap5_defs CONTIG_EDITOR.PACK_SEQUENCES]
-    set opt(StripeMode)      [keylget gap5_defs CONTIG_EDITOR.STRIPE_SIZE]
-    set opt(Quality)         [keylget gap5_defs CONTIG_EDITOR.SHOW_QUALITY]
-    set opt(MappingQuality)  [keylget gap5_defs CONTIG_EDITOR.SHOW_MAPPING_QUALITY]
-    set opt(Cutoffs)         [keylget gap5_defs CONTIG_EDITOR.SHOW_CUTOFFS]
-    set opt(PosType)	     [keylget gap5_defs CONTIG_EDITOR.POS_TYPE]
-    set opt(HideAnno)        0
-    set opt(Status)          "--- Status info here ---"
+    set opt(Disagreements)    [keylget gap5_defs CONTIG_EDITOR.DISAGREEMENTS]
+    set opt(DisagreeMode)     [keylget gap5_defs CONTIG_EDITOR.DISAGREE_MODE]
+    set opt(DisagreeCase)     [keylget gap5_defs CONTIG_EDITOR.DISAGREE_CASE]
+    set opt(DisagreeQuality)  [keylget gap5_defs CONTIG_EDITOR.DISAGREE_QUAL]
+    set opt(PackSequences)    [keylget gap5_defs CONTIG_EDITOR.PACK_SEQUENCES]
+    set opt(StripeMode)       [keylget gap5_defs CONTIG_EDITOR.STRIPE_SIZE]
+    set opt(Quality)          [keylget gap5_defs CONTIG_EDITOR.SHOW_QUALITY]
+    set opt(MappingQuality)   [keylget gap5_defs CONTIG_EDITOR.SHOW_MAPPING_QUALITY]
+    set opt(Cutoffs)          [keylget gap5_defs CONTIG_EDITOR.SHOW_CUTOFFS]
+    set opt(PosType)	      [keylget gap5_defs CONTIG_EDITOR.POS_TYPE]
+    set opt(HideAnno)         0
+    set opt(Status)           "--- Status info here ---"
+    set opt(GroupByPrimary)   1
+    set opt(GroupBySecondary) 1
+    set opt(GroupPrimary)     1
+    set opt(GroupSecondary)   3
 
     set opt(io_base) $opt(-io)
     set opt(io) [io_child $opt(-io) $opt(-contig)]
@@ -1133,6 +1137,8 @@ proc editor_pane {top w above ind arg_array} {
 		-display_mapping_quality     $opt(MappingQuality) \
 		-display_cutoffs             $opt(Cutoffs) \
 	        -hide_anno                   $opt(HideAnno) \
+		-group_by_primary   	     $opt(GroupPrimary) \
+		-group_by_secondary 	     $opt(GroupSecondary) \
 		-pos_type		     [scan $opt(PosType) %c] \
 		-fg black \
 		-indelcolour [keylget gap5_defs CONTIG_EDITOR.INDEL_COLOUR] \
@@ -1551,6 +1557,28 @@ proc set_editor_pos_type {w} {
 
     foreach ed $opt(all_editors) {
 	$ed configure -pos_type [scan $opt(PosType) %c]
+	$ed redraw
+    }
+}
+
+
+proc editor_group_by {w} {
+    upvar \#0 $w opt
+
+    foreach ed $opt(all_editors) {
+	if {$opt(GroupByPrimary)} {
+	    $ed configure -group_by_primary $opt(GroupPrimary)
+	} else {
+	    $ed configure -group_by_primary 0
+	}
+	
+	if {$opt(GroupBySecondary)} {
+	    $ed configure -group_by_secondary $opt(GroupSecondary)
+	} else {
+	    $ed configure -group_by_secondary 0
+	}
+	
+	$ed set_sort_order 
 	$ed redraw
     }
 }
