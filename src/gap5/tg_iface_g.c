@@ -3902,8 +3902,6 @@ static tg_rec io_seq_index_query(void *dbh, char *name, int prefix) {
     if (!io->seq_name_tree)
 	return -1;
 
-    btree_print(io->seq_name_tree, io->seq_name_tree->root, 0);
-
     return btree_search(io->seq_name_tree, name, prefix);
 }
 
