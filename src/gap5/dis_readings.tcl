@@ -180,7 +180,7 @@ proc OK_Pressed_EdDisReading { io list f sel_task constags } {
     destroy $f
     update idletasks
 
-    if {![quit_displays $io "disassemble_readings"]} {
+    if {![quit_displays -io $io -msg "disassemble_readings"]} {
 	# Someone's too busy to shutdown?
 	return
     }
@@ -244,7 +244,21 @@ proc RemoveContigHoles2 {io t} {
 	set list [lorf_get_list $t.infile]
     }
 
+    if {![quit_displays -io $io -msg "break_contig_holes"]} {
+	# Someone's too busy to shutdown?
+	return
+    }
     destroy $t
 
     break_contig_holes -io $io -contigs $list
+
+    if {[db_info num_contigs $io] == 0} {
+	set cs_win [keylget gap5_defs CONTIG_SEL.WIN]
+	destroy $cs_win
+	DisableMenu_Open
+	ActivateMenu_New
+	return
+    }
+
+    ContigInitReg $io
 }
