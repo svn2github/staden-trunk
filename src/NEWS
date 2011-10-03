@@ -1,3 +1,109 @@
+Sep 30th 2011
+-------------
+
+Gap5 Updates
+============
+
+*	First implementation of Group Readings in the contig
+        editor. This provides options to vertically reorder the
+        sequences by a variety of primary and secondary collations.
+
+*	When invoking the editor by reading name it now brings the
+        editor up on the first visible base of that sequence, instead
+        of the first potentially-clipped base.
+
+*	Added a Remove Pad Columns function. It's a faster and simpler
+        alternative to Shuffle Pads, designed specifically to only
+        remove consensus columns entirely made up of pads.
+
+*	The Restriction Enzyme Plot from gap4 has been added to
+        gap5. This works as expected in gap4 except for the ability to
+        create tags, which can be added at a later stage if desired.
+
+*	Exporting in SAM format now provides an option to use unpadded
+        reference coordinates rather than the old mode of padded
+        only. This is more alike the pair-wise alignments that are
+        expected from short-read aligners.
+
+*	The Editor search dialogue window now has Page Up and Page
+        Down keybindings to perform previous and next search (as per
+        Gap4's key bindings).
+
+*	The editor Trace Display is now aligned against
+        sequences. This means scrolling and dragging also works. In
+        addition the Lock button has been fixed.
+
+
+Gap5 Fixes
+==========
+
+*	Fix to a severe bug in shuffle pads. In rare cases it could
+        introduce a column of pads itself, and then remove it again in
+        the final step. If during this stage it didn't make any other
+        edits then it did not save the data and so the column being
+        removed was incorrect - effectively deleting a real column of
+        bases.  We also now check more carefully to prevent similar
+        mistakes.
+
+*	When using dialogues asking for a single contig and a range
+        within it (eg Save Consensus) it now correctly sets the
+        default start and end positions based on the clipped consensus
+        coordinates, instead of just 1 to contig-length.
+
+*	It should no longer be possible to duplicate contig names when
+        importing new reads.
+
+*	Lists containing the same contig multiple times (either
+        explicitly or implicitly by using different read IDs within
+        the same contig) are now filtered out in functions taking
+        lists of contigs (eg Find Internal Joins).
+
+*	Remove Contig Holes now shuts down editors and updates the
+        Contig Selector upon completion.
+
+*	Fixed various disassembly related issues.
+	- We now remove the correct reading name entry from the B+Tree
+	  when there are multiples with the same name. (We check
+          name,rec pairing)
+
+	- Fixed an error in the b+tree code when completely removing
+          nodes. It was causing assertion failures in the next save.
+
+        - Better error handling for when faced with a record number
+          that no longer exists (due to the bug above). We now bring
+          up error dialogues instead of crashing.
+
+*	Check Database on a single contig now honours the "fix"
+        option. It also now reports the number of attempted fixes to
+        problems found.
+
+*	Exporting a portion of a single contig in Export Sequences now
+        correctly outputs all the annotations, even if they're outside
+        the desired range (by attached to readings that are
+        overlapping the range).
+
+*	Removed extraneous newline that sometimes appears in fasta or
+        fastq outputs.
+
+*	Unpadded consensus coordinates in the contig editor now always
+        start at base 1, regardless of the displayed unpadded starting
+        position.
+
+*	Fixed some editor sizing issues when using non-standard font
+        sizes. This was showing up as the consensus line sometimes
+        being invisible in the Join Editor.
+
+*	Removed a few gap5-cache related bugs (assertions,
+        corruptions, crashes).
+
+*	Complemeted contigs in the Template Display sometimes wrongly
+        caused templates to be flagged as inconsistent. Now fixed.
+
+*	Fixed a bug with Break Contigs sometimes causing the contig
+        start and end points to be inconsistent. (Usually showing up
+        as scrolling issues.)
+
+
 Sep 14th 2011
 -------------
 
