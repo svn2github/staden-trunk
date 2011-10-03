@@ -345,8 +345,8 @@ proc entrybox_get {path} {
 	    focus $path.entry
 	    $path.entry icursor end
 	    bell
-	    #wait forever...
-	    tkwait variable re_enter
+#	    #wait forever...
+#	    tkwait variable re_enter
 	    return ""
 	}
     }
