@@ -134,7 +134,7 @@ proc create_search_win {w com {dir 0} {raise 1}} {
 	{l sequence                  sequence}
 #	{l quality                   quality}
 	{l {consensus quality}       consquality}
-#	{l {from file}               file}
+	{l {from file}               file}
 	{r {tag type}                tag}
 	{r {unpadded position}       uposition}
 	{r {reading name}            name}
@@ -434,7 +434,7 @@ proc do_file_search {w com dir type fname} {
 	set l [set $w.File($ind)]
 
 	# Move editor
-	if {[eval $com $dir = position "@[lindex $l 1]/[lindex $l 0]"] == 1} {
+	if {[eval $com $dir = position "@[lindex $l 1]/[lindex $l 0]"] == 0} {
 	    break;
 	}
     }

@@ -17,10 +17,58 @@
 
 #define WIN_WIDTH 65536
 
+/*
+ * Value can be one of several modes:
+ *   1. By position in contig.       eg 30717
+ *   2. By position in current gel.  eg @100
+ *   3. By position in defined gel.  eg @100/xy66a2.s1
+ *   4. By a relative offset.        eg +1000 eg -1000
+ */
 int edview_search_position(edview *xx, int dir, int strand, char *value) { 
-    int pos = atoi(value);
+    int pos;
+    char *cp;
 
-    edSetCursorPos(xx, GT_Contig, xx->contig->rec, pos, 1);
+    switch (*value) {
+    case '\0':
+	break;
+	
+    case '+':
+    case '-':
+	/* Relative */
+	pos = atoi(value+1);
+	edSetCursorPos(xx, GT_Contig, xx->contig->rec,
+		       xx->cursor_apos + pos, 1);
+        break;
+
+    case '@':
+	pos = atoi(value+1);
+	if (NULL != (cp = strchr(value, '/'))) {
+	    tg_rec rec;
+	    int type;
+	    
+	    rec = contig_name_to_number(xx->io, cp+1);
+	    if (rec) {
+		type = GT_Contig;
+	    } else {
+		rec = get_gel_num(xx->io, cp+1, 0);
+		type = GT_Seq;
+	    }
+
+	    if (!rec)
+		return -1;
+
+	    edSetCursorPos(xx, type, rec, pos, 1);
+	} else {
+	    edSetCursorPos(xx, GT_Contig, xx->cursor_rec, pos, 1);
+	}
+	break;
+
+    default:
+	pos = atoi(value);
+	edSetCursorPos(xx, GT_Contig, xx->contig->rec, pos, 1);
+	break;
+    }
+    
     return 0;
 }
 
