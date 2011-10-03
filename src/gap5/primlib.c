@@ -101,8 +101,6 @@ primlib_choose(primlib_state *state, char *seq)
     sa.incl_l = strlen(seq);
     sa.incl_s = state->p3args.first_base_index;
 
-    puts(seq);
-
     memset(&state->p3args.glob_err, 0, sizeof(state->p3args.glob_err));
     if (0 != primer3_choose(state->p3state, &state->p3args, &sa)) {
 	if (sa.error.data || state->p3args.glob_err.data) {

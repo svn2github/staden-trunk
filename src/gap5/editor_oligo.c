@@ -123,10 +123,17 @@ Tcl_Obj *edSelectOligoGenerate(edview *xx, int is_fwds, int bkwd_width,
 	int st = state->primers[i].start, st2 = st;
 	int en = st + state->primers[i].length-1, en2 = en;
 	for (j = st; j < consensusLength; j++) {
-	    if (opos[j] == st)
-		st2 = j;
-	    if (opos[j] == en)
-		en2 = j;
+	    if (is_fwds) {
+		if (opos[j] == st)
+		    st2 = j;
+		if (opos[j] == en)
+		    en2 = j;
+	    } else {
+		if (opos[j] == st)
+		    en2 = consensusLength - j - 1;
+		if (opos[j] == en)
+		    st2 = consensusLength - j - 1;
+	    }
 	}
 
 	Tcl_ListObjAppendElement(xx->interp, l, 
