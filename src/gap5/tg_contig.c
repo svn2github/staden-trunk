@@ -2680,6 +2680,8 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c, int start, int
 		} else {
 		    compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
 		}
+
+		compute_ypos_tags(r, *count);
 	    }
     	
 	    if (job & CSIR_SORT_BY_Y)
