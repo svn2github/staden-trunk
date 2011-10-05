@@ -1795,7 +1795,14 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
 //    bio->rg2pl_hash = sam_header2tbl(bio->header->dict, "RG", "ID", "PL");
 
     /* The main processing loop, calls sam_add_seq() */
-    pileup_loop(fp, sam_check_unmapped, sam_add_seq, bio);
+    if (0 != pileup_loop(fp, sam_check_unmapped, sam_add_seq, bio)) {
+	verror(ERR_WARN, "sam_import", "pileup failed processing line %d",
+	       fp->line);
+	cache_flush(io);
+	bam_close(fp);
+	return -1;
+    }
+
     //pileup_loop(fp, NULL, sam_add_seq, bio);
 
     //    if (bio->rg2pl_hash)

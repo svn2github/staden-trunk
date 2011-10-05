@@ -98,6 +98,9 @@ typedef struct {
 
     /* If true, skip auxillary field parsing while reading SAM */
     int no_aux;
+
+    /* line number (when in SAM mode) */
+    int line;
 } bam_file_t;
 
 /* Decoding the above struct */

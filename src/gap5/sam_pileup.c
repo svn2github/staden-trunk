@@ -290,7 +290,14 @@ int pileup_loop(bam_file_t *fp,
 	bam_seq_t *b;
 	int pos, last_in_contig;
 
-	r = (bam_next_seq(fp, &pnew->b) > 0) ? 1 : -1;
+	//r = (bam_next_seq(fp, &pnew->b) > 0) ? 1 : -1;
+	r = bam_next_seq(fp, &pnew->b);
+	if (r == -1) {
+	    fprintf(stderr, "bam_next_seq() failure on line %d\n", fp->line);
+	    return -1;
+	}
+
+	r = (r > 0) ? 1 : -1;
 	b = pnew->b;
 
 	/* Force realloc */

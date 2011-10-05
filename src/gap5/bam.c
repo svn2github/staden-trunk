@@ -12,6 +12,7 @@
 #include <zlib.h>
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "bam.h"
 #include "os.h"
@@ -138,7 +139,7 @@ int bam_get_line(bam_file_t *b, unsigned char **str, size_t *len) {
 	}
     }
 
-    return -1;
+    return b->out_sz ? -1 : 0;
 }
 
 int load_bam_header(bam_file_t *b) {
@@ -175,6 +176,11 @@ int load_bam_header(bam_file_t *b) {
 	b->ref[i].len = le_int4(b->ref[i].len);
     }
 
+    for (i = 0; i < b->header_len; i++) {
+	if (b->header[i] == '\n')
+	    b->line++;
+    }
+
     return 0;
 }
 
@@ -190,6 +196,7 @@ int load_sam_header(bam_file_t *b) {
     b->nref = 0;
 
     while ((b->out_sz > 0 || bam_more_output(b) > 0) && *b->out_p == '@') {
+	b->line++;
 	if ((len = bam_get_line(b, &str, &alloc)) == -1)
 	    return -1;
 
@@ -435,6 +442,7 @@ bam_file_t *bam_open(char *fn, char *mode) {
     b->z_finish = 1;
     b->bgzf     = 0;
     b->no_aux   = 0;
+    b->line     = 0;
 
     b->ref_hash = HashTableCreate(16, HASH_FUNC_HSIEH |
 				      HASH_DYNAMIC_SIZE |
@@ -709,8 +717,9 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};/* f0 */
 
     /* Fetch a single line */
-    if ((used_l = bam_get_line(b, &str, &alloc_l)) <= 0)
+    if ((used_l = bam_get_line(b, &str, &alloc_l)) <= 0) {
 	return used_l;
+    }
 
     used_l *= 4; // FIXME
 
@@ -1023,6 +1032,8 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
 int bam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     int32_t blk_size, blk_ret;
     bam_seq_t *bs;
+
+    b->line++;
 
     if (!b->bam)
 	return sam_next_seq(b, bsp);
