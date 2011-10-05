@@ -90,8 +90,8 @@ proc create_tag_editor {w c data} {
  
     scrollbar $v.sy -orient vert -command "$v.t yview" -bd 2 -relief sunken
     scrollbar $v.b.sx -orient horiz -command "$v.t xview" -bd 2 -relief sunken
-    text $v.t -height 8 -width 20 -yscrollcommand "$v.sy set" \
-	-xscrollcommand "$v.b.sx set" -bd 2 -relief sunken
+    text $v.t -height 10 -width 50 -yscrollcommand "$v.sy set" \
+	-xscrollcommand "$v.b.sx set" -bd 2 -relief sunken -wrap none
 
     if {$d(type) == "NONE"} {
 	tag_editor_set_type $w.bar.type $w $v.t $data \
