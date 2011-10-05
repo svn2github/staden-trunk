@@ -833,14 +833,20 @@ proc contig_editor {w args} {
     # The editor(s) itself
     if {$join} {
 	set pane0 $w.ed0
-	set e [editor_pane $w $pane0 1 2 opt]
+	set e [editor_pane $w $pane0 1 "" opt]
 	set opt(editor2) $e
 	lappend opt(all_editors) $e
+
+	set pane1 $w.ed1
+	set e [editor_pane $w $pane1 0 2 opt]
+	set opt(editor1) $e
+	lappend opt(all_editors) $e
+    } else {
+	set pane1 $w.ed1
+	set e [editor_pane $w $pane1 0 "" opt]
+	set opt(editor1) $e
+	lappend opt(all_editors) $e
     }
-    set pane1 $w.ed1
-    set e [editor_pane $w $pane1 0 "" opt]
-    set opt(editor1) $e
-    lappend opt(all_editors) $e
 
     # Difference bar for the join editor
     if {$join} {
