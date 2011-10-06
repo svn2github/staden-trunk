@@ -3088,9 +3088,17 @@ bind EdNames <<menu>> {
 		    -label "Goto [$s get_name] (Contig '$cname' @ $pos, size ~ $dist)" \
 		    -command "create_or_move_editor $base_io $sc $orec 0"
 
-		lappend to_join [list %W.m add command \
-		    -label "Join to [$s get_name] (Contig '$cname' @ $pos)" \
-		    -command "join_contig \
+		set ts [$io get_seq $rec]
+
+		if {[$ts get_template_orient] != [$s get_template_orient]} {
+		    lappend to_join \
+			[list %W.m add command \
+			     -label "Join to [$s get_name] (Contig '$cname' @ $pos, complemented)" \
+			     -command "
+                                 complement_contig \
+                                  -io $base_io \
+                                  -contigs =[$s get_contig];
+                                 join_contig \
                                   -io $base_io \
                                   -contig   [$ed contig_rec] \
                                   -reading  \#$rec \
@@ -3098,6 +3106,20 @@ bind EdNames <<menu>> {
                                   -contig2  $sc \
                                   -reading2 \#$orec \
                                   -pos2     0"]
+		} else {
+		    lappend to_join \
+			[list %W.m add command \
+			     -label "Join to [$s get_name] (Contig '$cname' @ $pos)" \
+			     -command "join_contig \
+                                  -io $base_io \
+                                  -contig   [$ed contig_rec] \
+                                  -reading  \#$rec \
+                                  -pos      0 \
+                                  -contig2  $sc \
+                                  -reading2 \#$orec \
+                                  -pos2     0"]
+		}
+		$ts delete
 	    }
 
 	    $s delete

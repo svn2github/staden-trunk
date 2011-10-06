@@ -1261,7 +1261,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_conf",	"get_conf4",    "get_contig",   "get_position",
 	"get_orient",   "get_mapping_qual",
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
-	"get_clips",    "set_clips",    "move_annos",
+	"get_clips",    "set_clips",    "move_annos",   "get_template_orient",
 	(char *)NULL,
     };
 
@@ -1272,7 +1272,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_CONF,       GET_CONF4,      GET_CONTIG,     GET_POSITION,
 	GET_ORIENT,     GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
-	GET_CLIPS,      SET_CLIPS,      MOVE_ANNOS
+	GET_CLIPS,      SET_CLIPS,      MOVE_ANNOS,     GET_TEMPLATE_ORIENT,
     };
 
     if (objc < 2) {
@@ -1423,6 +1423,46 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	sequence_get_position2(ts->io, rec, &cnum, &pos, NULL, &dir, NULL,
 			       &r, &s);
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), (s->len < 0) ^ dir);
+	cache_decr(ts->io, s);
+	break;
+    }
+
+    case GET_TEMPLATE_ORIENT: {
+	/*
+	 * Computes the orientation of the template. Useful for checking
+	 * consistency.
+	 *
+	 * Eg for a standard --> <-- style read-pair:
+	 * 0  -fwd-> <-rev-
+	 * 1  -rev-> <-fwd-
+	 *
+	 * Hence -fwd-> -rev-> gives orient 0/1 and a conflict.
+	 */
+	tg_rec rec = ts->seq->rec, cnum;
+	int pos, dir;
+	range_t r;
+	seq_t *s;
+	int tdir;
+	int lib_type = LIB_T_INWARD;
+
+	sequence_get_position2(ts->io, rec, &cnum, &pos, NULL, &dir, NULL,
+			       &r, &s);
+	if (s->parent_type == GT_Library)
+	    get_library_stats(ts->io, s->parent_rec,
+			      NULL, NULL, &lib_type, NULL);
+
+	switch (lib_type) {
+	case LIB_T_INWARD:
+	case LIB_T_OUTWARD:
+	    tdir = (s->flags & SEQ_END_MASK) == SEQ_END_REV;
+	    tdir ^= (s->len < 0) ^ dir;
+	    break;
+
+	case LIB_T_SAME:
+	    tdir = (s->len < 0) ^ dir;
+	}
+
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), tdir);
 	cache_decr(ts->io, s);
 	break;
     }
