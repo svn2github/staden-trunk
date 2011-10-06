@@ -319,7 +319,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 					    s->seq, tmp_qual);
 
 		if (tmp_qual) {
-		    for (n = 0; n < ABS(s->len); n++) {
+		    for (n = 0; n <= bend-bstart && n < ABS(s->len); n++) {
 			int q = rint(tmp_qual[n]);
 			if (q < 0)
 			    s->conf[n] = 0;
