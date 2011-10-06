@@ -68,6 +68,10 @@ proc InitListContigs {io parent {csh_win {}}} {
 	"+ListContigsSelectPressBinding $io %W %x %y"
     bind [$t.list bodypath] <<select-release>> \
 	"+ListContigsSelectReleaseBinding $io $t.list"
+    bind [$t.list bodypath] <Control-Key-a> \
+	"ListContigsSelectAll $io $t.list"
+
+    focus [$t.list bodypath]
 
     wm geometry $t 600x300
 
@@ -150,6 +154,17 @@ proc InitListContigs {io parent {csh_win {}}} {
 	lappend contigs $ident
     }
     ListCreate2 contigs $contigs $NGListTag(contigs)
+}
+
+; proc ListContigsSelectAll {io w} {
+    global NGListTag
+    set contigs {}
+    set end [$w index end]
+    for {set item 0} {$item <= $end} {incr item} {
+	set ident [lindex [lindex [$w get $item] 0] 0]
+	lappend contigs $ident
+    }
+    ListCreate2 contigs $contigs NGListTag(contigs)
 }
 
 ##############################################################################
