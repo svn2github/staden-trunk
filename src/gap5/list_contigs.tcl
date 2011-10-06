@@ -290,5 +290,5 @@ proc ListContigsCopy {t} {
 
 proc ListContigsSelection {offset maxbytes} {
     global .Selection
-    return [string range ${.Selection} $offset $maxbytes]
+    return [string range ${.Selection} $offset [expr {$offset+$maxbytes-1}]]
 }

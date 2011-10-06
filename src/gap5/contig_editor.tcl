@@ -2900,7 +2900,7 @@ proc editor_oligo_select {ed tl w} {
 
 proc editor_oligo_handle_selection {offset maxbytes} {
     global .Selection
-    return [string range ${.Selection} $offset $maxbytes]
+    return [string range ${.Selection} $offset [expr {$offset+$maxbytes-1}]]
 }
 
 proc editor_oligo_add {ed w} {
