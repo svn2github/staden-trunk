@@ -211,7 +211,9 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
 
     s->next = NULL;
 
-    /* Grow storage */
+    /* Grow storage, first guess, but b->len can be shorter than cigar
+     * padded sequence.
+     */
     if (s->alloc_len < p->b->len+10)
 	s->alloc_len = p->b->len+10;
     
@@ -236,7 +238,18 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
 	char *sp = s->seq;
 	char *qp = s->conf;
 
-	if (bio->a->data_type & DATA_SEQ) {
+        if (seq_offset >= s->alloc_len) {
+            s->alloc_len = (seq_offset + 10);
+            if (NULL == (s->seq  = (char *)realloc(s->seq,  s->alloc_len)))
+                return NULL;
+            if (NULL == (s->conf = (char *)realloc(s->conf, s->alloc_len)))
+                return NULL;
+
+	    sp = s->seq;
+	    qp = s->conf;
+        }
+
+	if ((bio->a->data_type & DATA_SEQ) && (p->b->len >= seq_offset)) {
 	    for (i = 0; i < seq_offset; i+=2) {
 		unsigned char coded = *seq++;
 		*sp++ = lc2[coded].c1;
@@ -247,7 +260,7 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
 		*sp++ = 'N';
 	}
 
-	if (bio->a->data_type & DATA_QUAL) {
+	if ((bio->a->data_type & DATA_QUAL) && (p->b->len >= seq_offset)) {
 	    for (i = 0; i < seq_offset; i++)
 		*qp++ = *qual++;
 	} else {

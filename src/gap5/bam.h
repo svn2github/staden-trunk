@@ -133,6 +133,7 @@ typedef struct {
 #define bam_strand(b)    ((bam_flag((b)) & BAM_FREVERSE) != 0)
 #define bam_name(b)      ((char *)(&(b)->data))
 #define bam_cigar(b)     ((uint32_t *)(bam_name((b)) + bam_name_len((b))))
+#define bam_seq_len(b)   ((b)->len)
 #define bam_seq(b)       (((char *)bam_cigar((b))) + 4*bam_cigar_len(b))
 #define bam_qual(b)      (bam_seq(b) + (int)(((b)->len+1)/2))
 #define bam_aux(b)       (bam_qual(b) + (b)->len)

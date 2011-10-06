@@ -159,24 +159,27 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
     if (p->nth < nth && op != BAM_CINS) {
 	//p->base = '-';
 	p->base = '*';
-	p->qual = p->b_qual[p->seq_offset];
 	if (p->seq_offset < b->len)
 	    p->qual = (p->qual + p->b_qual[p->seq_offset+1])/2;
+	else
+	    p->qual = 0;
     } else {
 	switch(op) {
 	case BAM_CDEL:
 	    p->base = '*';
-	    p->qual = p->b_qual[p->seq_offset];
 	    if (p->seq_offset < b->len)
 		p->qual = (p->qual + p->b_qual[p->seq_offset+1])/2;
+	    else
+		p->qual = 0;
 	    break;
 
 	case BAM_CPAD:
 	    //p->base = '+';
 	    p->base = '*';
-	    p->qual = p->b_qual[p->seq_offset];
 	    if (p->seq_offset < b->len)
 		p->qual = (p->qual + p->b_qual[p->seq_offset+1])/2;
+	    else
+		p->qual = 0;
 	    break;
 
 	case BAM_CREF_SKIP:
@@ -188,7 +191,8 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	    break;
 
 	default:
-	    p->qual = p->b_qual[p->seq_offset];
+	    if (p->seq_offset < b->len) {
+		p->qual = p->b_qual[p->seq_offset];
 	    /*
 	     * If you need to label inserted bases as different from
 	     * (mis)matching bases then this is where we'd make that change.
@@ -200,7 +204,11 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	     *     p->base = tolower(tab[p->b_seq[p->seq_offset/2]][p->seq_offset&1]);
 	     * else
 	     */
-	    p->base = tab[p->b_seq[p->seq_offset/2]][p->seq_offset&1];
+		p->base = tab[p->b_seq[p->seq_offset/2]][p->seq_offset&1];
+	    } else {
+		p->base = 'N';
+		p->qual = 0xff;
+	    }
 		
 	    break;
 	}
