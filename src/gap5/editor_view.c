@@ -692,6 +692,7 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
  * %T   T confidence log-odds (raw for probability value)
  * %H   Het confidence log-odds
  * %h	Het call
+ * %d   Depth
  * %*   * (gap) confidence
  *
  * Additionally specifying %<number><format> forces AT MOST that many
@@ -902,6 +903,17 @@ char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format) {
 		str[1] = "ACGT*"[h%5];
 		str[2] = 0;
 		add_string(status_buf, &j, l1, l2, str);
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'd':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		int d = xx->cachedConsensus[p].depth;
+		add_number(status_buf, &j, l1, l2, d);
 	    } else {
 		add_string(status_buf, &j, l1, l2, "-");
 	    }

@@ -282,6 +282,82 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
     return -1;
 }
 
+int edview_search_depth(edview *xx, int dir, int strand, char *value,
+			int lt) {
+    int start, end;
+    int found = 0, at_end = 0;
+    int fpos, i, qval = atoi(value);
+    consensus_t cons[WIN_WIDTH+1];
+
+    /* Set initial start positions */
+    if (dir) {
+	start = xx->cursor_apos + (dir ? 1 : -1);
+	end   = start + (WIN_WIDTH-1);
+    } else {
+	end   = xx->cursor_apos + (dir ? 1 : -1);
+	start = end - (WIN_WIDTH-1);
+    }
+    fpos = xx->cursor_apos;
+
+    /* Loop WIN_WIDTH block at a time */
+    do {
+	calculate_consensus(xx->io, xx->cnum, start, end, cons);
+
+	if (dir) {
+	    for (i = 0; i < WIN_WIDTH; i++) {
+		if (( lt && cons[i].depth < qval) ||
+		    (!lt && cons[i].depth > qval)) {
+		    found = 1;
+		    break;
+		}
+	    }
+	} else {
+	    for (i = WIN_WIDTH-1; i; i--) {
+		if (( lt && cons[i].depth < qval) ||
+		    (!lt && cons[i].depth > qval)) {
+		    found = 1;
+		    break;
+		}
+	    }
+	}
+
+	if (found) {
+	    fpos = start + i;
+	    break;
+	}
+
+	/* Next search region - overlapping by patlen+pads */
+	if (dir) {
+	    start += WIN_WIDTH;
+	    end   += WIN_WIDTH;
+
+	    if (start > xx->contig->end)
+		at_end = 1;
+	} else {
+	    start -= WIN_WIDTH;
+	    end   -= WIN_WIDTH;
+
+	    if (end < xx->contig->start)
+		at_end = 1;
+	}
+    } while (!at_end);
+
+    if (found) {
+	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos, 1);
+	return 0;
+    }
+
+    return -1;
+}
+
+int edview_search_depth_lt(edview *xx, int dir, int strand, char *value) {
+    return edview_search_depth(xx, dir, strand, value, 1);
+}
+
+int edview_search_depth_gt(edview *xx, int dir, int strand, char *value) {
+    return edview_search_depth(xx, dir, strand, value, 0);
+}
+
 int edview_search_cons_het(edview *xx, int dir, int strand, char *value) {
     int start, end;
     int found = 0, at_end = 0;
@@ -710,6 +786,8 @@ int edview_search(edview *xx, int dir, int strand,
 	{"uposition",    edview_search_uposition},
 	{"sequence",     edview_search_sequence},
 	{"consquality",  edview_search_consquality},
+	{"depth_lt",     edview_search_depth_lt},
+	{"depth_gt",     edview_search_depth_gt},
 	{"name",         edview_search_name},
 	{"tag",          edview_search_tag_type},
 	{"annotation",   edview_search_tag_anno},

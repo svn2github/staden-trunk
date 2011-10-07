@@ -18,6 +18,8 @@ set search_setup(annotation)		"0 0 0 0 string"
 set search_setup(sequence)		"0 1 0 0 sequence {num. mismatches}"
 set search_setup(quality)		"0 0 0 0"
 set search_setup(consquality)		"0 0 0 0 value"
+set search_setup(depth_lt)		"0 0 0 0 value"
+set search_setup(depth_gt)		"0 0 0 0 value"
 set search_setup(file)			"1 0 0 0 filename"
 set search_setup(name)			"0 0 0 0 name"
 set search_setup(edit)			"0 0 0 0"
@@ -145,6 +147,8 @@ proc create_search_win {w com {dir 0} {raise 1}} {
 	{r {reference indel}         indel}
 	{l {heterozygosity}          conshet}
 	{r {consensus discrepancy}   consdiscrep}
+	{r {depth <}                 depth_lt}
+	{r {depth >}                 depth_gt}
     }
 
     # Type frame
@@ -338,6 +342,8 @@ proc do_search {w com args} {
 	    || $type == "annotation" \
 	    || $type == "name" \
 	    || $type == "consquality" \
+	    || $type == "depth_lt" \
+	    || $type == "depth_gt" \
 	    || $type == "discrepancy"
 	    || $type == "conshet"
             || $type == "consdiscrep"} {
