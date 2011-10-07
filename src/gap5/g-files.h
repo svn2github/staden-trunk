@@ -34,7 +34,7 @@ extern void g_close_file(GFile *g);
  * Close a file and its associated index
  */
 
-extern int g_write_aux_index(GFile *gfile, GCardinal rec);
+extern int g_write_aux_index(GFile *gfile, GCardinal rec, Index *old_ind);
 /*
  * Read a record from the index of the aux file
  */

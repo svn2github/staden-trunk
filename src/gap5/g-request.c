@@ -578,7 +578,7 @@ static void initialise_records(GFile *gfile, GCardinal rec)
 	     * An error here means we're trying to initialise an already
 	     * initialised record. Ignore!
 	     */
-	    err = g_write_aux_index(gfile,i);
+	    err = g_write_aux_index(gfile,i, NULL);
 	    /*
 	     * If we get an error here, something is seriously wrong!
 	     */
@@ -595,11 +595,11 @@ static void initialise_records(GFile *gfile, GCardinal rec)
 
 static void update_record(GFile *gfile, GCardinal rec, GImage image,
 			  GCardinal allocated, GCardinal used,
-			  GTimeStamp edtime)
+			  GTimeStamp edtime, GImage *delayed_image)
 {
     GImage old_image;
     int err;
-    Index *ind;
+    Index *ind, old_ind;
     
     /*
      * we may need to initialise other uninitialised records
@@ -617,6 +617,7 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
      * Get pointer to in-memory cached index
      */
     ind = g_read_index(gfile, rec);
+    old_ind = *ind;
     old_image = ind->aux_image;
     
     /* need to update idx image + time */
@@ -632,7 +633,7 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
 
     /* And write it back to hash and aux */
     g_write_index(gfile, rec, ind);
-    err = g_write_aux_index(gfile,rec);
+    err = g_write_aux_index(gfile,rec, &old_ind);
     /*
      * If we get an error here, something is seriously wrong!
      */
@@ -643,15 +644,23 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
     }
     
     /* check through the cache list */
-    if (old_image != G_NO_IMAGE && old_image != 0) {
-	heap_free(gfile->dheap, old_image);
-	if (err) {
-	    gerr_set(err);
-	    fprintf(stderr,"** SERIOUS PROBLEM - file %s\n",
-		    g_filename(gfile));
-	    fprintf(stderr,"** In update_record(): "
-		    "heap_free returned error code %d.\n",err);
-	    panic_shutdown();
+    if (delayed_image) {
+	if (old_image != G_NO_IMAGE && old_image != 0) {
+	    *delayed_image = old_image;
+	} else {
+	    *delayed_image = G_NO_IMAGE;
+	}
+    } else {
+	if (old_image != G_NO_IMAGE && old_image != 0) {
+	    heap_free(gfile->dheap, old_image);
+	    if (err) {
+		gerr_set(err);
+		fprintf(stderr,"** SERIOUS PROBLEM - file %s\n",
+			g_filename(gfile));
+		fprintf(stderr,"** In update_record(): "
+			"heap_free returned error code %d.\n",err);
+		panic_shutdown();
+	    }
 	}
     }
 }
@@ -721,6 +730,7 @@ static int g_unlock_views(GDB *gdb, GView v)
     int countv = 0;
     static view_rec_pair_t *pair = NULL;
     static int pair_alloc = 0;
+    GImage *old_images = NULL;
 
     /* check arguments */
     if (gdb==NULL) return gerr_set(GERR_INVALID_ARGUMENTS);
@@ -768,6 +778,7 @@ static int g_unlock_views(GDB *gdb, GView v)
     /*
      * unlock each view in turn
      */
+    old_images = calloc(countv, sizeof(*old_images));
     for (i = 0; i < countv; i++) {
 	Cache *cache;
 
@@ -782,7 +793,7 @@ static int g_unlock_views(GDB *gdb, GView v)
 	    gfile->header.free_record = cache->rec;
 
 	    update_record(gfile, cache->rec, cache->image, cache->allocated,
-			  cache->used, edtime);
+			  cache->used, edtime, &old_images[i]);
 
 	    updates++;
 
@@ -804,7 +815,7 @@ static int g_unlock_views(GDB *gdb, GView v)
 	    }
 
 	    update_record(gfile, cache->rec, cache->image, cache->allocated,
-			  cache->used, edtime);
+			  cache->used, edtime, &old_images[i]);
 	    /* count updates to file */
 	    updates++;
     
@@ -841,6 +852,17 @@ static int g_unlock_views(GDB *gdb, GView v)
 	update_header(gfile,edtime);
     }
     /* g_sync_off(gfile); */
+
+    /* Now free the storage, having successfully written new data */
+    if (old_images) {
+	for (i = 0; i < countv; i++) {
+	    if (old_images[i] == G_NO_IMAGE)
+		continue;
+
+	    heap_free(gfile->dheap, old_images[i]);
+	}
+	free(old_images);
+    }
 
     gfile->check_header = 1;
 
@@ -1379,7 +1401,7 @@ ind = g_read_index(gfile, rec);
 
 
     /* update record */
-    update_record(gfile, rec, image, allocate, len, edtime);
+    update_record(gfile, rec, image, allocate, len, edtime, NULL);
     
     /* update header */
     update_header(gfile, edtime);
@@ -1450,7 +1472,7 @@ int g_fast_writev_N_(GDB *gdb, GClient c, GFileN file_N, GCardinal rec, GIOVec *
 
 
     /* update record */
-    update_record(gfile, rec, image, allocate, len, edtime);
+    update_record(gfile, rec, image, allocate, len, edtime, NULL);
     
     /* update header */
     update_header(gfile, edtime);

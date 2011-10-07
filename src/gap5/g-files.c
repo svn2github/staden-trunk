@@ -586,7 +586,7 @@ void g_forget_index(GFile *gfile, GCardinal rec) {
 	HacheTableDecRef(gfile->idx_hash, hi);
 }
 
-int g_write_aux_index(GFile *gfile, GCardinal rec)
+int g_write_aux_index(GFile *gfile, GCardinal rec, Index *old_ind)
 /*
  * Read a record from the index of the aux file
  */
@@ -602,9 +602,15 @@ int g_write_aux_index(GFile *gfile, GCardinal rec)
     idx.image[0] = ind->aux_image;
     idx.time [0] = ind->aux_time;
     idx.used [0] = ind->aux_used;
-    idx.image[1] = 0;
-    idx.time [1] = 0;
-    idx.used [1] = 0;
+    if (old_ind) {
+	idx.image[1] = old_ind->aux_image;
+	idx.time [1] = old_ind->aux_time;
+	idx.used [1] = old_ind->aux_used;
+    } else {
+	idx.image[1] = 0;
+	idx.time [1] = 0;
+	idx.used [1] = 0;
+    }
 
     /* check arguments */
     if (gfile==NULL) return gerr_set(GERR_INVALID_ARGUMENTS);
