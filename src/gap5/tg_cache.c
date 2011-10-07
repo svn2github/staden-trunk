@@ -2078,9 +2078,17 @@ void *cache_rw(GapIO *io, void *data) {
 	return NULL;
 
     if (io->base && io->base->cache == mi->hi->h) {
-	ci = cache_dup(io, ci);
-	mi = cache_master(ci);
-	data = &ci->data;
+	/*
+	 * The editor currently updates library stats on a regular basis
+	 * while scrolling, but we haven't implemented a dup function for
+	 * it yet. It's not something the user is changing though so we
+	 * can ignore this and update the live one.
+	 */
+	if (ci->type != GT_Library) {
+	    ci = cache_dup(io, ci);
+	    mi = cache_master(ci);
+	    data = &ci->data;
+	}
     }
 
     /* Ensure it's locked RW */
