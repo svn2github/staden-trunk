@@ -1,3 +1,62 @@
+7th Oct 2011
+============
+
+Gap5 Updates
+============
+
+*	The contig editor has two new search modes: "depth <" and
+	"depth >" to look for low and high depth regions.
+
+*	Added a Search From File editor search mode. This is identical
+        to the Gap4 equivalent and reads the same format "gapNav"
+        files.
+
+*	Improved robustness of databases; crashes while flushing
+        writes should now roll back to the previous state rather than
+        giving a corrupted DB.
+
+*	The List Contigs window now has a Control-A keybinding.
+        Additionally Copy and Paste should now copy all selected
+        rather than just the first 4Kb or so.
+
+*	Improved support for "*" in sequence records within SAM. (They
+        get treated as "N" for now, in the absense of any reference.)
+        Also improved error handling for malformed files.
+
+*	Increased the default size of the tag editor window. Also
+        disabled the line wrapping, so the horizontal scrollbar should
+        be used for long lines.
+
+Gap5 Fixes
+==========
+
+*	The editor Join To system will now automatically complement
+        contigs if required.
+
+*	The join editor now has the top and bottom contigs correctly
+        ordered, once again agreeing with the title bar ("a / b"
+        meaning contig a on top and contig b on the bottom.
+
+*	The contig editor should no longer keep claiming you have
+        changed data even when you simply scroll along.
+
+*	Fixed a memory corruption in the consensus caching code,
+        caused when a bin considerably shrinks.
+
+*	The tags added by the Find Primer-Walk function in the editor
+        are now positioned correctly for both strands (reverse was
+        incorrect before).
+
+*	Added back the ability to use F11/F12 in the editor for quick
+        tag editing. This was accidentally lost in the 30th Sep
+        release.
+
+*	Fixed a bug that caused empty Tk error dialogues to appear
+        when clicking on locations with no sequence data within the
+        contig editor, but only after attempting to edit a contig with
+        an invalid name.
+
+
 Sep 30th 2011
 -------------
 
