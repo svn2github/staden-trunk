@@ -240,6 +240,8 @@ add_command	{Commands.Create Tag}		3 2 {tag_editor_create \[curr_ed $e\]}
 add_cascade	{Commands.Edit Tag}		1 0
 add_cascade	{Commands.Delete Tag}		3 2
 add_separator	{Commands.S2}
+add_command	{Commands.Select Reads}		3 2 {editor_select_dialog \[curr_ed $e\] 1}
+add_command	{Commands.Deselect Reads}	3 2 {editor_select_dialog \[curr_ed $e\] 0}
 add_command     {Commands.Find primer-walk}	3 2 {editor_oligo_dialog \[curr_ed $e\]}
 #add_command	{Commands.Save Contig}		3 2 {$e save}
 #add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}

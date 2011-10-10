@@ -1181,30 +1181,33 @@ proc GetReadingList { } {
 
 #given a reading name and a highlight status, add or delete from list
 #called from contig editor
-#Returns 1 if item is selected, 0 if unselected
-proc UpdateReadingListItem { r_name highlight} {
+#
+#Returns 1 if last item is selected, 0 if unselected
+proc UpdateReadingListItem { r_names highlight } {
     global r_list NGList NGListTag NGList_read_hash
 
-    if {$highlight == -1} {
-	# Toggle
-	if {[info exists NGList_read_hash($r_name)]} {
-	    unset NGList_read_hash($r_name)
-	    set r 0
-	} else {
-	    set NGList_read_hash($r_name) ""
-	    set r 1
-	}
-    } else {
-	if {$highlight == 1} {
-	    if {![info exists NGList_read_hash($r_name)]} {
-		set NGList_read_hash($r_name) ""
-	    }
-	    set r 1
-	} else {
+    foreach r_name $r_names {
+	if {$highlight == -1} {
+	    # Toggle
 	    if {[info exists NGList_read_hash($r_name)]} {
 		unset NGList_read_hash($r_name)
+		set r 0
+	    } else {
+		set NGList_read_hash($r_name) ""
+		set r 1
 	    }
-	    set r 0
+	} else {
+	    if {$highlight == 1} {
+		if {![info exists NGList_read_hash($r_name)]} {
+		    set NGList_read_hash($r_name) ""
+		}
+		set r 1
+	    } else {
+		if {[info exists NGList_read_hash($r_name)]} {
+		    unset NGList_read_hash($r_name)
+		}
+		set r 0
+	    }
 	}
     }
 

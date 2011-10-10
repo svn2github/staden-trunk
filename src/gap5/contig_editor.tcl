@@ -869,6 +869,11 @@ proc contig_editor {w args} {
     create_menus $contig_editor_main_menu $w.menubar
     bind  $w.menubar <ButtonPress> "tag_repopulate_menu \[set ${w}(curr_editor)\]"
 
+    bind $w.menubar <1> {+
+	global editor_right_click
+	set editor_right_click 0
+    }
+
     # Packing
     grid rowconfigure $w 3 -weight 1
     grid columnconfigure $w 0 -weight 1
@@ -2516,6 +2521,83 @@ proc editor_autoscroll_cancel {e} {
 
 
 #-----------------------------------------------------------------------------
+# Selecting and deselecting reads
+
+proc editor_select_dialog {ed sel} {
+    global gap5_defs
+    global $ed
+    global editor_right_click
+
+    set pos [lindex [$ed get_cursor absolute] 2]
+
+    if {$editor_right_click} {
+	return [editor_select_reads $ed $sel $pos $pos]
+    }
+
+    set t $ed.select_dialog
+    if {[xtoplevel $t] == ""} return
+    wm title $t "Select Reads"
+    
+    # Positional parameters
+    entrybox $t.start \
+	-title "From consensus base" \
+	-default $pos \
+	-width 10 \
+	-type CheckInt
+
+    entrybox $t.end \
+	-title "To consensus base" \
+	-default $pos \
+	-width 10 \
+	-type CheckInt
+
+    okcancelhelp $t.ok \
+	-bd 2 -relief groove \
+	-ok_command "editor_select_reads $ed $sel \
+                         \[entrybox_get $t.start\] \
+                         \[entrybox_get $t.end\];  \
+                         destroy $t" \
+	-cancel_command "destroy $t" \
+	-help_command "show_help gap5 {Editor-Select-Reads}"
+
+    pack $t.start $t.end $t.ok -side top -fill both
+}
+
+proc editor_select_reads {ed sel start end} {
+    SetBusy
+
+    set io [$ed io]
+    set c [$io get_contig [$ed contig_rec]]
+    set rlist {}
+    foreach x [$c seqs_in_range $start $end] {
+	foreach {x_st x_en x_rec} $x break
+
+	# Adjust for clipped region
+	set r [$io get_seq $x_rec]
+	foreach {cl cr} [$r get_clips] break
+
+	if {[$r get_orient] == 0} {
+	    set c_st [expr {$x_st+$cl-1}]
+	    set c_en [expr {$x_st+$cr-1}]
+	} else {
+	    set c_st [expr {$x_en-$cr+1}]
+	    set c_en [expr {$x_en-$cl+1}]
+	}
+	$r delete
+
+	if {$c_en < $start || $c_st > $end} continue
+	lappend rlist "#$x_rec"
+    }
+    $c delete
+
+    if {$rlist != {}} {
+	UpdateReadingListItem $rlist $sel
+    }
+
+    ClearBusy
+}
+
+#-----------------------------------------------------------------------------
 # Oligo selection
 
 # Creates the Find Primer dialogue window.
@@ -3308,7 +3390,7 @@ bind EdNames <<select>> {
     foreach {type rec pos} $where break
     if {$type != 18} return
 
-    set EdNames_select [UpdateReadingListItem "\#$rec" -1]
+    set EdNames_select [UpdateReadingListItem [list "\#$rec"] -1]
     editor_name_select %W [%W get_number @%x @%y]
 }
 
@@ -3320,7 +3402,7 @@ bind EdNames <<select-drag>> {
     if {$type != 18} return
 
     global EdNames_select
-    UpdateReadingListItem "\#$rec" $EdNames_select
+    UpdateReadingListItem [list "\#$rec"] $EdNames_select
     editor_name_select %W [%W get_number @%x @%y]
 }
 
@@ -3359,6 +3441,7 @@ bind Editor <Key-F12> {
     tag_editor_delete %W [%W get_number $x $y]
 }
 
+set editor_right_click 0
 bind Editor <<menu>> {
     set _sel [%W get_number @%x @%y 0 1]
     if {$_sel == ""} {
@@ -3369,8 +3452,16 @@ bind Editor <<menu>> {
     }
     unset _sel
 
+    global editor_right_click
+    set editor_right_click 1
     tag_repopulate_menu %W
     editor_menu %W %x %y
+}
+
+bind Editor <<menu-release>> {
+    puts menu_release
+    global editor_right_click
+    set editor_right_click 0
 }
 
 bind Editor <Control-Key-c> {
