@@ -41,7 +41,7 @@ typedef struct {
     // tg_rec library;  /* ? want this */
     tg_rec rec[2];
     int start[2], end[2];
-    int contig[2];
+    tg_rec contig[2];
     int mqual[2];
 } read_pair_t;
 
@@ -404,9 +404,9 @@ int PlotTempMatches(GapIO *io, read_pair_t *rp) {
 read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 			    contig_list_t *contig_array,
 			    enum readpair_mode mode,
-			    int end_size, int min_mq,
+			    int end_size, int min_mq, int min_freq,
 			    tg_rec *library, int nlibrary) {
-    int i;
+    int i, j;
     HashTable *h;
     HashIter *iter;
     HashItem *hi;
@@ -415,6 +415,8 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     int no_large_contigs = 1;
     pool_alloc_t *rp_pool;
     HashTable *lib_hash = NULL;
+    HashTable *ctg_hash = NULL;
+    tg_rec ctg_pair[2];
 
     h = HashTableCreate(1024, HASH_FUNC_HSIEH |
 			      HASH_DYNAMIC_SIZE |
@@ -434,6 +436,17 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 
     if (!h || !rp_pool)
 	return NULL;
+
+    /*
+     * For filtering by frequency. We construct a key consisting of
+     * two contig recs and then increment that value during pair generation.
+     * Any contig-pair with insufficient depth of read-pair is then
+     * rejected;
+     */
+    if (min_freq)
+	ctg_hash = HashTableCreate(1024, HASH_FUNC_HSIEH | 
+				         HASH_DYNAMIC_SIZE |
+				         HASH_POOL_ITEMS);
 
     for (i = 0; i < num_contigs; i++) {
 	contig_iterator *ci;
@@ -671,9 +684,36 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	pairs[npairs].mqual[0] = r1->mqual;
 	pairs[npairs].mqual[1] = r2->mqual;
 
+	if (min_freq) {
+	    HashData hd;
+
+	    ctg_pair[0] = pairs[npairs].contig[0];
+	    ctg_pair[1] = pairs[npairs].contig[1];
+	    hd.i = 0;
+	    hi = HashTableAdd(ctg_hash, (char *)ctg_pair, sizeof(ctg_pair),
+			      hd, NULL);
+	    hi->data.i++;
+	}
+
 	r2->rec = 0;
 
 	npairs++;
+    }
+
+    /* Now filter by contig pair frequency */
+    if (min_freq) {
+	for (i = j = 0; i < npairs; i++) {
+	    HashItem *hi;
+
+	    ctg_pair[0] = pairs[i].contig[0];
+	    ctg_pair[1] = pairs[i].contig[1];
+	    hi = HashTableSearch(ctg_hash, (char *)ctg_pair, sizeof(ctg_pair));
+	    if (!hi || hi->data.i < min_freq)
+		continue;
+
+	    pairs[j++] = pairs[i];
+	}
+	npairs = j;
     }
 
     /* Indicate end of list */
@@ -691,6 +731,9 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     if (lib_hash)
 	HashTableDestroy(lib_hash, 0);
 
+    if (ctg_hash)
+	HashTableDestroy(ctg_hash, 0);
+
     vmessage("Found %d read-pairs\n", npairs);
 
     return pairs;
@@ -703,12 +746,12 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
  */
 int find_read_pairs(GapIO *io, int num_contigs, contig_list_t *contig_array,
 		    enum readpair_mode mode, int end_size, int min_mq,
-		    tg_rec *library, int nlibrary) {
-
+		    int min_freq, tg_rec *library, int nlibrary) {
+    
     read_pair_t *tarr;
 
     if (NULL == (tarr = spanning_pairs(io, num_contigs, contig_array,
-				       mode, end_size, min_mq,
+				       mode, end_size, min_mq, min_freq,
 				       library, nlibrary)))
 	return -1;
 

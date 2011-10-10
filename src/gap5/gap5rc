@@ -552,6 +552,7 @@ set_def READPAIR.LINEWIDTH		2
 set_def READPAIR.MODE			1
 set_def READPAIR.END_SIZE		1000
 set_def READPAIR.MIN_MAP_QUAL		10
+set_def READPAIR.MIN_FREQ		0
 
 #find repeats
 set_def FINDREP.INFILE			$defs_c_in

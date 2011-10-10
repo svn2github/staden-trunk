@@ -106,6 +106,7 @@ typedef struct {
     char *mode;
     int end_size;
     int min_map_qual;
+    int min_freq;
     char *libraries;
 } readpair_arg;
 

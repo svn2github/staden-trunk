@@ -832,6 +832,7 @@ FindReadPairs(ClientData clientData,
 	{"-mode",    ARG_STR, 1, "end_end", offsetof(readpair_arg, mode)},
 	{"-end_size",ARG_INT, 1, "2000",    offsetof(readpair_arg, end_size)},
 	{"-min_map_qual", ARG_INT, 1, "10", offsetof(readpair_arg, min_map_qual)},
+	{"-min_freq",  ARG_INT, 1, "0",     offsetof(readpair_arg, min_freq)},
 	{"-libraries", ARG_STR, 1, "",      offsetof(readpair_arg, libraries)},
 	{NULL,	     0,	     0, NULL, 0}
     };
@@ -889,7 +890,7 @@ FindReadPairs(ClientData clientData,
     }
 
     if (find_read_pairs(args.io, num_contigs, contig_array, mode,
-			args.end_size, args.min_map_qual,
+			args.end_size, args.min_map_qual, args.min_freq, 
 			libraries ? ArrayBase(tg_rec, libraries) : NULL,
 			libraries ? ArrayMax(libraries) : 0) < 0 ) {
 	verror(ERR_WARN, "Find read pairs", "Failure in Find Read Pairs");

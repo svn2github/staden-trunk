@@ -40,6 +40,14 @@ proc ReadPairDialog { io f} {
 	-type CheckInt \
 	-orient horiz
 
+    scalebox $f.min_freq \
+	-title "Minimum Spanning Frequency" \
+	-from 0 -to 100 \
+	-default [keylget gap5_defs READPAIR.MIN_FREQ] \
+	-width 5 \
+	-type CheckInt \
+	-orient horiz
+
     # Produce a listbox of library names
     label $f.spacer -text ""
     labelframe $f.libs -text ""
@@ -83,7 +91,7 @@ proc ReadPairDialog { io f} {
     ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-	    -ok_command "ReadPairs_OK_Pressed $io $f $f.infile $f.mode $f.end_size $f.min_mq $f.libs.tl"\
+	    -ok_command "ReadPairs_OK_Pressed $io $f $f.infile $f.mode $f.end_size $f.min_mq $f.min_freq $f.libs.tl"\
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap5 {Read Pairs}" \
 	    -bd 2 \
@@ -91,12 +99,12 @@ proc ReadPairDialog { io f} {
     ###########################################################################
     #final packing
 
-    pack $f.infile $f.mode $f.end_size $f.min_mq $f.spacer $f.libs \
-	$f.ok_cancel -fill x
+    pack $f.infile $f.mode $f.end_size $f.min_mq $f.min_freq $f.spacer \
+	$f.libs $f.ok_cancel -fill x
 
 }
 
-proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq lib_w} {
+proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq min_freq lib_w} {
     global gap5_defs
     upvar \#0 $lib_w l_rec
 
@@ -108,6 +116,7 @@ proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq lib_w} {
 
     set end_size [$end_size get]
     set min_mq [scalebox_get $min_mq]
+    set min_freq [scalebox_get $min_freq]
     set mode [lindex {end_end end_all all_all} [expr {[radiolist_get $mode]-1}]]
     set libs {}
     foreach idx [$lib_w curselection] {
@@ -131,6 +140,7 @@ proc ReadPairs_OK_Pressed {io f infile mode end_size min_mq lib_w} {
 	-mode         $mode \
 	-end_size     $end_size \
 	-min_map_qual $min_mq \
+	-min_freq     $min_freq \
 	-libraries    $libs
     ClearBusy
 }
