@@ -2531,7 +2531,7 @@ proc editor_select_dialog {ed sel} {
     set pos [lindex [$ed get_cursor absolute] 2]
 
     if {$editor_right_click} {
-	return [editor_select_reads $ed $sel $pos $pos]
+	return [editor_select_reads $ed $sel 0 $pos $pos]
     }
 
     set t $ed.select_dialog
@@ -2551,19 +2551,26 @@ proc editor_select_dialog {ed sel} {
 	-width 10 \
 	-type CheckInt
 
+    yes_no $t.contained \
+	-title "Entirelty contained in range" \
+	-orient horizontal \
+	-bd 0 \
+	-default 0
+
     okcancelhelp $t.ok \
 	-bd 2 -relief groove \
-	-ok_command "editor_select_reads $ed $sel \
-                         \[entrybox_get $t.start\] \
-                         \[entrybox_get $t.end\];  \
+	-ok_command "editor_select_reads $ed $sel    \
+                         \[yes_no_get $t.contained\] \
+                         \[entrybox_get $t.start\]   \
+                         \[entrybox_get $t.end\];    \
                          destroy $t" \
 	-cancel_command "destroy $t" \
 	-help_command "show_help gap5 {Editor-Select-Reads}"
 
-    pack $t.start $t.end $t.ok -side top -fill both
+    pack $t.start $t.end $t.contained $t.ok -side top -fill both
 }
 
-proc editor_select_reads {ed sel start end} {
+proc editor_select_reads {ed sel contained start end} {
     SetBusy
 
     set io [$ed io]
@@ -2585,7 +2592,11 @@ proc editor_select_reads {ed sel start end} {
 	}
 	$r delete
 
-	if {$c_en < $start || $c_st > $end} continue
+	if {$contained} {
+	    if {$c_st < $start || $c_en > $end} continue
+	} else {
+	    if {$c_en < $start || $c_st > $end} continue
+	}
 	lappend rlist "#$x_rec"
     }
     $c delete
