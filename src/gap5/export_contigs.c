@@ -775,10 +775,71 @@ static char *sam_depadded_cigar(char *seq, int left, int right, int olen,
 }
 
 /*
+ * Exports a single consensus tag as a fake sam sequence.
+ */
+static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
+				contig_t *c, int offset,
+				int depad, char *cons,
+				int *npad, int *pad_to) {
+    anno_ele_t *a = (anno_ele_t *)cache_search(io, GT_AnnoEle, fi->r.rec);
+    /* A single SAM line */
+    static dstring_t *ds = NULL;
+    int start, end, i;
+    char type[5];
+
+    if (ds)
+	dstring_empty(ds);
+    else
+	ds = dstring_create(NULL);
+
+    /* Depad coords */
+    start = fi->r.start;
+    end   = fi->r.end;
+
+    if (depad) {
+	int np2;
+
+	/* pos is currently padded */
+	for (i = *pad_to; i < start; i++) {
+	    if (cons[i - (c->start)] == '*')
+		(*npad)++;
+	}
+	*pad_to = i;
+
+	start -= *npad;
+
+	np2 = *npad;
+	for (; i < end; i++) {
+	    if (cons[i - c->start] == '*')
+		np2++;
+	}
+	end -= np2;
+    }
+
+
+    /* sometimes 784? bottom strand ones? */
+    /* Basic SAM record */
+    dstring_appendf(ds, "*\t768\t%s\t%d\t255\t%dM\t*\t0\t0\t*\t*\t",
+		    c->name, start + offset, end - start + 1);
+
+    /* Annotation itself */
+    dstring_append(ds, "RT:Z:?|");
+    dstring_append_hex_encoded(ds, type2str(fi->r.mqual, type), "|");
+    dstring_append_char(ds, '|');
+    if (a->comment && *a->comment)
+	dstring_append_hex_encoded(ds, a->comment, "|");
+    else
+	dstring_append_char(ds, '|');
+
+    dstring_append_char(ds, '\n');
+    fputs(dstring_str(ds), fp);
+}
+
+/*
  * Exports a single sam sequence, marrying up annotations to the appropriate
  * sequences and adding these in auxillary tags.
  *
- * We use Zs:Z:type|pos|len|comment and Zc:Z: for these.
+ * We use the new format PT:Z:<tag_list> for these.
  *
  * Depad indicates whether we wish to output in depadded consensus coordinates.
  * If true, we use cons to identify where the pads are. For efficiency we
@@ -802,6 +863,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     int mqual;
     char *cigar_tmp;
     char rg_buf[1024], *aux_ptr;
+    int first_tag = 1;
 
     fifo_t *last, *ti;
 
@@ -1069,24 +1131,34 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
 	/* Tag is for this seq. */
 	a = cache_search(io, GT_AnnoEle, ti->r.rec);
-	if (ti->r.flags & GRANGE_FLAG_TAG_SEQ)
-	    dstring_append(ds, "\tZs:Z:");
-	else
-	    dstring_append(ds, "\tZc:Z:");
-	dstring_append(ds, type2str(ti->r.mqual, type));
-	if ((s->len >= 0) ^ fi->r.comp) {
-	    dstring_appendf(ds, "|%d|%d|", ti->r.start - (fi->r.start-1),
-			    ti->r.end - ti->r.start+1);
+	if (!(ti->r.flags & GRANGE_FLAG_TAG_SEQ)) {
+	    last = ti;
+	    ti = ti->next;
+	    continue;
+	}
+
+	
+	if (first_tag) {
+	    dstring_append(ds, "\tPT:Z:");
+	    first_tag = 0;
 	} else {
-	    dstring_appendf(ds, "|%d|%d|", ABS(s->len)+1 -
-			    (ti->r.end - (fi->r.start-1)),
-			    ti->r.end - ti->r.start+1);
+	    dstring_append(ds, "|");
 	}
-	if (a->comment && *a->comment) {
-	    char *escaped = escape_C_string(a->comment);
-	    dstring_append(ds, escaped);
-	    free(escaped);
+	    
+	if ((s->len >= 0) ^ fi->r.comp) {
+	    dstring_appendf(ds, "%d|%d|?|", ti->r.start - (fi->r.start-1),
+			    ti->r.end - (fi->r.start-1));
+	} else {
+	    dstring_appendf(ds, "%d|%d|?|",
+			    ABS(s->len)+1 - (ti->r.end - (fi->r.start-1)),
+			    ABS(s->len)+1 - (ti->r.start - (fi->r.start-1)));
 	}
+	dstring_append_hex_encoded(ds, type2str(ti->r.mqual, type), "|");
+	dstring_append_char(ds, '|');
+	if (a->comment && *a->comment)
+	    dstring_append_hex_encoded(ds, a->comment, "|");
+	else
+	    dstring_append_char(ds, '|');
 
 	/* Remove ti from the list (NB fifo is wrong abstract type) */
 	if (last) {
@@ -1181,15 +1253,23 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	    fifo_queue_push(tq, r);
+	    if (r->flags & GRANGE_FLAG_TAG_SEQ)
+		fifo_queue_push(tq, r);
+	    else
+		fifo_queue_push(fq, r); /* consensus tag */
 	}
 
 	/* And pop off when they're history */
 	while (fi = fifo_queue_head(fq)) {
 	    if (fi->r.end < last_start) {
 		fifo_queue_pop(fq);
-		sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
-			       depad, cons, &npads, &pad_to);
+		if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+		    sam_export_cons_tag(io, fp, fi, c, offset,
+					depad, cons, &npads, &pad_to);
+		} else {
+		    sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
+				   depad, cons, &npads, &pad_to);
+		}
 		free(fi);
 	    } else {
 		break;
@@ -1200,8 +1280,13 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     /* Flush the rest of queues */
     while (fi = fifo_queue_head(fq)) {
 	fifo_queue_pop(fq);
-	sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
-		       depad, cons, &npads, &pad_to);
+	if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	    sam_export_cons_tag(io, fp, fi, c, offset,
+				depad, cons, &npads, &pad_to);
+	} else {
+	    sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
+			   depad, cons, &npads, &pad_to);
+	}
 	free(fi);
     }
 

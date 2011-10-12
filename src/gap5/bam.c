@@ -822,15 +822,15 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
 		} c4i;
 
 		switch (*cpf++) {
-		case 'M': op=0; break;
-		case 'I': op=1; break;
-		case 'D': op=2; break;
-		case 'N': op=3; break;
-		case 'S': op=4; break;
-		case 'H': op=5; break;
-		case 'P': op=6; break;
-		case '=': op=6; break;
-		case 'X': op=7; break;
+		case 'M': op=BAM_CMATCH;         break;
+		case 'I': op=BAM_CINS;           break;
+		case 'D': op=BAM_CDEL;           break;
+		case 'N': op=BAM_CREF_SKIP;      break;
+		case 'S': op=BAM_CSOFT_CLIP;     break;
+		case 'H': op=BAM_CHARD_CLIP;     break;
+		case 'P': op=BAM_CPAD;           break;
+		case '=': op=BAM_CBASE_MATCH;    break;
+		case 'X': op=BAM_CBASE_MISMATCH; break;
 		default:
 		    fprintf(stderr, "Unknown cigar opcode '%c'\n", cpf[-1]);
 		    return -1;

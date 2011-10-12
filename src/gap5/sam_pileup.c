@@ -80,7 +80,9 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	    p->cigar_ind++;
 	}
 	
-	if (op == BAM_CMATCH && p->cigar_len <= pos - p->pos) {
+	if ((op == BAM_CMATCH ||
+	     op == BAM_CBASE_MATCH ||
+	     op == BAM_CBASE_MISMATCH) && p->cigar_len <= pos - p->pos) {
 	    p->seq_offset += p->cigar_len;
 	    p->pos += p->cigar_len;
 	    p->cigar_len = 0;

@@ -95,6 +95,9 @@ int dstring_nappend(dstring_t *ds, const char *str, size_t len);
 int dstring_appendf(dstring_t *ds, const char *fmt, ...) __PRINTF_FORMAT__(2,3);
 int dstring_append_char(dstring_t *ds, char c);
 int dstring_append_int(dstring_t *ds, int i);
+int dstring_append_hex_encoded(dstring_t *ds, const char *str,
+			       const char *meta);
+
 void dstring_empty(dstring_t *ds);
 
 

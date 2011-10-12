@@ -245,6 +245,58 @@ int dstring_append(dstring_t *ds, const char *str) {
 }
 
 /*
+ * Adds a C string to the end, but URL encoding it with percent rules
+ * If specified 'meta' is a list of meta-characters need escaping, otherwise
+ * we use standard html ones ("<>&");
+ */
+int dstring_append_hex_encoded(dstring_t *ds, const char *str,
+			       const char *meta) {
+    unsigned char escape[256];
+    const unsigned char *ustr = str;
+    int i, j;
+    char hex[3];
+
+    for (i = 0; i < 256; i++) {
+	if (isprint(i))
+	    escape[i] = 0;
+	else
+	    escape[i] = 1;
+    }
+    escape['%'] = 1;
+    if (meta) {
+	for (i = 0; meta[i]; i++)
+	    escape[meta[i]] = 1;
+    } else {
+	for (i = 0; "<>&"[i]; i++)
+	    escape["<>&"[i]] = 1;
+    }
+
+    j = 0;
+    hex[0] = '%';
+    do {
+	i = j;
+	while (ustr[i] && !escape[ustr[i]])
+	    i++;
+
+	if (i-j) {
+	    if (0 != dstring_ninsert(ds, ds->length, &str[j], i-j))
+		return -1;
+	}
+
+	while (ustr[i] && escape[ustr[i]]) {
+	    hex[1] = "0123456789ABCDEF"[ustr[i] >> 4];
+	    hex[2] = "0123456789ABCDEF"[ustr[i] &  7];
+	    if (0 != dstring_ninsert(ds, ds->length, hex, 3))
+		return -1;
+	    i++;
+	}
+	j = i;
+    } while (ustr[i]);
+
+    return 0;
+}
+
+/*
  * Adds a single character to the end of the string.
  *
  * Returns 0 for success

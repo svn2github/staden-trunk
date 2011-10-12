@@ -1271,6 +1271,107 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
     return 0;
 }
 
+static int hex[256] = {
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,-1,-1,-1,-1,-1,-1,
+    -1,10,11,12,13,14,15,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,10,11,12,13,14,15,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+
+/*
+ * Parses a tag string and splits it into separate components returned in
+ * start, end, dir, type and text. The tag is of the form:
+ * start|end|strand|type|text
+ */
+static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
+			      char **type, int *type_len,
+			      char **text, int *text_len) {
+    char *cp, *orig = str;
+    int n;
+
+    if (!*str)
+	return NULL;
+
+    if (3 != sscanf(str, "%d|%d|%c|%n", start, end, dir, &n))
+	goto error;
+    str += n;
+
+    *type = cp = str;
+    while (*str && *str != '|') {
+	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
+	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
+	    str += 3;
+	} else {
+	    *cp++ = *str++;
+	}
+    }
+    if (!*str)
+	goto error;
+    *type_len = cp-*type;
+
+    *text = ++str;
+    while (*str && *str != '|')
+	str++;
+    *text_len = str-*text;
+
+    return *str == '|' ? ++str : str;
+
+ error:
+    verror(ERR_WARN, "parse_bam_PT_tag", "invalid sam/bam annotation: %s",
+	   orig);
+    return NULL;
+}
+
+/*
+ * Parses a tag string and splits it into separate components returned in
+ * start, end, dir, type and text. The tag is of the form:
+ * strand|type|text
+ */
+static char *parse_bam_RT_tag(char *str, char *dir,
+			      char **type, int *type_len,
+			      char **text, int *text_len) {
+    char *cp, *orig = str;
+    int n;
+
+    if (!*str)
+	return NULL;
+
+    *dir = *str++;
+    if (! (*str && *str == '|'))
+	goto error;
+    str++;
+
+    *type = str;
+    while (*str && *str != '|')
+	str++;
+    if (!*str)
+	goto error;
+    *type_len = str-*type;
+
+    *text = ++str;
+    while (*str && *str != '|')
+	str++;
+    *text_len = str-*text;
+
+    return *str == '|' ? ++str : str;
+
+ error:
+    verror(ERR_WARN, "parse_bam_RT_tag", "invalid sam/bam annotation: %s",
+	   orig);
+    return NULL;
+}
+
 /*
  * Removes a sequence from the bam_io_t struct.
  * This actually performs the main work of adding a sequence to the gap5
@@ -1301,10 +1402,15 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     char *handle, aux_key[2];
     int stech;
     bam_aux_t val;
-
-    bio->count++;
+    char *tags;
+    int fake;
 
     b = p->b;
+    fake = ((bam_flag(b) & BAM_FSECONDARY) &&
+	    (bam_flag(b) & BAM_FQCFAIL));
+
+    if (fake)
+	goto anno_only; /* Yes I know! The code needs splitting up */
 
     /* Fetch read-group and pretend it's a library for now */
     if ((LB = bam_aux_find(b, "RG"))) {
@@ -1499,7 +1605,127 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     }
 #endif
 
-    /* Add tags */
+ anno_only:
+
+    /* Add new style tags */
+    if ((tags = bam_aux_find(b, "PT"))) {
+	int start, end, type_len, text_len;
+	char dir, *type, *text, tmp;
+	char tag_type[5], *tag_text;
+	tg_rec orec;
+	int otype;
+	range_t r;
+	anno_ele_t *e;
+	bin_index_t *bin;
+
+	while (tags = parse_bam_PT_tag(tags, &start, &end, &dir,
+				       &type, &type_len, &text, &text_len)) {
+	    //printf("Tag %d..%d dir %c type=%.*s text=%.*s\n",
+	    //	   start, end, dir, type_len, type, text_len, text);
+
+	    strncpy(tag_type, type, 4);
+	    tag_type[4] = 0;
+
+	    /* Create the tag */
+	    if (fake) {
+		orec  = r.pair_rec = bio->c->rec;
+		otype = GT_Contig;
+		r.flags = GRANGE_FLAG_ISANNO;
+
+		r.start = start;
+		r.end   = end;
+	    } else {
+		orec  = r.pair_rec = recno;
+		otype = GT_Seq;
+		r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+
+		if (start < 1 || end > ABS(s.len)) {
+		    verror(ERR_WARN, "sam_import", "Anno. range (%d..%d) is "
+			   "outside of sequence range (%d..%d)",
+			   start, end, 1, ABS(s.len));
+		    if (start < 1)
+			start = 1;
+		    if (end > ABS(s.len))
+			end = ABS(s.len);
+		}
+		r.start = s.pos + start-1;
+		r.end   = s.pos + end-1;
+	    }
+
+	    r.mqual = str2type(tag_type);
+
+	    tmp = text[text_len];
+	    text[text_len] = 0;
+	    r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual, text);
+	    text[text_len] = tmp;
+
+	    /* Link it to a bin */
+	    e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
+	    e = cache_rw(bio->io, e);
+
+	    if (fake) {
+		bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
+	    } else {
+		bin = bin_add_to_range(bio->io, &bio->c, bin_rec, &r,
+				       NULL, NULL, 0);
+	    }
+	    e->bin = bin->rec;
+	}
+    }
+
+    if ((tags = bam_aux_find(p->b, "RT"))) {
+	int start, end, type_len, text_len;
+	char dir, *type, *text, tmp;
+	char tag_type[5], *tag_text;
+	tg_rec orec;
+	int otype;
+	range_t r;
+	anno_ele_t *e;
+	bin_index_t *bin;
+
+	start = bs->pos;
+	end   = bs->pos + bs->seq_len-1;
+
+	while (tags = parse_bam_RT_tag(tags, &dir,
+				       &type, &type_len, &text, &text_len)) {
+	    strncpy(tag_type, type, 4);
+	    tag_type[4] = 0;
+
+	    /* Create the tag */
+	    if (fake) {
+		orec  = r.pair_rec = bio->c->rec;
+		otype = GT_Contig;
+		r.flags = GRANGE_FLAG_ISANNO;
+	    } else {
+		orec  = r.pair_rec = recno;
+		otype = GT_Seq;
+		r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+	    }
+
+	    r.mqual = str2type(tag_type);
+	    r.start = start;
+	    r.end   = end;
+
+	    tmp = text[text_len];
+	    text[text_len] = 0;
+	    r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual, text);
+	    text[text_len] = tmp;
+
+	    /* Link it to a bin */
+	    e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
+	    e = cache_rw(bio->io, e);
+
+	    if (fake) {
+		bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL, 0);
+	    } else {
+		bin = bin_add_to_range(bio->io, &bio->c, bin_rec, &r,
+				       NULL, NULL, 0);
+	    }
+	    e->bin = bin->rec;
+	}
+    }
+
+    /* Add old style tags */
     handle = NULL;
     while (0 == bam_aux_iter(b, &handle, aux_key, &type, &val)) {
 	range_t r;
@@ -1557,8 +1783,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 		}
 	    }
 	}
-	r.rec      = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
-				  tag_text);
+	r.rec = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual, tag_text);
 
 	/* Link it to a bin */
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
@@ -1581,6 +1806,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 
     return 0;
 }
+
 
 /*
  * Called once per sequence as they're discovered
@@ -1737,6 +1963,8 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
 	/* Remove sequence */
 	if (p->eof & 1) {
 	    //printf("End seq %s\n", bam_name(p->b));
+
+	    /* Either fake seq (consensus annotation) or real */
 	    bio_del_seq(bio, p);
 	}
     }
