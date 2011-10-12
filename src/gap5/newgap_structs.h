@@ -330,10 +330,8 @@ typedef struct {
 typedef struct {
     GapIO *io;
     char *inlist;
-    int cutoff;
-    int min_len;
     int win_size;
-    int max_dash;
+    int ignore_N;
     float max_mismatch;
 } check_ass_arg;
 

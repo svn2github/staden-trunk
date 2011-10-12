@@ -128,6 +128,7 @@ GAP5=\
 	cs-object.o\
 	find_repeats.o\
 	readpair.o\
+	check_assembly.o\
 	consensus.o\
 	read_depth.o\
 	gap_range.o \

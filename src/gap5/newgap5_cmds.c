@@ -30,6 +30,7 @@
 #include "list_proc.h"
 #include "find_repeats.h"
 #include "readpair.h"
+#include "check_assembly.h"
 #include "tkEditor.h"
 #include "tkEdNames.h"
 #include "read_depth.h"
@@ -1918,6 +1919,46 @@ int tcl_break_contig_holes(ClientData clientData, Tcl_Interp *interp,
     return ret;
 }
 
+int
+tcl_check_assembly(ClientData clientData, Tcl_Interp *interp,
+		   int objc, Tcl_Obj *CONST objv[]) {
+    int rargc;
+    contig_list_t *rargv;
+    char *name1;
+    char *name2;
+    char *name3;
+    check_ass_arg args;
+
+    cli_args a[] = {
+	{"-io",	        ARG_IO,	 1, NULL, offsetof(check_ass_arg, io)},
+	{"-contigs",    ARG_STR, 1, NULL, offsetof(check_ass_arg, inlist)},
+	{"-win_size",   ARG_INT, 1, "29", offsetof(check_ass_arg, win_size)},
+	{"-ignore_N",   ARG_INT, 1, "0",  offsetof(check_ass_arg, ignore_N)},
+	{"-max_pmismatch", ARG_FLOAT, 1, "15.0",
+	     offsetof(check_ass_arg, max_mismatch)},
+	{NULL,	  0,	   0, NULL, 0}
+    };
+
+    vfuncheader("check assembly");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    if (rargc == 0) {
+	xfree(rargv);
+	return TCL_OK;
+    }
+
+    check_assembly(args.io, rargc, rargv, 
+		   args.win_size, args.max_mismatch / 100.0, args.ignore_N);
+
+    xfree(rargv);
+
+    return TCL_OK;
+}
+
+
 #ifdef VALGRIND
 tcl_leak_check(ClientData clientData,
 	       Tcl_Interp *interp,
@@ -2218,6 +2259,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "break_contig_holes", tcl_break_contig_holes,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "check_assembly", tcl_check_assembly,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "iter_test",

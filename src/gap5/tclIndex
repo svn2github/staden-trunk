@@ -283,3 +283,5 @@ set auto_index(generate_fastq) [list source [file join $dir map_reads.tcl]]
 set auto_index(ImportGFF) [list source [file join $dir import_gff.tcl]]
 
 set auto_index(CheckDatabase) [list source [file join $dir check_database.tcl]]
+
+set auto_index(CheckAssembly) [list source [file join $dir check_assembly.tcl]]
