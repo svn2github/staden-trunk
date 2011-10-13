@@ -828,8 +828,6 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
     dstring_append_char(ds, '|');
     if (a->comment && *a->comment)
 	dstring_append_hex_encoded(ds, a->comment, "|");
-    else
-	dstring_append_char(ds, '|');
 
     dstring_append_char(ds, '\n');
     fputs(dstring_str(ds), fp);
@@ -1157,8 +1155,6 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	dstring_append_char(ds, '|');
 	if (a->comment && *a->comment)
 	    dstring_append_hex_encoded(ds, a->comment, "|");
-	else
-	    dstring_append_char(ds, '|');
 
 	/* Remove ti from the list (NB fifo is wrong abstract type) */
 	if (last) {
@@ -1253,10 +1249,21 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	    if (r->flags & GRANGE_FLAG_TAG_SEQ)
+	    if (r->flags & GRANGE_FLAG_TAG_SEQ) {
 		fifo_queue_push(tq, r);
-	    else
-		fifo_queue_push(fq, r); /* consensus tag */
+	    } else {
+		fifo_t *fi, *fl;
+
+		fi = fifo_queue_push(fq, r); /* consensus tag */
+		fi->clipped_pos = r->start;
+
+		/* Sort by clipped left-end */
+		while ((fl = fi->prev) && fi->clipped_pos < fl->clipped_pos) {
+		    fifo_queue_swap(fq, fi, fl);
+		}
+
+		last_start = r->start;
+	    }
 	}
 
 	/* And pop off when they're history */
