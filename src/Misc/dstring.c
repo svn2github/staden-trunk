@@ -284,8 +284,8 @@ int dstring_append_hex_encoded(dstring_t *ds, const char *str,
 	}
 
 	while (ustr[i] && escape[ustr[i]]) {
-	    hex[1] = "0123456789ABCDEF"[ustr[i] >> 4];
-	    hex[2] = "0123456789ABCDEF"[ustr[i] &  7];
+	    hex[1] = "0123456789ABCDEF"[ustr[i] >>  4];
+	    hex[2] = "0123456789ABCDEF"[ustr[i] & 0xf];
 	    if (0 != dstring_ninsert(ds, ds->length, hex, 3))
 		return -1;
 	    i++;

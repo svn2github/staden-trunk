@@ -1316,14 +1316,20 @@ static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
 	    *cp++ = *str++;
 	}
     }
-    if (!*str)
+    if (!*str++)
 	goto error;
     *type_len = cp-*type;
 
-    *text = ++str;
-    while (*str && *str != '|')
-	str++;
-    *text_len = str-*text;
+    *text = cp = str;
+    while (*str && *str != '|') {
+	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
+	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
+	    str += 3;
+	} else {
+	    *cp++ = *str++;
+	}
+    }
+    *text_len = cp-*text;
 
     return *str == '|' ? ++str : str;
 
@@ -1352,17 +1358,29 @@ static char *parse_bam_RT_tag(char *str, char *dir,
 	goto error;
     str++;
 
-    *type = str;
-    while (*str && *str != '|')
-	str++;
-    if (!*str)
+    *type = cp = str;
+    while (*str && *str != '|') {
+	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
+	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
+	    str += 3;
+	} else {
+	    *cp++ = *str++;
+	}
+    }
+    if (!*str++)
 	goto error;
-    *type_len = str-*type;
+    *type_len = cp-*type;
 
-    *text = ++str;
-    while (*str && *str != '|')
-	str++;
-    *text_len = str-*text;
+    *text = cp = str;
+    while (*str && *str != '|') {
+	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
+	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
+	    str += 3;
+	} else {
+	    *cp++ = *str++;
+	}
+    }
+    *text_len = cp-*text;
 
     return *str == '|' ? ++str : str;
 
