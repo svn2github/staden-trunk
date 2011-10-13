@@ -213,25 +213,35 @@ tg_rec read_name_to_number(GapIO *io, char *gel_name) {
 
 /*
  * Converts a contig name to a contig number.
- * WARNING: slow for now.
+ * Name can be =contig_rec, #contig_rec, #reading_rec, contig_name
+ * or (slower) reading_name.
  *
  * Returns:
  *     contig record number for success
  *     0 for failure
  */
 tg_rec contig_name_to_number(GapIO *io, char *name) {
-    tg_rec n;
-    
-    if (*name == '=') {
+    tg_rec n = 0;
+
+    /* Check numeric values first */
+    if (*name == '=' || *name == '#') {
 	n = atorec(name+1);
-    } else {
-	n = contig_index_query(io, name);
+
+	if (cache_exists(io, GT_Contig, n)) {
+	    return n;
+	} else if (cache_exists(io, GT_Seq, n)) {
+	    if ((n = rnumtocnum(io, n)) > 0)
+		return n;
+	}
     }
-    if (n <= 0) {
-	n = read_name_to_number(io, name);
-	if (n > 0)
-	    n = rnumtocnum(io, n);
-    }
+
+    /* Also check contig names and sequence names */
+    if ((n = contig_index_query(io, name)) > 0)
+	return n;
+
+    if ((n = read_name_to_number(io, name)) > 0)
+	n = rnumtocnum(io, n);
+
     return n > 0 ? n : 0;
 }
 
