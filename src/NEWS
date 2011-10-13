@@ -1,3 +1,37 @@
+13th Oct 2011
+=============
+
+Gap5 Updates
+============
+
+*	The contig editor now has functions to select and deselect all
+        sequences at a particular consensus column (or overlapping or
+	within a given range).
+
+*	Find Read Pairs now has an option to filter the results to
+        only display contig pairings spanned by more than a certain
+        number of read-pairs.
+
+*	Added Check Assembly function. This compares the used/visible
+        portion of a sequence against the consensus to identify
+        sequences that align badly. (It doesn't yet have the gap4
+        functionality of aligning the cutoff data too.)
+
+*	Added experimental code for importing and exporting tags in
+        the latest SAM format. This is still ongoing work, and an
+        ongoing discussion on the samtools-devel mailing list.
+
+Gap5 Fixes
+==========
+
+*	Using #<seq_number> in the contig_name_to_number() function no
+        longer crashes gap5. Instead it figures out what you meant and
+        converts the sequence number to a contig number.
+
+*	Removed a source of Check Database crashes, although as yet I
+        don't understand the underlying cause.
+
+
 7th Oct 2011
 ============
 
