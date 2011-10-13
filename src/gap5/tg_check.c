@@ -1053,6 +1053,13 @@ int check_cache(GapIO *io) {
 	    int mis = 0;
 
 	    v = cache_search(ior, ci->type, ci->rec);
+	    if (!v) {
+		vmessage("Failed to find rec %"PRIrec" of type %d in disk "
+			 "copy, but it is present in memory cache.\n",
+			 ci->rec, ci->type);
+		err++;
+		continue;
+	    }
 	    ci2 = ci_ptr(v);
 
 	    switch(ci->type) {
