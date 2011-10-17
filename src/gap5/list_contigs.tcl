@@ -286,10 +286,11 @@ proc ListContigsCopy {t} {
     foreach line [$t curselection] {
 	set text [$t get $line]
 	append data \
-	    [format "%s\t%s\t%s\n" \
+	    [format "%s\t%s\t%s\t%s\n" \
 		 [lindex $text 0] \
 		 [lindex $text 1] \
-		 [lindex $text 2]]
+		 [lindex $text 2] \
+		 [lindex $text 3]]
     }
     global .Selection
     set .Selection $data
