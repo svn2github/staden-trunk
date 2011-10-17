@@ -598,9 +598,15 @@ static int fix_holes(GapIO *io, r_pos_t *pos, int npos,
 	if (pos[i].contig != contig ||
 	    pos[i].end < start) {
 	    remove_contig_holes(io, contig, start, end, !remove_holes);
-	    contig = pos[i].contig;
 	    start  = pos[i].start;
 	    end    = pos[i].end;
+
+	    if (pos[i].contig != contig) {
+		contig = pos[i].contig;
+		c = cache_search(io, GT_Contig, contig);
+		cend = MAX(c->end, end);
+		contig_visible_end(io, contig, cend);
+	    }
 	} else {
 	    if (start > pos[i].start)
 		start = pos[i].start;
