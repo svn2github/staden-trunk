@@ -36,6 +36,7 @@ btree_node_t *btree_new_node(void) {
 
 void btree_del_node(btree_node_t *n) {
     int i;
+
     for (i = 0; i < n->used; i++) {
 	if (n->keys[i])
 	    free(n->keys[i]);
@@ -110,6 +111,8 @@ static int btree_find_key(btree_node_t *n, char *str) {
 /* Set parent index 'ind' to have key 'str' */
 static int btree_set_parent_key(btree_t *t, btree_node_t *p,
 				int ind, char *str, int recurse) {
+    btree_inc_ref(t->cd, p);
+
     if (recurse && p->parent && p->keys[ind]) {
 	btree_node_t *par = btree_node_get(t->cd, p->parent);
 	int ind2 = btree_find_key(par, p->keys[ind]);
@@ -123,6 +126,8 @@ static int btree_set_parent_key(btree_t *t, btree_node_t *p,
     p->keys[ind] = strdup(str);
 
     btree_node_put(t->cd, p);
+    btree_dec_ref(t->cd, p);
+
     return 0;
 }
 
@@ -433,8 +438,9 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
     btree_node_t *left, *right;
 
     do {
-	btree_node_t *par = n->parent ? btree_node_get(t->cd, n->parent)
-	                              : NULL;
+	btree_node_t *par;
+
+	btree_inc_ref(t->cd, n);
 
 	/* Remove index 'ind' */
 	if (n->keys[ind])
@@ -456,11 +462,14 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
 	    btree_inc_ref(t->cd, t->root);
 	    t->root->parent = 0;
 	    btree_node_put(t->cd, t->root);
+	    btree_dec_ref(t->cd, n);
 	    return 0;
 	}
 
 	/* Replace 'ind' with our parent's index to us */
+	par = n->parent ? btree_node_get(t->cd, n->parent) : NULL;
 	if (par) {
+	    btree_inc_ref(t->cd, par);
 	    ind = btree_find_key(par, str);
 
 	    if (par->keys[ind] && 0 == strcmp(par->keys[ind], str))
@@ -469,6 +478,7 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
 	 
 	if (n->used >= BTREE_MIN || !par) {
 	    btree_node_put(t->cd, n);
+	    btree_dec_ref(t->cd, n);
 	    return 0;
 	}
 
@@ -483,33 +493,47 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
 	left  = (ind-1 >= 0)
 	    ? btree_node_get(t->cd, par->chld[ind-1])
 	    : NULL;
+	if (left) btree_inc_ref(t->cd, left);
 
 	right = (ind+1 <= par->used-1)
 	    ? btree_node_get(t->cd, par->chld[ind+1])
 	    : NULL;
+	if (right) btree_inc_ref(t->cd, right);
+
 
 	/* Can we redistribute? */
 	if (left && left->used  > BTREE_MIN) {
 	    redist(t, n, left, ind, ind-1, 1);
+	    btree_dec_ref(t->cd, n);
+	    btree_dec_ref(t->cd, left);
+	    if (right) btree_dec_ref(t->cd, right);
 	    break;
 
 	} else if (right && right->used > BTREE_MIN) {
 	    redist(t, n, right, ind, ind+1, 0);
+	    btree_dec_ref(t->cd, n);
+	    if (left) btree_dec_ref(t->cd, left);
+	    btree_dec_ref(t->cd, right);
 	    break;
 
 	} else {
 	    /* Merge with one of our neighbours */
 	    if (left) {
 		/* left = left; */
+		if (right) btree_dec_ref(t->cd, right);
 		right = n;
+		btree_inc_ref(t->cd, right);
 		ind--;
 	    } else {
+		if (left) btree_dec_ref(t->cd, left);
 		left = n;
+		btree_inc_ref(t->cd, left);
 		/* right = right; */
 	    }
 
 	    if (left == right) {
 		/* we're already a one-node item, recurse up again */
+		btree_dec_ref(t->cd, n);
 		n = btree_node_get(t->cd, left->parent);
 	    } else {
 		/* Merge right into left */
@@ -528,13 +552,21 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
 		btree_node_put(t->cd, left);
 		
 		/* Recurse */
+		btree_dec_ref(t->cd, n);
 		n = btree_node_get(t->cd, left->parent);
+		btree_inc_ref(t->cd, n);
 		btree_set_parent_key(t, n, ind, left->keys[left->used-1], 1);
 		ind++; /* right node */
 		str = left->keys[left->used-1];
 
+		btree_dec_ref(t->cd, right);
 		btree_node_del(t->cd, right);
+		right = NULL;
+		btree_dec_ref(t->cd, n);
 	    }
+
+	    if (left)  btree_dec_ref(t->cd, left);
+	    if (right) btree_dec_ref(t->cd, right);
 	}
 
     } while (n);

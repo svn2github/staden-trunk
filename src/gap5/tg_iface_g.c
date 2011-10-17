@@ -1204,7 +1204,6 @@ void btree_node_del(void *cd, btree_node_t *n) {
 
     /* FIXME: deallocate disk storage space too */
     ci->forgetme = 1;
-    btree_del_node(n);
 }
 
 void btree_flush(g_io *io, HacheTable *h) {
