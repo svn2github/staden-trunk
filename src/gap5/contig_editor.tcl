@@ -490,6 +490,20 @@ proc contig_register_callback {ed type id args} {
 		$ed set_cursor $type $rec $pos 0
 	    }
 
+	    # Correct the window title
+	    upvar \#0 $w opt
+	    parray $w
+
+	    set c [$opt(io) get_contig $opt(-contig)]
+	    if {[info exists opt(-contig2)]} {
+		set c2 [$opt(io2) get_contig $opt(-contig2)]
+		wm title $w "Join: [$c get_name] / [$c2 get_name]"
+		$c2 delete
+	    } else {
+		wm title $w "Edit: [$c get_name]"
+	    }
+	    $c delete
+
 	    # Finally adjust the display.
 	    set pos [$ed xview]
 	    incr pos $arg(offset)
