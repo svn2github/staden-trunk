@@ -2193,17 +2193,29 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
     set ${w}(Status) $msg
 }
 
-proc editor_name_select {w where} {
+proc editor_name_select {w where {num 0}} {
     global $w
 
     if {$where == ""} return
 
-    foreach {type rec pos} $where break;
-    if {$type != 18} return
-
     # Add name to XA_PRIMARY selection
-    set seq [[$w io] get_sequence $rec]
-    set name [$seq get_name]
+    foreach {type rec pos} $where break;
+    if {$num} {
+	set name "#$rec"
+    } else {
+	switch $type {
+	    18 {
+		set seq [[$w io] get_sequence $rec]
+		set name [$seq get_name]
+		$seq delete
+	    }
+	    17 {
+		set c [[$w io] get_contig $rec]
+		set name [$c get_name]
+		$c delete
+	    }
+	}
+    }
 
     # FIXME: underline name too, via $ed call?
 #    [set ${w}(ed)] ...
@@ -3126,14 +3138,30 @@ bind EdNames <<menu>> {
     if {![info exists type]} {
 	return
     }
-    if {$type != 18} {
-	return
-    }
     
-    create_popup %W.m "Commands for sequence \#$rec"
+    switch $type {
+	17 {
+	    create_popup %W.m "Commands for contig \#$rec"
+	}
+	18 {
+	    create_popup %W.m "Commands for sequence \#$rec"
+	}
+	default {
+	    return
+	}
+    }
+
     %W.m add command \
 	-label "Copy name to clipboard" \
 	-command "editor_name_select $ed {$type $rec $pos}"
+    %W.m add command \
+	-label "Copy #number to clipboard" \
+	-command "editor_name_select $ed {$type $rec $pos} 1"
+    
+    if {$type != 18} {
+	tk_popup %W.m [expr %X-20] [expr %Y-10]
+	return
+    }
 
     # Create the goto... menu
     #%W.m add cascade -label "Goto..." -menu %W.m.goto
@@ -3389,7 +3417,7 @@ bind Editor <Shift-Control-Key-Prior>   {%W xview scroll -100000 units}
 bind Editor <<select-drag>> {%W select to @%x; editor_select_scroll %W %x}
 bind Editor <<select-to>>   {%W select to @%x}
 bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
-bind EdNames <2> {editor_name_select %W [%W get_number @%x @%y]}
+bind EdNames <2> {editor_name_select %W [%W get_number @%x @%y] 1}
 
 bind EdNames <<select>> {
     global EdNames_select
@@ -3399,7 +3427,7 @@ bind EdNames <<select>> {
     if {$where == ""} return
 
     foreach {type rec pos} $where break
-    if {$type != 18} return
+#    if {$type != 18} return
 
     set EdNames_select [UpdateReadingListItem [list "\#$rec"] -1]
     editor_name_select %W [%W get_number @%x @%y]
