@@ -402,6 +402,7 @@ char *edGetBriefTag(edview *xx, tg_rec anno_ele, char *format) {
  * %G   G confidence log-odds (raw for probability value)
  * %T   T confidence log-odds (raw for probability value)
  * %V   Vendor/platform
+ * %B   Bin record number
  *
  * Additionally specifying %<number><format> forces AT MOST that many
  * characters to be displayed.
@@ -478,6 +479,10 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
 		add_number64(status_buf, &j, l1, l2, s->rec);
 	    else
 		add_string(status_buf, &j, l1, l2, s->name);
+	    break;
+
+	case 'B':
+	    add_number64(status_buf, &j, l1, l2, s->bin);
 	    break;
 
 	case 'p': {
