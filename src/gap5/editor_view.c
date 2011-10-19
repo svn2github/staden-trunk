@@ -93,8 +93,6 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
     xx->interp = interp;
     xx->io = io; /* model */
     xx->cnum = contig;
-    xx->contig = (contig_t *)cache_search(io, GT_Contig, xx->cnum);
-    cache_incr(xx->io, xx->contig);
 
     xx->ed = ed;
     xx->displayYPos = 0;
@@ -181,8 +179,6 @@ void edview_destroy(edview *xx) {
 	HacheTableDestroy(xx->trace_hash, 0);
 	HacheTableIterDestroy(iter);
     }
-
-    cache_decr(xx->io, xx->contig);
 
     HacheTableRemove(edview_hash, (char *)&xx->cnum, sizeof(tg_rec), 0);
 
@@ -491,7 +487,7 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
 	    if (0 == sequence_get_position(xx->io, s->rec, &cnum, &cpos, NULL,
 					   NULL)) {
 		
-		if (raw || cnum == xx->contig->rec) {
+		if (raw || cnum == xx->cnum) {
 		    add_number(status_buf, &j, l1, l2, cpos);
 		} else {
 		    char buf[1024];
@@ -742,11 +738,13 @@ char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format) {
 	    break;
 
 	case 'n':
-	    if (raw)
+	    if (raw) {
 		add_number64(status_buf, &j, l1, l2, crec);
-	    else
+	    } else {
+		contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
 		add_string(status_buf, &j, l1, l2,
-			   contig_get_name(&xx->contig));
+			   contig_get_name(&c));
+	    }
 	    break;
 
 	case 'p': {
@@ -761,17 +759,23 @@ char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format) {
 	    break;
 	}
 
-	case 'l':
-	    add_number(status_buf, &j, l1, l2, contig_get_length(&xx->contig));
+	case 'l': {
+	    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+	    add_number(status_buf, &j, l1, l2, contig_get_length(&c));
 	    break;
+	}
 
-	case 's':
-	    add_number(status_buf, &j, l1, l2, contig_get_start(&xx->contig));
+	case 's': {
+	    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+	    add_number(status_buf, &j, l1, l2, contig_get_start(&c));
 	    break;
+	}
 
-	case 'e':
-	    add_number(status_buf, &j, l1, l2, contig_get_end(&xx->contig));
+	case 'e': {
+	    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+	    add_number(status_buf, &j, l1, l2, contig_get_end(&c));
 	    break;
+	}
 
 	case 'b':
 	    if (pos >= xx->displayPos &&
@@ -940,6 +944,7 @@ char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format) {
  *        -1 for failure
  */
 int edview_visible_items(edview *xx, int start, int end) {
+    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
     int i;
     int mode = xx->ed->stack_mode
 	? CSIR_ALLOCATE_Y_MULTIPLE
@@ -957,7 +962,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 	free(xx->r);
     xx->r_start = start;
     xx->r_end = end;
-    xx->r = contig_items_in_range_with_pos(xx->io, &xx->contig, start, end,
+    xx->r = contig_items_in_range_with_pos(xx->io, &c, start, end,
 				  CSIR_SORT_BY_Y | mode, CSIR_DEFAULT,
 				  xx->cursor_apos, &xx->nr);
     if (!xx->r)
@@ -1088,9 +1093,10 @@ static int edview_binary_search_y(rangec_t *r, int nr, int y) {
 
 static int ed_set_xslider_pos(edview *xx, int offset) {
     char buf[100];
-    double len = contig_get_length(&xx->contig);
+    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+    double len = contig_get_length(&c);
 
-    offset -= contig_get_start(&xx->contig);
+    offset -= contig_get_start(&c);
 
     sprintf(buf, " %.20f %.20f",
 	    offset / len,
@@ -2217,7 +2223,7 @@ int edSetCursorPos(edview *xx, int type, tg_rec rec, int pos, int visible) {
 		sequence_get_position(xx->io, rec, NULL, &cpos, NULL, NULL);
 		type = GT_Contig;
 		pos += cpos;
-		rec = xx->contig->rec;
+		rec = xx->cnum;
 		*/
 		if (pos < 0 || pos > ABS(s->len))
 		    return 0;
@@ -2232,8 +2238,9 @@ int edSetCursorPos(edview *xx, int type, tg_rec rec, int pos, int visible) {
 	int ustart, uend;
 
 	if (xx->ed->display_cutoffs) {
-	    ustart = xx->contig->start;
-	    uend   = xx->contig->end;
+	    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+	    ustart = c->start;
+	    uend   = c->end;
 	} else {
 	    char con;
 	    calculate_consensus_simple(xx->io, xx->cnum, pos, pos, &con, NULL);
@@ -2242,7 +2249,7 @@ int edSetCursorPos(edview *xx, int type, tg_rec rec, int pos, int visible) {
 		ustart = pos;
 		uend = pos;
 	    } else {
-		consensus_valid_range(xx->io, xx->contig->rec, &ustart, &uend);
+		consensus_valid_range(xx->io, xx->cnum, &ustart, &uend);
 	    }
 	}
 
@@ -2286,7 +2293,7 @@ int edGetXY(edview *xx, int rec_type, tg_rec rec, int pos, int *x, int *y) {
     if (xx->nr == 0)
 	return -1;
 
-    if (rec == xx->contig->rec) {
+    if (rec == xx->cnum) {
 	int col = pos - xx->displayPos;
 
 	if (col < 0 || col > xx->displayWidth)
@@ -2538,7 +2545,8 @@ int edReadStart(edview *xx) {
 	if (xx->cursor_type == GT_Seq) {
 	    xx->cursor_pos = 0;
 	} else {
-	    xx->cursor_pos = xx->contig->start;
+	    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+	    xx->cursor_pos = c->start;
 	}
     } else {
 	if (xx->cursor_type == GT_Seq) {
@@ -2578,7 +2586,8 @@ int edReadEnd(edview *xx) {
 	    seq_t *s = get_seq(xx->io, xx->cursor_rec);
 	    xx->cursor_pos = ABS(s->len);
 	} else {
-	    xx->cursor_pos = xx->contig->end+1;
+	    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+	    xx->cursor_pos = c->end+1;
 	}
     } else {
 	if (xx->cursor_type == GT_Seq) {
@@ -2613,7 +2622,9 @@ int edReadEnd2(edview *xx) {
 }
 
 int edContigStart(edview *xx) {
-    xx->cursor_pos = xx->contig->start;
+    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+
+    xx->cursor_pos = c->start;
     xx->cursor_type = GT_Contig;
     xx->cursor_rec = xx->cnum;
     xx->cursor_apos = xx->cursor_pos;
@@ -2628,7 +2639,9 @@ int edContigStart(edview *xx) {
 }
 
 int edContigEnd(edview *xx) {
-    xx->cursor_pos = xx->contig->end;
+    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+
+    xx->cursor_pos = c->end;
     xx->cursor_type = GT_Contig;
     xx->cursor_rec = xx->cnum;
     xx->cursor_apos = xx->cursor_pos;
@@ -2917,13 +2930,14 @@ void edDisplayTrace(edview *xx) {
 	/* Consensus click */
 	rangec_t *r;
 	int nr, i;
+	contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
 
 	/* Shut down existing traces */
 	tman_shutdown_traces(xx, 2);
 
 	/* And display the new ones */
 	puts("FIXME: reuse existing cache of items");
-	r = contig_seqs_in_range(xx->io, &xx->contig,
+	r = contig_seqs_in_range(xx->io, &c,
 				 xx->cursor_apos, xx->cursor_apos,
 				 CSIR_SORT_BY_X, &nr);
 
@@ -3080,11 +3094,13 @@ void edSelectFrom(edview *xx, int pos) {
 
 	cache_decr(xx->io, s);
     } else {
+	contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+
 	/* Clip to contig extents */
-	if (pos < xx->contig->start)
-	    pos = xx->contig->start;
-	if (pos > xx->contig->end)
-	    pos = xx->contig->end;
+	if (pos < c->start)
+	    pos = c->start;
+	if (pos > c->end)
+	    pos = c->end;
     }
     xx->select_start = xx->select_end = pos;
 
@@ -3135,11 +3151,13 @@ void edSelectTo(edview *xx, int pos) {
 
 	cache_decr(xx->io, s);
     } else {
+	contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+
 	/* Clip to contig extents */
-	if (pos < xx->contig->start)
-	    pos = xx->contig->start;
-	if (pos > xx->contig->end)
-	    pos = xx->contig->end;
+	if (pos < c->start)
+	    pos = c->start;
+	if (pos > c->end)
+	    pos = c->end;
     }
     xx->select_end = pos;
 
@@ -3239,28 +3257,35 @@ int edGetSelection(ClientData clientData, int offset, char *buffer,
  */
 int edNextDifference(edview *xx) {
     int pos0, pos1;
+    contig_t *c0, *c1;
 
     if (!xx->link)
 	return -1;
+
+    c0 = cache_search(xx->link->xx[0]->io, GT_Contig, xx->link->xx[0]->cnum);
+    cache_incr(xx->link->xx[0]->io, c0);
+
+    c1 = cache_search(xx->link->xx[1]->io, GT_Contig, xx->link->xx[1]->cnum);
+    cache_incr(xx->link->xx[1]->io, c1);
 
     /* Find the positions, anchored from top contig incase they differ */
     pos1 = xx->link->xx[1]->cursor_apos + 1;
     pos0 = pos1 - xx->link->lockOffset;
 
-    while (pos0 <= xx->link->xx[0]->contig->end && 
-	   pos1 <= xx->link->xx[1]->contig->end) {
+    while (pos0 <= c0->end && 
+	   pos1 <= c1->end) {
 	int len = 1023, i;
 	char cons0[1024], cons1[1024];
 
-	if (pos0 + len > xx->link->xx[0]->contig->end)
-	    len = xx->link->xx[0]->contig->end - pos0 + 1;
-	if (pos1 + len > xx->link->xx[1]->contig->end)
-	    len = xx->link->xx[1]->contig->end - pos1 + 1;
+	if (pos0 + len > c0->end)
+	    len = c0->end - pos0 + 1;
+	if (pos1 + len > c1->end)
+	    len = c1->end - pos1 + 1;
 
 	/* Compute consensus fragments and compare */
-	calculate_consensus_simple(xx->link->xx[0]->io, xx->link->xx[0]->cnum,
+	calculate_consensus_simple(xx->link->xx[0]->io, c0->rec,
 				   pos0, pos0+len-1, cons0, NULL);
-	calculate_consensus_simple(xx->link->xx[1]->io, xx->link->xx[1]->cnum,
+	calculate_consensus_simple(xx->link->xx[1]->io, c1->rec,
 				   pos1, pos1+len-1, cons1, NULL);
 
 	for (i = 0; i < len; i++) {
@@ -3276,14 +3301,18 @@ int edNextDifference(edview *xx) {
     }
 
     /* Found a difference, or at the end of the contig */
-    edSetCursorPos(xx->link->xx[0], GT_Contig, xx->link->xx[0]->cnum, pos0, 1);
-    edSetCursorPos(xx->link->xx[1], GT_Contig, xx->link->xx[1]->cnum, pos1, 1);
+    edSetCursorPos(xx->link->xx[0], GT_Contig, c0->rec, pos0, 1);
+    edSetCursorPos(xx->link->xx[1], GT_Contig, c1->rec, pos1, 1);
+
+    cache_decr(xx->link->xx[0]->io, c0);
+    cache_decr(xx->link->xx[1]->io, c1);
 
     return 0;
 }
 
 int edPrevDifference(edview *xx) {
     int pos0, pos1;
+    contig_t *c0, *c1;
 
     if (!xx->link)
 	return -1;
@@ -3292,20 +3321,26 @@ int edPrevDifference(edview *xx) {
     pos1 = xx->link->xx[1]->cursor_apos - 1;
     pos0 = pos1 - xx->link->lockOffset;
 
-    while (pos0 >= xx->link->xx[0]->contig->start && 
-	   pos1 >= xx->link->xx[1]->contig->start) {
+    c0 = cache_search(xx->link->xx[0]->io, GT_Contig, xx->link->xx[0]->cnum);
+    cache_incr(xx->link->xx[0]->io, c0);
+
+    c1 = cache_search(xx->link->xx[1]->io, GT_Contig, xx->link->xx[1]->cnum);
+    cache_incr(xx->link->xx[1]->io, c1);
+
+    while (pos0 >= c0->start && 
+	   pos1 >= c1->start) {
 	int len = 1023, i;
 	char cons0[1024], cons1[1024];
 
-	if (pos0 - len < xx->link->xx[0]->contig->start)
-	    len = pos0 - xx->link->xx[0]->contig->start + 1;
-	if (pos1 - len < xx->link->xx[1]->contig->start)
-	    len = pos1 - xx->link->xx[1]->contig->start + 1;
+	if (pos0 - len < c0->start)
+	    len = pos0 - c0->start + 1;
+	if (pos1 - len < c1->start)
+	    len = pos1 - c1->start + 1;
 
 	/* Compute consensus fragments and compare */
-	calculate_consensus_simple(xx->link->xx[0]->io, xx->link->xx[0]->cnum,
+	calculate_consensus_simple(xx->link->xx[0]->io, c0->rec,
 				   pos0-(len-1), pos0, cons0, NULL);
-	calculate_consensus_simple(xx->link->xx[1]->io, xx->link->xx[1]->cnum,
+	calculate_consensus_simple(xx->link->xx[1]->io, c1->rec,
 				   pos1-(len-1), pos1, cons1, NULL);
 
 	for (i = len-1; i >= 0; i--) {
@@ -3321,8 +3356,11 @@ int edPrevDifference(edview *xx) {
     }
 
     /* Found a difference, or at the end of the contig */
-    edSetCursorPos(xx->link->xx[0], GT_Contig, xx->link->xx[0]->cnum, pos0, 1);
-    edSetCursorPos(xx->link->xx[1], GT_Contig, xx->link->xx[1]->cnum, pos1, 1);
+    edSetCursorPos(xx->link->xx[0], GT_Contig, c0->rec, pos0, 1);
+    edSetCursorPos(xx->link->xx[1], GT_Contig, c1->rec, pos1, 1);
+
+    cache_decr(xx->link->xx[0]->io, c0);
+    cache_decr(xx->link->xx[1]->io, c1);
 
     return 0;
 }
