@@ -951,7 +951,18 @@ proc editor_join {w} {
     upvar \#0 $w opt
 
     # Gather location information about the join
-    set ed [lindex $opt(all_editors) 0]
+    set ed  [lindex $opt(all_editors) 0]
+    set ed2 [lindex $opt(all_editors) 1]
+
+    if {[$ed contig_rec] == [$ed2 contig_rec]} {
+	tk_messageBox \
+	    -icon error \
+	    -message "Cannot join a contig to itself." \
+	    -title Error \
+	    -type ok \
+	    -parent $w
+	return
+    }
 
     if {[catch {foreach {len mis} [$ed join_mismatch] break}]} {
 	set ret [tk_messageBox \
