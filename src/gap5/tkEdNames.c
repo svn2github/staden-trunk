@@ -225,9 +225,10 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	int type, count, offset;
 	rangec_t *r;
 	int nr;
+	contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
 
 	/* Cache elsewhere - ie last number of seqs visible? */
-	r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
+	r = contig_seqs_in_range(xx->io, &c, xx->displayPos,
 				 xx->displayPos + xx->displayWidth,
 				 CSIR_COUNT_ONLY, &nr);
 	free(r);
@@ -406,7 +407,7 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    goto fail;
 	}
 
-	vTcl_SetResult(interp, "%d", en->xx->contig);
+	vTcl_SetResult(interp, "%"PRIrec, en->xx->cnum);
 
     } else if ('g' == *argv[1] && strcmp(argv[1], "get_name") == 0) {
 	char *name;

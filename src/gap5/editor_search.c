@@ -36,7 +36,7 @@ int edview_search_position(edview *xx, int dir, int strand, char *value) {
     case '-':
 	/* Relative */
 	pos = atoi(value+1);
-	edSetCursorPos(xx, GT_Contig, xx->contig->rec,
+	edSetCursorPos(xx, GT_Contig, xx->cnum,
 		       xx->cursor_apos + pos, 1);
         break;
 
@@ -65,7 +65,7 @@ int edview_search_position(edview *xx, int dir, int strand, char *value) {
 
     default:
 	pos = atoi(value);
-	edSetCursorPos(xx, GT_Contig, xx->contig->rec, pos, 1);
+	edSetCursorPos(xx, GT_Contig, xx->cnum, pos, 1);
 	break;
     }
     
@@ -75,10 +75,10 @@ int edview_search_position(edview *xx, int dir, int strand, char *value) {
 int edview_search_uposition(edview *xx, int dir, int strand, char *value) {
     int upos = atoi(value), ppos;
 
-    if (0 != consensus_padded_pos(xx->io, xx->contig->rec, upos, &ppos))
+    if (0 != consensus_padded_pos(xx->io, xx->cnum, upos, &ppos))
 	return -1;
 
-    edSetCursorPos(xx, GT_Contig, xx->contig->rec, ppos, 1);
+    edSetCursorPos(xx, GT_Contig, xx->cnum, ppos, 1);
     return 0;
 }
 
@@ -93,6 +93,7 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
     int found = 0, at_end = 0;
     tg_rec fseq;
     int fpos, i, j;
+    contig_t *c;
 
     /*
      * Parse value search string. It optionally includes two extra params
@@ -133,6 +134,8 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
     }
     fpos = xx->cursor_apos;
 
+    c = cache_search(xx->io, GT_Contig, xx->cnum);
+    cache_incr(xx->io, c);
     do {
 	char *ind, *indt = NULL, *indb = NULL;
 
@@ -165,13 +168,13 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 		if (fpos <= start + ind-cons) {
 		    found = 1;
 		    fpos = start + ind-cons;
-		    fseq = xx->contig->rec;
+		    fseq = xx->cnum;
 		}
 	    } else {
 		if (fpos >= start + ind-cons) {
 		    found = 1;
 		    fpos = start + ind-cons;
-		    fseq = xx->contig->rec;
+		    fseq = xx->cnum;
 		}
 	    }
 	    break;
@@ -188,7 +191,7 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 	    start += i;
 	    end   += i;
 
-	    if (start > xx->contig->end)
+	    if (start > c->end)
 		at_end = 1;
 	} else {
 	    for (i = 0, j = patlen && i < WIN_WIDTH; j; i++) {
@@ -201,13 +204,14 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 	    start -= WIN_WIDTH-i;
 	    end   -= WIN_WIDTH-i;
 
-	    if (end < xx->contig->start)
+	    if (end < c->start)
 		at_end = 1;
 	}
     } while (!at_end);
+    cache_decr(xx->io, c);
 
     if (found) {
-	edSetCursorPos(xx, fseq == xx->contig->rec ? GT_Contig : GT_Seq,
+	edSetCursorPos(xx, fseq == xx->cnum ? GT_Contig : GT_Seq,
 		       fseq, fpos, 1);
     }
 
@@ -222,6 +226,7 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
     float qual[WIN_WIDTH+1];
     int found = 0, at_end = 0;
     int fpos, i, qval = atoi(value);
+    contig_t *c;
 
     /* Set initial start positions */
     if (dir) {
@@ -234,6 +239,8 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
     fpos = xx->cursor_apos;
 
     /* Loop WIN_WIDTH block at a time */
+    c = cache_search(xx->io, GT_Contig, xx->cnum);
+    cache_incr(xx->io, c);
     do {
 	calculate_consensus_simple(xx->io, xx->cnum, start, end, NULL, qual);
 
@@ -263,19 +270,20 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
 	    start += WIN_WIDTH;
 	    end   += WIN_WIDTH;
 
-	    if (start > xx->contig->end)
+	    if (start > c->end)
 		at_end = 1;
 	} else {
 	    start -= WIN_WIDTH;
 	    end   -= WIN_WIDTH;
 
-	    if (end < xx->contig->start)
+	    if (end < c->start)
 		at_end = 1;
 	}
     } while (!at_end);
+    cache_decr(xx->io, c);
 
     if (found) {
-	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos, 1);
+	edSetCursorPos(xx, GT_Contig, xx->cnum, fpos, 1);
 	return 0;
     }
 
@@ -288,6 +296,7 @@ int edview_search_depth(edview *xx, int dir, int strand, char *value,
     int found = 0, at_end = 0;
     int fpos, i, qval = atoi(value);
     consensus_t cons[WIN_WIDTH+1];
+    contig_t *c;
 
     /* Set initial start positions */
     if (dir) {
@@ -300,6 +309,8 @@ int edview_search_depth(edview *xx, int dir, int strand, char *value,
     fpos = xx->cursor_apos;
 
     /* Loop WIN_WIDTH block at a time */
+    c = cache_search(xx->io, GT_Contig, xx->cnum);
+    cache_incr(xx->io, c);
     do {
 	calculate_consensus(xx->io, xx->cnum, start, end, cons);
 
@@ -331,19 +342,20 @@ int edview_search_depth(edview *xx, int dir, int strand, char *value,
 	    start += WIN_WIDTH;
 	    end   += WIN_WIDTH;
 
-	    if (start > xx->contig->end)
+	    if (start > c->end)
 		at_end = 1;
 	} else {
 	    start -= WIN_WIDTH;
 	    end   -= WIN_WIDTH;
 
-	    if (end < xx->contig->start)
+	    if (end < c->start)
 		at_end = 1;
 	}
     } while (!at_end);
+    cache_decr(xx->io, c);
 
     if (found) {
-	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos, 1);
+	edSetCursorPos(xx, GT_Contig, xx->cnum, fpos, 1);
 	return 0;
     }
 
@@ -363,6 +375,7 @@ int edview_search_cons_het(edview *xx, int dir, int strand, char *value) {
     int found = 0, at_end = 0;
     int fpos, i, qval = atoi(value);
     consensus_t cons[WIN_WIDTH+1];
+    contig_t *c;
 
     /* Set initial start positions */
     if (dir) {
@@ -375,6 +388,8 @@ int edview_search_cons_het(edview *xx, int dir, int strand, char *value) {
     fpos = xx->cursor_apos;
 
     /* Loop WIN_WIDTH block at a time */
+    c = cache_search(xx->io, GT_Contig, xx->cnum);
+    cache_incr(xx->io, c);
     do {
 	calculate_consensus(xx->io, xx->cnum, start, end, cons);
 
@@ -404,19 +419,20 @@ int edview_search_cons_het(edview *xx, int dir, int strand, char *value) {
 	    start += WIN_WIDTH;
 	    end   += WIN_WIDTH;
 
-	    if (start > xx->contig->end)
+	    if (start > c->end)
 		at_end = 1;
 	} else {
 	    start -= WIN_WIDTH;
 	    end   -= WIN_WIDTH;
 
-	    if (end < xx->contig->start)
+	    if (end < c->start)
 		at_end = 1;
 	}
     } while (!at_end);
+    cache_decr(xx->io, c);
 
     if (found) {
-	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos, 1);
+	edSetCursorPos(xx, GT_Contig, xx->cnum, fpos, 1);
 	return 0;
     }
 
@@ -429,6 +445,7 @@ int edview_search_cons_discrep(edview *xx, int dir, int strand, char *value) {
     int fpos, i;
     double qval = atof(value);
     consensus_t cons[WIN_WIDTH+1];
+    contig_t *c;
 
     /* Set initial start positions */
     if (dir) {
@@ -441,6 +458,8 @@ int edview_search_cons_discrep(edview *xx, int dir, int strand, char *value) {
     fpos = xx->cursor_apos;
 
     /* Loop WIN_WIDTH block at a time */
+    c = cache_search(xx->io, GT_Contig, xx->cnum);
+    cache_incr(xx->io, c);
     do {
 	calculate_consensus(xx->io, xx->cnum, start, end, cons);
 
@@ -470,19 +489,20 @@ int edview_search_cons_discrep(edview *xx, int dir, int strand, char *value) {
 	    start += WIN_WIDTH;
 	    end   += WIN_WIDTH;
 
-	    if (start > xx->contig->end)
+	    if (start > c->end)
 		at_end = 1;
 	} else {
 	    start -= WIN_WIDTH;
 	    end   -= WIN_WIDTH;
 
-	    if (end < xx->contig->start)
+	    if (end < c->start)
 		at_end = 1;
 	}
     } while (!at_end);
+    cache_decr(xx->io, c);
 
     if (found) {
-	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos, 1);
+	edSetCursorPos(xx, GT_Contig, xx->cnum, fpos, 1);
 	return 0;
     }
 
@@ -497,6 +517,7 @@ int edview_search_name(edview *xx, int dir, int strand, char *value)
     rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
     int start, end, cstart;
     contig_iterator *iter;
+    contig_t *c;
 
     /* Check for #num where num is a sequence record in this contig */
     if (*value == '#') {
@@ -519,14 +540,15 @@ int edview_search_name(edview *xx, int dir, int strand, char *value)
     rp = sequence_index_query_all(xx->io, value, 1, &nr);
 
     /* Also get an position-based iterator */
+    c = cache_search(xx->io, GT_Contig, xx->cnum);
     if (dir) {
 	start    = xx->cursor_apos + 1;
-	end      = xx->contig->end;
+	end      = c->end;
 	ifunc    = contig_iter_next;
 	best_pos = end + 1;
 	best_off = 0;
     } else {
-	start    = xx->contig->start;
+	start    = c->start;
 	end      = xx->cursor_apos - 1;
 	ifunc    = contig_iter_prev;
 	best_pos = start - 1;
@@ -616,13 +638,14 @@ int edview_search_tag_type(edview *xx, int dir, int strand, char *value) {
     rangec_t *r;
     rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
     int type = str2type(value);
+    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
 
     if (dir) {
 	start = xx->cursor_apos + (dir ? 1 : -1);
-	end   = xx->contig->end;
+	end   = c->end;
 	ifunc = contig_iter_next;
     } else {
-	start = xx->contig->start;
+	start = c->start;
 	end   = xx->cursor_apos + (dir ? 1 : -1);
 	ifunc = contig_iter_prev;
     }
@@ -666,6 +689,7 @@ int edview_search_tag_anno(edview *xx, int dir, int strand, char *value) {
     rangec_t *r;
     rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
     char *r_exp = NULL;
+    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
 
     if (value) {
 	if (NULL == (r_exp = REGCMP(xx->interp, value))) {
@@ -676,10 +700,10 @@ int edview_search_tag_anno(edview *xx, int dir, int strand, char *value) {
 
     if (dir) {
 	start = xx->cursor_apos + (dir ? 1 : -1);
-	end   = xx->contig->end;
+	end   = c->end;
 	ifunc = contig_iter_next;
     } else {
-	start = xx->contig->start;
+	start = c->start;
 	end   = xx->cursor_apos + (dir ? 1 : -1);
 	ifunc = contig_iter_prev;
     }
@@ -732,13 +756,14 @@ int edview_search_tag_indel(edview *xx, int dir, int strand, char *value) {
     int start, end;
     rangec_t *r;
     rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
+    contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
 
     if (dir) {
 	start = xx->cursor_apos + (dir ? 1 : -1);
-	end   = xx->contig->end;
+	end   = c->end;
 	ifunc = contig_iter_next;
     } else {
-	start = xx->contig->start;
+	start = c->start;
 	end   = xx->cursor_apos + (dir ? 1 : -1);
 	ifunc = contig_iter_prev;
     }

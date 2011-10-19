@@ -67,10 +67,12 @@ Tcl_Obj *edSelectOligoGenerate(edview *xx, int is_fwds, int bkwd_width,
 	if (right > cright)
 	    right = cright;
     } else {
-	if (left < xx->contig->start)
-	    left = xx->contig->start;
-	if (right > xx->contig->end)
-	    right = xx->contig->end;
+	contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
+
+	if (left  < c->start)
+	    left  = c->start;
+	if (right > c->end)
+	    right = c->end;
     }
 
     /*

@@ -484,8 +484,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"join_align",	 "join_mismatch","join",         "join_offset",
 	"select",	 "edit_annotation",  "clear_visibility_cache",
 	"cursor_id",     "get_cursor",	  "search",      "get_xy",
-	"decr_contig",   "incr_contig",   "select_oligo","show_cursor",
-	"reference_pos", "next_difference", "prev_difference", "ref_count",
+	"change_contig", "select_oligo","show_cursor",
+	"reference_pos", "next_difference", "prev_difference",
 	"set_sort_order", "set_trace_lock", NULL
     };
     enum options {
@@ -499,8 +499,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_JOIN_ALIGN,     _JOIN_MISMATCH, _JOIN,          _JOIN_OFFSET,
 	_SELECT,	 _EDIT_ANNOTATION,  _CLEAR_VISIBILITY_CACHE,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	 _GET_XY,
-	_DECR_CONTIG,    _INCR_CONTIG,   _SELECT_OLIGO,  _SHOW_CURSOR,
-	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE, _REF_COUNT,
+	_CHANGE_CONTIG,  _SELECT_OLIGO,  _SHOW_CURSOR,
+	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE,
 	_SET_SORT_ORDER, _SET_TRACE_LOCK
     };
 
@@ -561,6 +561,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     /* Save contig */
     case _SAVE: {
 	reg_length rl;
+	contig_t *c;
 
 	/*
 	 * We shouldn't have to do the decr, flush, search & incr here.
@@ -571,14 +572,12 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	 * This is a convenient work around until we update the caching
 	 * layer.
 	 */
-	cache_decr(xx->io, xx->contig);
 	result = cache_flush(xx->io);
-	xx->contig = cache_search(xx->io, GT_Contig, xx->cnum);
-	cache_incr(xx->io, xx->contig);
+	c = cache_search(xx->io, GT_Contig, xx->cnum);
 
 	rl.job = REG_LENGTH;
-	rl.length = xx->contig->end - xx->contig->start + 1;
-	contig_notify(xx->io->base, xx->contig->rec, (reg_data *)&rl);
+	rl.length = c->end - c->start + 1;
+	contig_notify(xx->io->base, c->rec, (reg_data *)&rl);
 
 	vTcl_SetResult(interp, "%d", result);
 	break;
@@ -602,6 +601,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     case _XVIEW: {
 	double f1;
 	int type, count, offset;
+	contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
 
 	if (argc == 2) {
 	    /* editor xview */
@@ -621,8 +621,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 		goto fail;
 		
 	    case TK_SCROLL_MOVETO:
-		offset = f1 * contig_get_length(&xx->contig) +
-		    contig_get_start(&xx->contig);
+		offset = f1 * contig_get_length(&c) + contig_get_start(&c);
 		break;
 
 	    case TK_SCROLL_PAGES:
@@ -636,10 +635,10 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	/* Bounds checking */
-	if (offset < xx->contig->start - xx->displayWidth/2 + 1)
-	    offset = xx->contig->start - xx->displayWidth/2 + 1;
-	if (offset > xx->contig->end - xx->displayWidth/2)
-	    offset = xx->contig->end - xx->displayWidth/2;
+	if (offset < c->start - xx->displayWidth + 1)
+	    offset = c->start - xx->displayWidth + 1;
+	if (offset > c->end)
+	    offset = c->end;
 
 	set_displayPos(xx, offset);
 	break;
@@ -1163,29 +1162,9 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	break;
     }
 
-    /*
-     * These two methods handle the caching of the xx->contig member. This
-     * may have been modified externally to the editor, so in order to ensure
-     * the editor copy is correctly in sync we have decr and incr methods.
-     *
-     * We MUST make sure that we decrement before doing the (potential)
-     * external edit, and then increment. Messy, but an easier solution than
-     * never caching it or having an intermediate pointer to pointer.
-     */
-    case _DECR_CONTIG:
-	cache_decr(ed->xx->io, ed->xx->contig);
-	break;
-    case _INCR_CONTIG:
+    case _CHANGE_CONTIG:
 	if (argc == 3)
 	    ed->xx->cnum = atorec(argv[2]);
-	ed->xx->contig = cache_search(ed->xx->io, GT_Contig, ed->xx->cnum);
-	cache_incr(ed->xx->io, ed->xx->contig);
-	break;
-    case _REF_COUNT:
-	/* Debugging to print up current ref count */
-	printf("REF COUNT = %d\n",
-	       ((cached_item *)cache_master(ci_ptr(ed->xx->contig)))
-	       ->hi->ref_count);
 	break;
 
     case _SELECT_OLIGO: {

@@ -14,7 +14,7 @@
 #include "dna_utils.h"
 
 /* Add 'num' pads into the consensus for editor 'xx' at position 'pos'. */
-static void add_pads(edview *xx, int pos, int num)
+static void add_pads(edview *xx, contig_t *ctg, int pos, int num)
 {
     int i;
 
@@ -22,7 +22,7 @@ static void add_pads(edview *xx, int pos, int num)
 	return;
 
     for (i = 0; i < num; i++)
-	contig_insert_base(xx->io, &xx->contig, pos, '*', -1);
+	contig_insert_base(xx->io, &ctg, pos, '*', -1);
 }
 
 /*
@@ -331,7 +331,13 @@ static int align(edview *xx0, int pos0, int len0,
 	int last_pad1 = -1;
 	int inserted_bases0 = 0;
 	int inserted_bases1 = 0;
+	contig_t *ctg0, *ctg1;
 
+	ctg0 = cache_search(xx0->io, GT_Contig, xx0->cnum);
+	cache_incr(xx0->io, ctg0);
+
+	ctg1 = cache_search(xx1->io, GT_Contig, xx1->cnum);
+	cache_incr(xx1->io, ctg1);
 
 	while (depad_pos0 < len0 && depad_pos1 < len1) {
 	    if (*S < 0) {
@@ -349,10 +355,12 @@ static int align(edview *xx0, int pos0, int len0,
 	    extra_pads = (curr_pad1 - last_pad1) - (curr_pad0 - last_pad0);
 
 	    if (extra_pads < 0) { /* Add to seq 0 */
-		add_pads(xx1, pos1 + curr_pad1 + inserted_bases1, -extra_pads);
+		add_pads(xx1, ctg1,
+			 pos1 + curr_pad1 + inserted_bases1, -extra_pads);
 		inserted_bases1 -= extra_pads;
 	    } else if (extra_pads > 0) { /* Add to seq 1 */
-		add_pads(xx0, pos0 + curr_pad0 + inserted_bases0,  extra_pads);
+		add_pads(xx0, ctg0,
+			 pos0 + curr_pad0 + inserted_bases0,  extra_pads);
 		inserted_bases0 += extra_pads;
 	    }
 	    
@@ -366,6 +374,9 @@ static int align(edview *xx0, int pos0, int len0,
 
 	    S++;
 	}
+
+	cache_decr(xx0->io, ctg0);
+	cache_decr(xx1->io, ctg1);
     }
     /*************************************************************************/
 
@@ -998,7 +1009,7 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
 
 int edJoin(edview *xx) {
     /* p=parent contig, l=left contig, r=right contig */
-    contig_t *cl, *cr;
+    tg_rec cl, cr;
     GapIO *io = xx->io;
     int offset;
 
@@ -1006,17 +1017,17 @@ int edJoin(edview *xx) {
 	return -1;
 
     if (xx->link->lockOffset > 0) {
-	cl = xx->link->xx[1]->contig;
-	cr = xx->link->xx[0]->contig;
+	cl = xx->link->xx[1]->cnum;
+	cr = xx->link->xx[0]->cnum;
 	offset = xx->link->lockOffset;
     } else {
-	cl = xx->link->xx[0]->contig;
-	cr = xx->link->xx[1]->contig;
+	cl = xx->link->xx[0]->cnum;
+	cr = xx->link->xx[1]->cnum;
 	offset = -xx->link->lockOffset;
     }
 
     cache_flush(io);
 
-    return join_contigs(io, cl->rec, cr->rec, offset);
+    return join_contigs(io, cl, cr, offset);
 }
 

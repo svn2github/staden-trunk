@@ -49,7 +49,6 @@ typedef struct _edview {
     /* A derived IO struct */
     GapIO *io;
     tg_rec cnum;
-    contig_t *contig;
 
     /* Necessary Tcl/Tk bits and bobs */
     Tcl_Interp *interp;

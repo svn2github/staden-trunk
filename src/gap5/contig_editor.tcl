@@ -127,12 +127,10 @@ proc io_undo_exec {w crec cmdu} {
 	    }
 
 	    B_MOVE {
-		$w decr_contig
 		set c [$io get_contig $cio(crec)]
 		foreach {p f} [$c remove_sequence $op1] break;
 		$c add_sequence $op1 $op2 $p $f
 		$c delete
-		$w incr_contig
 
 		eval $w set_cursor [$w get_cursor relative]
 	    }
@@ -214,7 +212,6 @@ proc io_undo_exec {w crec cmdu} {
 	    }
 
 	    C_SHIFT {
-		$w decr_contig
 		set contig [$io get_contig $op1]
 		$contig shift_base $op2 $op3
 		set seqs [$contig seqs_in_range [expr {$op2-1}] [expr {$op2+2}]]
@@ -255,19 +252,14 @@ proc io_undo_exec {w crec cmdu} {
 		    $contig move_anno $anno -1
 		}
 		$contig delete
-
-		$w incr_contig
 	    }
 
 	    T_DEL {
-		$w incr_contig
 		set tag [$io get_anno_ele $op1]
 		$tag remove
-		$w decr_contig
 	    }
 
 	    T_NEW {
-		$w decr_contig
 		array set d $op1
 
 		# If we have a record already, we never actually deallocated it
@@ -291,7 +283,6 @@ proc io_undo_exec {w crec cmdu} {
 		$t set_comment $d(anno)
 		$t set_type $d(type)
 		$t delete
-		$w incr_contig
 	    }
 
 	    T_MOVE {
@@ -399,8 +390,6 @@ proc contig_register_callback {ed type id args} {
 
 	CHILD_EDIT -
 	LENGTH {
-	    $ed decr_contig
-	    $ed incr_contig
 	    $ed clear_visibility_cache
 	    $ed redraw
 	    # A bit obscure, but it ensures edSetApos() is called in C,
@@ -475,7 +464,7 @@ proc contig_register_callback {ed type id args} {
 
 	    # Update the editor cached contig record details
 	    set ${w}(-contig) $arg(contig)
-	    $ed incr_contig $arg(contig)
+	    $ed change_contig $arg(contig)
 	    upvar \#0 contigIO_$arg(contig) cio
 	    set cio(Undo) ""
 	    set cio(Redo) ""
@@ -1807,11 +1796,9 @@ proc editor_insert_gap {w where} {
 		 [list C_SET $type $rec $pos] \
 		 [list B_DEL $rec $pos] ] {}
     } else {
-	$w decr_contig
 	set contig [$io get_contig $rec]
 	$contig insert_base $pos
 	$contig delete
-	$w incr_contig
 
 	store_undo $w \
 	    [list \
@@ -1876,7 +1863,6 @@ proc editor_delete_base {w where {powerup 0}} {
 		     [list B_INS $rec $pos $old_base $old_conf]] {}
 	}
     } else {
-	$w decr_contig
 	set contig [$io get_contig $rec]
 
 	set cons [calc_consensus -io $io -contigs "{=$rec $pos $pos}"]
@@ -1891,7 +1877,6 @@ proc editor_delete_base {w where {powerup 0}} {
 
 	$contig delete_base $pos
 	$contig delete
-	$w incr_contig
 
 	store_undo $w \
 	    [list \
@@ -1930,7 +1915,6 @@ proc editor_shift {w where dir} {
     # to manually shift-right any sequences which weren't at pos before
     # the shift-left but are now. Similarly for opposite shifts.
 
-    $w decr_contig
     set contig [$io get_contig $rec]
     set seqs [$contig seqs_in_range [expr {$pos-1}] [expr {$pos+1}]]
 
@@ -1954,7 +1938,6 @@ proc editor_shift {w where dir} {
 
     set shifted [$contig shift_base $pos $dir]
     $contig delete
-    $w incr_contig
 
     if {$shifted > 0} {
 	store_undo $w \
@@ -2059,8 +2042,6 @@ proc editor_move_seq {w where direction} {
 
     set upos $pos; # copy for undo
 
-    $w decr_contig
-
     set c [$io get_contig $cnum]
     foreach {pair_rec flags} [$c remove_sequence $rec] break;
     incr pos $direction
@@ -2070,8 +2051,6 @@ proc editor_move_seq {w where direction} {
     set seq [$io get_sequence $rec]
     $seq move_annos $direction
     $seq delete
-
-    $w incr_contig
 
     store_undo $w \
 	[list \
@@ -2276,9 +2255,7 @@ proc U_tag_change {w rec new_a} {
 
     if {$new_a == ""} {
 	# Delete
-	$w decr_contig
 	$tag remove
-	$w incr_contig
 
 	store_undo $w \
 	    [list \
@@ -2288,14 +2265,23 @@ proc U_tag_change {w rec new_a} {
 	    [list U_tag_change $w $rec ""]
 
     } elseif {$rec == -1} {
+	# Clip coords to consensus
+	if {$d(otype) == 18} {
+	    set c [$io get_contig [$w get_contig_rec]]
+	    set cstart [$c get_visisble_start]
+	    set cend   [$c get_visible_end]
+	    $c delete
+
+	    puts $cstart..$cend
+	    puts $d(start)..$d(end)
+	}
+
 	# Create
-	$w decr_contig
 	set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
 	set t [$io get_anno_ele $rec]
 	$t set_comment $d(anno)
 	$t set_type $d(type)
 	$t delete
-	$w incr_contig
 	
 	store_undo $w \
 	    [list \
