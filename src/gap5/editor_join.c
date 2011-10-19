@@ -480,6 +480,12 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     ret = align(xx2[0], left0, len0, xx2[1], left1, len1,
 		fixed_left, fixed_right, &shift);
 
+    /* Help force full redraw */
+    if (xx->r) {
+	free(xx->r);
+	xx->r = NULL;
+    }
+
     if (ret)
 	return ret;
 

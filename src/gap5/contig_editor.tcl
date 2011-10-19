@@ -399,6 +399,8 @@ proc contig_register_callback {ed type id args} {
 
 	CHILD_EDIT -
 	LENGTH {
+	    $ed decr_contig
+	    $ed incr_contig
 	    $ed clear_visibility_cache
 	    $ed redraw
 	    # A bit obscure, but it ensures edSetApos() is called in C,
@@ -492,7 +494,6 @@ proc contig_register_callback {ed type id args} {
 
 	    # Correct the window title
 	    upvar \#0 $w opt
-	    parray $w
 
 	    set c [$opt(io) get_contig $opt(-contig)]
 	    if {[info exists opt(-contig2)]} {
@@ -821,7 +822,7 @@ proc contig_editor {w args} {
 
 	button $tool.align \
 	    -text Align -padx 2 \
-	    -command "\[set ${w}(curr_editor)\] join_align; \[set ${w}(curr_editor)\] redraw"
+	    -command "\[set ${w}(curr_editor)\] join_align"
 	button $tool.alignL \
 	    -text "<" -padx 2 \
 	    -command "\[set ${w}(curr_editor)\] join_align 0 1"
