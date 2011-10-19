@@ -291,10 +291,10 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
 
 
     /* For read-pairs, unlink with rest of template */
-    if (remove && pos->rng.pair_rec) {
+    if (remove && pos->rng.pair_rec &&
+	(seq = cache_search(io, GT_Seq, pos->rng.pair_rec))) {
 	range_t *r;
 
-	seq = cache_search(io, GT_Seq, pos->rng.pair_rec);
 	if (seq->parent_rec == pos->rng.pair_rec) {
 	    seq = cache_rw(io, seq);
 	    seq->parent_type = 0;
