@@ -22,11 +22,15 @@ proc ListGet {name} {
 
     if {$io >= 0 && [regexp {^\[(.*)\]$} $name dummy id] == 1} {
 	set l {}
-	for {set rn [db_info chain_left $io $id]} {$rn > 0} {} {
-	    set r [io_read_reading $io $rn]
-	    lappend l [io_read_text $io [keylget r name]]
-	    set rn [keylget r right]
+	set crec [db_info get_contig_num $io $id]
+	if {$crec == "" || $crec <= 0} {
+	    return ""
 	}
+	set c [$io get_contig $crec]
+	foreach x [$c seqs_in_range [$c get_start] [$c get_end]] {
+	    lappend l "#[lindex $x 2]"
+	}
+	$c delete
 	return $l
     } elseif {[regexp {^{(.*)}$} $name dummy id] == 1} {
 	set l {}

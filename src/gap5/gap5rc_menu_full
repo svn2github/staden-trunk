@@ -169,12 +169,12 @@ add_command	{Lists.Save}			12 6 {SaveListDialog}
 if { $tcl_platform(platform) != "windows" } {
     add_command	{Lists.Print}			12 6 {PrintListDialog}
 }
-#add_separator	{Lists.S1}
+add_separator	{Lists.S1}
 #add_command	{Lists.Highlight readings list}	 8 10 {InputSelectReadingList \$io}
-#add_command	{Lists.Contigs to readings}	 8 10 {ContigsToReadings \$io}
+add_command	{Lists.Contigs to readings}	 8 10 {ContigsToReadings \$io}
 #add_command	{Lists.Minimal coverage}	 8 10 {MinimalCoverage \$io} e
 #add_command	{Lists.Unattached readings}	 8 10 {UnattachedReadings \$io} e
-add_separator   {Lists.S2} 
+#add_separator   {Lists.S2} 
 add_command {Lists.Search sequence names} 12 6 {SearchSeqDialog \$io} 
 #add_command {Lists.Search template names} 12 6 {SearchTemplateDialog \$io} 
 #add_command {Lists.Search annotation contents} 12 6 {SearchAnnoDialog \$io} 
