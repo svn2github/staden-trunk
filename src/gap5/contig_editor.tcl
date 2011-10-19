@@ -821,7 +821,7 @@ proc contig_editor {w args} {
 
 	button $tool.align \
 	    -text Align -padx 2 \
-	    -command "\[set ${w}(curr_editor)\] join_align"
+	    -command "\[set ${w}(curr_editor)\] join_align; \[set ${w}(curr_editor)\] redraw"
 	button $tool.alignL \
 	    -text "<" -padx 2 \
 	    -command "\[set ${w}(curr_editor)\] join_align 0 1"
@@ -2578,7 +2578,7 @@ proc editor_select_dialog {ed sel} {
 	-type CheckInt
 
     yes_no $t.contained \
-	-title "Entirelty contained in range" \
+	-title "Entirely contained in range" \
 	-orient horizontal \
 	-bd 0 \
 	-default 0
