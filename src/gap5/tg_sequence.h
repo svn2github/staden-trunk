@@ -50,6 +50,9 @@ int sequence_set_trace_name  (GapIO *io, seq_t **s, char *trace_name);
 int sequence_set_seq         (GapIO *io, seq_t **s, char *seq);
 int sequence_set_conf        (GapIO *io, seq_t **s, char *conf);
 
+int sequence_set_left_no_invalidate (GapIO *io, seq_t **s, int value);
+int sequence_set_right_no_invalidate(GapIO *io, seq_t **s, int value);
+
 tg_rec sequence_new_from(GapIO *io, seq_t *s);
 
 tg_rec sequence_index_query(GapIO *io, char *name);

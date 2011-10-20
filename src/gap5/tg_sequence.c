@@ -217,6 +217,32 @@ int sequence_set_right(GapIO *io, seq_t **s, int value) {
 }
 
 /*
+ * As above, but not invalidating the consensus. (It is the responsibility
+ * of the caller to do this later).
+ */
+int sequence_set_left_no_invalidate (GapIO *io, seq_t **s, int value) {
+    seq_t *n;
+    if (!(n = cache_rw(io, *s)))
+	return -1;
+
+    n->left = value;
+    *s = n;
+
+    return 0;
+}
+
+int sequence_set_right_no_invalidate(GapIO *io, seq_t **s, int value) {
+    seq_t *n;
+    if (!(n = cache_rw(io, *s)))
+	return -1;
+
+    n->right = value;
+    *s = n;
+
+    return 0;
+}
+
+/*
  * Sets the sequence mapping quality
  *
  * Returns 0 on success

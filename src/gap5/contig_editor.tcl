@@ -141,6 +141,17 @@ proc io_undo_exec {w crec cmdu} {
 		$seq delete
 	    }
 
+	    C_CUT {
+		set contig [$io get_contig $op1]
+		foreach {rec l r} $op4 {
+		    set s [$io get_seq $rec]
+		    $s set_clips_no_invalidate $l $r
+		    $s delete
+		}
+		$contig invalidate_consensus $op2 $op3
+		$contig delete
+	    }
+
 	    C_INS {
 		set contig [$io get_contig $op1]
 		$contig insert_base $op2
@@ -2106,6 +2117,10 @@ proc editor_clip_seq {w where end} {
     }
 
     foreach {type rec pos} $where break;
+    if {$type == 17} {
+	return [editor_clip_contig $w $where $end]
+    }
+
     if {$type != 18} {
 	# sequences only
 	bell
@@ -2147,6 +2162,72 @@ proc editor_clip_seq {w where end} {
 	[list \
 	     [list B_CUT $rec $ul $ur] \
 	     [list C_SET $type $rec $pos]] {}
+    $w redraw
+}
+
+proc editor_clip_contig {w where end} {
+    upvar $w opt
+
+    set io [$w io]
+
+    foreach {type crec pos} $where break;
+    set c [$io get_contig $crec]
+    set seqs [$c seqs_in_range $pos $pos]
+    set undo {}
+
+    set min $pos
+    set max $pos
+    foreach x $seqs {
+	set dir [lindex $x 14]
+	set st  [lindex $x 0]
+	set en  [lindex $x 1]
+	set rec [lindex $x 2]
+
+	set min [expr {$st<$min?$st:$min}]
+	set max [expr {$en>$max?$en:$max}]
+
+	set s [$io get_seq $rec]
+	foreach {l r} [$s get_clips] break;
+	lappend undo $rec $l $r
+
+	if {([$s get_length] < 0) ^ $dir} {
+	    set l2 [expr {abs([$s get_length])-$r+1}]
+	    set r  [expr {abs([$s get_length])-$l+1}]
+	    set l  $l2
+	}
+
+	set l [expr {$l+$st-1}]
+	set r [expr {$r+$st-1}]
+
+	if {$l < $pos && $r >= $pos} {
+	    if {$end == "l"} {
+		set l $pos
+	    } else {
+		set r [expr {$pos-1}]
+	    }
+
+	    set l [expr {$l + 1 - ($st)}]
+	    set r [expr {$r + 1 - ($st)}]
+	    if {([$s get_length] < 0) ^ $dir} {
+		set l2 [expr {abs([$s get_length])-$r+1}]
+		set r  [expr {abs([$s get_length])-$l+1}]
+		set l  $l2
+	    }
+
+	    $s set_clips_no_invalidate $l $r
+	}
+	$s delete
+    }
+
+    $c invalidate_consensus $min $max
+    $c delete
+
+    # FIXME: add undo
+    store_undo $w \
+	[list \
+	     [list C_CUT $crec $min $max $undo] \
+	     [list C_SET $type $crec $pos]] {}
+
     $w redraw
 }
 

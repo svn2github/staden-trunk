@@ -430,7 +430,7 @@ static int tcl_contig_seqs_range(tcl_contig *tc, Tcl_Interp *interp,
 
     items = Tcl_NewListObj(0, NULL);
     for (i = 0; i < nr; i++) {
-	Tcl_Obj *ele, *e4[14];
+	Tcl_Obj *ele, *e4[15];
 
 	e4[0]  = Tcl_NewIntObj(r[i].start);
 	e4[1]  = Tcl_NewIntObj(r[i].end);
@@ -446,7 +446,8 @@ static int tcl_contig_seqs_range(tcl_contig *tc, Tcl_Interp *interp,
 	e4[11] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_PEND_MASK) ? 1 : 0);
 	e4[12] = Tcl_NewIntObj(r[i].flags & GRANGE_FLAG_TYPE_MASK);
 	e4[13] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_CONTIG) ? 1 : 0);
-	ele = Tcl_NewListObj(14, e4);
+	e4[14] = Tcl_NewIntObj(r[i].comp);
+	ele = Tcl_NewListObj(15, e4);
 
 	Tcl_ListObjAppendElement(interp, items, ele);
     }
@@ -482,7 +483,7 @@ static int tcl_contig_anno_range(tcl_contig *tc, Tcl_Interp *interp,
 
     items = Tcl_NewListObj(0, NULL);
     for (i = 0; i < nr; i++) {
-	Tcl_Obj *ele, *e4[14];
+	Tcl_Obj *ele, *e4[15];
 
 	e4[0]  = Tcl_NewIntObj(r[i].start);
 	e4[1]  = Tcl_NewIntObj(r[i].end);
@@ -498,7 +499,8 @@ static int tcl_contig_anno_range(tcl_contig *tc, Tcl_Interp *interp,
 	e4[11] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_PEND_MASK) ? 1 : 0);
 	e4[12] = Tcl_NewIntObj(r[i].flags & GRANGE_FLAG_TYPE_MASK);
 	e4[13] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_CONTIG) ? 1 : 0);
-	ele = Tcl_NewListObj(14, e4);
+	e4[14] = Tcl_NewIntObj(r[i].comp);
+	ele = Tcl_NewListObj(15, e4);
 
 	Tcl_ListObjAppendElement(interp, items, ele);
     }
@@ -616,6 +618,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"nrefpos",	"nanno",        "shift_base",   "move_anno",
 	"check",        "move_seq",
 	"get_visible_start", "get_visible_end", "get_visible_length",
+	"invalidate_consensus",
 	(char *)NULL,
     };
 
@@ -627,7 +630,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
 	NREFPOS,        NANNO,	        SHIFT_BASE,     MOVE_ANNO,
 	CHECK,          MOVE_SEQ,
-	GET_VISIBLE_START, GET_VISIBLE_END, GET_VISIBLE_LENGTH
+	GET_VISIBLE_START, GET_VISIBLE_END, GET_VISIBLE_LENGTH,
+	INVALIDATE_CONSENSUS
     };
 
     if (objc < 2) {
@@ -1116,6 +1120,20 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	vTcl_SetResult(interp, "%d %d", ret, fixed);
 	break;
     }
+
+    case INVALIDATE_CONSENSUS: {
+	int start = tc->contig->start;
+	int end   = tc->contig->end;
+	int ret;
+
+	if (objc >= 3)
+	    Tcl_GetIntFromObj(interp, objv[2], &start);
+	if (objc >= 4)
+	    Tcl_GetIntFromObj(interp, objv[3], &end);
+
+	ret = bin_invalidate_consensus(tc->io, tc->contig->rec, start, end);
+	vTcl_SetResult(interp, "%d", ret);
+    }
     }
 
     return TCL_OK;
@@ -1262,6 +1280,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_orient",   "get_mapping_qual",
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
 	"get_clips",    "set_clips",    "move_annos",   "get_template_orient",
+	"set_clips_no_invalidate",
 	(char *)NULL,
     };
 
@@ -1273,6 +1292,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_ORIENT,     GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
 	GET_CLIPS,      SET_CLIPS,      MOVE_ANNOS,     GET_TEMPLATE_ORIENT,
+	SET_CLIPS_NO_INVALIDATE,
     };
 
     if (objc < 2) {
@@ -1572,6 +1592,26 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	cache_decr(ts->io, ts->seq);
 	sequence_set_left (ts->io, &ts->seq, left);
 	sequence_set_right(ts->io, &ts->seq, right);
+	cache_incr(ts->io, ts->seq);
+
+	break;
+    }
+
+    case SET_CLIPS_NO_INVALIDATE: {
+	int left, right;
+
+	if (objc != 4) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_clips left right\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &left);
+	Tcl_GetIntFromObj(interp, objv[3], &right);
+	cache_decr(ts->io, ts->seq);
+	sequence_set_left_no_invalidate (ts->io, &ts->seq, left);
+	sequence_set_right_no_invalidate(ts->io, &ts->seq, right);
 	cache_incr(ts->io, ts->seq);
 
 	break;
