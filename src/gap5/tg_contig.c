@@ -8,6 +8,7 @@
 #include "tg_gio.h"
 #include "misc.h"
 #include "tree.h"
+#include "dna_utils.h"
 
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
@@ -1782,7 +1783,7 @@ static int (*primary)(const void *, const void *);
 static int (*secondary)(const void *, const void *);
 static int p_sort;
 static int s_sort;
-static int absolute_pos;
+static int base_sort_pos = 1;
 
 
 // empty sort
@@ -1910,6 +1911,29 @@ static int simple_sort_range_by_template(const void *v1, const void *v2) {
 }
 
 
+/* As we already have rangec_t calculated we can use this instead of the
+   slower sequence_get_base */
+static int get_base(seq_t *s, rangec_t *r, int pos, char *base, int *cutoff) {
+    
+    if (pos < 0 || pos >= ABS(s->len)) return -1;
+
+    if ((s->len < 0) ^ r->comp) {             // is comlemented
+    	pos = ABS(s->len) - 1 - pos;
+	*base = complement_base(s->seq[pos]);
+    } else {
+    	*base = s->seq[pos];
+    }
+    
+    if (pos < s->left - 1 || pos >= s->right) {
+    	*cutoff = 1;
+    } else {
+    	*cutoff = 0;
+    }
+    
+    return 0;
+}
+
+
 static int simple_sort_by_base(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
     const rangec_t *r2 = (const rangec_t *)v2;
@@ -1917,54 +1941,36 @@ static int simple_sort_by_base(const void *v1, const void *v2) {
     
     if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
     	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
-	int strand1 = (r1->flags & GRANGE_FLAG_COMP1) ^ r1->comp;
+	int cutoff = 0;
 	
-	fprintf(stderr, "ap %d s %d e %d l %d d %d\n", absolute_pos, r1->start, r1->end, s->len, strand1); 
-	
-	
-	
-	if (absolute_pos >= r1->start && absolute_pos <= r1->end) {
-	    int tpos = absolute_pos - (r1->start - s->pos);
-	    int i;
-	    
-	    b1 = s->seq[absolute_pos - (r1->start - s->pos)];
-	    fprintf(stderr, "b1 %c len %d\n", b1,  absolute_pos - (r1->start - s->pos));
-	    
-	    
-	    for (i = 0; i <= tpos; i++) {
-	    	fprintf(stderr, "%c", s->seq[i]);
-	    }
-	    
-	    fprintf(stderr, "\n"); 
-	    
-	} else {
-	    return -1;
-	} 
+	if (get_base(s, r1, base_sort_pos - r1->start, &b1, &cutoff) || cutoff) {
+	    b1 = 125;
+	}
+
+    	if (b1 == 'N') {
+	    b1 = 123;
+	} else if (b1 == '*'){
+	    b1 = 124;
+	}
     }
     
     if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
     	seq_t *s = cache_search(sort_io, GT_Seq, r2->rec);
-	
-	if (absolute_pos >= r2->start && absolute_pos <= r2->end) {
-	    int tpos = absolute_pos - (r1->start - s->pos);
-	    int i;
-	    b2 = s->seq[absolute_pos - (r2->start - s->pos)];
+	int cutoff = 0;
 
-	    for (i = -2; i <= 2; i++) {
-	    	fprintf(stderr, "%c", s->seq[tpos + i]);
-	    }
-	    
-	    fprintf(stderr, "\n"); 
-	} else {
-	    return -1;
-	} 
+	if (get_base(s, r2, base_sort_pos - r2->start, &b2, &cutoff) || cutoff) {
+	    b2 = 125;
+	}
+	
+    	if (b2 == 'N') {
+	    b2 = 123;
+	} else if (b2 == '*') {
+	    b2 = 124;
+	}
     }
-    
-    // fprintf(stderr, "%c %c\n", b1, b2);
     
     return b1 - b2;
 }
-
 
 static int simple_sort_by_strand(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
@@ -2012,6 +2018,11 @@ static int chosen_sort(const void *v1, const void *v2) {
     } else {
     	return sort_range_by_x(v1, v2);
     }
+}
+
+
+void contig_set_base_sort_point(int pos) {
+    base_sort_pos = pos;
 }
 
 
@@ -2610,6 +2621,7 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c, int start, int
 				   
     if (r) {
     	int job;
+	int k;
     
     	if (first & CSIR_DEFAULT) {
 	    first |= p_sort;
@@ -2705,14 +2717,6 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
     return contig_objects_in_range(io, c, start, end, first_order, second_order, count, 0, 0);
 }
 
-
-rangec_t *contig_items_in_range_with_pos(GapIO *io, contig_t **c, int start, int end,
-				int first_order, int second_order, int pos, int *count) {
-				
-    absolute_pos = pos;
-    
-    return contig_objects_in_range(io, c, start, end, first_order, second_order, count, 0, 0);
-}
 
 rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count) {

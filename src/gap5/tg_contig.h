@@ -69,10 +69,9 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count);
 rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count);
-rangec_t *contig_items_in_range_with_pos(GapIO *io, contig_t **c, int start, int end,
-				int first_order, int second_order, int pos, int *count);
 			       
 void contig_set_default_sort(int primary, int secondary);
+void contig_set_base_sort_point(int pos);
 
 #define CSIR_PAIR                  (1<<0)
 #define CSIR_ALLOCATE_Y_SINGLE     (1<<1)

@@ -1609,6 +1609,29 @@ proc editor_group_by {w} {
     }
 }
 
+
+
+# sort_by_base depends on a base in the consensus
+# (type 17) being set.  Code in set_sort_order forces
+# a redraw.
+proc order_update_on_consensus {w} {
+    global $w
+    
+    foreach {type rec pos} [$w get_number] break
+    
+    set tl [winfo toplevel $w]
+    
+    if {$type == 17} {
+    	upvar \#0 $tl opt
+	
+	foreach ed $opt(all_editors) {
+	    $ed set_base_sort_point
+	    $ed set_sort_order 
+    	    $ed redraw
+	}
+    }
+}
+
 #-----------------------------------------------------------------------------
 # Undo support
 proc store_undo {w cmdu cmdr} {
@@ -3274,6 +3297,7 @@ bind EdNames <<menu>> {
 
 bind Editor <<select>> {
     focus %W
+
     set w [winfo toplevel %W]
     if {![string match [set ${w}(curr_editor)] %W]} {
 	[set ${w}(curr_editor)] configure -hollow_cursor 1
@@ -3290,6 +3314,17 @@ bind Editor <<select>> {
 	eval %W set_cursor $_sel 1
 	update_brief %W
     }
+    
+    if {[string match "17*" $_sel]} {
+    	upvar \#0 $w opt
+	
+	foreach ed $opt(all_editors) {
+	    $ed set_base_sort_point
+	    $ed set_sort_order 
+    	    $ed redraw
+	}
+    }
+    
     unset _sel
     %W select clear
 }
@@ -3308,17 +3343,17 @@ bind Editor <Key-Return> {
     set ${w}(Status) "Padded position $pos, unpadded $upos"
 }
 
-bind Editor <Key-Left>		{%W cursor_left; update_brief %W}
-bind Editor <Control-Key-b>	{%W cursor_left; update_brief %W}
+bind Editor <Key-Left>		{%W cursor_left; update_brief %W; order_update_on_consensus %W}
+bind Editor <Control-Key-b>	{%W cursor_left; update_brief %W; order_update_on_consensus %W}
 
-bind Editor <Key-Right>		{%W cursor_right; update_brief %W}
-bind Editor <Control-Key-f>	{%W cursor_right; update_brief %W}
+bind Editor <Key-Right>		{%W cursor_right; update_brief %W; order_update_on_consensus %W}
+bind Editor <Control-Key-f>	{%W cursor_right; update_brief %W; order_update_on_consensus %W}
 
-bind Editor <Key-Up>		{%W cursor_up;    update_brief %W}
-bind Editor <Control-Key-p>	{%W cursor_up;    update_brief %W}
+bind Editor <Key-Up>		{%W cursor_up;    update_brief %W; order_update_on_consensus %W}
+bind Editor <Control-Key-p>	{%W cursor_up;    update_brief %W; order_update_on_consensus %W}
 
-bind Editor <Key-Down>		{%W cursor_down;  update_brief %W}
-bind Editor <Control-Key-n>	{%W cursor_down;  update_brief %W}
+bind Editor <Key-Down>		{%W cursor_down;  update_brief %W; order_update_on_consensus %W}
+bind Editor <Control-Key-n>	{%W cursor_down;  update_brief %W; order_update_on_consensus %W}
 
 # Not all X11 servers have these keysyms
 catch {

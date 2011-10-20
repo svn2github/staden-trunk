@@ -960,11 +960,12 @@ int edview_visible_items(edview *xx, int start, int end) {
     /* Query sequences */
     if (xx->r)
 	free(xx->r);
+	
     xx->r_start = start;
     xx->r_end = end;
-    xx->r = contig_items_in_range_with_pos(xx->io, &c, start, end,
+    xx->r = contig_items_in_range(xx->io, &c, start, end,
 				  CSIR_SORT_BY_Y | mode, CSIR_DEFAULT,
-				  xx->cursor_apos, &xx->nr);
+				  &xx->nr);
     if (!xx->r)
 	return -1;
 
@@ -3550,3 +3551,8 @@ int origpos(edview *xx, tg_rec srec, int pos) {
 
     return op;
 }
+
+void ed_set_base_sort_point(edview *xx) {
+    contig_set_base_sort_point(xx->cursor_apos);
+}
+    

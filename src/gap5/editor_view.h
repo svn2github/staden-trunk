@@ -297,5 +297,6 @@ int edPrevDifference(edview *xx);
 
 /* Set the group_by/sort settings */
 void edview_set_sort_order(edview *xx);
+void ed_set_base_sort_point(edview *xx);
 
 #endif /* _EDITOR_VIEW_H_ */
