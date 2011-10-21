@@ -6,8 +6,15 @@
 # notice for information on the restrictions for usage and distribution, and
 # for a disclaimer of all warranties.
 #
-proc DisReadingsDialog { io f cs} {
+
+#-----------------------------------------------------------------------------
+# Disassemble Readings
+
+proc DisReadings { io } {
     global gap5_defs
+
+    set f [keylget gap5_defs DIS_READINGS.WIN]
+    set cs [keylget gap5_defs CONTIG_SEL.WIN]
 
     if {[xtoplevel $f -resizable 0] == ""} return
     wm title $f "Disassemble readings"
@@ -203,6 +210,81 @@ proc OK_Pressed_EdDisReading { io list f sel_task constags } {
     }
 
     ContigInitReg $io
+}
+
+#-----------------------------------------------------------------------------
+# Disassemble Contigs
+
+proc DisContigs { io } {
+    global gap5_defs
+
+    set f [keylget gap5_defs DIS_CONTIGS.WIN]
+    set cs [keylget gap5_defs CONTIG_SEL.WIN]
+
+    if {[xtoplevel $f -resizable 0] == ""} return
+    wm title $f "Disassemble contigs"
+
+    contig_id $f.id -title "Contig identifier" -io $io -range 0
+
+    #create file of filenames entry windows
+    lorf_in $f.infile [keylget gap5_defs DIS_READINGS.INFILE] \
+	"{contig_id_configure $f.id -state disabled} \
+	 {contig_id_configure $f.id -state disabled}\
+	 {contig_id_configure $f.id -state normal}" -bd 2 -relief groove
+
+
+    ###########################################################################
+    #OK and Cancel buttons
+    okcancelhelp $f.ok_cancel \
+        -ok_command "OK_Pressed_DisContig $io $f $cs $f.infile $f.id"\
+	-cancel_command "destroy $f" \
+	-help_command "show_help gap5 {Disassemble}" \
+	-bd 2 \
+	-relief groove
+    ###########################################################################
+
+    pack $f.infile -fill x
+    pack $f.id -fill x
+    pack $f.ok_cancel -fill x
+
+}
+
+proc OK_Pressed_DisContig { io f cs infile id } {
+    global gap5_defs
+
+    #special case for a single reading
+    if {[lorf_in_get $infile] == 3} {
+	set list [contig_id_gel $id]
+    } else {
+	if {[set list [lorf_get_list $infile]] == ""} {bell; return}
+    }
+
+    destroy $f
+    update idletasks
+
+    if {![quit_displays -io $io -msg "disassemble_readings"]} {
+	# Someone's too busy to shutdown?
+	return
+    }
+
+    set result [disassemble_contigs \
+		    -io $io \
+		    -contigs $list]
+    #if database is empty, destroy contig selector and set menus back to
+    #as if opened new database
+    if {[db_info num_contigs $io] == 0} {
+	set cs_win [keylget gap5_defs CONTIG_SEL.WIN]
+	destroy $cs_win
+	DisableMenu_Open
+	ActivateMenu_New
+	return
+    }
+
+    ContigInitReg $io
+    InitContigGlobals $io
+
+    # Called to increase maxseq
+    PrintDatabaseInfo $io
 }
 
 #-----------------------------------------------------------------------------

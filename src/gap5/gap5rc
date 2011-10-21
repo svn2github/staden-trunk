@@ -354,6 +354,7 @@ set_def TEMPLATE.CURSOR2	.cursor_l
 set_def READING_LIST.WIN	.reading_list
 set_def SHOWREL.WIN		.show_relationships
 set_def DIS_READINGS.WIN	.disassemble_readings
+set_def DIS_CONTIGS.WIN		.disassemble_contigs
 set_def EXTRACT.WIN		.extract_readings
 set_def PREASS.WIN		.preassemble
 set_def CONTIG_EDITOR.WIN	.cedit

@@ -273,7 +273,7 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
     /* FIXME: optimise by only calling this once per contig rather
      * than once per read.
      */
-    {
+    if (pos->start <= c->start || pos->end >= c->end) {
 	int ns, ne;
 	if (-1 != consensus_unclipped_range(io, c->rec, &ns, &ne)) {
 	    //printf("Old range=%d..%d new range=%d..%d\n",
@@ -1205,4 +1205,75 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
     ArrayDestroy(cmap);
 
     return err ? -1 : 0;
+}
+
+/*
+ * As per disassemble readings, but removes entire contigs.
+ *
+ * This is substantially faster as it doesn't need to track a lot of the
+ * changes to contig dimensions.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
+    int i;
+    int ret = 0;
+
+    for (i = 0; i < ncontigs; i++) {
+	contig_t *c;
+	contig_iterator *iter;
+	rangec_t *r;
+
+	iter = contig_iter_new_by_type(io, cnums[i], 1, CITER_FIRST,
+				       CITER_ISTART, CITER_IEND,
+				       GRANGE_FLAG_ISANY);
+
+	if (!iter) {
+	    verror(ERR_WARN, "disassemble_contigs",
+		   "Failed to load contig #%"PRIrec, cnums[i]);
+	    ret = 1;
+	    continue;
+	}
+
+	/* Destroy contents of the contig */
+	while (r = contig_iter_next(io, iter)) {
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
+	    
+	    switch (r->flags & GRANGE_FLAG_ISMASK) {
+	    case GRANGE_FLAG_ISSEQ: {
+		seq_t *s = cache_search(io, GT_Seq, r->rec);
+
+		if (!s) {
+		    ret = 1;
+		    continue;
+		}
+
+		/* Remove from B+Tree */
+		io->iface->seq.index_del(io->dbh, s->name, s->rec);
+
+		/* Remove from seq_block */
+		cache_item_remove(io, GT_Seq, r->rec);
+
+		break;
+	    }
+
+	    case GRANGE_FLAG_ISANNO:
+		cache_item_remove(io, GT_AnnoEle, r->rec);
+		break;
+	    }
+	}
+
+	contig_iter_del(iter);
+
+	/* Destroy the contig bin structure itself */
+	c = cache_search(io, GT_Contig, cnums[i]);
+
+	if (c && c->bin)
+	    bin_destroy_recurse(io, c->bin);
+	contig_destroy(io, cnums[i]);
+    }
+
+    return ret;
 }

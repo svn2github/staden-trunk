@@ -283,13 +283,6 @@ proc AutoAssemble { io option } {
     }
 }
 
-##############################################################################
-#gap disassemble readings option
-proc DisReadings { io } {
-    global gap5_defs
-
-    DisReadingsDialog $io [keylget gap5_defs DIS_READINGS.WIN] [keylget gap5_defs CONTIG_SEL.WIN]
-}
 
 ##############################################################################
 #gap find repeats option

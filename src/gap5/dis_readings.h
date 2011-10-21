@@ -20,6 +20,17 @@
 int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
                          int remove_holes, int duplicate_tags);
 
+/*
+ * As per disassemble readings, but removes entire contigs.
+ *
+ * This is substantially faster as it doesn't need to track a lot of the
+ * changes to contig dimensions.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs);
+
 void bin_destroy_recurse(GapIO *io, tg_rec rec);
 
 /*

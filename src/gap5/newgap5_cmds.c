@@ -1420,7 +1420,7 @@ tcl_disassemble_readings(ClientData clientData, Tcl_Interp *interp,
 	{NULL,	 0,	  0, NULL, 0}
     };
 
-    vfuncheader("disassemble contig");
+    vfuncheader("disassemble readings");
 
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
@@ -1450,6 +1450,64 @@ tcl_disassemble_readings(ClientData clientData, Tcl_Interp *interp,
     }
     Tcl_Free((char *)reads);
     xfree(rnums);
+
+    return TCL_OK;
+}
+
+static int rec_compar(const void *vp1, const void *vp2) {
+    tg_rec *r1 = (tg_rec *)vp1;
+    tg_rec *r2 = (tg_rec *)vp2;
+
+    return *r2-*r1;
+}
+
+int
+tcl_disassemble_contigs(ClientData clientData, Tcl_Interp *interp,
+			 int objc, Tcl_Obj *CONST objv[])
+{
+    dis_reading_arg args;
+    contig_list_t *contig_array = NULL;
+    int ncontigs = 0, i, j, last;
+    tg_rec *contigs;
+    cli_args a[] = {
+	{"-io",	      ARG_IO,  1, NULL, offsetof(dis_reading_arg, io)},
+	{"-contigs" , ARG_STR, 1, NULL, offsetof(dis_reading_arg, list)},
+	{NULL,	 0,	  0, NULL, 0}
+    };
+
+    vfuncheader("disassemble contigs");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    /* Parse list of contigs */
+    active_list_contigs(args.io, args.list, &ncontigs, &contig_array);
+
+    if (NULL == (contigs = (tg_rec *)xmalloc(ncontigs * sizeof(*contigs))))
+        return TCL_ERROR;
+
+    for (i = 0; i < ncontigs; i++)
+	contigs[i] = contig_array[i].contig;
+
+    /* Remove duplicates */
+    qsort(contigs, ncontigs, sizeof(*contigs), rec_compar);
+    last = -1;
+    for (i = j = 0; i < ncontigs; i++) {
+	if (contigs[i] != last)
+	    last = contigs[j++] = contigs[i];
+    }
+    ncontigs = j;
+
+    /* Disassemble */
+    if (disassemble_contigs(args.io, contigs, ncontigs) < 0) {
+        verror(ERR_WARN, "Disassemble contigs",
+               "Failure in Disassemble Contigs");
+    }
+
+    if (contigs)
+	xfree(contigs);
+    if (contig_array)
+	xfree(contig_array);
 
     return TCL_OK;
 }
@@ -2215,6 +2273,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "disassemble_readings",
 			 tcl_disassemble_readings,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "disassemble_contigs",
+			 tcl_disassemble_contigs,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "sequence_depth",
