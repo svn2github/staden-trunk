@@ -406,7 +406,7 @@ proc contig_register_callback {ed type id args} {
 	    # A bit obscure, but it ensures edSetApos() is called in C,
 	    # keeping cached absolute and relative positions in sync
 	    # incase the edit was moving a sequence.
-	    eval $ed set_cursor [$ed get_cursor relative]
+	    eval $ed set_cursor [$ed get_cursor relative] 0
 	}
 
 	GENERIC {

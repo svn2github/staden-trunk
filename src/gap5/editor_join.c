@@ -1016,6 +1016,9 @@ int edJoin(edview *xx) {
     if (!xx->link)
 	return -1;
 
+    xx->link->lockOffset = xx->link->xx[1]->displayPos -
+	xx->link->xx[0]->displayPos;
+
     if (xx->link->lockOffset > 0) {
 	cl = xx->link->xx[1]->cnum;
 	cr = xx->link->xx[0]->cnum;
