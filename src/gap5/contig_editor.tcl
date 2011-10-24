@@ -2380,27 +2380,42 @@ proc U_tag_change {w rec new_a} {
 	    [list U_tag_change $w $rec ""]
 
     } elseif {$rec == -1} {
+	if {$d(start) > $d(end)} {
+	    set t $d(start)
+	    set d(start) $d(end)
+	    set d(end) $t
+
+	}
 	# Clip coords to consensus
-	if {$d(otype) == 18} {
-	    set c [$io get_contig [$w get_contig_rec]]
-	    set cstart [$c get_visisble_start]
+	if {$d(otype) == 17} {
+	    set c [$io get_contig [$w contig_rec]]
+	    set cstart [$c get_visible_start]
 	    set cend   [$c get_visible_end]
 	    $c delete
 
-	    puts $cstart..$cend
-	    puts $d(start)..$d(end)
+	    if {$d(start)  < $cstart} {
+		set d(start) $cstart
+	    }
+	    if {$d(end)  > $cend} {
+		set d(end) $cend
+	    }
 	}
 
 	# Create
-	set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
-	set t [$io get_anno_ele $rec]
-	$t set_comment $d(anno)
-	$t set_type $d(type)
-	$t delete
+	if {$d(start) <= $d(end)} {
+	    set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
+	    set t [$io get_anno_ele $rec]
+	    $t set_comment $d(anno)
+	    $t set_type $d(type)
+	    $t delete
 	
-	store_undo $w \
-	    [list \
-		 [list T_DEL $rec]] {}
+	    store_undo $w \
+		[list \
+		     [list T_DEL $rec]] {}
+	} else {
+	    # Clipped and still negative size => entirely off contig
+	    bell;
+	}
 
     } else {
 	# Modify
