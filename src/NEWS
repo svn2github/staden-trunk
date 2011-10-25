@@ -1,3 +1,78 @@
+25th Oct 2011
+=============
+
+Gap5 Updates
+------------
+
+*	Protect against attempts to create annotations off the ends of
+        contigs (in cutoff).
+
+*	New function: Disassemble Contigs (needs more testing).
+
+*	New function: Lists -> Contigs to Readings
+
+*	Bulk trimming in the editor using < and > bindings.
+
+*	Added grouping by base type to the contig editor.
+
+*	Removed contig editor's cache of the contig structure. This is
+        just an internal change, but it avoids a potential cause of
+        inconsistencies.
+
+*	Added the ability to copy and paste contig names as well as
+        reading names from the editor window. Also rebound Button-2 to be
+        copy by #number, with Button-1 still being "name".
+
+Gap5 Fixes
+----------
+
+*	Major Join Editor bug fix. If editing cursor is not visible
+        and lock mode is not enabled, the save while joining caused
+        the contigs to shift positions, breaking alignment.
+
+*	Fixed the consensus when consisting soley of reads of N.
+
+*	It's no longer possible to attempt a join to itself. (Could be
+        achieved before by using multiple join editor windows up
+        simultaneously.)
+
+*	Improved robustness of Disassemble Readings when given a list
+        of sequence record numbers that don't exist or aren't sequences.
+
+*	Fixed editor redisplay bugs when edits are made in a join
+        editor being updated in another window.
+
+*	Fixed typo in editor.
+
+
+18th Oct 2011
+=============
+
+Gap5 Updates
+------------
+
+*	Added the ability to copy and paste contig names as well as
+	reading names from the editor window. Also rebound Button-2 to
+	be copy by #number, with Button-1 still being "name".
+
+Gap5 Fixes
+----------
+
+*	Fixed a Disassemble Readings corruption that could leave
+        zero-read contigs in some cases.
+
+*	Added No.Annotations to the copy buffer of the List Contigs
+        window.
+
+*	Fixed some caching bugs with the B+Tree code, showing up as
+        crashes or corruptions.
+
+*	Bug fixes to the new SAM tag exporting.
+	- Blank tags no longer get an additional '|' character.
+	- Consensus tags are now sorted correctly, removing the need
+	  to use samtools sort.
+
+
 13th Oct 2011
 =============
 
