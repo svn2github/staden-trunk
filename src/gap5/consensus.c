@@ -1362,7 +1362,7 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	}
 
 	/* And store result */
-	if (depth[i]) {
+	if (depth[i] && depth[i] != cons[i].counts[5] /* all N */) {
 	    double m;
 
 	    cons[i].depth = depth[i];
@@ -1687,4 +1687,144 @@ int consensus_padded_pos(GapIO *io, tg_rec contig, int upos, int *pos) {
     free(cons);
 
     return 0;
+}
+
+#define WLEN 12
+#define WSIZE (1<<(2*WLEN))
+static unsigned char uhash[WSIZE];
+
+static char *s(uint32_t w) {
+    static char s[WLEN+1];
+    int i;
+
+    for (i = 0; i < WLEN; i++) {
+	s[WLEN-i-1] = "ACGT"[w & 3];
+	w >>= 2;
+    }
+    s[WLEN] = 0;
+
+    return s;
+}
+
+
+int update_uniqueness_hash(GapIO *io) {
+    int i, j, cnum;
+    char *cons = NULL;
+    size_t cons_l = 0;
+    uint32_t w, W;
+
+    consensus_init(P_HET);
+
+    memset(uhash, 0, WSIZE);
+
+    for (cnum = 0; cnum < io->db->Ncontigs; cnum++) {
+	tg_rec crec = arr(tg_rec, io->contig_order, cnum);
+	contig_t *c = cache_search(io, GT_Contig, crec);
+	size_t len;
+
+	if (!c) {
+	    if (cons)
+		xfree(cons);
+	    return -1;
+	}
+
+	len = c->end - c->start + 1;
+	if (cons_l < len) {
+	    cons_l = len;
+	    if (NULL == (cons = xrealloc(cons, cons_l)))
+		return -1;
+	}
+
+	printf("%d/%d len %d\n", cnum+1, io->db->Ncontigs, len);
+
+	calculate_consensus_simple(io, crec, c->start, c->end, cons, NULL);
+	
+	for (w = i = j = 0; i < len && j < WLEN-1; i++) {
+	    int c = lookup[cons[i]];
+	    if (c < 4) {
+		w = (w << 2) | c;
+		W = (W << 2) | (c ^ 3);
+		j++;
+	    }
+	}
+	for (; i < len; i++) {
+	    int c = lookup[cons[i]];
+	    if (c < 4) {
+		w = (w << 2) | c;
+		w &= WSIZE-1;
+
+		if (uhash[w] < 255)
+		    uhash[w]++;
+
+		W = (W << 2) | (c^3);
+		W &= WSIZE-1;
+
+		if (uhash[W] < 255)
+		    uhash[W]++;
+
+		//printf("%s %d\n", s(w), uhash[w]);
+	    }
+	}
+    }
+
+//    for (i = 0; i < WSIZE; i++) {
+//	if (uhash[i])
+//	    printf("%d %d\n", i, uhash[i]);
+//    }
+
+    return 0;
+}
+
+int get_uniqueness(GapIO *io, tg_rec crec, int pos) {
+    char cons[WLEN*4+1];
+    int i, j, w = 0;
+    char *cp;
+
+    cp = &cons[WLEN*2];
+    calculate_consensus_simple(io, crec, pos-WLEN*2, pos+WLEN*2, cons, NULL);
+
+    for (i = 0, j = WLEN/2; i >= -WLEN*2 && j > 0; i--) {
+	if (lookup[cp[i] < 4])
+	    j--;
+    }
+
+    if (j != 0)
+	return 0;
+
+    for (; i < WLEN*2 && j < WLEN; i++) {
+	int c = lookup[cp[i]];
+	if (c < 4) {
+	    w = (w << 2) | c;
+	    j++;
+	}
+    }
+
+    printf("%s %d\n", s(w), uhash[w]);
+
+    return uhash[w];
+}
+
+int get_uniqueness_pos(char *str, int len, int pos) {
+    char cons[WLEN*4+1];
+    int i, j, w = 0;
+
+    for (i = pos, j = WLEN/2; i > 0 && j > 0; i--) {
+	if (lookup[str[i]] < 4)
+	    j--;
+    }
+
+    if (j != 0)
+	return 0;
+
+    for (; i < len && j < WLEN; i++) {
+	int c = lookup[str[i]];
+	if (c < 4) {
+	    w = (w << 2) | c;
+	    j++;
+	}
+    }
+
+    printf("%s %d\n", s(w), uhash[w]);
+
+    return uhash[w];
 }
