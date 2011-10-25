@@ -108,7 +108,9 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 			 int contig_orient);
 int sequence_delete_base(GapIO *io, seq_t **s, int pos,
 			 int contig_orient);
-
+int sequence_delete_base2(GapIO *io, seq_t **s, int pos, int contig_orient,
+			  int check_base);
+			  
 /* Fix range_t length values after insert or delete */
 int sequence_range_length(GapIO *io, seq_t **s);
 

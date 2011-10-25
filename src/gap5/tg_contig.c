@@ -9,6 +9,9 @@
 #include "misc.h"
 #include "tree.h"
 #include "dna_utils.h"
+#include "consensus.h"
+#include "break_contig.h"
+#include "tg_check.h"
 
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
@@ -388,7 +391,6 @@ static int contig_insert_tag2(GapIO *io, tg_rec crec, tg_rec bnum,
 			      int comp, HacheTable *hash) {
     int i;
     bin_index_t *bin;
-    HacheData hd;
     int f_a, f_b;
 
     bin = get_bin(io, bnum);
@@ -1096,7 +1098,6 @@ static int contig_delete_base_fix(GapIO *io, tg_rec crec, tg_rec bnum,
     /* Find objects now moved to -ve coords in bins, and re-home them */
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i), r2, *r_out;
-	HacheItem *hi;
 
 	if (r->flags & GRANGE_FLAG_UNUSED)
 	    continue;
@@ -1149,12 +1150,8 @@ static int contig_delete_base_fix(GapIO *io, tg_rec crec, tg_rec bnum,
 		       old_comp, new_comp);
 
 		if (new_comp != old_comp) {
-		    int tmp;
 		    s->len *= -1;
 		    s->flags ^= SEQ_COMPLEMENTED;
-		    //tmp = s->left;
-		    //s->left  = ABS(s->len) - (s->right-1);
-		    //s->right = ABS(s->len) - (tmp-1);
 		}
 
 		/* Also move annotations */
@@ -1640,127 +1637,6 @@ static int sort_range_by_x_end(const void *v1, const void *v2) {
 
 static GapIO *sort_io = NULL; /* Hack to pass into qsort() */
 
-static int sort_range_by_x_clipped(const void *v1, const void *v2) {
-    const rangec_t *r1 = (const rangec_t *)v1;
-    const rangec_t *r2 = (const rangec_t *)v2;
-    int d;
-    int r1_start, r2_start;
-    
-    /* Use clipped coordinate in seqs */
-    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
-	if ((s->len < 0) ^ r1->comp) {
-	    r1_start = r1->start + ABS(s->len) - (s->right-1) - 1;
-	} else {
-	    r1_start = r1->start + s->left-1;
-	}
-    } else {
-	r1_start = r1->start;
-    }
-
-    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-	seq_t *s = cache_search(sort_io, GT_Seq, r2->rec);
-	if ((s->len < 0) ^ r2->comp)
-	    r2_start = r2->start + ABS(s->len) - (s->right-1) - 1;
-	else
-	    r2_start = r2->start + s->left-1;
-    } else {
-	r2_start = r2->start;
-    }
-
-    /* By X primarily */
-    if ((d = r1_start - r2_start))
-	return d;
-    
-    /* And finally by recno, allowing for 64-bit quantities. */
-    if (r1->rec > r2->rec)
-	return 1;
-    else if (r1->rec < r2->rec)
-	return -1;
-    else
-	return 0;
-}
-
-/*
- * Sort comparison function for range_t; sort by ascending position of
- * object end position.
- */
-static int sort_range_by_x_clipped_end(const void *v1, const void *v2) {
-    const rangec_t *r1 = (const rangec_t *)v1;
-    const rangec_t *r2 = (const rangec_t *)v2;
-    int d;
-    int r1_end, r2_end;
-
-    /* Use clipped coordinate in seqs */
-    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-	seq_t *s = cache_search(sort_io, GT_Seq, r1->rec);
-	if ((s->len < 0) ^ r1->comp)
-	    r1_end = r1->start + ABS(s->len) - (s->left-1) - 1;
-	else
-	    r1_end = r1->start + s->right-1;
-    } else {
-	r1_end = r1->end;
-    }
-
-    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-	seq_t *s = cache_search(sort_io, GT_Seq, r2->rec);
-	if ((s->len < 0) ^ r2->comp)
-	    r2_end = r2->start + ABS(s->len) - (s->left-1) - 1;
-	else
-	    r2_end = r2->start + s->right-1;
-    } else {
-	r2_end = r2->end;
-    }
-
-    /* By X primarily */
-    if ((d = r1_end - r2_end))
-	return d;
-    
-    /* And finally by recno, allowing for 64-bit quantities. */
-    if (r1->rec > r2->rec)
-	return 1;
-    else if (r1->rec < r2->rec)
-	return -1;
-    else
-	return 0;
-}
-
-/* Sort comparison function for range_t; sort by ascending position */
-static int sort_range_by_tech_x(const void *v1, const void *v2) {
-    const rangec_t *r1 = (const rangec_t *)v1;
-    const rangec_t *r2 = (const rangec_t *)v2;
-    int d;
-
-
-    /* Initially by technology */
-    if (r1->seq_tech != r2->seq_tech) {
-	return r1->seq_tech - r2->seq_tech;
-    }
-
-    /* Then by X */
-    if ((d = r1->start - r2->start))
-	return d;
-    
-#if 0
-    /* And then by unmapped first, mapped second */
-    {
-	int m1, m2;
-	m1 = (r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ;
-	m2 = (r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ;
-	if (m1 != m2)
-	    return m2 - m1;
-    }
-#endif
-
-    /* And finally by recno, allowing for 64-bit quantities. */
-    if (r1->rec > r2->rec)
-	return 1;
-    else if (r1->rec < r2->rec)
-	return -1;
-    else
-	return 0;
-}
-
 /* Sort comparison function for range_t; sort by ascending position */
 static int sort_range_by_y(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
@@ -1913,7 +1789,7 @@ static int simple_sort_range_by_template(const void *v1, const void *v2) {
 
 /* As we already have rangec_t calculated we can use this instead of the
    slower sequence_get_base */
-static int get_base(seq_t *s, rangec_t *r, int pos, char *base, int *cutoff) {
+static int get_base(seq_t *s, const rangec_t *r, int pos, char *base, int *cutoff) {
     
     if (pos < 0 || pos >= ABS(s->len)) return -1;
 
@@ -1999,14 +1875,7 @@ static int simple_sort_range_by_tech_x(const void *v1, const void *v2) {
 }
 
 
-static int simple_sort_range_by_y(const void *v1, const void *v2) {
-    const rangec_t *r1 = (const rangec_t *)v1;
-    const rangec_t *r2 = (const rangec_t *)v2;
-
-    return r1->y - r2->y;
-}
-
-
+/* runs the simple sort choices */
 static int chosen_sort(const void *v1, const void *v2) {
     
     int ret;
@@ -2088,7 +1957,7 @@ void contig_set_default_sort(int pri, int sec) {
 }
 
 
-// temporary one to see if things work
+/* return a pointer to a function */
 static int (*set_sort(int job))(const void *, const void *) {
 
 
@@ -2621,7 +2490,6 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c, int start, int
 				   
     if (r) {
     	int job;
-	int k;
     
     	if (first & CSIR_DEFAULT) {
 	    first |= p_sort;
@@ -3652,7 +3520,7 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
  */
 int iterator_expand_range(GapIO *io, tg_rec crec, int start, int end,
 			  int *e_start, int *e_end) {
-    int nr, i;
+    int nr;
     rangec_t *r;
     contig_t *c = cache_search(io, GT_Contig, crec);
 
