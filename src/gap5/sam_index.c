@@ -26,11 +26,13 @@ typedef struct bio_seq {
     struct bio_seq *next;
     char *seq;
     char *conf;
+    int  *pad;
     int seq_len;
     int alloc_len;
     int mqual;
     int pos;
     int left;
+    int padded_pos;
     tg_rec rec;
 } bio_seq_t;
 
@@ -207,6 +209,7 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
 	s->alloc_len = 0;
 	s->seq = NULL;
 	s->conf = NULL;
+	s->pad = NULL;
     }
 
     s->next = NULL;
@@ -219,6 +222,8 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
     
     s->seq = (char *)realloc(s->seq, (int)(s->alloc_len * 1.2));
     s->conf = (char *)realloc(s->conf, (int)(s->alloc_len * 1.2));
+    s->pad = (int *)realloc(s->pad, (int)(s->alloc_len * 1.2)*sizeof(int));
+    s->padded_pos = 0;
 
     //    printf("New seq %p / %p => %p,%p\n", p, s, s->seq, s->conf);
 
@@ -244,6 +249,9 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
                 return NULL;
             if (NULL == (s->conf = (char *)realloc(s->conf, s->alloc_len)))
                 return NULL;
+            if (NULL == (s->pad = (int *)realloc(s->pad,
+						 s->alloc_len*sizeof(int))))
+                return NULL;
 
 	    sp = s->seq;
 	    qp = s->conf;
@@ -259,6 +267,10 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
 	    for (i = 0; i < seq_offset; i++)
 		*sp++ = 'N';
 	}
+
+	for (i = 0; i < seq_offset; i++)
+	    s->pad[i] = i;
+	s->padded_pos = seq_offset;
 
 	if ((bio->a->data_type & DATA_QUAL) && (p->b->len >= seq_offset)) {
 	    for (i = 0; i < seq_offset; i++)
@@ -1292,7 +1304,8 @@ static int hex[256] = {
 /*
  * Parses a tag string and splits it into separate components returned in
  * start, end, dir, type and text. The tag is of the form:
- * start|end|strand|type|text
+ *   start;end;strand;type(;key=value)*
+ * Right now we just treat the (;key=value)* bit as arbitrary text.
  */
 static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
 			      char **type, int *type_len,
@@ -1303,12 +1316,12 @@ static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
     if (!*str)
 	return NULL;
 
-    if (3 != sscanf(str, "%d|%d|%c|%n", start, end, dir, &n))
+    if (3 != sscanf(str, "%d;%d;%c;%n", start, end, dir, &n))
 	goto error;
     str += n;
 
     *type = cp = str;
-    while (*str && *str != '|') {
+    while (*str && *str != ';' && *str != '|') {
 	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
 	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
 	    str += 3;
@@ -1316,9 +1329,23 @@ static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
 	    *cp++ = *str++;
 	}
     }
-    if (!*str++)
-	goto error;
     *type_len = cp-*type;
+
+    switch (*str) {
+    case ';':
+	str++;
+	break;
+
+    case '|':
+	*text_len = 0;
+	*text = NULL;
+	return ++str;
+
+    case '\0':
+	*text_len = 0;
+	*text = NULL;
+	return str;
+    }
 
     *text = cp = str;
     while (*str && *str != '|') {
@@ -1344,7 +1371,7 @@ static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
  * start, end, dir, type and text. The tag is of the form:
  * strand|type|text
  */
-static char *parse_bam_RT_tag(char *str, char *dir,
+static char *parse_bam_CT_tag(char *str, char *dir,
 			      char **type, int *type_len,
 			      char **text, int *text_len) {
     char *cp, *orig = str;
@@ -1354,12 +1381,12 @@ static char *parse_bam_RT_tag(char *str, char *dir,
 	return NULL;
 
     *dir = *str++;
-    if (! (*str && *str == '|'))
+    if (! (*str && *str == ';'))
 	goto error;
     str++;
 
     *type = cp = str;
-    while (*str && *str != '|') {
+    while (*str && *str != ';') {
 	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
 	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
 	    str += 3;
@@ -1367,9 +1394,23 @@ static char *parse_bam_RT_tag(char *str, char *dir,
 	    *cp++ = *str++;
 	}
     }
-    if (!*str++)
-	goto error;
     *type_len = cp-*type;
+
+    switch (*str) {
+    case ';':
+	str++;
+	break;
+
+    case '|':
+	*text_len = 0;
+	*text = NULL;
+	return ++str;
+
+    case '\0':
+	*text_len = 0;
+	*text = NULL;
+	return str;
+    }
 
     *text = cp = str;
     while (*str && *str != '|') {
@@ -1385,7 +1426,7 @@ static char *parse_bam_RT_tag(char *str, char *dir,
     return *str == '|' ? ++str : str;
 
  error:
-    verror(ERR_WARN, "parse_bam_RT_tag", "invalid sam/bam annotation: %s",
+    verror(ERR_WARN, "parse_bam_CT_tag", "invalid sam/bam annotation: %s",
 	   orig);
     return NULL;
 }
@@ -1474,10 +1515,14 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 		return -1;
 	    if (NULL == (bs->conf = (char *)realloc(bs->conf, bs->alloc_len)))
 		return -1;
+	    if (NULL == (bs->pad = (int *)realloc(bs->pad,
+						  bs->alloc_len*sizeof(int))))
+		return -1;
 	}
 	for (i = p->seq_offset+1; i < b->len; i++) {
 	    bs->seq [bs->seq_len] = bam_nt16_rev_table[bam_seqi(b_seq,i)];
 	    bs->conf[bs->seq_len] = b_qual[i];
+	    bs->pad[bs->seq_len] = bs->padded_pos++;
 	    bs->seq_len++;
 	}
     }
@@ -1641,6 +1686,9 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	    //printf("Tag %d..%d dir %c type=%.*s text=%.*s\n",
 	    //	   start, end, dir, type_len, type, text_len, text);
 
+	    start = bs->pad[start-1]+1;
+	    end   = bs->pad[end-1]+1;
+
 	    strncpy(tag_type, type, 4);
 	    tag_type[4] = 0;
 
@@ -1657,6 +1705,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 		otype = GT_Seq;
 		r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
 
+		/* FIXME: Re-pad start/end */
+
 		if (start < 1 || end > ABS(s.len)) {
 		    verror(ERR_WARN, "sam_import", "Anno. range (%d..%d) is "
 			   "outside of sequence range (%d..%d)",
@@ -1672,10 +1722,16 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 
 	    r.mqual = str2type(tag_type);
 
-	    tmp = text[text_len];
-	    text[text_len] = 0;
-	    r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual, text);
-	    text[text_len] = tmp;
+	    if (text) {
+		tmp = text[text_len];
+		text[text_len] = 0;
+		r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
+				       text);
+		text[text_len] = tmp;
+	    } else {
+		r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
+				       NULL);
+	    }
 
 	    /* Link it to a bin */
 	    e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
@@ -1704,7 +1760,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	start = bs->pos;
 	end   = bs->pos + bs->seq_len-1;
 
-	while (tags = parse_bam_RT_tag(tags, &dir,
+	while (tags = parse_bam_CT_tag(tags, &dir,
 				       &type, &type_len, &text, &text_len)) {
 	    strncpy(tag_type, type, 4);
 	    tag_type[4] = 0;
@@ -1724,10 +1780,16 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	    r.start = start;
 	    r.end   = end;
 
-	    tmp = text[text_len];
-	    text[text_len] = 0;
-	    r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual, text);
-	    text[text_len] = tmp;
+	    if (text) {
+		tmp = text[text_len];
+		text[text_len] = 0;
+		r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
+				       text);
+		text[text_len] = tmp;
+	    } else {
+		r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
+				       NULL);
+	    }
 
 	    /* Link it to a bin */
 	    e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
@@ -1965,6 +2027,9 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
 		return -1;
 	    if (NULL == (s->conf = (char *)realloc(s->conf, s->alloc_len)))
 		return -1;
+	    if (NULL == (s->pad = (int *)realloc(s->pad,
+						 s->alloc_len * sizeof(int))))
+		return -1;
 	}
 	if (bio->a->data_type & DATA_SEQ) {
 	    s->seq [s->seq_len] = p->base;
@@ -1976,6 +2041,8 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
 	} else {
 	    s->conf[s->seq_len] = 0;
 	}
+	s->pad[s->padded_pos] = s->seq_len;
+	s->padded_pos += 1 - p->padding;
 	s->seq_len++;
 
 	/* Remove sequence */
@@ -2112,6 +2179,8 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
 		free(s->seq);
 	    if (s->conf)
 		free(s->conf);
+	    if (s->pad)
+		free(s->pad);
 	    free(s);
 	}
 

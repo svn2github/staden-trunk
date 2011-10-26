@@ -161,11 +161,13 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
     if (p->nth < nth && op != BAM_CINS) {
 	//p->base = '-';
 	p->base = '*';
+	p->padding = 1;
 	if (p->seq_offset < b->len)
 	    p->qual = (p->qual + p->b_qual[p->seq_offset+1])/2;
 	else
 	    p->qual = 0;
     } else {
+	p->padding = 0;
 	switch(op) {
 	case BAM_CDEL:
 	    p->base = '*';

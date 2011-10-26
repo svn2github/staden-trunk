@@ -823,11 +823,12 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
 		    c->name, start + offset, end - start + 1);
 
     /* Annotation itself */
-    dstring_append(ds, "RT:Z:?|");
-    dstring_append_hex_encoded(ds, type2str(fi->r.mqual, type), "|");
-    dstring_append_char(ds, '|');
-    if (a->comment && *a->comment)
+    dstring_append(ds, "RT:Z:?;");
+    dstring_append_hex_encoded(ds, type2str(fi->r.mqual, type), ";|");
+    if (a->comment && *a->comment) {
+	dstring_append_char(ds, ';');
 	dstring_append_hex_encoded(ds, a->comment, "|");
+    }
 
     dstring_append_char(ds, '\n');
     fputs(dstring_str(ds), fp);
@@ -846,7 +847,7 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
  */
 static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 			   int fixmates, tg_rec crec, contig_t *c, int offset,
-			   int depad, char *cons, int *npad, int *pad_to){
+			   int depad, char *cons, int *npad, int *pad_to) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec), *sorig = s;
     int len = s->len < 0 ? -s->len : s->len, olen = len;
     int lenQ = 0;
@@ -862,6 +863,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     char *cigar_tmp;
     char rg_buf[1024], *aux_ptr;
     int first_tag = 1;
+    int *depad_map = NULL;
 
     fifo_t *last, *ti;
 
@@ -1113,9 +1115,38 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     }
 
     /*--- Attach tags for this sequence too */
+    if (fifo_queue_head(tq)) {
+	char *c, *d;
+	int i = 0, j = 0, l = ABS(s->len);
+	int op, op_len = 0;
+	depad_map = malloc(l * sizeof(*depad_map));
+	if (!depad_map)
+	    return NULL;
+
+	c = cigar;
+	d = s->seq;
+	
+	for (i = 0; i < l; i++) {
+	    if (op_len == 0) {
+		while (isdigit(*c))
+		    op_len = op_len*10 + *c++ - '0';
+		op = *c++;
+	    }
+
+	    depad_map[i] = j;
+	    if (d[i] != '*' || op == 'P' || (!depad && op == 'D')) {
+		//printf("%2d %c/%c %2d  %d%c\n", i+1, d[i], S[j], j+1, op_len, op);
+		op_len--;
+		j++;
+	    } else {
+		//printf("%2d %c/- %2d  -\n", i+1, d[i], j+1);
+	    }
+	}
+    }
     for (last = NULL, ti = fifo_queue_head(tq); ti;) {
 	anno_ele_t *a;
 	char type[5];
+	int st, en;
 
 	if (ti->r.start > fi->r.end)
 	    break;
@@ -1144,17 +1175,25 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	}
 	    
 	if ((s->len >= 0) ^ fi->r.comp) {
-	    dstring_appendf(ds, "%d|%d|?|", ti->r.start - (fi->r.start-1),
-			    ti->r.end - (fi->r.start-1));
+	    st = ti->r.start - (fi->r.start-1);
+	    en = ti->r.end - (fi->r.start-1);
 	} else {
-	    dstring_appendf(ds, "%d|%d|?|",
-			    ABS(s->len)+1 - (ti->r.end - (fi->r.start-1)),
-			    ABS(s->len)+1 - (ti->r.start - (fi->r.start-1)));
+	    st = ABS(s->len)+1 - (ti->r.end - (fi->r.start-1));
+	    en = ABS(s->len)+1 - (ti->r.start - (fi->r.start-1));
 	}
-	dstring_append_hex_encoded(ds, type2str(ti->r.mqual, type), "|");
-	dstring_append_char(ds, '|');
-	if (a->comment && *a->comment)
+	//printf("%d..%d => %d..%d in seq len %d\n", 
+	//       st, en, depad_map[st-1]+1, depad_map[en-1]+1, s->len);
+	if (depad_map)
+	    dstring_appendf(ds, "%d;%d;?;",
+			    depad_map[st-1]+1, depad_map[en-1]+1);
+	else
+	    dstring_appendf(ds, "%d;%d;?;", st, en);
+
+	dstring_append_hex_encoded(ds, type2str(ti->r.mqual, type), ";|");
+	if (a->comment && *a->comment) {
+	    dstring_append_char(ds, ';');
 	    dstring_append_hex_encoded(ds, a->comment, "|");
+	}
 
 	/* Remove ti from the list (NB fifo is wrong abstract type) */
 	if (last) {
@@ -1169,6 +1208,8 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	    ti = fifo_queue_head(tq);
 	}
     }
+    if (depad_map)
+	free(depad_map);
 
 
     /*--- Finally output it */
