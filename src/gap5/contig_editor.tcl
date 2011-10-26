@@ -3486,8 +3486,11 @@ bind Editor <Key-c> {editor_edit_base %W c [%W get_number]}
 bind Editor <Key-g> {editor_edit_base %W g [%W get_number]}
 bind Editor <Key-t> {editor_edit_base %W t [%W get_number]}
 bind Editor <Key-u> {editor_edit_base %W t [%W get_number]}
+bind Editor <Key-n> {editor_edit_base %W n [%W get_number]}
+bind Editor <Key-minus> {editor_edit_base %W - [%W get_number]}
 bind Editor <Key-asterisk> {editor_edit_base %W * [%W get_number]}
 bind Editor <Key-i> {editor_insert_gap %W [%W get_number]}
+bind Editor <Key-Insert> {editor_insert_gap %W [%W get_number]}
 bind Editor <Key-Delete> {editor_delete_base %W [%W get_number]}
 bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number]}
 bind Editor <Control-Key-Delete> {editor_delete_base %W [%W get_number] 1}
