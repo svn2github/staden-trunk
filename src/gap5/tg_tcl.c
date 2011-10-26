@@ -241,10 +241,11 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     case NEW_ANNO_ELE: {
 	int obj_type, start, end;
 	Tcl_WideInt obj_rec;
+	char dir = ANNO_DIR_NUL;
 
-	if (objc != 6) {
+	if (objc != 6 && objc != 7) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
-			   "\"%s obj_type obj_rec start end\"\n",
+			   "\"%s obj_type obj_rec start end ?dir?\"\n",
 			   Tcl_GetStringFromObj(objv[0], NULL));
 	    return TCL_ERROR;
 	}
@@ -253,12 +254,14 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_GetWideIntFromObj(interp, objv[3], &obj_rec);
 	Tcl_GetIntFromObj(interp, objv[4], &start);
 	Tcl_GetIntFromObj(interp, objv[5], &end);
+	if (objc == 7)
+	    dir = *Tcl_GetStringFromObj(objv[6], NULL);
 
 	vTcl_SetResult(interp, "%"PRIrec,
 		       anno_ele_add(io, obj_type, obj_rec,
 				    0 /* anno_rec */,
 				    str2type("COMM"), "",
-				    start, end));
+				    start, end, dir));
 	break;
     }
 
@@ -1741,10 +1744,10 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	"delete",       "io",           "get_rec",
 	"get_contig",   "get_position", "get_comment",
 	"get_obj_type", "get_obj_rec",  "get_anno_rec",
-	"get_type",     
+	"get_type",     "get_direction",
 	"set_contig",   "set_position", "set_comment",
 	"set_obj_type", "set_obj_rec",  "set_anno_rec",
-	"set_type",     "remove",
+	"set_type",     "set_direction","remove",
 	(char *)NULL,
     };
 
@@ -1752,10 +1755,10 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	DELETE,         IO,             GET_REC,
 	GET_CONTIG,     GET_POSITION,   GET_COMMENT,
 	GET_OBJ_TYPE,   GET_OBJ_REC,    GET_ANNO_REC,
-	GET_TYPE,       
+	GET_TYPE,       GET_DIRECTION,
 	SET_CONTIG,     SET_POSITION,   SET_COMMENT,
 	SET_OBJ_TYPE,   SET_OBJ_REC,    SET_ANNO_REC,
-	SET_TYPE,	REMOVE
+	SET_TYPE,	SET_DIRECTION,  REMOVE
     };
 
     if (objc < 2) {
@@ -1857,6 +1860,27 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	str = Tcl_GetStringFromObj(objv[2], NULL);
 	anno_ele_set_comment(te->io, &te->anno, str);
+	break;
+    }
+
+    case GET_DIRECTION:
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), &te->anno->direction ,1);
+	break;
+
+    case SET_DIRECTION: {
+	char *dir;
+
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_direction +|-|.|?\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	dir = Tcl_GetStringFromObj(objv[2], NULL);
+	if (-1 == anno_ele_set_direction(te->io, &te->anno, *dir))
+	    return TCL_ERROR;
+
 	break;
     }
 

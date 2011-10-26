@@ -8,7 +8,7 @@
  */
 tg_rec anno_ele_new(GapIO *io, tg_rec bin,
 		    int obj_type, tg_rec obj_rec, tg_rec anno_rec,
-		    int type, char *comment);
+		    int type, char dir, char *comment);
 
 /*
  * Removes an anno_ele from the gap database.
@@ -24,7 +24,7 @@ int anno_ele_destroy(GapIO *io, anno_ele_t *e);
  * and creates the bin Range entry too.
  */
 tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
-		    int type, char *comment, int start, int end);
+		    int type, char *comment, int start, int end, char dir);
 
 /*
  * Returns the range_t element from the bin holding this annotation.
@@ -53,6 +53,14 @@ int anno_ele_set_comment(GapIO *io, anno_ele_t **e, char *comment);
  *        -1 on failure
  */
 int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str);
+
+/*
+ * Sets the annotation direction, one of ANNO_DIR_* macros (+,-,.,?)
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int anno_ele_set_direction(GapIO *io, anno_ele_t **e, char dir);
 
 /*
  * Finds the contig number and position of an anno_ele record number.

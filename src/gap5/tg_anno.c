@@ -11,16 +11,17 @@
  */
 tg_rec anno_ele_new(GapIO *io, tg_rec bin,
 		    int obj_type, tg_rec obj_rec, tg_rec anno_rec,
-		    int type, char *comment) {
+		    int type, char dir, char *comment) {
     tg_rec rec;
     anno_ele_t e;
 
-    e.bin      = bin;
-    e.obj_type = obj_type;
-    e.obj_rec  = obj_type == GT_Contig ? 0 : obj_rec;
-    e.anno_rec = anno_rec;
-    e.tag_type = type;
-    e.comment  = comment;
+    e.bin       = bin;
+    e.obj_type  = obj_type;
+    e.obj_rec   = obj_type == GT_Contig ? 0 : obj_rec;
+    e.anno_rec  = anno_rec;
+    e.tag_type  = type;
+    e.direction = dir;
+    e.comment   = comment;
     
     rec = cache_item_create(io, GT_AnnoEle, &e);
 
@@ -32,7 +33,7 @@ tg_rec anno_ele_new(GapIO *io, tg_rec bin,
  * and creates the bin Range entry too.
  */
 tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
-		    int type, char *comment, int start, int end) {
+		    int type, char *comment, int start, int end, char dir) {
     range_t r;
     anno_ele_t *e;
     contig_t *c;
@@ -64,7 +65,7 @@ tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
     if (GT_Seq == obj_type)
 	r.flags |= GRANGE_FLAG_TAG_SEQ;
 
-    r.rec = anno_ele_new(io, 0, obj_type, obj_rec, 0, type, comment);
+    r.rec = anno_ele_new(io, 0, obj_type, obj_rec, 0, type, dir, comment);
     e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
     e = cache_rw(io, e);
 
@@ -143,6 +144,24 @@ int anno_ele_set_comment(GapIO *io, anno_ele_t **e, char *comment) {
     strcpy(ae->comment, comment);
 
     *e = ae;
+
+    return 0;
+}
+
+/*
+ * Sets the annotation direction, one of ANNO_DIR_* macros (+,-,.,?)
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int anno_ele_set_direction(GapIO *io, anno_ele_t **e, char dir) {
+    anno_ele_t *ae;
+
+    if (!(ae = cache_rw(io, *e)))
+	return -1;
+
+    *e = ae;
+    ae->direction = dir;
 
     return 0;
 }

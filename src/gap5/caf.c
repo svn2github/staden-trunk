@@ -736,13 +736,16 @@ static int read_contig_section(FILE *fp, GapIO *io, contig_t **contig, tg_args *
 	anno_ele_t *e;
 	int an_pos;
 	int an_len;
+	char an_dir;
 	bin_index_t *bin;
 
 	if (annotation[i].end >= annotation[i].start) {
 	    an_len = annotation[i].end - annotation[i].start + 1;
+	    an_dir = '+';
 	} else {
 	    an_len = annotation[i].start - annotation[i].end + 1;
 	    annotation[i].start = annotation[i].end;
+	    an_dir = '-';
 	}
 
 	an_pos = ((*contig)->start + 1) + (annotation[i].start - 1);
@@ -757,8 +760,8 @@ static int read_contig_section(FILE *fp, GapIO *io, contig_t **contig, tg_args *
 	r.pair_rec = (*contig)->rec;
 	r.flags    = GRANGE_FLAG_ISANNO;
 
-	r.rec = anno_ele_new(io, 0, GT_Contig, (*contig)->rec, 0, annotation[i].type,
-	    	    annotation[i].text);
+	r.rec = anno_ele_new(io, 0, GT_Contig, (*contig)->rec, 0,
+			     annotation[i].type, an_dir, annotation[i].text);
 
 	e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	e = cache_rw(io, e);
@@ -1156,13 +1159,16 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	    anno_ele_t *e;
 	    int an_pos;
 	    int an_len;
+	    int an_dir;
 	    bin_index_t *bin;
 	    
 	    if (annotation[i].end >= annotation[i].start) {
 	    	an_len = annotation[i].end - annotation[i].start + 1;
+		an_dir = '+';
 	    } else {
 	    	an_len = annotation[i].start - annotation[i].end + 1;
 		annotation[i].start = annotation[i].end;
+		an_dir = '-';
 	    }
 	    
 	    if (seq.len >= 0) {
@@ -1185,7 +1191,7 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	    r.flags    = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
 	    
 	    r.rec = anno_ele_new(io, 0, GT_Seq, recno, 0, annotation[i].type,
-	    	    	annotation[i].text);
+				 an_dir, annotation[i].text);
 			
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);

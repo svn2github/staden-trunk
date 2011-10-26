@@ -311,6 +311,9 @@ proc io_undo_exec {w crec cmdu} {
 		if {[$tag get_type] != $d(type)} {
 		    $tag set_type $d(type)
 		}
+		if {[lsearch -exact {+ - . ?} [$tag get_direction]] != $d(strand)} {
+		    $tag set_direction [string index "+-.?" $d(strand)]
+		}
 		$tag delete
 	    }
 	    
@@ -2352,13 +2355,13 @@ proc U_tag_change {w rec new_a} {
     set old_a ""
     if {$rec != -1} {
 	set tag [$io get_anno_ele $rec]
-	set d(strand)  0; # fixme
 	set d(type)    [$tag get_type]
 	foreach {d(start) d(end)} [$tag get_position] break;
 	set d(otype)   [$tag get_obj_type]
 	set d(orec)    [$tag get_obj_rec]
 	set d(anno)    [$tag get_comment]
 	set d(default) "?"
+	set d(strand)  [lsearch -exact {+ - . ?} [$tag get_direction]]
 	set d(rec)     $rec
 
 	set old_a [array get d]
@@ -2407,6 +2410,7 @@ proc U_tag_change {w rec new_a} {
 	    set t [$io get_anno_ele $rec]
 	    $t set_comment $d(anno)
 	    $t set_type $d(type)
+	    $t set_direction [string index "+-.?" $d(strand)]
 	    $t delete
 	
 	    store_undo $w \
@@ -2424,6 +2428,9 @@ proc U_tag_change {w rec new_a} {
 	}
 	if {[$tag get_type] != $d(type)} {
 	    $tag set_type $d(type)
+	}
+	if {[lsearch -exact {+ - . ?} [$tag get_direction]] != $d(strand)} {
+	    $tag set_direction [string index "+-.?" $d(strand)]
 	}
 	$tag delete
 
@@ -2487,7 +2494,7 @@ proc tag_editor_launch {w where} {
     global .Tag.$rec
     upvar \#0 .Tag.$rec d
 
-    set d(strand)  0; # fixme
+    set d(strand)  [lsearch -exact {+ - . ?} [$tag get_direction]]
     set d(type)    [$tag get_type]
     set d(otype)   [$tag get_obj_type]
     set d(orec)    [$tag get_obj_rec]
@@ -2529,7 +2536,7 @@ proc tag_editor_create {w} {
     global .Tag.$rec
     upvar \#0 .Tag.$rec d
 
-    set d(strand)  0; # fixme
+    set d(strand) 0
     set d(type)    "COMM"
     set d(otype)   $otype
     set d(orec)    $orec
@@ -2538,6 +2545,7 @@ proc tag_editor_create {w} {
     set d(anno)    "default"
     set d(default) "?"
     set d(rec)     $rec
+
 
     create_tag_editor $w.tag_$rec "tag_editor_callback $w $rec" .Tag.$rec
 }
@@ -3041,7 +3049,7 @@ proc editor_oligo_report {ed t} {
 	set d [frame $w.buttons -bd 2 -relief groove]
 	button $d.add \
 	    -text "Add annotation" \
-	    -command "editor_oligo_add $ed $w"
+	    -command "editor_oligo_add $ed $w $direction"
 	button $d.close \
 	    -text "Close" \
 	    -command "unset $w; destroy $w"
@@ -3139,7 +3147,7 @@ proc editor_oligo_handle_selection {offset maxbytes} {
     return [string range ${.Selection} $offset [expr {$offset+$maxbytes-1}]]
 }
 
-proc editor_oligo_add {ed w} {
+proc editor_oligo_add {ed w direction} {
     global $w
 
     # Get record number(s) for name (maybe multiple seqs with this name)
@@ -3203,7 +3211,7 @@ proc editor_oligo_add {ed w} {
     }
 
     set d(type)    "OLIG"
-    set d(strand)  0
+    set d(strand)  [expr {1-$direction}]
 
     set d(anno)    "Template	[set ${w}(template)]
 Oligoname	??

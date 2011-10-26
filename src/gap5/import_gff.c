@@ -29,7 +29,7 @@ typedef struct {
     int     start;
     int     end;
     double  score;
-    int     strand; /* '+', '-' or 0 for unknown */
+    int     strand; /* '+', '-', '.' or '?' */
     int     phase;
     int     n_attrib;
     key_val attrib[MAX_GFF_ATTRIB];
@@ -174,8 +174,10 @@ static gff_entry *parse_gff_entry(char *line, gff_entry *gff) {
 	gff->strand = '+';
     else if (*tmp == '-')
 	gff->strand = '-';
+    else if (*tmp == '.')
+	gff->strand = '.';
     else
-	gff->strand = 0;
+	gff->strand = '?';
 
     /* Phase */
     tmp = cp;
@@ -390,7 +392,8 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
     }
 
     r.pair_rec = rec;
-    r.rec = anno_ele_new(io, 0, rec_type, rec, 0, str2type(type), txt);
+    r.rec = anno_ele_new(io, 0, rec_type, rec, 0, str2type(type),
+			 gff->strand, txt);
 
     e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
     e = cache_rw(io, e);

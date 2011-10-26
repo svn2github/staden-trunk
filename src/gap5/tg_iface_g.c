@@ -1641,7 +1641,7 @@ static int io_database_write(void *dbh, cached_item *ci) {
 }
 
 
-static tg_rec io_database_create(void *dbh, void *from) {
+static tg_rec io_database_create(void *dbh, void *from, int version) {
     g_io *io = (g_io *)dbh;
     tg_rec db_rec = allocate(io, GT_Database);
     GView v;
@@ -1651,7 +1651,7 @@ static tg_rec io_database_create(void *dbh, void *from) {
     assert(db_rec == 0);
 
     db.Ncontigs = 0;
-    db.version = DB_VERSION;
+    db.version = version;
 
     /* Contig order */
     db.contig_order = allocate(io, GT_RecArray); /* contig array */
@@ -4830,6 +4830,7 @@ static cached_item *io_anno_ele_block_read(void *dbh, tg_rec rec) {
     int i;
     uint64_t last, i64;
     int comment_len[ANNO_ELE_BLOCK_SZ];
+    int fmt;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -4849,7 +4850,8 @@ static cached_item *io_anno_ele_block_read(void *dbh, tg_rec rec) {
     }
 
     g_assert(buf[0] == GT_AnnoEleBlock, NULL);
-    g_assert((buf[1] & 0x3f) == 0, NULL); /* Format */
+    fmt = buf[1] & 0x3f;
+    g_assert(fmt <= 1, NULL); /* Format */
 
     rdstats[GT_AnnoEleBlock] += buf_len;
     rdcounts[GT_AnnoEleBlock]++;
@@ -4911,6 +4913,19 @@ static cached_item *io_anno_ele_block_read(void *dbh, tg_rec rec) {
 	cp += u72int(cp, (uint32_t *)&comment_len[i]);
     }
 
+    /* Anno direction */
+    if (fmt > 0) {
+	for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    in[i].direction = *cp++;
+	}
+    } else {
+	for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    in[i].direction = ANNO_DIR_NUL;
+	}
+    }
+
 
     /* Convert our static structs to cached_items */
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
@@ -4956,18 +4971,28 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     int i;
     tg_rec last_obj_rec, last_anno_rec;
     unsigned char *cp, *cp_start;
-    unsigned char *out[7], *out_start[7];
-    size_t out_size[7], total_size;
-    int level[7];
+    unsigned char *out[8], *out_start[8];
+    size_t out_size[8], total_size;
+    int level[8];
     GIOVec vec[2];
     char fmt[2];
+    int do_dir;
+    int nparts;
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
     check_view_rec(io, ci);
 
+    if (io->db_vers >= 4) {
+	do_dir = 1; /* direction field of annotations */
+	nparts = 8;
+    } else {
+	do_dir = 0;
+	nparts = 7;
+    }
+
     /* Compute worst-case sizes, for memory allocation */
-    for (i = 0; i < 7; i++) {
+    for (i = 0; i < nparts; i++) {
 	out_size[i] = 0;
     }
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
@@ -4983,9 +5008,14 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 	out_size[3] += 10;/* obj record */
 	out_size[4] += 10;/* anno record */
 	out_size[5] += 5; /* comment length */
-	out_size[6] += e->comment ? strlen(e->comment) : 0; /* comments */
+	if (do_dir) {
+	    out_size[6] += do_dir;   /* direction */
+	    out_size[7] += e->comment ? strlen(e->comment) : 0; /* comments */
+	} else {
+	    out_size[6] += e->comment ? strlen(e->comment) : 0; /* comments */
+	}
     }
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < nparts; i++)
 	out_start[i] = out[i] = malloc(out_size[i]+1);
     
     /* serialised annotations, separated by type of data */
@@ -5016,20 +5046,28 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 	if (e->comment) {
 	    int comment_len = strlen(e->comment);
 	    out[5] += int2u7(comment_len, out[5]);
-	    memcpy(out[6], e->comment, comment_len);
-	    out[6] += comment_len;
+	    if (do_dir) {
+		*out[6]++ = e->direction;
+		memcpy(out[7], e->comment, comment_len);
+		out[7] += comment_len;
+	    } else {
+		memcpy(out[6], e->comment, comment_len);
+		out[6] += comment_len;
+	    }
 	} else {
 	    out[5] += int2u7(0, out[5]);
+	    if (do_dir)
+		*out[6]++ = e->direction;
 	}
     }
 
     /* Concatenate data types together and adjust out_size to actual usage */
-    for (total_size = i = 0; i < 7; i++) {
+    for (total_size = i = 0; i < nparts; i++) {
 	out_size[i] = out[i] - out_start[i];
 	total_size += out_size[i];
     }
     cp = cp_start = malloc(total_size+1);
-    for (i = 0; i < 7; i++) {
+    for (i = 0; i < nparts; i++) {
 	memcpy(cp, out_start[i], out_size[i]);
 	cp += out_size[i];
 	free(out_start[i]);
@@ -5047,7 +5085,8 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
 	gzout = (unsigned char *)mem_deflate_lparts(io->comp_mode,
 						    (char *)cp_start,
-						    out_size, level, 7, &ssz);
+						    out_size, level, nparts,
+						    &ssz);
 	free(cp_start);
 	cp_start = gzout;
 	cp = cp_start + ssz;
@@ -5055,7 +5094,7 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 
     /* Finally write the serialised data block */
     fmt[0] = GT_AnnoEleBlock;
-    fmt[1] = 0 | (io->comp_mode << 6); /* format */
+    fmt[1] = (do_dir?1:0) | (io->comp_mode << 6); /* format */
     vec[0].buf = fmt;      vec[0].len = 2;
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
 

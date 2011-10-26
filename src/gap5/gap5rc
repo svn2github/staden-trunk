@@ -76,7 +76,7 @@ set_def	TEMPLATE.RULER_COLOUR			"black"
 set_def	TEMPLATE.HIGHLIGHT_COLOUR		"white"
 
 set_def TAG_BRIEF_FORMAT  \
-	{Tag type:%t  Comment:"%.100c"}
+	{Tag type:%t  Dir:%d   Comment:"%.100c"}
 
 #set_def READ_BRIEF_FORMAT  \
 #	{Reading:%n(#%Rn)   Length:%l(%L)   Vector:%Tv   Clone:%Cn   Chemistry:%a   Primer:%P  Tstat:%Tc %c}

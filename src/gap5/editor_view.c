@@ -267,6 +267,18 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
 	    *j += sprintf(buf + *j, "%s", str);
 }
 
+static void add_char(char *buf, int *j, int l1, int l2, char chr) {
+    if (l1)
+	if (l2)
+	    *j += sprintf(buf + *j, "%*.*c", l1, l2, chr);
+	else
+	    *j += sprintf(buf + *j, "%*c", l1, chr);
+    else
+	if (l2)
+	    *j += sprintf(buf + *j, "%.*c", l2, chr);
+	else
+	    *j += sprintf(buf + *j, "%c", chr);
+}
 
 /*
  * Formats tag information for the status line. This is done using a format
@@ -278,6 +290,7 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
  * %l	Tag length
  * %#	Tag number (0 if unknown)
  * %c	Tag comment
+ * %d   Tag direction
  *
  * Additionally, some formats (p, l, n and c) can be specified as
  * %<number><format> (eg %80c) to allow AT MOST that many characters.
@@ -346,6 +359,9 @@ char *edGetBriefTag(edview *xx, tg_rec anno_ele, char *format) {
 	    add_number64(status_buf, &j, l1, l2, e->rec);
 	    break;
 
+	case 'd':
+	    add_char(status_buf, &j, l1, l2, e->direction);
+	    break;
 
 	case 'c': /* Comment */
 	    add_string(status_buf, &j, l1, l2,
@@ -922,6 +938,9 @@ char *edGetBriefCon(edview *xx, tg_rec crec, int pos, char *format) {
 		pos < xx->displayPos + xx->displayWidth) {
 		int p = pos - xx->displayPos;
 		int d = xx->cachedConsensus[p].depth;
+		//d = get_uniqueness_pos(xx->displayedConsensus,
+		//		       xx->displayWidth,
+		//		       p);
 		add_number(status_buf, &j, l1, l2, d);
 	    } else {
 		add_string(status_buf, &j, l1, l2, "-");
@@ -1604,6 +1623,10 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
 
 	for (i = 0; i < wid; i++) {
 	    qbin = xx->cachedConsensus[i].phred/10;
+//	    qbin = get_uniqueness_pos(xx->displayedConsensus,
+//				      xx->displayWidth,
+//				      i);
+//	    qbin = 9-2*log(qbin>1?qbin:1);
 	    if (qbin < 0) qbin = 0;
 	    if (qbin > 9) qbin = 9;
 	    ink[i].sh |= sh_bg;

@@ -1271,7 +1271,8 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
 	r.end = s.pos;
 	r.pair_rec = recno;
 	r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
-	r.rec = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual, aux);
+	r.rec = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual,
+			     ANNO_DIR_NUL, aux);
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
 	e = cache_rw(bio->io, e);
 	
@@ -1659,7 +1660,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	r.end = s.pos;
 	r.pair_rec = recno;
 	r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
-	r.rec = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual, aux);
+	r.rec = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual,
+			     ANNO_DIR_NUL, aux);
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
 	e = cache_rw(bio->io, e);
 	
@@ -1726,11 +1728,11 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 		tmp = text[text_len];
 		text[text_len] = 0;
 		r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
-				       text);
+				       dir, text);
 		text[text_len] = tmp;
 	    } else {
 		r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
-				       NULL);
+				       dir, NULL);
 	    }
 
 	    /* Link it to a bin */
@@ -1784,11 +1786,11 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 		tmp = text[text_len];
 		text[text_len] = 0;
 		r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
-				       text);
+				       dir, text);
 		text[text_len] = tmp;
 	    } else {
 		r.rec   = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual,
-				       NULL);
+				       dir, NULL);
 	    }
 
 	    /* Link it to a bin */
@@ -1863,7 +1865,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 		}
 	    }
 	}
-	r.rec = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual, tag_text);
+	r.rec = anno_ele_new(bio->io, 0, otype, orec, 0, r.mqual, 
+			     ANNO_DIR_NUL, tag_text);
 
 	/* Link it to a bin */
 	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);

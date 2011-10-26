@@ -104,6 +104,7 @@ void usage(void) {
     fprintf(stderr, "                           Zlib is the default.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "      -[1-9]               Use a fixed compression level from 1 to 9\n");
+    fprintf(stderr, "      -v version_num       Request a specific database formation version\n");
 }
 
 //#include <malloc.h>
@@ -130,6 +131,7 @@ int main(int argc, char **argv) {
     a.pair_queue     = 0;
     a.store_refpos   = 1;
     a.remove_dups    = 1;
+    a.version        = DB_VERSION;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.13"SVN_VERS"\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
@@ -139,7 +141,7 @@ int main(int argc, char **argv) {
     //mallopt(M_MMAP_MAX, 0);
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBCsVbtThAmMo:pPq:nz:fd:c:gux123456789rRD")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCsVbtThAmMo:pPq:nz:fd:c:gux123456789rRDv:")) != -1) {
 	switch(opt) {
 	case 'g':
 	    a.repad = 1;
@@ -254,6 +256,10 @@ int main(int argc, char **argv) {
 	case 'D':
 	    a.remove_dups = 0;
 	    break;
+
+	case 'v':
+	    a.version = atoi(optarg);
+	    break;
 	    
 	default:
 	    if (opt == ':')
@@ -286,6 +292,9 @@ int main(int argc, char **argv) {
     }
 
     /* Open the DB */
+    if (a.version != DB_VERSION)
+	gio_set_db_version(a.version);
+
     io = gio_open(a.out_fn, 0, a.append ? 0 : 1);
     if (NULL == io) {
 	perror("gio_open");

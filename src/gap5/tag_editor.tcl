@@ -84,7 +84,8 @@ proc create_tag_editor {w c data} {
 		  {tag_editor_set_type $w.bar.type $w $v.t $data}"
 
     button $w.bar.strand -text [tag_editor_strand $d(strand)] \
-	-command "tag_editor_set_strand $w.bar.strand $data"
+	-command "tag_editor_set_strand $w.bar.strand $data" \
+	-width 6
     button $w.bar.help -text "Help" \
 	-command "show_help gap5 {Editor-Annotations}"
  
@@ -308,7 +309,7 @@ proc tag_editor_moveorcopy {method com data anno} {
 }
 
 proc tag_editor_strand {strand} {
-    return [lindex {"----->" "<-----" "<---->"} $strand]
+    return [lindex {"----->" "<-----" "<---->" "?----?"} $strand]
 }
 
 #
@@ -322,6 +323,8 @@ proc tag_editor_set_strand {w data} {
     } elseif {$d(strand) == 1} {
 	set d(strand) 2
     } elseif {$d(strand) == 2} {
+	set d(strand) 3
+    } elseif {$d(strand) == 3} {
 	set d(strand) 0
     }
 
@@ -411,7 +414,7 @@ proc tag_macro_copy {ed key} {
     set tag [[$ed io] get_anno_ele $rec]
     set ${d}(type)    [$tag get_type]
     set ${d}(anno)    [$tag get_comment]
-    set ${d}(strand)  0
+    set ${d}(strand)  [lsearch -exact {+ - . ?} [$tag get_direction]]
     set ${d}(default) 0
     set ${d}(set)     1
     set ${d}(macro)   1

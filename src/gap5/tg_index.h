@@ -26,6 +26,7 @@ typedef struct {
     int pair_queue;
     int store_refpos;
     int remove_dups;
+    int version;
 } tg_args;
 
 #define DATA_SEQ	1

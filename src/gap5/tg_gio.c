@@ -27,6 +27,17 @@ void xperror_warn(char *name, char *str) {
     verror(ERR_WARN, name, str);
 }
 
+static int db_version = DB_VERSION;
+int gio_set_db_version(int vers) {
+    if (vers < 0)
+	return -1;
+    if (vers > DB_VERSION)
+	return -1;
+
+    db_version = vers;
+    return 0;
+}
+
 /*
  * Open a database, optionally in read-only mode and creating if desired too.
  *
@@ -76,7 +87,7 @@ GapIO *gio_open(char *fn, int ro, int create) {
     io->read_only = ro;
 
     if (create) {
-	io->iface->database.create(io->dbh, NULL);
+	io->iface->database.create(io->dbh, NULL, db_version);
     }
 
     /* Cache the GDatabase struct */
@@ -113,6 +124,8 @@ GapIO *gio_open(char *fn, int ro, int create) {
 
     io->debug_level = 0;
     io->debug_fp = stderr;
+
+    //update_uniqueness_hash(io);
 
     return io;
 }

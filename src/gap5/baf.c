@@ -558,7 +558,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    if (GT_Seq == anno_obj_type)
 		r.flags |= GRANGE_FLAG_TAG_SEQ;
 	    r.rec = anno_ele_new(io, 0, anno_obj_type, r.pair_rec, 0,
-				 str2type(typ), txt);
+				 str2type(typ), ANNO_DIR_NUL, txt);
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);
 	

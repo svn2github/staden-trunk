@@ -78,7 +78,23 @@ typedef struct {
 #define DB_INDEX_CONTIG 1
 
 typedef struct {
-    STANDARD_IFACE
+    /* Allocate and deallocate. Init is allocate() + lock + initialise */
+    tg_rec (*create)(void *dbh, void *from, int version);
+    int (*destroy)(void *dbh, tg_rec rec, GView view);
+
+    /* Locking and unlocking */
+    GView (*lock)(void *dbh, tg_rec rec, int mode);
+    int (*unlock)(void *dbh, GView view);
+    int (*upgrade)(void *dbh, GView view, int mode);
+    int (*abandon)(void *dbh, GView view);
+
+    /* Read/Write */
+    cached_item *(*read)(void *dbh, tg_rec rec);
+    int (*write)(void *dbh, cached_item *ci);
+
+    /* Queries on size */
+    int (*info)(void *dbh, GView view, GViewInfo *vi);
+
     int (*index_create)(void *dbh, cached_item *ci, int type);
 } io_database;
 

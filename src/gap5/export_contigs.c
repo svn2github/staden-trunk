@@ -823,7 +823,7 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
 		    c->name, start + offset, end - start + 1);
 
     /* Annotation itself */
-    dstring_append(ds, "RT:Z:?;");
+    dstring_appendf(ds, "RT:Z:%c;", a->direction);
     dstring_append_hex_encoded(ds, type2str(fi->r.mqual, type), ";|");
     if (a->comment && *a->comment) {
 	dstring_append_char(ds, ';');
@@ -1121,7 +1121,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	int op, op_len = 0;
 	depad_map = malloc(l * sizeof(*depad_map));
 	if (!depad_map)
-	    return NULL;
+	    return;
 
 	c = cigar;
 	d = s->seq;
@@ -1184,10 +1184,11 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	//printf("%d..%d => %d..%d in seq len %d\n", 
 	//       st, en, depad_map[st-1]+1, depad_map[en-1]+1, s->len);
 	if (depad_map)
-	    dstring_appendf(ds, "%d;%d;?;",
-			    depad_map[st-1]+1, depad_map[en-1]+1);
+	    dstring_appendf(ds, "%d;%d;%c;",
+			    depad_map[st-1]+1, depad_map[en-1]+1,
+			    a->direction);
 	else
-	    dstring_appendf(ds, "%d;%d;?;", st, en);
+	    dstring_appendf(ds, "%d;%d;%c;", st, en, a->direction);
 
 	dstring_append_hex_encoded(ds, type2str(ti->r.mqual, type), ";|");
 	if (a->comment && *a->comment) {

@@ -173,7 +173,8 @@ typedef struct {
  */
 //#define DB_VERSION 1 /* 1.2.6 */
 //#define DB_VERSION 2 /* 1.2.12, annotation range fixes */
-#define DB_VERSION 3 /* 1.2.14, added template_name_len in seq_t */
+//#define DB_VERSION 3 /* 1.2.14, added template_name_len in seq_t */
+#define DB_VERSION 4 /* 2.0.0b8-p16, added direction to tags */
 
 /* g-layer equivalent of database_t : this is as it's written on disc */
 typedef struct { 
@@ -432,6 +433,7 @@ typedef struct {
 struct anno_ele_block;
 typedef struct {
     int tag_type;    /* short 4-byte tag type code */
+    char direction;  /* +/-/./? */
     char *comment;   /* Possibly blank, but a per-region comment too */
     tg_rec rec;      /* record */
     tg_rec bin;      /* bin containing this element */
@@ -442,6 +444,11 @@ typedef struct {
     int idx; 
     char data[1];    /* location of packed comment */
 } anno_ele_t;
+
+#define ANNO_DIR_FWD '+'
+#define ANNO_DIR_REV '+'
+#define ANNO_DIR_NUL '.'
+#define ANNO_DIR_UNK '?'
 
 #define ANNO_ELE_BLOCK_BITS 10
 #define ANNO_ELE_BLOCK_SZ (1<<ANNO_ELE_BLOCK_BITS)
