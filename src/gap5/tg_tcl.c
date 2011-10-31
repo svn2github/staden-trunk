@@ -1280,7 +1280,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_rec",      "get_len",      "get_length",   "get_pair",
 	"get_left",     "get_right",    "get_name",     "get_seq",
 	"get_conf",	"get_conf4",    "get_contig",   "get_position",
-	"get_orient",   "get_mapping_qual",
+	"get_clipped_position",         "get_orient",   "get_mapping_qual",
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
 	"get_clips",    "set_clips",    "move_annos",   "get_template_orient",
 	"set_clips_no_invalidate",
@@ -1292,7 +1292,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_REC,        GET_LEN,        GET_LENGTH,     GET_PAIR,
 	GET_LEFT,	GET_RIGHT,      GET_NAME,       GET_SEQ,
 	GET_CONF,       GET_CONF4,      GET_CONTIG,     GET_POSITION,
-	GET_ORIENT,     GET_MAPPING_QUAL,
+	GET_CLIPPED_POSITION,           GET_ORIENT,     GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
 	GET_CLIPS,      SET_CLIPS,      MOVE_ANNOS,     GET_TEMPLATE_ORIENT,
 	SET_CLIPS_NO_INVALIDATE,
@@ -1434,6 +1434,15 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	tg_rec rec = ts->seq->rec, cnum;
 	int pos;
 	sequence_get_position(ts->io, rec, &cnum, &pos, NULL, NULL);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), pos);
+	break;
+    }
+
+    case GET_CLIPPED_POSITION: {
+	tg_rec rec = ts->seq->rec, cnum;
+	int pos;
+	sequence_get_clipped_position(ts->io, rec, &cnum,
+				      NULL, NULL, &pos, NULL, NULL);
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), pos);
 	break;
     }

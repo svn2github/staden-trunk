@@ -9,8 +9,11 @@
  *
  * If break_holes is true then any gaps in coverage caused by breaking will
  * then attempt to break the contig further.
+ *
+ * Returns the new (right) contig record on success
+ *        -1 on failure
  */
-int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes);
+tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes);
 
 /*
  * Compute the visible statr position of a contig. This isn't just the extents

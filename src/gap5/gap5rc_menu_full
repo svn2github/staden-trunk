@@ -244,6 +244,9 @@ add_separator	{Commands.S2}
 add_command	{Commands.Select Reads}		3 2 {editor_select_dialog \[curr_ed $e\] 1}
 add_command	{Commands.Deselect Reads}	3 2 {editor_select_dialog \[curr_ed $e\] 0}
 add_command     {Commands.Find primer-walk}	3 2 {editor_oligo_dialog \[curr_ed $e\]}
+add_separator	{Commands.S4}
+add_command	{Commands.Break Contig}		3 6 {editor_break_contig \[curr_ed $e\]}
+
 #add_command	{Commands.Save Contig}		3 2 {$e save}
 #add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}
 #add_command	{Commands.Save Consensus Trace}	1 0 {consensus_trace_dialog $e} e
@@ -256,8 +259,6 @@ add_command     {Commands.Find primer-walk}	3 2 {editor_oligo_dialog \[curr_ed $
 #add_command	{Commands.Align}		3 2 {$e align}
 #add_command	{Commands.Remove Pad Columns}	3 2 {editor_strip_pads $e}
 #add_command	{Commands.Remove Reading}	3 6 {$e hide_read} e
-#add_separator	{Commands.S4}
-#add_command	{Commands.Break Contig}		3 6 {editor_break_contig $w $e}
 
 ### # Contig Editor Settings menu
 ### # Contig Editor Settings -> Status menu

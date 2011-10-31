@@ -1359,16 +1359,20 @@ tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
 	{"-break_holes", ARG_INT, 1, "0",  offsetof(break_ctg_arg, no_holes)},
 	{NULL,	 0,	  0, NULL, 0}
     };
+    tg_rec cr;
 
     vfuncheader("break contig");
 
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    if (break_contig(args.io, args.contig, args.pos, args.no_holes) != 0) {
+    cr = break_contig(args.io, args.contig, args.pos, args.no_holes);
+    if (cr < 0) {
 	Tcl_SetResult(interp, "Failure in Break Contig", TCL_STATIC);
 	return TCL_ERROR;
     }
+
+    vTcl_SetResult(interp, "%"PRIrec, cr);
 
     return TCL_OK;
 }

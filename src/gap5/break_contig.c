@@ -1314,7 +1314,7 @@ int compute_pos3(GapIO *io, tg_rec crec, int cpos) {
  * Breaks a contig in two such that snum is the right-most reading of
  * a new contig.
  */
-int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
+tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     contig_t *cl;
     contig_t *cr;
     int cid;
@@ -1323,6 +1323,7 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     bin_index_t *bin;
     int do_comp = 0;
     HacheTable *h;
+    tg_rec ret = -1;
 
     /*
      * Check we have at least 1 seq in each half. Also move cpos to be the
@@ -1481,8 +1482,10 @@ int break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 	}
     }
 
+    ret = cr->rec;
+
     cache_decr(io, cl);
     cache_decr(io, cr);
 
-    return 0;
+    return ret;
 }

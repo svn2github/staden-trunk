@@ -2345,6 +2345,71 @@ proc editor_name_select {w where {num 0}} {
 }
 
 #-----------------------------------------------------------------------------
+# Break contig
+
+proc editor_break_contig {ed} {
+    global gap5_defs
+
+    set io [$ed io]
+
+    if {[$io read_only]} {
+	bell
+	return
+    }
+
+    # show cursor
+    eval $ed set_cursor [$ed get_cursor relative] 1
+
+    # Get reading position
+    foreach {type rec pos} [$ed get_cursor relative] break
+    if {$type == 18} {
+	# Coord is clipped start point of this read
+	set arec [$ed contig_rec]
+	set s [$io get_sequence $rec]
+	#set apos [$s get_position]
+	set apos [$s get_clipped_position]
+	$s delete
+    } else {
+	# On consensus, coord is this pos itself
+	foreach {atype arec apos} [$ed get_cursor absolute] break
+    }
+
+    upvar contigIO_$arec cio
+    
+    set ret [tk_messageBox \
+		 -icon  question \
+		 -title "Break contig" \
+		 -message "This will save changes and break the contig in two, with all reads starting on or to the right of consensus position $apos being in the second contig. Continue?" \
+		 -type yesno \
+		 -parent $ed]
+
+    if {$ret == "no"} {
+	return
+    }
+
+    $ed save
+
+    set io $cio(base)
+
+    if {![quit_displays -io $io -msg "break contig"]} {
+	# Someone's too busy to shutdown?
+	ClearBusy
+	return
+    }
+
+    set cr [break_contig \
+		-io $io \
+		-contig $arec \
+		-pos $apos \
+		-break_holes 1]
+    ContigSelector $io
+    ContigInitReg $io
+
+    edit_contig -io $io -contig $arec -pos $apos
+    edit_contig -io $io -contig $cr   -pos 1
+}
+
+#-----------------------------------------------------------------------------
 # Tag editor windows
 
 # Functions to make tag edits or to be called by the undo/redo stack.
