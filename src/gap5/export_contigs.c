@@ -920,14 +920,12 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     /*--- Best guess at template name */
     tname = s->name;
     tname_len = s->template_name_len;
+    if (tname_len > s->name_len)
+	tname_len = s->name_len;
 
-    if (tname_len == 0)
-	tname = false_name(io, s, 0, &tname_len);
-
-    else if (tname_len == s->name_len)
+    if (tname_len == s->name_len || tname_len == 0)
 	if (cp = strchr(s->name, '/'))
 	    tname_len = (int)(cp-s->name);
-
 
     /*--- Compute SAM flag field */
     flag = 0;
