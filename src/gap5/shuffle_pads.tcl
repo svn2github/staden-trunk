@@ -63,7 +63,7 @@ proc RemovePadColumns {io} {
 
     set t [keylget gap5_defs REMOVE_PAD_COLUMNS.WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
-    wm title $t "Shuffle Pads"
+    wm title $t "Remove Pad Columns"
     contig_id $t.id -io $io -range 0
 
     lorf_in $t.infile [keylget gap5_defs REMOVE_PAD_COLUMNS.INFILE] \
