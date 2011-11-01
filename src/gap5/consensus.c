@@ -165,7 +165,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	//		        start > NMAX(bin->start_used, bin->end_used)) */
 	//            ) {
 	if (1) {
-	    seq_t *s, *dup_s = NULL, seq;
+	    seq_t *s = NULL, *dup_s = NULL, seq;
 	    range_t *cons_r = NULL;
 	    int n, valid;
 	    int bstart, bend; /* consensus start/end in this bin */
@@ -1089,6 +1089,9 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	}
     }
 
+    /* Currently always needed for the N vs non-N evaluation */
+    flags |= CONS_COUNTS;
+
     /* Initialise */
     if (NULL == (scores = (double (*)[15])calloc(len, 15 * sizeof(double))))
 	return -1;
@@ -1380,6 +1383,12 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	}
 
 	/* And store result */
+//	if (depth[i] &&
+//	    !(fabs(norm[0] - norm[5]) < FLT_EPSILON  &&
+//	      fabs(norm[0] - norm[9]) < FLT_EPSILON  &&
+//	      fabs(norm[0] - norm[12]) < FLT_EPSILON &&
+//	      fabs(norm[0] - norm[14]) < FLT_EPSILON)) {
+
 	if (depth[i] && depth[i] != cons[i].counts[5] /* all N */) {
 	    double m;
 
