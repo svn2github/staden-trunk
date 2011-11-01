@@ -274,6 +274,24 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		    
 		} else {
 		load_failed: /* Horrid, I know! */
+
+		    /*
+		     * If read-only we can't store this anyway, so just
+		     * abort and compute the consensus we asked for instead
+		     * of taking time to cache data that we immediately
+		     * have to throw away.
+		     */
+		    if (io->read_only || end - start < 1000) {
+			cache_decr(io, c);
+			cache_decr(io, bin);
+			if (s && s != &seq)
+			    cache_decr(io, s);
+			return calculate_consensus_simple2(io, contig,
+							   start, end,
+							   con, qual);
+		    }
+
+
 		    gio_debug(io, 1, "Creating new cached cons %d..%d "
 			      "bin #%"PRIrec"\n",
 			      bstart, bend, bin->rec);
@@ -1593,33 +1611,36 @@ int consensus_unclipped_range(GapIO *io, tg_rec contig, int *start, int *end) {
  *        -1 for error
  */
 int consensus_unpadded_pos(GapIO *io, tg_rec contig, int pos, int *upos) {
-    int np, i, i_end;
+    int np, i, i_end, clipped_start;
     char *cons;
     contig_t *c;
+
+    consensus_valid_range(io, contig, &clipped_start, NULL);
 
     /* For now it's the slow route: compute consensus and count '*'s */
     if (NULL == (c = cache_search(io, GT_Contig, contig)))
 	return TCL_ERROR;
     if (pos <= c->start) {
-	*upos = pos;
+	*upos = pos - clipped_start + 1;
 	return 0;
     }
 
     if (NULL == (cons = malloc(pos - c->start + 1)))
 	return -1;
 
-    if (-1 == calculate_consensus_simple(io, contig, c->start,
+    if (-1 == calculate_consensus_simple(io, contig, clipped_start,
 					 pos, cons, NULL)) {
 	free(cons);
 	return -1;
     }
 
-    i_end = pos - c->start;
+    i_end = pos - clipped_start;
     for (np = 0, i = 0; i < i_end; i++) {
 	if (cons[i] == '*')
 	    np++;
     }
-    *upos = pos - np;
+
+    *upos = pos - np - clipped_start + 1;
     free(cons);
 
     return 0;
