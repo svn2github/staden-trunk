@@ -1028,6 +1028,9 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 	}
     }
     
+    if (fix)
+	bin_invalidate_consensus(io, c->rec, c->start, c->end);
+
     cache_decr(io, c);
     if (rec_hash)
 	HacheTableDestroy(rec_hash, 0);
