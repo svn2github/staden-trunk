@@ -826,11 +826,16 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 			    bin_incr_nseq(io, bin, -1);
 			} else {
+			    int bb;
 			    //printf("DEL %"PRIrec" at %d\n", r->rec,
 			    //       pos - MIN(r->start, r->end));
+
+			    bb = ((r->flags & GRANGE_FLAG_ISMASK) ==
+				  GRANGE_FLAG_ISCONS)
+				? 0 : bcall;
 			    sequence_delete_base2(io, &s,
 						  pos - MIN(r->start, r->end),
-						  0, bcall);
+						  0, bb);
 			    if (hash) {
 				//printf("1 Mov %"PRIrec"\n", r->rec);
 				hd.i = MAX(NMIN(r_start, r_end), apos);

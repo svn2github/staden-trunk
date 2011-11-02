@@ -858,6 +858,7 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 	rnum = cl->id;
 	
 	sorig = cache_search(io, GT_Seq, rnum);
+	cache_incr(io, sorig);
 	s = dup_seq(sorig);
 	if (cl->mseg->comp)
 	    complement_seq_t(s);
@@ -1066,10 +1067,12 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 
 		if (new_comp != old_comp) {
 		    int tmp;
+		    s = cache_rw(io, s);
 		    s->len *= -1;
-		    tmp = s->left;
-		    s->left  = ABS(s->len) - (s->right-1);
-		    s->right = ABS(s->len) - (tmp-1);
+		    s->flags ^= SEQ_COMPLEMENTED;
+		    //tmp = s->left;
+		    //s->left  = ABS(s->len) - (s->right-1);
+		    //s->right = ABS(s->len) - (tmp-1);
 		}
 
 		bin_changed = 1;
@@ -1087,6 +1090,8 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 		}
 	    }
 	}
+
+	cache_decr(io, sorig);
     }
 
     /* Step 3 (remove pad columns) done in calling function. */
