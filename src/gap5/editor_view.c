@@ -3375,7 +3375,7 @@ int edPrevDifference(edview *xx) {
 	pos0 -= (len-i-1);
 	pos1 -= (len-i-1);
 
-	if (i != 0)
+	if (i != -1)
 	    break;
     }
 
