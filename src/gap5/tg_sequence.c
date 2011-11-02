@@ -604,6 +604,9 @@ void complement_seq_t(seq_t *s) {
 			s->format == SEQ_FORMAT_CNF4 ? 4 : 1);
     s->len *= -1;
 
+    /* Why not this? It breaks shuffle pads if so - what else? */
+    //s->len ^= SEQ_COMPLEMENTED;
+
     tmp = s->left;
     s->left  = alen - (s->right-1);
     s->right = alen - (tmp-1);
