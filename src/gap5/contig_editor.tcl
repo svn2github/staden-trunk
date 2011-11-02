@@ -1016,41 +1016,30 @@ proc editor_join {w} {
 #         false if we cannot exit (user hit cancel, or failed to save).
 proc editor_exit {w {get_lock 0}} {
     global $w
-    set ed [set ${w}(curr_editor)]
 
     if {[winfo exists $w.save_dialog]} return
 
-    # Two styles of exit dialog depending on whether we arrived here with
-    # $get_lock true, indicating this wasn't a user controlled exit but rather
-    # a request originating in another window due to the requirement of
-    # taking write-access to this contig.
-    if {![[set ${w}(io)] read_only] && [$ed edits_made]} {
-	if {$get_lock} {
-	    set ret [tk_dialog \
-			 $w.save_dialog \
-			 "Quit editor?" \
-			 "Another window wishes to modify this contig, shutting down the editor in the process.\n\nTo deny this hit Cancel.\n\nOtherwise the editor will exit. You can choose whether to save changes when this happens." \
-			 "" \
-			 2 \
-			 Save {Don't Save} Cancel]
-
-	    set ret [lindex {yes no cancel} $ret]
-	} else {
-	    set ret [tk_messageBox \
-			 -icon question \
-			 -title "Save changes" \
-			 -message "Edits have been made. Save changes?" \
-			 -default yes \
-			 -type yesnocancel \
-			 -parent $w]
-	}
-	
-	if {$ret == "cancel"} {
-	    return 0
-	} elseif {$ret == "yes"} {
-	    if {[$ed save] != 0} {
-		bell
+    set ret ""
+    foreach ed [set ${w}(all_editors)] {
+	if {![[set ${w}(io)] read_only] && [$ed edits_made]} {
+	    if {$ret == ""} {
+		# Ask once only and apply to both in join editor
+		set ret [tk_messageBox \
+			     -icon question \
+			     -title "Save changes" \
+			     -message "Edits have been made. Save changes?" \
+			     -default yes \
+			     -type yesnocancel \
+			     -parent $w]
+	    }
+	    
+	    if {$ret == "cancel"} {
 		return 0
+	    } elseif {$ret == "yes"} {
+		if {[$ed save] != 0} {
+		    bell
+		    return 0
+		}
 	    }
 	}
     }
