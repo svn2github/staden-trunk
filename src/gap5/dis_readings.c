@@ -8,6 +8,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include <io_lib/hash_table.h>
+
 #include "dis_readings.h"
 #include "misc.h"
 #include "break_contig.h"
@@ -302,14 +304,11 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
 	}
 
 	/* Pair is held in bin range too */
-	if (bin_get_item_position(io, GT_Seq, pos->rng.pair_rec,
-				  NULL, NULL, NULL, NULL,
-				  &brec, NULL, NULL))
-	    return -1;
-	bin = cache_search(io, GT_Bin, brec);
+	bin = cache_search(io, GT_Bin, seq->bin);
 	r = arrp(range_t, bin->rng, seq->bin_index);
 	assert(r->rec == seq->rec);
 	bin = cache_rw(io, bin);
+	bin->flags |= BIN_RANGE_UPDATED;
 
 	/* Fix other end's range_t */
 	r->pair_rec = 0;
@@ -1219,6 +1218,11 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
     int i;
     int ret = 0;
+    HashTable *pairs;
+    HashIter *iter;
+    HashItem *hi;
+
+    pairs = HashTableCreate(8192, HASH_DYNAMIC_SIZE | HASH_POOL_ITEMS);
 
     for (i = 0; i < ncontigs; i++) {
 	contig_t *c;
@@ -1226,7 +1230,7 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	rangec_t *r;
 
 	iter = contig_iter_new_by_type(io, cnums[i], 1, CITER_FIRST,
-				       CITER_ISTART, CITER_IEND,
+				       CITER_CSTART, CITER_CEND,
 				       GRANGE_FLAG_ISANY);
 
 	if (!iter) {
@@ -1244,6 +1248,7 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	    switch (r->flags & GRANGE_FLAG_ISMASK) {
 	    case GRANGE_FLAG_ISSEQ: {
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
+		seq_t *p;
 
 		if (!s) {
 		    ret = 1;
@@ -1252,6 +1257,22 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 
 		/* Remove from B+Tree */
 		io->iface->seq.index_del(io->dbh, s->name, s->rec);
+
+		/* Identify pairs */
+		if (r->pair_rec) {
+		    hi = HashTableSearch(pairs, (char *)&r->rec,
+					 sizeof(tg_rec));
+		    if (hi) {
+			/* Other end already removed */
+			HashTableDel(pairs, hi, 0);
+		    } else {
+			/* Mark for update of other end */
+			HashData hd;
+			hd.i = r->rec;
+			HashTableAdd(pairs, (char *)&r->pair_rec,
+				     sizeof(tg_rec), hd, NULL);
+		    }
+		}
 
 		/* Remove from seq_block */
 		cache_item_remove(io, GT_Seq, r->rec);
@@ -1274,6 +1295,42 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	    bin_destroy_recurse(io, c->bin);
 	contig_destroy(io, cnums[i]);
     }
+
+		
+    /* Unlink pairs found in other contigs */ 
+    iter = HashTableIterCreate();
+    while (hi = HashTableIterNext(pairs, iter)) {
+	tg_rec rec = *(tg_rec *)hi->key;
+	seq_t *s = cache_search(io, GT_Seq, rec);
+	bin_index_t *bin;
+	range_t *r;
+
+	if (!s)
+	    continue;
+
+	if (s->parent_rec == hi->data.i) {
+	    s = cache_rw(io, s);
+	    s->parent_type = 0;
+	    s->parent_rec = 0;
+	}
+
+	/* Also held in the bin range too */
+	bin = cache_search(io, GT_Bin, s->bin);
+	if (!bin || !bin->rng)
+	    continue;
+
+	r = arrp(range_t, bin->rng, s->bin_index);
+	assert(r->rec == s->rec);
+
+	bin = cache_rw(io, bin);
+	bin->flags |= BIN_RANGE_UPDATED;
+
+	r->pair_rec = 0;
+	r->flags &= ~GRANGE_FLAG_TYPE_MASK;
+	r->flags |=  GRANGE_FLAG_TYPE_SINGLE;
+    }
+
+    HashTableDestroy(pairs, 0);
 
     cache_flush(io);
 
