@@ -969,8 +969,6 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     cache_decr(io, binp);
     cache_decr(io, binl);
     cache_decr(io, binr);
-    cache_decr(io, cl);
-    cache_decr(io, cr);
 
     /*
      * The order of notifications here is crucial.
@@ -1001,6 +999,9 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     rl.job = REG_LENGTH;
     rl.length = cl->end - cl->start + 1;
     contig_notify(io, cl->rec, (reg_data *)&rl);
+
+    cache_decr(io, cl);
+    cache_decr(io, cr);
 
     cache_flush(io);
 
