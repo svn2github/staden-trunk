@@ -1501,6 +1501,11 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 		break;
 
 	    s = cache_search(io, GT_Seq, r->rec);
+	    if (!s) {
+		verror(ERR_WARN, "consensus_valid_range",
+		       "Failed to load seq #%"PRIrec, r->rec);
+		continue;
+	    }
 
 	    if ((s->len < 0) ^ r->comp) {
 		left = r->start + ABS(s->len) - (s->right-1) - 1;
@@ -1536,6 +1541,11 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 		break;
 
 	    s = cache_search(io, GT_Seq, r->rec);
+	    if (!s) {
+		verror(ERR_WARN, "consensus_valid_range",
+		       "Failed to load seq #%"PRIrec, r->rec);
+		continue;
+	    }
 
 	    if ((s->len < 0) ^ r->comp) {
 		right = r->start + ABS(s->len) - (s->left-1) - 1;
