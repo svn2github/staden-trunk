@@ -1,3 +1,74 @@
+3rd Nov 2011
+============
+
+Gap5 Fixes
+----------
+
+*	Fixed potential bug in joining contigs causing it to fail to
+        delete the old right hand contig. (We have seen this, but not
+        100% sure this fixes it.)
+
+	Also updated Check Database to be able to fix these problems.
+
+*	Fixed a rather common crash & assertion failure in the contig
+        editor (caused by mismatching reference counting on
+        copy-on-write objects).
+
+*	Robustness improvements: consensus when faced with corrupted
+        databses and the contig selector when trying to draw zero
+        contigs.
+
+*	Disassemble Contigs now correctly unpairs reads too. This was
+        leading to crashes before. Also this function now correctly
+        flushes changes to disk.
+
+*	Shuffle Pads should no longer cause some sequences to get out
+        of alignment.
+
+*	When quitting the Join Editor and not making a join, it would
+        only offer to save changes to 1 of the 2 contigs. It now does
+        both.
+
+*	The differences line in the join editor should no longer find
+        false matches when searching backwards.
+
+Misc
+----
+
+*	Bug fixed the "File does not exist" error dialogue
+
+
+1st Nov 2011
+============
+
+Gap5 Updates
+------------
+
+*	Added an option to Break Contig at a specific position within
+        the contig editor.
+
+*	Tag directions are now stored in the database, and can be
+        edited/set using the Tag Editor within the contig editor.
+
+*	tg_index now has a "-v version" option to request generating
+        older format gap5 databases.
+
+*	The contig editor now allows "n" or "-" to be typed in. Also
+        added Insert keybinding as for insertng pads ("i" still works).
+
+Gap5 Fixes
+----------
+
+*	The recent consensus change to call Ns was bugged and could
+        cause them to appear elsewhere. Check Database in fix mode
+        will now also clear any cached consensus.
+
+*	Fixed a bug in Export Contigs to SAM format involving the
+        handling of template names. It could sometimes cause a crash.
+
+*	Fixed issues with tag parsing in SAM.
+
+
 25th Oct 2011
 =============
 
