@@ -1906,6 +1906,7 @@ proc editor_delete_base {w where {powerup 0}} {
 	if {$cons != "*" && !$powerup} {
 	    bell
 	    $w cursor_right
+	    $contig delete
 	    return
 	}
 
