@@ -1100,8 +1100,9 @@ int check_cache(GapIO *io) {
 		    b1->track_rec   != b2->track_rec ||
 		    b1->nseqs       != b2->nseqs ||
 		    b1->rng_free    != b2->rng_free ||
-		    b1->nrefpos     != b2->nrefpos ||
-		    b1->nanno       != b2->nanno) {
+		    (io->db->version > 1 && 
+		     (b1->nrefpos     != b2->nrefpos ||
+		      b1->nanno       != b2->nanno))) {
 		    mis++;
 		} else if (b1->rng && b2->rng) {
 		    if (ArrayMax(b1->rng) != ArrayMax(b2->rng)) {
