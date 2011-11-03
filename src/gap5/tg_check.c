@@ -965,16 +965,19 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
  * against this to check that no unknown libraries are present.
  *
  * Returns the number of errors found
- *         0 on success.
+ *         0 on success (*removed is true if the contig was destroyed);
  */
 int check_contig(GapIO *io, tg_rec crec, int fix, int level,
-		 HacheTable *lib_hash, int *fixed) {
+		 HacheTable *lib_hash, int *fixed, int *removed) {
     contig_t *c;
     bin_stats bs;
     int err = 0;
     bin_index_t *bin;
     HacheTable *rec_hash = NULL;
     int valid_ctg_start, valid_ctg_end;
+
+    if (removed)
+	*removed = 0;
 
     consensus_valid_range(io, crec, &valid_ctg_start, &valid_ctg_end);
 
@@ -999,14 +1002,54 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 
     if (c->bin) {
 	bin = cache_search(io, GT_Bin, c->bin);
+
 	if (bin->parent != crec || bin->parent_type != GT_Contig) {
 	    vmessage("root bin %"PRIrec" parent/type is incorrect\n", c->bin);
 	    err++;
 	    if (fix) {
-		bin = cache_rw(io, bin);
-		bin->parent = crec;
-		bin->parent_type = GT_Contig;
-		if (fixed) (*fixed)++;
+		/*
+		 * It's probably linked in elsewhere correctly, so
+		 * don't fix if so, instead remove from this contig.
+		 */
+		int linked = 0;
+
+		cache_incr(io, bin);
+
+		if (bin->parent_type == GT_Contig) {
+		    contig_t *c2 = cache_search(io, GT_Contig, bin->parent);
+		    if (c2 && c2->bin == bin->rec)
+			linked = 1;
+		} else if (bin->parent_type == GT_Bin) {
+		    bin_index_t *b2 = cache_search(io, GT_Bin, bin->parent);
+		    if (b2 && (b2->child[0] == bin->rec ||
+			       b2->child[1] == bin->rec)) {
+			linked = 1;
+		    }
+		}
+
+		cache_decr(io, bin);
+
+		if (linked) {
+		    /* Remove this contig instead */
+		    vmessage("Contig %"PRIrec": detected as a failed "
+			     "deletion, removing.\n", crec);
+
+		    cache_decr(io, c);
+		    if (rec_hash)
+			HacheTableDestroy(rec_hash, 0);
+
+		    contig_destroy(io, crec);
+
+		    if (fixed) (*fixed)++;
+		    if (removed) *removed = 1;
+		    return err;
+		} else {
+		    /* Reconnect the bin to this contig */
+		    bin = cache_rw(io, bin);
+		    bin->parent = crec;
+		    bin->parent_type = GT_Contig;
+		    if (fixed) (*fixed)++;
+		}
 	    }
 	}
     }
@@ -1399,11 +1442,14 @@ int check_database(GapIO *io, int fix, int level) {
 
     /* Check each contig in turn */
     for (i = 0; i < ArrayMax(contig_order); i++) {
+	int del;
 	tg_rec crec = arr(tg_rec, contig_order, i);
 	vmessage("--Checking contig #%"PRIrec" (%d of %d)\n",
 		 crec, i+1, (int)ArrayMax(contig_order));
 	UpdateTextOutput();
-	err += check_contig(io, crec, fix, level, hash, &fixed);
+	err += check_contig(io, crec, fix, level, hash, &fixed, &del);
+	if (del)
+	    i--;
     }
 
     if (fix && io->db->version == 1)

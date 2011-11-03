@@ -10,7 +10,7 @@
  *         0 on success.
  */
 int check_contig(GapIO *io, tg_rec crec, int fix, int level,
-		 HacheTable *lib_hash, int *fixed);
+		 HacheTable *lib_hash, int *fixed, int *removed);
 
 
 /*

@@ -1119,7 +1119,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	if (objc >= 4)
 	    Tcl_GetIntFromObj(interp, objv[3], &level);
 	
-	ret = check_contig(tc->io, tc->contig->rec, fix, level, NULL, &fixed);
+	ret = check_contig(tc->io, tc->contig->rec, fix, level, NULL,
+			   &fixed, NULL);
 	vTcl_SetResult(interp, "%d %d", ret, fixed);
 	break;
     }
