@@ -23,17 +23,20 @@ proc DoScroll { f csh_win csp_win direction scroll } {
 
     if {$NGRec($f,auto_scroll)} {
 	set bbox [$csh_win bbox S]
-	set min_x [lindex $bbox 0]
-	set max_x [lindex $bbox 2]
-	set min_y [lindex $bbox 1]
-	set max_y [lindex $bbox 3]
-	
-	set first_unit [lindex [$f.hscroll get] 0]
-	set unit [expr double($CanvasConst(auto_incr))/($max_x - $min_x)]
-	$csh_win xview moveto [expr $first_unit + ($direction * $unit)]
 
-	if {[winfo exists $csp_win] } {
-	    $csp_win xview moveto [expr $first_unit + ($direction * $unit)]
+	if {$bbox != ""} {
+	    set min_x [lindex $bbox 0]
+	    set max_x [lindex $bbox 2]
+	    set min_y [lindex $bbox 1]
+	    set max_y [lindex $bbox 3]
+	
+	    set first_unit [lindex [$f.hscroll get] 0]
+	    set unit [expr double($CanvasConst(auto_incr))/($max_x - $min_x)]
+	    $csh_win xview moveto [expr $first_unit + ($direction * $unit)]
+
+	    if {[winfo exists $csp_win] } {
+		$csp_win xview moveto [expr $first_unit + ($direction * $unit)]
+	    }
 	}
 	after 100 "DoScroll $f $csh_win $csp_win $direction $scroll" 
     }
