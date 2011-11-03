@@ -1708,11 +1708,23 @@ cached_item *cache_master(cached_item *ci) {
 
 void cache_incr(GapIO *io, void *data) {
     cached_item *ci = cache_master(ci_ptr(data));
+
+    if (io->base) {
+	void *vbase = cache_search_no_load(io->base, ci->type, ci->rec);
+	ci = cache_master(ci_ptr(vbase));
+    }
+
     HacheTableIncRef(ci->hi->h, ci->hi);
 }
 
 void cache_decr(GapIO *io, void *data) {
     cached_item *ci = cache_master(ci_ptr(data));
+
+    if (io->base) {
+	void *vbase = cache_search_no_load(io->base, ci->type, ci->rec);
+	ci = cache_master(ci_ptr(vbase));
+    }
+
     HacheTableDecRef(ci->hi->h, ci->hi);
 
     assert(ci->hi->ref_count >= 0);
