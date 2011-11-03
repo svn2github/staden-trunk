@@ -1275,5 +1275,7 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	contig_destroy(io, cnums[i]);
     }
 
+    cache_flush(io);
+
     return ret;
 }
