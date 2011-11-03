@@ -175,7 +175,7 @@ proc FileExists { filename {p .} } {
 
     if {![file exists $filename]} {
 	tk_messageBox -icon error -type ok -title "File does not exist" \
-	        -parent $p
+	        -parent $p \
 		-message "$filename cannot be opened. \
 	Please check the filename and directory"
 	return 0
