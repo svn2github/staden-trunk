@@ -2436,6 +2436,12 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
 	if (!bin->child[i])
 	    continue;
 	ch = get_bin(io, bin->child[i]);
+	if (!ch) {
+	    verror(ERR_WARN, "contig_seqs_in_range2", "Bin #%"PRIrec
+		   " failed to load", bin->child[i]);
+	    continue;
+	}
+
 	if (end   >= NMIN(ch->pos, ch->pos + ch->size-1) &&
 	    start <= NMAX(ch->pos, ch->pos + ch->size-1)) {
 	    count = contig_seqs_in_range2(io, bin->child[i], start, end,
