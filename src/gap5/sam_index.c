@@ -1749,7 +1749,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	}
     }
 
-    if ((tags = bam_aux_find(p->b, "RT"))) {
+    if ((tags = bam_aux_find(p->b, "CT"))) {
 	int start, end, type_len, text_len;
 	char dir, *type, *text, tmp;
 	char tag_type[5], *tag_text;

@@ -823,7 +823,7 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
 		    c->name, start + offset, end - start + 1);
 
     /* Annotation itself */
-    dstring_appendf(ds, "RT:Z:%c;", a->direction);
+    dstring_appendf(ds, "CT:Z:%c;", a->direction);
     dstring_append_hex_encoded(ds, type2str(fi->r.mqual, type), ";|");
     if (a->comment && *a->comment) {
 	dstring_append_char(ds, ';');
