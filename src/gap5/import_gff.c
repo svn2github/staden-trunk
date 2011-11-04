@@ -256,6 +256,7 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
     bin_index_t *bin;
     anno_ele_t *e;
     contig_t *c;
+    int cstart, cend;
     char type_a[5];
     tg_rec seq_bin;
 
@@ -304,36 +305,49 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 	     */
 	    if (cached_crec != c->rec) {
 		int i, np;
-		char *con = xmalloc(c->end - c->start + 2);
+		char *con;
+		
+		if (-1 == consensus_valid_range(io, c->rec, &cstart, &cend)) {
+		    cstart = c->start;
+		    cend = c->end;
+		}
+
+		con = xmalloc(cend - cstart + 2);
 
 		if (cached_map)
 		    xfree(cached_map);
-		cached_map = xmalloc((c->end - c->start + 2) * sizeof(int));
+		cached_map = xmalloc((cend - cstart + 2) * sizeof(int));
 		if (!con || !cached_map)
 		    return -1;
 
-		calculate_consensus_simple(io, c->rec, c->start, c->end,
+		calculate_consensus_simple(io, c->rec, cstart, cend,
 					   con, NULL);
 
 		cached_crec  = c->rec;
-		cached_start = c->start;
-		for (np = 0, i = c->start; i <= c->end; i++) {
-		    cached_map[i - c->start - np] = i;
-		    if (con[i - c->start] == '*')
+		cached_start = 1;
+		for (np = 0, i = cstart; i <= cend; i++) {
+		    cached_map[i - cstart - np] = i;
+		    if (con[i - cstart] == '*')
 			np++;
 		}
-		cached_end = c->end - np;
+		cached_end = i-1 - cstart - np;
 		free(con);
 	    }
 
 	    /* Update r.start / r.end via unpadded to padded mapping table */
 	    if (r.start >= cached_start && r.start <= cached_end)
-		r.start = cached_map[r.start - c->start];
+		r.start = cached_map[r.start - cached_start];
+	    else if (r.start < cached_start)
+		r.start = cached_map[0];
+	    else
+		r.start = cached_map[cached_end];
 
 	    if (r.end >= cached_start && r.end <= cached_end)
-		r.end = cached_map[r.end - c->start];
+		r.end = cached_map[r.end - cached_start];
+	    else if (r.end < cached_start)
+		r.end = cached_map[0];
 	    else
-		r.end = cached_map[cached_end - c->start] + r.end - cached_end;
+		r.end = cached_map[cached_end];
 
 	    if (r.end < r.start)
 		r.end = r.start;

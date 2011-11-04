@@ -2208,6 +2208,8 @@ static int export_tags_gff(GapIO *io, FILE *fp,
     /* Generate a padded to unpadded mapping table */
     if (unpadded) {
 	int i, np;
+	int cstart;
+
 	if (NULL == (con = malloc(c->end - c->start + 2))) {
 	    cache_decr(io, c);
 	    return -1;
@@ -2220,8 +2222,11 @@ static int export_tags_gff(GapIO *io, FILE *fp,
 	}
 	calculate_consensus_simple(io, crec, c->start, c->end, con, NULL);
 
+	if (-1 == consensus_valid_range(io, crec, &cstart, NULL))
+	    cstart = c->start;
+
 	for (np = 0, i = c->start; i <= c->end; i++) {
-	    map[i-c->start] = i - np;
+	    map[i-c->start] = i-cstart+1 - np;
 	    if (con[i-c->start] == '*')
 		np++;
 	}
