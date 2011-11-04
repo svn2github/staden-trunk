@@ -597,6 +597,7 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 		ch = cache_rw(io, ch);
 		ch->parent = bin->rec;
 		ch->parent_type = GT_Bin;
+		ch->flags |= BIN_BIN_UPDATED;
 		if (fixed) (*fixed)++;
 	    }
 	}
@@ -1048,6 +1049,7 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 		    bin = cache_rw(io, bin);
 		    bin->parent = crec;
 		    bin->parent_type = GT_Contig;
+		    bin->flags |= BIN_BIN_UPDATED;
 		    if (fixed) (*fixed)++;
 		}
 	    }
