@@ -1671,30 +1671,34 @@ int consensus_unpadded_pos(GapIO *io, tg_rec contig, int pos, int *upos) {
  *        -1 for error
  */
 int consensus_padded_pos(GapIO *io, tg_rec contig, int upos, int *pos) {
-    int np, i, i_end, offset;
+    int np, i, i_end, offset, clipped_start;
     char *cons;
     contig_t *c;
+
+    consensus_valid_range(io, contig, &clipped_start, NULL);
 
     /* For now it's the slow route: compute consensus and count '*'s */
     if (NULL == (c = cache_search(io, GT_Contig, contig)))
 	return TCL_ERROR;
-    if (upos <= c->start) {
-	*pos = upos;
+    if (upos <= 0) {
+	*pos = upos + clipped_start-1;
 	return 0;
     }
 
     /* First guess at 8k more */
-    if (NULL == (cons = malloc(upos - c->start + 1 + 8192)))
+    if (NULL == (cons = malloc(upos + 1 + 8192)))
 	return -1;
 
-    if (-1 == calculate_consensus_simple(io, contig, c->start,
-					 upos + 8192, cons, NULL)) {
+    if (-1 == calculate_consensus_simple(io, contig,
+					 clipped_start,
+					 clipped_start + upos + 8192,
+					 cons, NULL)) {
 	free(cons);
 	return -1;
     }
 
-    i_end = upos - c->start;
-    offset = c->start;
+    i_end = upos;
+    offset = clipped_start;
     np = 0;
     for(;;) {
 	int sz;
@@ -1703,11 +1707,11 @@ int consensus_padded_pos(GapIO *io, tg_rec contig, int upos, int *pos) {
 
 	    if (cons[i] == '*')
 		np++;
-	    if (i + offset >= upos + np)
+	    if (i + offset - (clipped_start-1) >= upos + np)
 		break;
 	}
 	
-	if (i + offset >= upos + np)
+	if (i + offset - (clipped_start-1) >= upos + np)
 	    break;
 
 	/* If we haven't found the unpadded location yet, keep going */
