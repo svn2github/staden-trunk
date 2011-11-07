@@ -1465,6 +1465,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     char *tags;
     int fake;
 
+    bio->count++;
+
     b = p->b;
     fake = ((bam_flag(b) & BAM_FSECONDARY) &&
 	    (bam_flag(b) & BAM_FQCFAIL));
