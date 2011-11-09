@@ -589,7 +589,7 @@ static void redraw_depth_image(DepthTrackItem *dti, Display *display) {
     bx = dti->wx0;
     
     /* 1) Compute X */
-    dti->ntl = gap_range_x(dti->gr, ax, bx, 0, 0, 0, 0, 0, force_change, dti->reads_only);
+    dti->ntl = gap_range_x(dti->gr, ax, bx, 0, 0, 0, 0, 1, force_change, dti->reads_only);
 
     /* 2) Calculate Y scale */
     if (dti->gr->max_height > 0) {    
