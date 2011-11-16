@@ -89,7 +89,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 		    -io $io \
 		    -contig 0 \
 		    -command "ListContigsCallback $io $t.list" \
-		    -flags {REQUIRED LENGTH JOIN_TO DELETE COMPLEMENT}]
+		    -flags {REQUIRED LENGTH JOIN_TO DELETE COMPLEMENT RENAME}]
     
     # Populate the list
     ListContigsRepopulate $io $t.list
@@ -216,7 +216,8 @@ proc InitListContigs {io parent {csh_win {}}} {
 
 	"LENGTH" -
 	"COMPLEMENT" -
-	"JOIN_TO" {
+	"JOIN_TO" -
+	"RENAME" {
 	    ListContigsRepopulate $io $w
 	}
     }

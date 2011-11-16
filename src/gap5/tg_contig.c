@@ -79,6 +79,7 @@ int contig_set_bin(GapIO *io, contig_t **c, tg_rec value) {
  */
 int contig_set_name(GapIO *io, contig_t **c, char *name) {
     contig_t *n;
+    GapIO *iob = io->base ? io->base : io;
 
     if (!(n = cache_rw(io, *c)))
 	return -1;
@@ -88,8 +89,16 @@ int contig_set_name(GapIO *io, contig_t **c, char *name) {
 
     *c = n;
 
+    /* Delete old name */
+    if (n->name)
+	iob->iface->contig.index_del(iob->dbh, n->name, n->rec);
+
+    /* Add new name */
     n->name   = (char *)(&n->name+1);
     strcpy(n->name, name);
+
+    if (*name)
+	iob->iface->contig.index_add(iob->dbh, name, n->rec);
 
     return 0;
 }
@@ -2488,7 +2497,7 @@ void update_range_y(GapIO *io, rangec_t *r, int count) {
 }
 
 
-static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c, int start, int end,
+static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,int start, int end,
 				int first, int second, int *count, int mask, int val) {
 
     rangec_t *r = NULL;
@@ -4460,8 +4469,27 @@ int move_contig(GapIO *io, tg_rec crec, int distance) {
 	return -1;
 
     bin->pos += distance;
+    bin->flags |= BIN_BIN_UPDATED;
     c->start += distance;
     c->end   += distance;
 
     return 0;
+}
+
+/*
+ * Sets the visible start of a contig, both in the contig structure and
+ * also the root bin to keep everything internally consistent.
+ *
+ * Ie it's a more end-user version of contig_set_start.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int contig_set_visible_start(GapIO *io, tg_rec contig, int pos) {
+    int cstart;
+
+    if (-1 == consensus_valid_range(io, contig, &cstart, NULL))
+	return -1;
+
+    return move_contig(io, contig, pos - cstart);
 }

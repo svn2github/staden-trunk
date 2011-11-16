@@ -222,6 +222,33 @@ proc io_undo_exec {w crec cmdu} {
 		$contig delete
 	    }
 
+	    C_MOVE {
+		set contig [$io get_contig $op1]
+		$contig set_visible_start $op2
+		$contig delete
+
+		# Adjust scrollbar & cursor
+		eval $w set_cursor [$w get_cursor relative]
+	    }
+
+	    C_RENAME {
+		set iob [$io base]
+		set contig [$iob get_contig $op1]
+		$contig set_name $op2
+		$contig delete
+
+		contig_notify -io $iob -type LENGTH \
+		    -cnum [$w contig_rec] -args {}
+
+		contig_notify \
+		    -io $iob \
+		    -type RENAME \
+		    -cnum [$w contig_rec] \
+		    -args [list name $op2]
+
+		$iob flush
+	    }
+
 	    C_SHIFT {
 		set contig [$io get_contig $op1]
 		$contig shift_base $op2 $op3
@@ -410,6 +437,22 @@ proc contig_register_callback {ed type id args} {
 	    # keeping cached absolute and relative positions in sync
 	    # incase the edit was moving a sequence.
 	    eval $ed set_cursor [$ed get_cursor relative] 0
+	}
+
+	RENAME {
+	    set io [set ${w}(io)]
+
+	    if {[llength [set ${w}(all_editors)]] == 1} {
+		set c1 [$io get_contig [set ${w}(contig)]]
+		wm title $w "Edit: [$c1 get_name]"
+		$c1 delete
+	    } else {
+		set c1 [$io get_contig [set ${w}(contig)]]
+		set c2 [$io get_contig [set ${w}(contig2)]]
+		wm title $w "Join: [$c1 get_name] / [$c2 get_name]"
+		$c1 delete
+		$c2 delete
+	    }
 	}
 
 	GENERIC {
@@ -1716,6 +1759,14 @@ proc editor_undo_info {top {clear 0}} {
 		lappend msg "Delete column from contig at position $op2"
 	    }
 
+	    C_MOVE {
+		lappend msg "Set contig start to $op2"
+	    }
+
+	    C_RENAME {
+		lappend msg "Rename contig to $op2"
+	    }
+
 	    C_SHIFT {
 		lappend msg "Shift column from contig at position $op2, dir $op3"
 	    }
@@ -2215,7 +2266,6 @@ proc editor_clip_contig {w where end} {
     $c invalidate_consensus $min $max
     $c delete
 
-    # FIXME: add undo
     store_undo $w \
 	[list \
 	     [list C_CUT $crec $min $max $undo] \
@@ -2332,6 +2382,112 @@ proc editor_name_select {w where {num 0}} {
     # For Windows...
     clipboard clear
     clipboard append $name
+}
+
+proc editor_set_start {ed} {
+    set io [$ed io]
+    set c [$io get_contig [$ed contig_rec]]
+
+    set w $ed.move
+    if {[xtoplevel $w -resizable 0] == ""} return
+    wm title $w "Set Contig Start"
+
+    xentry $w.pos \
+	-label "Visible start position" \
+	-default [$c get_visible_start] \
+	-type int
+    okcancelhelp $w.ok \
+	-ok_command "editor_set_start2 $ed $w" \
+	-cancel_command "destroy $w" \
+	-help_command "show_help gap5 {Editor-Move}"
+
+    pack $w.pos -side top -fill both
+    pack $w.ok -side bottom -fill both
+}
+
+proc editor_set_start2 {ed w} {
+    set pos [$w.pos get]
+    if {[regexp {^[-+]?[0-9]+$} $pos] == 0} { 
+	bell
+	return
+    }
+
+    destroy $w
+
+    set io [$ed io]
+    set c [$io get_contig [$ed contig_rec]]
+    set old_pos [$c get_visible_start]
+    $c set_visible_start $pos
+
+    # Adjust scrollbar and editor cursor
+    $ed xview [expr {[$ed xview]-($old_pos - $pos)}]
+
+    foreach {type rec apos} [$ed get_cursor relative] break
+    if {$rec == [$ed contig_rec]} {
+	$ed set_cursor $type $rec [expr {$apos - ($old_pos - $pos)}]
+    }
+
+    # Force relative to absolute cursor map to update
+    eval $ed set_cursor [$ed get_cursor relative] 0
+
+    store_undo $ed \
+	[list \
+	     [list C_MOVE [$ed contig_rec] $old_pos] \
+	     [list C_SET $type $rec $apos]] {}
+}
+
+proc editor_set_name {ed} {
+    set io [[$ed io] base]
+    set c [$io get_contig [$ed contig_rec]]
+
+    set w $ed.name
+    if {[xtoplevel $w -resizable 0] == ""} return
+    wm title $w "Set Contig Name"
+
+    xentry $w.name \
+	-label "Contig name" \
+	-default [$c get_name]
+    okcancelhelp $w.ok \
+	-ok_command "editor_set_name2 $ed $w" \
+	-cancel_command "destroy $w" \
+	-help_command "show_help gap5 {Editor-Rename}"
+
+    pack $w.name -side top -fill both
+    pack $w.ok -side bottom -fill both
+}
+
+proc editor_set_name2 {ed w} {
+    set io [[$ed io] base]
+
+    set nm [$w.name get]
+    if {$nm == ""} {
+	bell
+	return
+    }
+
+    if {[$io contig_name2rec $nm] > 0} {
+	bell
+	tk_messageBox -type ok -icon error -parent $w \
+	    -message "Contig name already exists"
+	return
+    }
+
+    destroy $w
+
+    set c [$io get_contig [$ed contig_rec]]
+    set old_name [$c get_name]
+    $c set_name $nm
+
+    store_undo $ed \
+	[list \
+	     [list C_RENAME [$ed contig_rec] $old_name $nm]] {}
+
+    contig_notify \
+	-io $io \
+	-type RENAME \
+	-cnum [$ed contig_rec] \
+	-args [list name $nm]
+    $io flush
 }
 
 #-----------------------------------------------------------------------------
@@ -3353,6 +3509,13 @@ bind EdNames <<menu>> {
 	-command "editor_name_select $ed {$type $rec $pos} 1"
     
     if {$type != 18} {
+	%W.m add separator
+	%W.m add command \
+	    -label "Change contig start" \
+	    -command "editor_set_start $ed"
+	%W.m add command \
+	    -label "Change contig name" \
+	    -command "editor_set_name $ed"
 	tk_popup %W.m [expr %X-20] [expr %Y-10]
 	return
     }

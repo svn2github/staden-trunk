@@ -39,8 +39,6 @@ proc GapCreateREnzDisplay {io contig_name list filename from to} {
     global tk_utils_defs 
     global CurContig
 
-    puts io=$io
-
     set w .gap_r_enzyme_map
     #generate a new display
     set num_display [next_renz_display]

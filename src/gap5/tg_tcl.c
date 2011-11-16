@@ -140,6 +140,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_library", "db_version",   "name",         "read_only",
 	"new_contig",  "new_sequence", "new_anno_ele", "rec_exists",
 	"seq_name_iter","seq_name_next","seq_name_end","check",
+	"contig_name2rec", "base",
 	(char *)NULL,
     };
 
@@ -150,6 +151,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
 	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,   IO_REC_EXISTS,
 	SEQ_NAME_ITER,SEQ_NAME_NEXT,  SEQ_NAME_END,   CHECK,
+	CONTIG_NAME2REC, IO_BASE
     };
 
     if (objc < 2) {
@@ -220,8 +222,14 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case SEQ_NAME2REC: {
-	char *seq = Tcl_GetStringFromObj(objv[2], NULL);
-	vTcl_SetResult(interp, "%"PRIrec, sequence_index_query(io, seq));
+	char *txt = Tcl_GetStringFromObj(objv[2], NULL);
+	vTcl_SetResult(interp, "%"PRIrec, sequence_index_query(io, txt));
+	break;
+    }
+
+    case CONTIG_NAME2REC: {
+	char *txt = Tcl_GetStringFromObj(objv[2], NULL);
+	vTcl_SetResult(interp, "%"PRIrec, contig_index_query(io, txt));
 	break;
     }
 
@@ -285,6 +293,17 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	    return TCL_ERROR;
 	
 	Tcl_SetObjResult(interp, iobj);
+	break;
+    }
+
+    case IO_BASE: {
+	if (!io->base) {
+	    Tcl_SetObjResult(interp, objv[0]);
+	} else {
+	    char *cmd = io_obj_as_string(io->base);
+	    /* This *will* exist already in the Tcl Interpreter */
+	    vTcl_SetResult(interp, "%s", cmd);
+	}
 	break;
     }
 
@@ -621,7 +640,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"nrefpos",	"nanno",        "shift_base",   "move_anno",
 	"check",        "move_seq",
 	"get_visible_start", "get_visible_end", "get_visible_length",
-	"invalidate_consensus",
+	"set_visible_start", "invalidate_consensus",    "set_name",
 	(char *)NULL,
     };
 
@@ -634,7 +653,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	NREFPOS,        NANNO,	        SHIFT_BASE,     MOVE_ANNO,
 	CHECK,          MOVE_SEQ,
 	GET_VISIBLE_START, GET_VISIBLE_END, GET_VISIBLE_LENGTH,
-	INVALIDATE_CONSENSUS
+	SET_VISIBLE_START, INVALIDATE_CONSENSUS,        SET_NAME
     };
 
     if (objc < 2) {
@@ -712,9 +731,48 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
     }
 
+    case SET_VISIBLE_START: {
+	int pos, r;
+	tg_rec crec;
+
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_visible_start pos\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+	Tcl_GetIntFromObj(interp, objv[2], &pos);
+	
+	crec = tc->contig->rec;
+	cache_decr(tc->io, tc->contig);
+
+	r = contig_set_visible_start(tc->io, crec, pos);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), r);
+
+	tc->contig = cache_search(tc->io, GT_Contig, crec);
+	cache_incr(tc->io, tc->contig);
+
+	break;
+    }
+
     case GET_NAME:
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), tc->contig->name, -1);
 	break;
+
+    case SET_NAME: {
+	char *name;
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_name new_name\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+	name = Tcl_GetStringFromObj(objv[2], NULL);
+
+	Tcl_SetIntObj(Tcl_GetObjResult(interp),
+		      contig_set_name(tc->io, &tc->contig, name));
+	break;
+    }
 
     case SEQS_IN_RANGE:
 	return tcl_contig_seqs_range(tc, interp, objc-1, objv+1);

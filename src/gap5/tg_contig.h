@@ -305,4 +305,15 @@ int padded_to_reference_array(GapIO *io, tg_rec cnum,
  */
 int move_contig(GapIO *io, tg_rec crec, int distance);
 
+/*
+ * Sets the visible start of a contig, both in the contig structure and
+ * also the root bin to keep everything internally consistent.
+ *
+ * Ie it's a more end-user version of contig_set_start.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int contig_set_visible_start(GapIO *io, tg_rec contig, int pos);
+
 #endif /* _TG_CONTIG_H_ */

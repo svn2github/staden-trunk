@@ -592,10 +592,23 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     /* Refresh display after external changes */
-    case _REDRAW:
+    case _REDRAW: {
+	int reload_seq = 0;
+	
+	if (argc == 3) {
+	    reload_seq = atoi(argv[2]);
+	}
+
 	ed->xx->refresh_flags = ED_DISP_ALL;
+	if (reload_seq && ed->xx->r) {
+	    free(ed->xx->r);
+	    ed->xx->r = NULL;
+	    ed->xx->nr = 0;
+	}
+
 	edview_redraw(ed->xx);
 	break;
+    }
 	
     /* X Scroll */
     case _XVIEW: {
