@@ -985,8 +985,10 @@ int edview_visible_items(edview *xx, int start, int end) {
     xx->r = contig_items_in_range(xx->io, &c, start, end,
 				  CSIR_SORT_BY_Y | mode, CSIR_DEFAULT,
 				  &xx->nr);
-    if (!xx->r)
+    if (!xx->r) {
+	xx->nr = 0;
 	return -1;
+    }
 
     if (xx->rec_hash) {
 	HacheTableDestroy(xx->rec_hash, 0);
