@@ -4,7 +4,6 @@
 #include "IO.h"
 #include "gap_globals.h"
 #include "fij.h"
-#include "io-reg.h"
 #include "contig_selector.h"
 #include "newgap_cmds.h" /* GetInterp() */
 #include "misc.h"

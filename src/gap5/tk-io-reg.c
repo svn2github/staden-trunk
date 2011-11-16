@@ -4,7 +4,6 @@
 
 #include "gap4_compat.h"
 #include "tk-io-reg.h"
-#include "io-reg.h"
 #include "gap_cli_arg.h"
 #include "newgap_cmds.h" /* GetInterp() */
 #include "newgap_structs.h" /* contig_arg */
@@ -439,6 +438,8 @@ static int reg_str2flags(Tcl_Interp *interp, char *str) {
 	    flags |= REG_ORDER;
 	} else if (strcmp(str_flags[i], "LENGTH") == 0) {
 	    flags |= REG_LENGTH;
+	} else if (strcmp(str_flags[i], "RENAME") == 0) {
+	    flags |= REG_RENAME;
 	} else if (strcmp(str_flags[i], "CHILD_EDIT") == 0) {
 	    flags |= REG_CHILD_EDIT;
 	} else if (strcmp(str_flags[i], "QUERY_NAME") == 0) {
@@ -512,6 +513,8 @@ static char *reg_flags2str(int flags) {
 	strcat(str, "ORDER ");
     if (flags & REG_LENGTH)
 	strcat(str, "LENGTH ");
+    if (flags & REG_RENAME)
+	strcat(str, "RENAME ");
     if (flags & REG_CHILD_EDIT)
 	strcat(str, "CHILD_EDIT ");
     if (flags & REG_QUERY_NAME)
@@ -881,6 +884,12 @@ static void tk_contig_register_cmd(GapIO *io, tg_rec contig, void *fdata,
 	Tcl_DStringAppend(&ds, buf, -1);
 	break;
 
+    case REG_RENAME:
+	sprintf(buf, "{name %s}",
+		jdata->rename.name);
+	Tcl_DStringAppend(&ds, buf, -1);
+	break;
+
     case REG_QUERY_NAME:
 	/* 'line' element is returned */
 	break;
@@ -1107,6 +1116,17 @@ int str2reg_data(Tcl_Interp *interp, GapIO *io,
     case REG_LENGTH:
 	rd->length.length = io_clength(io, cnum);
 	break;
+	
+    case REG_RENAME: {
+	static char buf[1024];
+	contig_t *c = cache_search(io, GT_Contig, cnum);
+	if (c)
+	    sprintf(buf, "%s", contig_get_name(&c));
+	else
+	    sprintf(buf, "?");
+	rd->rename.name = buf;
+	break;
+    }
 	
     case REG_QUERY_NAME:
     {

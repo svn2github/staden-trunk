@@ -1,6 +1,6 @@
 #include <tcl.h>
 
-#include "io-reg.h"
+#include "tg_gio.h"
 #include "gap_globals.h"
 #include "canvas_box.h"
 

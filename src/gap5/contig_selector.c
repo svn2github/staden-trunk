@@ -6,7 +6,6 @@
 #include "IO.h"
 #include "misc.h"
 #include "io_utils.h"
-#include "io-reg.h"
 #include "cs-object.h"
 #include "newgap_cmds.h"
 #include "contig_selector.h"

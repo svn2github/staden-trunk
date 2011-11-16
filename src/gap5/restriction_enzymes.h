@@ -11,7 +11,7 @@
 #define TASK_RENZ_INFO   0
 
 typedef struct s_match_t {
-    int contig;
+    tg_rec contig;
     int length;
     R_Match *match;
     int num_match;
@@ -69,7 +69,7 @@ typedef struct obj_t_renz_t {
 } obj_t_renz;
 
 int r_enz_1d_reg(GapIO *io, 
-		 int contig, 
+		 tg_rec contig, 
 		 char *disp_script, 
 		 char *quit_script, 
 		 char *window); 
@@ -90,7 +90,7 @@ template_renz_reg(Tcl_Interp *interp,                                  /* in */
 
 int renz_reg(Tcl_Interp *interp, GapIO *io, char *filename, char *frame,
 	     char *names_win, char *re_win, char *inlist, int num_items,
-	     int contig_num, int lreg, int rreg, int text_offset,
+	     tg_rec contig_num, int lreg, int rreg, int text_offset,
 	     char *text_fill, tick_s *tick, int yoffset, ruler_s *ruler,
 	     cursor_s xhair);
 
@@ -101,7 +101,7 @@ plot_multi_r_enz(GapIO *io,
 		 char *plot,
 		 char *inlist,
 		 int list_size,
-		 int contig_num,
+		 tg_rec contig_num,
 		 int start,
 		 int end,
 		 int text_offset,
@@ -131,7 +131,7 @@ OrderOnPosition (R_Enz *r_enzyme,
 
 int
 Create_REnz_Tags(GapIO *io,
-		 int contig_num,
+		 tg_rec contig_num,
 		 obj_renz *r,
 		 char *enz_list,
 		 char **enz_ids,

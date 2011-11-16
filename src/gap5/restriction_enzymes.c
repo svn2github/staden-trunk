@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "io-reg.h"
 #include "canvas_box.h"
 #include "gap_canvas_box.h"
 #include "gap_cli_arg.h"
@@ -23,7 +22,7 @@
  * Prototypes
  *---------------------------------------------------------------------------
  */
-static void renz_callback(GapIO *io, int contig,
+static void renz_callback(GapIO *io, tg_rec contig,
 			      void *fdata,
 			      reg_data *jdata);
 void display_renz(Tcl_Interp *interp, GapIO *io, obj_renz *r);
@@ -38,7 +37,7 @@ void display_renz(Tcl_Interp *interp, GapIO *io, obj_renz *r);
  */
 int
 renz_info(char *window,
-	  int contig,
+	  tg_rec contig,
 	  R_Match *match,
 	  int num_match,
 	  int sequence_type,
@@ -101,7 +100,7 @@ renz_info(char *window,
  * Callback routines for the restriction enzyme plot in the template display
  */
 
-static int update_obj_t_renz(GapIO *io, obj_t_renz *r, int contig) {
+static int update_obj_t_renz(GapIO *io, obj_t_renz *r, tg_rec contig) {
     int i, newl;
 
     for (i = 0; i < r->num_contigs; i++) {
@@ -123,7 +122,7 @@ static int update_obj_t_renz(GapIO *io, obj_t_renz *r, int contig) {
  */
 
 static void
-update_obj_renz(GapIO *io, obj_renz *r, int contig) {
+update_obj_renz(GapIO *io, obj_renz *r, tg_rec contig) {
     int newl;
 
     newl = ABS(io_clength(io, r->c_match.contig));
@@ -249,7 +248,7 @@ renz_replot(Tcl_Interp *interp,
  */
 static void 
 renz_callback(GapIO *io, 
-	      int contig,
+	      tg_rec contig,
 	      void *fdata,
 	      reg_data *jdata) 
 {
@@ -595,7 +594,7 @@ renz_reg(Tcl_Interp *interp,
 	 char *re_win,
 	 char *inlist,
 	 int num_items,
-	 int contig_num,
+	 tg_rec contig_num,
 	 int lreg,
 	 int rreg,
 	 int text_offset,
@@ -692,7 +691,7 @@ renz_reg(Tcl_Interp *interp,
  */
 int
 Create_REnz_Tags(GapIO *io,
-		 int contig_num,
+		 tg_rec contig_num,
 		 obj_renz *r,
 		 char *enz_list,
 		 char **enz_ids,
@@ -998,7 +997,7 @@ GetREnzName(ClientData clientData,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    r = result_data(args.io, args.id, args.contig);
+    r = result_data(args.io, args.id);
     /* printf("name %s \n", r->r_enzyme[args.item].name); */
     if (r) {
 	vTcl_SetResult(interp, "%s", r->r_enzyme[args.item].name);
@@ -1081,7 +1080,7 @@ CreateREnzTags(ClientData clientData,
 	       " contig only\n");
     }
 
-    r = result_data(args.io, args.id, contigs[0].contig);
+    r = result_data(args.io, args.id);
 
     /* create reading name array */
     if (Tcl_SplitList(interp, args.id_list, &num_ids, &enz_ids)

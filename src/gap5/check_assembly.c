@@ -1,5 +1,4 @@
 #include "IO.h"
-#include "io-reg.h"
 #include "cs-object.h"
 #include "gap_globals.h"
 #include "misc.h"

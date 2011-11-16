@@ -3,7 +3,6 @@
 
 #include "IO.h"
 #include "canvas_box.h"
-#include "io-reg.h"
 
 /* TASK_CANVAS_WORLD structure */
 typedef struct {

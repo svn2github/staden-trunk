@@ -55,6 +55,7 @@
 #define REG_BUFFER_END         (1<<20)
 #define REG_NOTE	       (1<<21)
 #define REG_CHILD_EDIT	       (1<<22)
+#define REG_RENAME	       (1<<23)
 
 
 /*
@@ -68,7 +69,7 @@
  * Some useful compound definitions
  */
 #define REG_REQUIRED	(REG_QUERY_NAME | REG_DELETE | REG_QUIT | REG_PARAMS)
-#define REG_DATA_CHANGE (REG_JOIN_TO | REG_LENGTH | REG_COMPLEMENT)
+#define REG_DATA_CHANGE (REG_JOIN_TO | REG_LENGTH | REG_COMPLEMENT | REG_RENAME)
 #define REG_OPS		(REG_GET_OPS | REG_INVOKE_OP)
 #define REG_LOCKS	(REG_GET_LOCK | REG_SET_LOCK)
 #define REG_REGISTERS	(REG_REGISTER | REG_DEREGISTER)
@@ -176,6 +177,11 @@ typedef struct {
 } reg_query_name;
 
 typedef struct {
+    int job;	/* REG_RENAME */
+    char *name;	/* char[1024] */
+} reg_rename;
+
+typedef struct {
     int job;	/* REG_DELETE, REG_COMPLEMENT, etc */
 } reg_delete, reg_complement, reg_anno, reg_buffer_start, reg_buffer_end;
 
@@ -255,6 +261,7 @@ typedef union _reg_data {
     reg_buffer_start	buffer_start;
     reg_buffer_end	buffer_end;
     reg_note		note;
+    reg_rename		rename;
 } reg_data;
 
 
