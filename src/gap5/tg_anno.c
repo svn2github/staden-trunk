@@ -73,7 +73,11 @@ tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
 	bin = bin_add_to_range(io, &c, seq_bin, &r, NULL, NULL, 0);
     else
 	bin = bin_add_range(io, &c, &r, NULL, NULL, 0);
-    e->bin = bin->rec;
+
+    if (!bin) 
+	verror(ERR_FATAL, "anno_ele_add", "bin_add_to_range returned NULL");
+
+    e->bin = bin ? bin->rec : 0;
 
     cache_decr(io, c);
     return r.rec;
