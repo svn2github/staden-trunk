@@ -54,7 +54,7 @@ int edview_search_position(edview *xx, int dir, int strand, char *value) {
 		type = GT_Seq;
 	    }
 
-	    if (!rec)
+	    if (rec != xx->cursor_rec)
 		return -1;
 
 	    edSetCursorPos(xx, type, rec, pos, 1);
