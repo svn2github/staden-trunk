@@ -50,7 +50,10 @@ bttmp_t *bttmp_file_open(void) {
 	return NULL;
     }
 
-    tmp->fp = fdopen(fd, "wb+");
+    if (NULL == (tmp->fp = fdopen(fd, "wb+"))) {
+	free(tmp);
+	return NULL;
+    }
 
     return tmp;
 }
