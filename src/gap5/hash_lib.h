@@ -3,7 +3,7 @@
 #include "align_lib.h"
 #include "consen.h"
 
-#define MINMAT 20
+#define MINMAT 12
 
 #define HASH_JOB_DIAG       1
 #define HASH_JOB_HIST       2

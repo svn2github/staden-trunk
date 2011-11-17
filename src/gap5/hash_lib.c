@@ -13,7 +13,7 @@
 #include "hash_lib.h"
 #include "consen.h"
 
-#define MINMAT 20
+#define MINMAT 12
 
 /* Size to divide the h->diag[] into for purposes of delayed initialisation */
 #define DSZ 0x800
@@ -1788,15 +1788,24 @@ int central_diagonal ( Hash *h ) {
     return j/h->matches;
 }
 
+static int c1_len, c2_len;
+
 static int sort_func(const void *p1, const void *p2) {
     int x1,y1,x2,y2;
     Block_Match *c1 = (Block_Match *)p1;
     Block_Match *c2 = (Block_Match *)p2;
 
+    /*
+    x1 = MIN(c1->pos_seq1, c1_len - (c1->pos_seq1 + c1->length));
+    y1 = MIN(c1->pos_seq2, c2_len - (c1->pos_seq2 + c1->length));
+    x2 = MIN(c2->pos_seq1, c1_len - (c2->pos_seq1 + c2->length));
+    y2 = MIN(c2->pos_seq2, c2_len - (c2->pos_seq2 + c2->length));
+    */
     x1 = c1->pos_seq1;
     y1 = c1->pos_seq2;
     x2 = c2->pos_seq1;
     y2 = c2->pos_seq2;
+
     return (x1+y1) - (x2+y2);
 }
 
@@ -1893,6 +1902,8 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 #endif
 
     /* sort the blocks on distance from starts of sequences */
+    c1_len = h->seq1_len;
+    c2_len = h->seq2_len;
     i = sort_blocks(h->block_match, h->matches);
 
     /* set each blocks score to its distance from the nearest edge
@@ -1901,8 +1912,7 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
      */
 
     for (i=0;i<h->matches;i++) {
-        gap_pen = 
-	-MIN(h->block_match[i].pos_seq1,h->block_match[i].pos_seq2);
+        gap_pen = -MIN(h->block_match[i].pos_seq1, h->block_match[i].pos_seq2);
         if((t=h->block_match[i].length + gap_pen) > best_score) {
             best_score = t;
             best_prev = i;
@@ -1914,7 +1924,33 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     if (best_prev == -1) return 0; /* bail out if there is no good score */
 
     /*
-    printf("=== STEP 1 === %d\n",h->matches);
+    printf("=== STEP 1, best_score = %d,%d === %d\n",
+	   best_score, best_prev, h->matches);
+    for (i=0;i<h->matches;i++) {
+	printf("i %d %d %d %d %d %d %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block);
+    }
+    */
+
+    gap_pen = -MIN(h->block_match[best_prev].pos_seq1,
+		   h->block_match[best_prev].pos_seq2);
+    qsort(h->block_match, h->matches, sizeof(Block_Match), sort_by_end_pos);
+    best_score = INT_MIN;
+    for (i=0;i<h->matches;i++) {
+        if((t=h->block_match[i].length + gap_pen) > best_score) {
+	    best_score = t;
+	    best_prev = i;
+	}
+    }
+
+    /*
+    printf("=== STEP 1.5, best_score = %d,%d === %d\n",
+	   best_score, best_prev, h->matches);
     for (i=0;i<h->matches;i++) {
 	printf("i %d %d %d %d %d %d %d\n",i,
 	       h->block_match[i].pos_seq1,
@@ -1930,28 +1966,6 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
      * predecessor. This is given by: best_score + length - diag_shift
      * note the best score and block number as we proceed
      */
-    qsort(h->block_match, h->matches, sizeof(Block_Match), sort_by_end_pos);
-    best_score = INT_MIN;
-    for (i=0;i<h->matches;i++) {
-        if((t=h->block_match[i].length + gap_pen) > best_score) {
-	    best_score = t;
-	    best_prev = i;
-	}
-    }
-
-    /*
-    printf("=== STEP 1.5 === %d\n",h->matches);
-    for (i=0;i<h->matches;i++) {
-	printf("i %d %d %d %d %d %d %d\n",i,
-	       h->block_match[i].pos_seq1,
-	       h->block_match[i].pos_seq2,
-	       h->block_match[i].length,
-	       h->block_match[i].diag,
-	       h->block_match[i].best_score,
-	       h->block_match[i].prev_block);
-    }
-    */
-
     for (i=1;i<h->matches;i++) {
 	k = 10;
 	for(j=i-1;j>-1 && k;j--) {
@@ -2002,9 +2016,21 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 		    k--;
 
 		/* best score does not include current match */
-		if ( (t = h->block_match[j].best_score +
-		      len - diag_shift) >
-		    h->block_match[i].best_score ) {
+		t = h->block_match[j].best_score + len - diag_shift;
+		/*
+		 * Also compensate for the fact that stitching together
+		 * blocks inherently implies we have mismatches between
+		 * blocks. At the very least we have 1 per word length
+		 * (and 1 per diag shift, already compensated for above).
+		 */
+		t -= 2*MIN(h->block_match[i].pos_seq1 -
+			   (h->block_match[j].pos_seq1+
+			    h->block_match[j].length),
+			   h->block_match[i].pos_seq2 -
+			   (h->block_match[j].pos_seq2+
+			    h->block_match[j].length)) / h->min_match;
+		
+		if ( t > h->block_match[i].best_score ) {
 		    h->block_match[i].best_score = t;
 		    h->block_match[i].prev_block = j;
 		    tt = t+h->block_match[i].length;
