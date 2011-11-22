@@ -1,5 +1,5 @@
-Staden Package release 2.0.0b9: 4th Nov 2011
-============================================
+Staden Package release 2.0.0b9: 22nd Nov 2011
+=============================================
 
 Firstly, it has been a long time since the last flagged release
 (February). Yes Gap5 is still in beta, but stability is improving
@@ -294,6 +294,15 @@ Other Gap5 Updates
         from a signal handler often ends up with a stack that gdb will
         not list.
 
+*	Renamed Disassemble Contigs to Delete Contigs and rearranged
+        the Edit menu a bit.
+
+*	Tweaks to the Find Internal Joins algorithm to hopefully
+	find some more small matches.
+
+*	Added the ability to rename contigs and to change their
+        starting location.
+
 
 Gap5 Bug Fixes
 --------------
@@ -355,6 +364,9 @@ Gap5 Bug Fixes
 
         - The differences line in the join editor should no longer find
           false matches when searching backwards.
+
+	- Backwards searching for sequence should no longer mission
+          occasional (approx 1 in 1000) matches.
 
         - It's no longer possible to attempt a join to itself. (Could be
           achieved before by using multiple join editor windows up
