@@ -176,8 +176,12 @@ char *get_contig_name(GapIO *io, tg_rec number) {
     contig_t *c;
 
     c = (contig_t *)cache_search(io, GT_Contig, number);
-    strncpy(name, contig_get_name(&c), DB_NAMELEN);
-    name[DB_NAMELEN] = 0;
+    if (c) {
+	strncpy(name, contig_get_name(&c), DB_NAMELEN);
+	name[DB_NAMELEN] = 0;
+    } else {
+	strcpy(name, "(unknown contig)");
+    }
 
     return name;
 }
