@@ -197,6 +197,8 @@ proc Normal_OK_Pressed {f io infile id sel_mask strippads notes template annos f
     #set out_file [entrybox_get $output.entry]
     set out_file [getFname_in_name $output]
 
+    if {$out_file == ""} return
+
     SetBusy
     get_consensus -io $io \
 	    -contigs $list \

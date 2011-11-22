@@ -94,7 +94,7 @@ proc ExportSequences2 {io f} {
 
     set fn [getFname_in_name $f.outfile]
 
-    if {$list == ""} {
+    if {$list == "" || $fn == ""} {
 	raise $f
 	return
     }
@@ -183,7 +183,7 @@ proc ExportTags2 {io f} {
 
     set fn [getFname_in_name $f.outfile]
 
-    if {$list == ""} {
+    if {$list == "" || $fn == ""} {
 	raise $f
 	return
     }

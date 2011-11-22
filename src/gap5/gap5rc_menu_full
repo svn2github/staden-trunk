@@ -79,19 +79,10 @@ if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
 add_command     {File.Export sequences}          8 10 {ExportSequences \$io} 
 add_command     {File.Export tags}               8 10 {ExportTags \$io} 
 add_command     {File.Import GFF}		 8 26 {ImportGFF \$io}
-add_cascade	{File.Save consensus}		 8 10
+add_command	{File.Save consensus}		 8 10 {NormalDialog \$io}
 add_separator	{File.S2}
 #add_command	{File.Extract readings}		 8 10 {ExtractReadings \$io} e
 add_command	{File.Exit}			 1 2 {Gap_Exit \$io}
-
-add_command	{File.Save consensus.normal}	8 10 \
-			{NormalDialog \$io}
-#add_command	{File.Save consensus.extended}	8 10 \
-#			{ExtendedDialog \$io} e
-#add_command	{File.Save consensus.unfinished}	8 10 \
-#			{UnfinishedDialog \$io} e
-#add_command	{File.Save consensus.quality}	8 10 \
-#			{QualityDialog \$io} e
 
 add_command	{Edit.Edit Contig}		 8 10 {EditContig \$io}
 add_command	{Edit.Join Contig}		 8 10 {JoinContig \$io}
@@ -103,14 +94,14 @@ add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
 #add_command	{Edit.Quality clip contig ends}	 8 26 {QClipEnds \$io} e
 #add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io}
 add_command	{Edit.Break a contig}		 8 26 {BreakContig \$io}
-add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io}
-add_command	{Edit.Disassemble contigs}	 8 26 {DisContigs \$io}
 add_command     {Edit.Remove contig holes}       8 26 {RemoveContigHoles \$io}
+add_command	{Edit.Disassemble contigs}	 8 26 {DisContigs \$io}
+add_separator	{Edit.S1}
 add_command	{Edit.Remove pads columns}	 8 26 {RemovePadColumns \$io} e
 add_command	{Edit.Shuffle pads}		 8 26 {ShufflePads \$io} e
+add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io}
 #add_command	{Edit.Enter tags}		 8 26 {EnterTags \$io} e
 #add_command	{Edit.Edit Notebooks}	 	 8 10 {NoteSelector \$io database}
-#add_separator	{Edit.S1} e
 #add_command	{Edit.Doctor Database}		12 6 {AlterRelationships \$io} e
 
 add_command	{View.Contig selector}		 8 10 {ContigSelector \$io}
