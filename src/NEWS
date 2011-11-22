@@ -1,3 +1,74 @@
+22nd Nov 2011
+=============
+
+Gap5 Updates
+------------
+
+*	Simplified the Save Consensus menu and fixed mishandling of
+        error dialogues.
+
+*	Renamed Disassemble Contigs to Delete Contigs and rearranged
+        the Edit menu a bit.
+
+*	Added the ability to rename contigs and to change their
+        starting location.
+
+*	Improved (hopefully) the choices made in the fast-mode Find
+        Internal Joins. This should remove the occasional missed
+        match.
+
+*	Code reorganisation: removed function io-reg.h and merged in
+        tg_register.h. (Also fixed restriction enzymes registration in
+        the process.)
+
+Gap5 Fixes
+----------
+
+*	Protect against invalid contig data in get_contig_name()
+        function. This should avoid a crash in certain inconsistent
+        databases.
+
+*	The editor backwards sequence search was missing maybe 1 in
+        1000 searches.
+
+*	Fix to the editor From File search so it only steps through
+        entries for the current contig.
+
+*	Attempt to avoid crashes when running out of memory in
+        edview_visible_items().
+
+*	Fixed bug in template depth display due to the inconsistant
+        colour being set to zero.
+
+*	Added back the count of the number of sequences indexed in
+        SAM (tg_index). Somehow this got lost in a recent update.
+
+*	More unpadded coordinate fixes (padded calculation this time).
+
+
+
+4th Nov 2011
+============
+
+Gap5 Fixes
+----------
+
+*	Changed unpadded GFF coordinates to agree with the new
+        unpadded coords in the editor: base 1 is the left base,
+        regardless of where the contig start coordinate is.
+
+	This fixes both GFF export and GFF import. (Note it breaks it
+        for users expecting gap5 to preserve reference based
+        coordinate systems.)
+
+*	Replaced RT with CT for consensus tags in SAM I/O.
+
+*	Fixed Check Database in fix mode to actually fix bin parenting
+        issues, rather than failing to commit the changes.
+
+*	Improved error handling in contig_seqs_in_range2.
+
+
 3rd Nov 2011
 ============
 
