@@ -222,7 +222,7 @@ proc DisContigs { io } {
     set cs [keylget gap5_defs CONTIG_SEL.WIN]
 
     if {[xtoplevel $f -resizable 0] == ""} return
-    wm title $f "Disassemble contigs"
+    wm title $f "Delete contigs"
 
     contig_id $f.id -title "Contig identifier" -io $io -range 0
 
@@ -231,6 +231,8 @@ proc DisContigs { io } {
 	"{contig_id_configure $f.id -state disabled} \
 	 {contig_id_configure $f.id -state disabled}\
 	 {contig_id_configure $f.id -state normal}" -bd 2 -relief groove
+
+    label $f.warn -text "WARNING: this removes entire contigs. To remove individual sequences please use Disassemble Readings" -fg red -wrap 400
 
 
     ###########################################################################
@@ -245,6 +247,7 @@ proc DisContigs { io } {
 
     pack $f.infile -fill x
     pack $f.id -fill x
+    pack $f.warn
     pack $f.ok_cancel -fill x
 
 }
@@ -262,7 +265,7 @@ proc OK_Pressed_DisContig { io f cs infile id } {
     destroy $f
     update idletasks
 
-    if {![quit_displays -io $io -msg "disassemble_readings"]} {
+    if {![quit_displays -io $io -msg "disassemble_contigs"]} {
 	# Someone's too busy to shutdown?
 	return
     }

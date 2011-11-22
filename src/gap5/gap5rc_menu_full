@@ -95,7 +95,7 @@ add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
 #add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io}
 add_command	{Edit.Break a contig}		 8 26 {BreakContig \$io}
 add_command     {Edit.Remove contig holes}       8 26 {RemoveContigHoles \$io}
-add_command	{Edit.Disassemble contigs}	 8 26 {DisContigs \$io}
+add_command	{Edit.Delete contigs}		 8 26 {DisContigs \$io}
 add_separator	{Edit.S1}
 add_command	{Edit.Remove pads columns}	 8 26 {RemovePadColumns \$io} e
 add_command	{Edit.Shuffle pads}		 8 26 {ShufflePads \$io} e
