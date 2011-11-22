@@ -194,7 +194,7 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 	    if (start > c->end)
 		at_end = 1;
 	} else {
-	    for (i = 0, j = patlen && i < WIN_WIDTH; j; i++) {
+	    for (i = 0, j = patlen; j && i < WIN_WIDTH; i++) {
 		if (cons[i] != '*')
 		    j--;
 	    }
