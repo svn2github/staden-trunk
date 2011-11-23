@@ -2,7 +2,8 @@
 * Editor-Movement::            Moving around the editor
 * Editor-Names::               The sequence names display
 * Editor-Editing::             Commands for editing data
-* Editor-Selections::          Cut and paste control
+* Editor-Select Base::         Cut and paste control of sequence
+* Editor-Select Seq::          Selecting Sequences
 * Editor-Annotations::         Creating, editing and deleting tags
 * Editor-Searching::           Searching
 * Editor-Settings::            The ``settings'' menu
@@ -109,11 +110,11 @@ preceding it for Delete. We cover the topic of editing later
 editing cursor is also another way of scrolling the editor.
 
 Finally the Page Up and Page Down keys scroll the editor left or right
-by 1Kb. Used with Shift the moves in increments of 10Kb, with Control
-in increments of 100Kb and with both Shift and Control in increments
-of 1Mb.
-
-FIXME: Add Home and END too for start/end of contig?
+by 90% of current screen width.  Used with Shift the moves in
+increments of 1Kb, with Control in increments of 10Kb and with both
+Shift and Control in increments of 100Kb. The Home and End keys jump
+to the start or end of the current item underneath the editing curosr
+- either a sequence or the consensus.
 
 _split()
 @node Editor-Names
@@ -143,7 +144,7 @@ relative lengths. The background shading indicates the mapping quality
 of the sequence (which may not be available in many cases, depending
 on how the assembly was derived). This should indicate the likelihood
 that the sequence has been assembled to the correct point. Sequence
-that appears to map elsewhere (eg due to a repeat) will be dark grey
+that appears to map elsewhere, e.g. due to a repeat, will be dark grey
 while unique sequence will be light grey or white. Moving the mouse
 cursor over a sequence will tell you the precise mapping quality along
 with additional information such as the sequence name, the technology
@@ -161,17 +162,38 @@ _picture(gap5_contig_editor.names2)
 
 This still uses the > and < symbols to reflect strand and grey scales
 for representing the mapping quality. The > and < are now also
-coloured independently. A dark grey > or < indicates that the read is
-not paired, while light means it forms a pair. (In future this may be
-expanded to indicate read-pair consistency and pairs spanning
-contigs.)
+coloured independently.
+
+@itemize
+@item light blue
+The read is not paired
+@item white
+Forms a consistent pair
+@item grey
+Paired, but the insert size is too large or too small
+@item red
+Paired, but in an invalid orientation
+@item orange
+Paired, but the other end is in another contig
+@end itemize
 
 At the bottom of the names panel is an editable text field containing
-the current ``padded'' display position. This is updated automatically
-as we scroll through the editor, or it can be used to jump the editor
-to specific points by typing in a new location and pressing the enter
-key.
+the current display position. Adjacent to this is a small ``P''
+indicating these coordinates are ``padded''. Clicking this will
+alternate with ``R'' to indicate reference coordinates, although these
+may not be available in all situations.  Note that currently, for speed
+reasons, it cannot directly display unpadded coordinates. 
 
+Typing into this position entry-box allows us to direct the editor to a
+specific location. If we end the number with ``u'' it performs an
+unpadded to padded conversion before jumping to this location.
+
+Left clicking on a name will toggle the background between the current
+grey to a shade of blue (with luminosity once again reflecting mapping
+quality). This indicates that the sequence name has been added to the
+``readings'' list. Multiple names may be selected and deselecting by
+pressing and holding the left mouse button while moving the mouse
+cursor.
 
 In both display modes, pressing the right mouse button brings up a
 context sensitive menu containing operations relevant to that specific
@@ -179,12 +201,17 @@ sequence. This may contain the following commands.
 
 
 @table @strong
-@item Copy to clipboard
-This copies the sequence name to the clipboard for use in a subsequent
-paste operation. Note that there is no visual cue that this has
-happened. The same function may also be achieved by left-clicking and
-dragging the mouse horiztonally, as if attempting to highlight a
-region of text.
+@item Copy name to clipboard
+@itemx Copy #number to clipboard
+These copy the sequence name or the record number to the clipboard for
+use in a subsequent paste operation. Note that there is no visual cue
+that this has happened. The same function may also be achieved by
+left-clicking and dragging the mouse horiztonally, as if attempting to
+highlight a region of text.
+
+These two items are also available when right clicking on the Consensus
+label, but in this case it copies the contig name or number to the
+clipboard instead.
 
 @item Goto...
 This lists other sequences sharing the same template, such as the
@@ -193,7 +220,17 @@ to the left-most base in that sequence. If the sequence is in another
 contig then a new editor will be created, unless one already exists
 for that contig in which case that other editor will be moved
 accordingly.
+
+@item Join to...
+In the case of read-pairs that span contigs, the join to function will
+bring up the join editor for both contigs involved, automatically
+complementing the other contig if appropriate based on the library pair
+orientation statistics.
 @end table
+
+Right clicking on the contig name also pops up a menu. In here are
+otions to change the contig name or the starting coordinate. These
+options are also available in the editor Commands menu.
 
 _split()
 @node Editor-Editing
@@ -232,11 +269,11 @@ padding character by pressing ``*''. These new bases and pads
 automatically get given a quality value of 100, but see below for how
 to adjust this. The consensus cannot be edited in this manner.
 
-To insert a gap into sequence press ``i''. At present only alignment
-pads can be inserted, not bases, although the pads can subsequently be
-edited to turn them into bases. The ``i'' key also permits insertions
-of gaps into the consensus, which it achieves by inserting into every
-sequence aligned at that position.
+To insert a gap into sequence press ``i'' or the Insert key. At present
+only alignment pads can be inserted, not bases, although the pads can
+subsequently be edited to turn them into bases. The ``i'' and Insert
+keys also permits insertions of gaps into the consensus, which it
+achieves by inserting into every sequence aligned at that position.
 
 Bases may be deleted by pressing the Delete or Backspace key. This
 deletes the base immediately to the left of the current editing
@@ -270,6 +307,8 @@ mouse button. Alternatively the following keys can be used.
  Down arrow or Control n        Move down one base
  Control a                      Move editing cursor to start of sequence
  Control e                      Move editing cursor to end of sequence
+ Home                           Move editing cursor to start of sequence
+ End                            Move editing cursor to end of sequence
  Meta or Alt <                  Move editing cursor to start of contig
  Meta or Alt >                  Move editing cursor to end of contig
 @end group
@@ -331,6 +370,14 @@ or deleting pads.
 This is achieved by using Control plus the left and right arrow keys
 while the editing cursor is anywhere on the sequence.
 
+@example
+@group
+ Control Left-Arrow       Shift sequence left
+ Control Right-Arrow      Shift sequence right
+@end group
+@end example
+
+
 @node Editor-Cutoffs
 @subsection Adjusting the Cutoff Data
 @cindex Cutoff data: contig editor
@@ -356,6 +403,21 @@ pressing the ``<'' (left cutoff) or ``>'' (right cutoff) keys. In both
 cases the cutoff point is between the base with the editing cursor and
 the base to the left of the editing cursor.
 
+Using the ``<'' and ``>'' keys with the editing cursor in the consensus
+performs bulk versions of these edits by clipping every single sequence
+to that poinit. One small difference here though is that the bulk
+versions only ever shrink cutoff data and do not grow it. 
+
+@example
+@group
+ <                        In sequence: set left cutoff position
+ >                        In sequence: set right cutoff position
+
+ <                        In consensus: bulk clip left cutoff
+ >                        In consensus: bulk clip right cutoff
+@end group
+@end example
+
 _split()
 @node Editor-Editing Summary
 @subsection Summary of Editing Commands
@@ -368,9 +430,9 @@ A brief summary of these editing operations can be seen below:
  Key              Location      Action
  -----------------------------  --------------------
  a,c,g,t,*        Reading       Change base
- i                Reading       Insert pad
- delete           Reading       Delete * to left
- Ctrl delete      Reading       Delete any base to left
+ i, Insert        Reading       Insert pad
+ Delete           Reading       Delete * to left
+ Ctrl Delete      Reading       Delete any base to left
 
  Control Left     Reading       Move reading left
  Control Right    Reading       Move reading right
@@ -384,14 +446,16 @@ A brief summary of these editing operations can be seen below:
  <                Reading       Set left cutoff
  >                Reading       Set right cutoff
 
- i                Consensus     Insert column of pads
- delete           Consensus     Delete * to left
- Ctrl delete      Consensus     Delete any base to left
+ i, Insert        Consensus     Insert column of pads
+ Delete           Consensus     Delete * to left
+ Ctrl Delete      Consensus     Delete any base to left
+ <                Consensus     Bulk clip left cutoff
+ >                Consensus     Bulk clip right cutoff
 @end example
 
 _split()
-@node Editor-Selections
-@section Selections
+@node Editor-Select Base
+@section Cut and Paste Control of Sequence
 @cindex Selections: contig editor
 @cindex Contig Editor: selections
 
@@ -432,6 +496,33 @@ Middle button (in another window)   Copy selected sequence
 @end example
 
 _split()
+@node Editor-Select Seq
+@section Selecting Sequences
+@cindex Selecting sequences: contig editor
+@cindex Contig Editor: selecting sequences
+
+The list named ``readings'' is used for all sequences selected in all
+editors. This is automatically updated whenever a sequence is selected
+or deselected.
+
+Inividual sequence names can be (de)selected by clicking on them with
+the left mouse button, or clicking and dragging out a region. This works
+well for a few sequences.
+
+If you need to select all readings overlapping a specific consensus base
+or a region of consensus bases mark the range of the consensus you wish
+to select over by pressing and dragging the left mouse button (as if you
+were going to create an annotation) and then either right click in the
+consensus or use the Commands menu to choose Select Reads. When using
+the Commands menu you get a dialogue asking for confirmation of the
+start and end positions and the option of whether to select sequences
+that overlap this range or only those which are entirely containing
+within that range. When using the right-click popup on the consensus it
+simply takes the defaults (overlapping sequences).
+
+Deselection follows the same procedure.
+
+_split()
 @node Editor-Annotations
 @section Annotations
 @cindex Tags: contig editor
@@ -452,27 +543,29 @@ Comments).
 
 _picture(contig_editor.taged)
 
-FIXME: not all of the tag editor features are supported yet;
-specifically the Move/Copy functionality and storing strand
-information.
+@i{FIXME: not all of the tag editor features are supported yet;
+specifically the Move/Copy functionality is currently missing.}
 
-To create an annotation, make a selection and then select ``Create
-Tag'' from the contig editor commands menu.  _oxref(Editor-Commands,
-The Commands Menu). This will bring up a further window; the ``tag
-editor'' (shown above). The ``Type:'' button at the top of the editor
-invokes a selectable list from which tag types can be chosen.  See
-below.
+To create an annotation, make a selection and then select ``Create Tag''
+from the contig editor commands menu at the top of the editor or by
+pressing the right mouse button.  _oxref(Editor-Commands, The Commands
+Menu). This will bring up a further window; the ``tag editor'' (shown
+above). The ``Type:'' button at the top of the editor invokes a
+selectable list from which tag types can be chosen.  See below.
 
 _picture(contig_editor.tagsel)
 
 Use this to select the desired type of annotation.  
 
-[FIXME: To implement. Next the strand of the annotation can be selected. This
-will be displayed as one of ``<----->'', ``<-----'' and ``----->''.]
-The comment (the box beneath the buttons) can be edited using the
-usual combination of keyboard input and arrow keys. The ``Save''
-button will exit the tag editor and create the annotation. To abandon
-editing without creating the annotation use the ``Cancel'' button.
+Next the strand of the annotation can be selected. This will be
+displayed as one of ``<---->'', ``<----'', ``---->'' and ``?----?''
+indicating both strands, top strand only, bottom strand only, and
+stranded but unknown strand respectively. These mirror the GFF strand
+definitions.  The comment (the box beneath the buttons) can be edited
+using the usual combination of keyboard input and arrow keys. The
+``Save'' button will exit the tag editor and create the annotation. To
+abandon editing without creating the annotation use the ``Cancel''
+button.
 
 To edit an existing annotation, position the editing cursor
 within a annotation and select ``Edit Tag'' from the commands menu. This
@@ -561,9 +654,16 @@ _split()
 @menu
 * Editor-Search-Anno::          Searching by annotation comments
 * Editor-Search-Type::          Searching by tag type
+* Editor-Search-PPosition::     Searching by padded position
+* Editor-Search-UPosition::     Searching by unpadded position
 * Editor-Search-Seq::           Searching by sequence
-* Editor-Search-ConsQual::      Searching by consensus quality
 * Editor-Search-Name::          Searching by reading name
+* Editor-Search-RefIndel::      Searching by reference indel
+* Editor-Search-ConsQual::      Searching by consensus quality
+* Editor-Search-ConsDiscrep::   Searching by consensus discrepancy
+* Editor-Search-ConsHet::       Searching by consensus heterozygosity
+* Editor-Search-depth-lt::      Searching by low coverage
+* Editor-Search-depth-ht::      Searching by high coverage
 @end menu
 
 The contig editor's searching ability and its links to the consensus
@@ -594,13 +694,14 @@ The Control-s and Control-r key bindings in the editor are equivalent
 to searching for the next or previous match. Both key bindings will
 bring up the search window if it is not currently displayed (and not
 search), otherwise they perform the search currently selected in that
-window.
+window. Additionally with the mouse focus in the search dialogue window
+the Page Up and Page Down keys will perform previous and next search
+too.
 
 As is described below, there are several search modes.
 
 @node Editor-Search-Anno
 @subsection Search by Annotation Comments
-@cindex Searching by annotation comments: contig editor
 
 This positions the cursor at the start of the next tag which
 has a comment containing the string specified in the value box.
@@ -613,7 +714,6 @@ position. Searching with an empty value will find all tags.
 
 @node Editor-Search-Type
 @subsection Search by Tag Type
-@cindex Searching by tag type: contig editor
 
 This positions the cursor at the start of the next tag of the specified
 type. To change the type, click on the currently listed tag type,
@@ -622,9 +722,25 @@ performed either forwards or backwards of the current cursor
 position. To find all  tags, use ``Search by Annotation Comments'',
 with an empty text box.
 
+@node Editor-Search-UPosition
+@subsection Search by Padded Position
+
+This jumps to a padded location in the editor and is directly equivalent
+to typing a number into the position entry box in the bottom left corner
+of the editor followed by ``p''.
+
+It is also possible to do relative searches by prefixing the location
+with + or -. So +100 will skip ahead 100 bases.
+
+@node Editor-Search-PPosition
+@subsection Search by Unpadded Position
+
+As per the padded search, but this jumps to an unpadded coordinate -
+essentially the number of non-* bases since the start of the contig,
+regardless of whether the first consensus base is labelled as base 1.
+
 @node Editor-Search-Seq
 @subsection Search by Sequence
-@cindex Searching by sequence: contig editor
 
 This positions the cursor at the start of the next segment of
 sequence that matches the value specified in the text box.
@@ -633,18 +749,8 @@ number of mismatches. Unlike Gap4, Gap5's sequence search only looks
 in the consensus sequence. It also operates either forwards or
 backwards from the current editing cursor position.
 
-@node Editor-Search-ConsQual
-@subsection Search by Consensus Quality
-@cindex Searching by consensus quality: contig editor
-
-This positions the cursor on the consensus at the next
-position where the quality of the consensus is below a given
-threshold. The quality threshold should be entered into the
-value box and should be within the range of 0 to 100 inclusive.
-
 @node Editor-Search-Name
 @subsection Search by Reading Name
-@cindex Searching reading name: contig editor
 
 This positions the cursor at the left end of the reading specified
 in the value text box. Note that not all reading names may be indexed
@@ -656,6 +762,58 @@ The reading name has to be an exact match and so currently does not
 find prefix strings. If multiple sequences exist with the same name
 (which should be strongly discouraged) then it is undefined which will
 be found first.
+
+@node Editor-Search-RefIndel
+@subsection Search by Reference InDel
+
+Note: this information may not be available in all scenarios. If you
+imported the gap5 database from a SAM or BAM file there is an implicit
+set of reference coordinates used within SAM/BAM. Gap5 can keep track of
+the relationship between gap5's padded coordinate system and the
+reference coordinates. This function uses this data to search for the
+next or previous reference insertion or deletion.
+
+@node Editor-Search-ConsQual
+@subsection Search by Consensus Quality
+
+This positions the cursor on the consensus at the next
+position where the quality of the consensus is below a given
+threshold. The quality threshold should be entered into the
+value box and should be within the range of 0 to 100 inclusive.
+
+@node Editor-Search-ConsDiscrep
+@subsection Search by Consensus Discrepancy
+
+The consensus algorithm can keep track of the expected number of
+differences to the consensus given sequence depth and sequence quality
+values. This search looks for locations where the actual number of
+differences exceeds the expected amount by more than a specified factor.
+
+@node Editor-Search-ConsHet
+@subsection Search by Consensus Heterozygosity
+
+The consensus algorithm has a simple heterozygous calling method. Rather
+than simply weighing up the evidence for the base being A, C, G, T or a
+pad it also considers that it may be a combination of any two of these
+values. The consensus scores for the individual bases as well as the
+highest scoring consensus base can be seen in the editor information
+line when the mouse cursor is moved over a consensus base.
+
+This search is looking for consensus bases where the best heterozygous
+score is greater than or equal to the specified value.
+
+@node Editor-Search-depth-lt
+@subsection Search by Low Coverage
+
+This jumps to the next or previous location where the sequence coverage
+drops below a specified value.
+
+@node Editor-Search-depth-ht
+@subsection Search by High Coverage
+
+This jumps to the next or previous location where the sequence coverage
+is higher than a specified value. Regions of extreme depth are often
+indication of misassemblies.
 
 _split()
 @node Editor-Settings
@@ -669,13 +827,15 @@ _split()
 @cindex Contig Editor: saving configuration
 
 The purpose of this menu is to configure the operation of the contig
-editor. Settings can be saved using the ``Save settings'' button, but
-this does not save any tag macros. These may be saved separately using
-the ``Save Macros'' option. Settings for the following options can be
-changed.
+editor. Settings can be saved using the ``Save settings'' button, which
+also saves preferences for the editor width and height and the location
+of the divider between the names and sequence panels. It does not save
+tag macros though; these may be saved separately using the ``Save
+Macros'' option. Settings for the following options can be changed.
 
 @ifset tex
 @itemize @bullet
+@item Group Readings
 @item
 Highlight Disagreements
 @itemize
@@ -691,6 +851,16 @@ Pack sequences
 @item
 Hide annoations
 @item
+Background stripes
+@item
+Show Mapping Quality
+@item
+Show Template Status
+@item
+Padded coordinates
+@item
+Reference coordinates
+@item
 Save tag macros
 @item
 Save settings
@@ -699,10 +869,66 @@ Save settings
 
 
 @menu
+* Editor-Group Readings::       Group Readings
 * Editor-Disagree::             Highlight Disagreements
-* Editor-Pack Sequences::	Pack Sequences
-* Editor-Hide Annotations::	Hide Annotations
+* Editor-Pack Sequences::       Pack Sequences
+* Editor-Hide Annotations::     Hide Annotations
 @end menu
+
+@node Editor-Group Readings
+@subsection Group Readings
+@cindex Group Readings: contig editor
+@cindex Contig Editor: Group Readings
+
+Sequences have an ``X'' location in the editor defined by the location
+within the contig that they align to. The ``Y'' location though is
+determined by the sequence layout algorithm, governed by the Pack
+Sequences setting and Group Readings options.
+
+By default sequences are grouped into distinct technologies, typically
+with longer sequences up the top (capillary) and shorter ones at the
+bottom (Illumina, SOLiD).  Within these technology groups the sequences
+are then sorted by their start location, so the top-most sequences start
+earlier and the bottom most sequences start later.
+
+The Group Readings menu allows user control over these primary and
+secondary collating orders. The sorting methods are defined below.
+
+@table @asis
+@item By technology
+Sorted in order of unknown, sanger (capillary), Illumina, SOLiD, 454.
+
+@item By clipped start
+Sorted by the visible (non-cutoff) start position.
+
+@item By start
+Sorted by the start position, regardless of whether the base is in
+cutoff data or not.
+
+@item By template
+Sorted by template name. In Gap5 this is always defined to be a prefix
+of the sequence name, or optionally the same as the sequence name. The
+sorting method is using a simple ASCII collation order.
+
+@item By strand
+Sorts data into the top strand first followed by the bottom strand data.
+
+@item By base
+This sort order is different from all others in that it depends on the
+location of the editor cursor.
+
+Sorts sequences by the base type overlapping the last editor cursor
+location in the consensus. The collation order is A, C, G, T, N and *.
+Sequences that do not overlap that consensus location or those that only
+overlap in the cutoff portion are not sorted by this method. If this is
+used as the primary sort then these other sequences will be sorted using
+the secondary sort. If the secondary sort is By Base then an implicit
+tertiary sort order of By Start is used.
+
+Note that moving the editing cursor around sequences will not update the
+Y order. Only placement of the editing cursor on the consensus will
+update this.
+@end table
 
 @node Editor-Disagree
 @subsection Highlight Disagreements
@@ -936,23 +1162,23 @@ so the default values to start from are shown below.
 @smallexample
 # Mouse-over a sequence the reading name panel
 set_def READ_BRIEF_FORMAT \
-	{Reading:%n(#%Rn)  Tech:%V  Length:%l(%L)  MappingQ:%m%**/%*m  Pos:%S%p / %*S%*p}
+        {Reading:%n(#%Rn)  Tech:%V  Length:%l(%L)  MappingQ:%m%**/%*m  Pos:%S%p / %*S%*p}
 
 # Mouse-over the "Consensus" label in the name panel
 set_def CONTIG_BRIEF_FORMAT  \
-	{Contig:%n(#%Rn)   Length:%l  Start:%s  End:%e}
+        {Contig:%n(#%Rn)   Length:%l  Start:%s  End:%e}
 
 # Mouse-over a base in a sequence
 set_def BASE_BRIEF_FORMAT1  \
-	{ Base %b confidence:%4.1c (Prob. %Rc, raw %4.1A %4.1C %4.1G %4.1T)   Position %Rp  %n}
+        { Base %b confidence:%4.1c (Prob. %Rc, raw %4.1A %4.1C %4.1G %4.1T)   Position %Rp  %n}
 
 # Mouse-over a base in the consensus
 set_def BASE_BRIEF_FORMAT2  \
-	{Base confidence:%4.1c (Prob. %Rc)  A=%4.1A C=%4.1C G=%4.1G T=%4.1T *=%4.1*  Position %p}
+        {Base confidence:%4.1c (Prob. %Rc)  A=%4.1A C=%4.1C G=%4.1G T=%4.1T *=%4.1*  Position %p}
 
 # Mouse-over an annotation
 set_def TAG_BRIEF_FORMAT  \
-	{Tag type:%t  Comment:"%.100c"}
+        {Tag type:%t  Comment:"%.100c"}
 @end smallexample
 
 The text output is as listed above, but replacing percent-code strings
@@ -1056,9 +1282,9 @@ sequence.
 @item %#
         Contig record number
 @item %p
-	Position in contig
+        Position in contig
 @item %l
-	Length of contig
+        Length of contig
 @item %s
         Contig start coordinate
 @item %e
@@ -1066,7 +1292,7 @@ sequence.
 @item %b
         Called consensus base
 @item %c
-	Score for called consensus base. Raw mode: probability value
+        Score for called consensus base. Raw mode: probability value
 @item %A
 @itemx %C
 @itemx %G
@@ -1217,8 +1443,8 @@ Left arrow or Control-b         Move editing cursor left one base
 Right arrow or Control-f        Move editing cursor right one base
 Up arrow or Control-p           Move editing cursor up one base
 Down arrow or Control-n         Move editing cursor down one base
-Control-a                       Move editing cursor to start of sequence
-Control-e                       Move editing cursor to end of sequence
+Control-a or Home               Move editing cursor to start of sequence
+Control-e or End                Move editing cursor to end of sequence
 Alt-comma                       Move editing cursor to start of contig
 Alt-fullstop                    Move editing cursor to end of contig
 
@@ -1227,8 +1453,11 @@ Control-s                       Search forward
 Control-r                       Search backwards
 Control-q                       Toggle tag display
 
-<                               Set left cutoff clip point
->                               Set right cutoff clip point
+<                               Set left cutoff clip point (in sequence)
+>                               Set right cutoff clip point (in sequence)
+
+<                               Bulk clip left cutoff (in consensus)
+>                               Bulk clip right cutoff (in consensus)
 
 [                               Set confidence to 0
 ]                               Set confidence to 100
@@ -1238,12 +1467,19 @@ Control Up                      Increase confidence of base by 10
 Control Down                    Decrease confidence of base by 10
 
 a, c, g, t or *                 Overwrite base with a new call.
-i                               Insert pad (or column if in consensus)
+i or Insert                     Insert pad (or column if in consensus)
 Backspace or Delete             Delete padding character
 Ctrl-Backspace or Ctrl-Delete   Delete base (any base type)
 
 Control-right arrow             Move sequence right 1 base-pair
 Control-left arrow              Move sequence left 1 base-pair
+
+F11                             Edit tag under editing cursor
+F12                             Delete tag under editing cursor
+
+Shift F1 to Shift F10           Edit tag macro 1 to 10
+Control F1 to Control F10       Copy tag at editing cursor to macro 1 to 10
+F1 to F10                       Create tag from macro 1 to 10
 
 @end example
 

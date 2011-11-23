@@ -1,8 +1,10 @@
 @chapter Checking Assemblies and Removing Readings
 @menu
+* Check Assembly::                    Checking Assemblies
 * Removing Readings::                 Removing Readings and Breaking Contigs
 * Break Contig::                      Breaking Contigs
 * Disassemble::                       Disassembling Readings
+* Delete Contigs::                    Delete Contigs
 @end menu
 
 @cindex assembly problems: breaking contigs
@@ -42,6 +44,68 @@ reveal all the other positions at which the reading matches.
 
 @page
 _split()
+@node Check Assembly
+@subsection Checking Assemblies
+@cindex Check assembly
+
+The Check Assembly routine (which is invoked from the gap5 View menu) is
+used to check contigs for potentially misassembled readings by comparing
+them against the segment of the consensus which they overlap.  It simply
+slides a small window along the sequence identifying regions of high
+disagreement between that portion of sequence and the consensus. Results
+are displayed in the Output Window and plotted on the main diagonal in
+the Contig Comparator. _fxref(Contig Comparator, Contig Comparator,
+comparator)
+
+From the Contig Comparator the user can invoke the Contig Editor to
+examine the alignment of any problem reading. _fxref(Editor, Editing in
+gap5, contig_editor) If the reading appears to be correctly positioned
+the user can either edit it, or instead select the name to add it to the
+``readings'' list for subsequent disassembly or removal.
+
+_picture(gap5_check_ass)
+
+Users select either to search only one contig ("single"), all contigs
+("all contigs"), or a subset of contigs contained in a "file" or a
+"list". If "file" or "list" is selected the "browse" button will be
+activated and clicking on it will invoke a file or list browser. If a
+single contig is selected the "Contig identifier" dialogue will be
+activated and users should enter a contig name.
+
+The percentage disagreement and over what size of window are both
+configurable parameters. Additionally there is a parameter to control
+whether N bases in the sequence should be considered as disagreements or
+not. The choice will depend on whether you are looking for sequences
+that appear to be in the wrong place (ignore Ns) or simply sequences
+that appear to have a large number of incorrect base calls (keep Ns).
+
+@cindex reading percent mismatch
+@cindex readings: sorted on alignment score
+@cindex aligned readings: sorted on alignment score
+
+The "Information" window produced by selecting "Information" from the
+Contig Comparator "Results" menu produces a summary of the results
+sorted in order os percentage mismatch.
+
+
+By clicking with the right mouse button
+on results plotted in the Contig Comparator a pop-up menu is revealed
+which can be used to invoke the Contig Editor
+(_fpref(Editor, Editing in gap4, contig_editor)). The editor will start
+up with the cursor positioned on the problem reading. If the reading is
+found to be misplaced it can be marked for removal from within the Editor
+(_fpref(Editor-Comm-Remove Reading, Remove Reading, contig_editor)).
+However, prior to this it may be beneficial to use some of the other
+analyses such as Find internal joins (_fpref(FIJ, Find Internal
+Joins, fij)) and Find repeats (_fpref(Repeats, Find Repeats,
+repeats)), which may help to find its correct location. Both of these
+functions produce results plotted in the Contig Comparator
+(_fpref(Contig Comparator, Contig Comparator, comparator)) and any
+alternative locations will give matches on the same vertical or
+horizontal projection as the problem reading.
+
+@page
+_split()
 @node Removing Readings
 @section Removing Readings and Breaking Contigs
 
@@ -78,12 +142,18 @@ _split()
 @cindex Break contig
 
 The Break Contig function (which is available from the gap5 Edit menu)
-enables contigs to be broken by removing the
-link between two adjacent readings. The
-user defines the contig coordinate to break at. All sequences starting
-to the right of that position will be placed into a new contig.
+enables contigs to be broken by removing the link between two adjacent
+readings. The user defines the contig coordinate to break at. All
+sequences starting to the right of that position will be placed into a
+new contig.
 
 _picture(gap5_break_contig)
+
+Breaking contig can somtimes cause more holes to be created. The
+``Remove contig holes'' will also cause subsequent breaks to happen at
+these cases, producing more than one additional contig.  If we have
+aligned against a reference and expect regions of zero coverage then
+this option should be disabled.
 
 @page
 _split()
@@ -129,3 +199,25 @@ obviously a requirement when dealing with mapped alignments.)  Hence
 gap5 gives us a choice whether to break contigs into two (or more)
 pieces when removing sequences produces holes in the contigs. By
 default this is enabled.
+
+@page
+_split()
+@node Delete Contigs
+@subsection Delete Contigs
+@cindex Delete Contigs
+@cindex Removing contigs
+
+While Disassemble Readings is capable of removing entire contigs, it is
+inefficient for this task as it has a lot of additional house-keeping to
+perform.
+
+_picture(gap5_delete_contigs)
+
+Delete Contigs should be used when we wish to remove entire contigs.
+Be careful not to accidentally choose this over disassemble readings as
+even when giving a single sequence name, this function will interpret it
+as a request for removing all other sequences in that contig too.
+
+There is no Undo feature, so backups are advised before hand.
+
+

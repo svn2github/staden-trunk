@@ -89,7 +89,7 @@ _split()
 @subsection Find Internal Joins Dialogue
 @cindex Find internal joins: dialogue
 
-_picture(fij.dialogue)
+_picture(gap5_fij.dialogue)
 
 The contigs to use in the search can be defined as "all contigs", a list
 of contigs in a file "file", or a list of contigs in a list "list".
@@ -150,10 +150,9 @@ The search algorithms first finds matching words of length "Word length",
 and only considers overlaps of length at least "Minimum overlap". Only
 alignments better than "Maximum percent mismatches" will be reported.
 
-There are two search algorithms: "Sensitive" or "Quick". The quick algorithm
-should be applied first, and then the sensitive one employed
-to find any less obvious
-overlaps. 
+There are three search algorithms: ``Sensitive'', ``Quick'' and
+``Fastest''. The quick or fastest algorithm should be applied first, and
+then the sensitive one employed to find any less obvious overlaps.
 
 The sensitive algorithm sums the lengths of
 the matching words of length "Word length" on each diagonal. It then finds
@@ -165,13 +164,16 @@ overlap was 1000 bases long and the percentage set at 5, the aligner would
 only consider alignments within 50 bases either side of the centre of gravity.
 Obviously the larger the percentage and the overlap, the slower the aligment.
 
-The quick algorithm can find overlaps and align 100,000 base sequences in a
-few seconds by considering, in its initial phase only matching segments of
-length "Minimum initial match length". However it does a dynamic programming
-alignment of all the chunks between the matching segments, and so produces an
-optimal alignment. Again a banded dynamic algorithm can be selected, but as
-this only applies to the chunks between matching segments, which for good
-alignments will be very short, it should make little difference to the speed.
+The fastest and quick algorithms can find overlaps and align 100,000
+base sequences in a few seconds by considering, in its initial phase
+only matching segments of length "Minimum initial match length".  However
+it does a dynamic programming alignment of all the chunks between the
+matching segments, and so produces an optimal alignment. Again a banded
+dynamic algorithm can be selected, but as this only applies to the
+chunks between matching segments, which for good alignments will be very
+short, it should make little difference to the speed.  the fastest and
+quick methods only differ in how aggressively they prune potential
+alignments before entering the dynamic programming phase.
 
 After the search the results will be sorted so that the best matches
 are at the top of a list where best is defined as a combination of

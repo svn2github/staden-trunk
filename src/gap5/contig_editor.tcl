@@ -2927,7 +2927,7 @@ proc editor_select_dialog {ed sel} {
                          \[entrybox_get $t.end\];    \
                          destroy $t" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap5 {Editor-Select-Reads}"
+	-help_command "show_help gap5 {Editor-Select Seq}"
 
     pack $t.start $t.end $t.contained $t.ok -side top -fill both
 }

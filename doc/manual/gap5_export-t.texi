@@ -77,8 +77,9 @@ There is also no direct support for BAM, however command line tools
 like samtools or picard can convert the SAM file into BAM format. The
 SAM file should already be sorted by position.
 
-For SAM only there is an additional option: whether to fix mate-pair
-information.  This will ensure that the MRNM (Mate Reference Name),
-MPOS and ISIZE fields are filled out. Note that this considerably
-slows down the speed of exporting, so it is disabled by default.
+For SAM only there are additional options: whether to fix mate-pair
+information and whether to use depadded coordinates.  This former will
+ensure that the MRNM (Mate Reference Name), MPOS and ISIZE fields are
+filled out. Note that this considerably slows down the speed of
+exporting, so it is disabled by default.
 

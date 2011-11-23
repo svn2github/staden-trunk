@@ -1,0 +1,159 @@
+@node tg_index
+@section Creating databases
+@cindex database creation
+@cindex tg_index
+
+Gap5 cannot directly work on assembly formats in their native format.
+This is a substantial difference from things like BAM file viewers, but
+the reason is simply that the other formats do not have data structured
+in a manner that is suitable for in-place editing. Gap5 is first and
+foremost an assembly editor.
+
+Gap5 databases are currently created external to Gap5 using a
+command-line program named @code{tg_index}.
+
+@code{tg_index} [options] @i{input_file ...}
+
+The most general usage is simply to specify one or more data files
+(it accepts SAM/BAM, CAF, ACE, BAF, MAQ and in a more limited fashion
+fasta/fastq), optionally specifying the output database with @code{-o}
+@i{database_name}. This will then create a database suitable for editing
+by Gap5.
+
+Valid options are:
+
+@table @code
+@item -m
+Input is MAQ format
+@item -M
+Input is MAQ-long format
+@item -A
+Input is ACE format
+@item -B
+Input is BAF format
+@item -C
+Input is CAF format
+@item -f
+Input is FASTA format
+@item -F
+Input is FASTQ format
+@item -b
+Input is BAM format
+@item -s
+Input is SAM format (with @@SQ headers)
+@br
+@item -u
+Also store unmapped reads (SAM/BAM only)
+@item -x
+Also store auxillary records (SAM/BAM only)
+@item -r
+Store reference-position data (on)  (SAM/BAM only)
+@item -R
+Don't store reference-position data (SAM/BAM  only)
+@item -D
+Do not remove duplicates (SAM/BAM only)
+@br
+@item -p
+Link read-pairs together (default on)
+@item -P
+Do not link read-pairs together
+@br
+@item -q @i{value}
+Number of reads to queue in memory while waiting for pairing.  Use to
+reduce memory  requirements for assemblies with lots of single reads at
+the expense of running time.  0 for all in memory, suggest 1000000 if
+used (default 0).
+@br
+@item -a
+Append to existing db
+@item -n
+New contigs always (relevant if appending)
+@br
+@item -g
+When appending to an existing db, assume the alignment was performed
+against an ungapped copy of the existing consensus. Add gaps back in to
+reads and/or consensus as needed.
+
+@item -t
+Index sequence names (default)
+@item -T
+Do not index sequence names
+
+@item -z @i{value}
+Specify minimum bin size (default is '4k')
+
+@item -f
+Fast mode: read-pair links are unidirectional large databases, eg n.seq
+> 100 million. 
+
+@item -d @i{data_types}
+Only copy over certain data types. This is a comma separated list
+containing one or more words from: seq, qual, anno, name, all or none 
+
+@item -c @i{method}
+Specifies the compression method. This shold be one of 'none', 'zlib' or
+'lzma'. Zlib is the default.
+
+@item -[1-9]
+Use a fixed compression level from 1 to 9
+
+@item -v @i{version_num}
+Request a specific database formation version
+@end table
+
+To merge existing gap5 databases you will need to export either one or
+both into an intermediate format (we suggest SAM) and then use tg_index
+to import data again.
+
+@node OpenDatabase
+@section Opening/closing databases
+@cindex Open database
+
+The Open menu item is in the main gap5 File menu. It brings up a file
+browser allowing selection of the gap5 database name. Databases consist
+of two files - a main data block (.g5d) and a data index (.g5x).  It
+does not matter which you choose as gap5 will open both.
+
+Alternatively you can specify the database name on the command line when
+launching gap5. Additionally this supports read-only access if you
+specify the @code{-ro} flag. For example to open a database named Egu.0
+(the old Gap4 convention implying version 0) in read-only mode we would
+type:
+
+@code{gap5 -ro Egu.0 &}
+
+
+@node GapDB-Directories
+@section Changing directories
+@cindex Change directory
+
+By default gap5 changes to the directory containing the database you
+have open. All local output files specified (for example Save Consensus
+or Export Sequences) will be relative to that location unless you use a
+full pathname. The current working directory may be changed by using the
+Change Direction dialogue, found in the main File menu.
+
+@node CheckDatabase
+@section Check Database
+@cindex Check database
+
+This function (which is available from the Gap5 File menu) is used to
+perform a check on the logical consistency of the database.  No user
+intervention is required. If the checks are passed the program will
+report zero errors. Otherwise a report of each error is displayed.
+
+_picture(gap5_check_database)
+
+On a large database these checks can take a considerable amount of
+time. The default is a thorough, but slow, check. However a faster mode
+is available which only performs gross contig and contig-binning level
+checks, omitting the per sequence and per annotation validation.
+
+The dialogue also offers the choice of attempting to fix any problems
+that are found. It is strongly recommended that you back the gap5
+database up prior to performing fixes as depending on the nature of the
+corruption the choices made may not necessarily be an improvement. Note
+that this also may not fix every problem that is found, or the fixes
+themselves may cause other errors to be found so it is best to recheck
+again.
+

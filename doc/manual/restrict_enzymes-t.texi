@@ -2,8 +2,8 @@
 * Restrict-Selecting::          Selecting enzymes
 * Restrict-Examining::          Examining the plot
 * Restrict-Reconfig::           Reconfiguring the plot
-* Restrict-Tags::               Creating tags for cut sites
-* Restrict-Output::             Textual outputs
+_ifdef([[_gap4]],[* Restrict-Tags::               Creating tags for cut sites
+])* Restrict-Output::             Textual outputs
 @end menu
 
 @cindex Restriction enzymes
@@ -85,6 +85,7 @@ menu containing Information and Configure will pop up. Configure will
 display a colour selection dialogue.  Adjusting the colour here will
 adjust the colour for all matches for this restriction enzyme.
 
+_ifdef([[_gap4]],[[
 _split()
 @node Restrict-Tags
 @subsection Creating Tags for Cut Sites
@@ -102,6 +103,7 @@ listing the enzyme names on the left, and the tag type to create for
 that enzyme on the right. Tag types must be chosen for all the listed
 restriction enzyme types before the tags can be created. Suitable tag
 types to choose are the ENZ0, ENZ1 (etc) tags.
+]])
 
 _split()
 @node Restrict-Output

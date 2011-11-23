@@ -488,8 +488,10 @@ add_command	{Help.Editing.Adjusting the Cutoff Data}	1 0 \
 #	{show_help gap5 {Editor-Techniques-Cutoffs}}
 add_command	{Help.Editing.Summary of Editing Commands}	1 0 \
 	{show_help gap5 {Editor-Editing Summary}}
-add_command	{Help.Editing.Selections}			1 0 \
-	{show_help gap5 {Editor-Selections}}
+add_command	{Help.Editing.Cut and Paste}			1 0 \
+	{show_help gap5 {Editor-Select Base}}
+add_command	{Help.Editing.Selecting Sequences}			1 0 \
+	{show_help gap5 {Editor-Select Base}}
 add_command	{Help.Editing.Annotations}			1 0 \
 	{show_help gap5 {Editor-Annotations}}
 add_command	{Help.Editing.Searching}			1 0 \

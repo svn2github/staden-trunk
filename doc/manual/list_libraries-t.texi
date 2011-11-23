@@ -31,4 +31,9 @@ strategy used.
 
 Underneath the list is a histogram of observed insert sizes for the
 currently selected library. The graph is currently very rudimentary
-with no controls, but it will auto-scale to fit the data.
+with no controls, but it will auto-scale to fit the data. The example
+shown above is an Illumina large insert library showing two distinct
+distributions with the smaller being where the biotin enrichment failed
+and short templates were included in the library. (Note in this example
+the sequence orientations have been flipped so the bulk of the data is
+in the orientation expected by other tools.)

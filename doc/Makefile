@@ -1,4 +1,4 @@
-VERSION=2.0.0b2
+VERSION=2.0.0b8
 prefix=/usr
 
 # GNU standard dir names

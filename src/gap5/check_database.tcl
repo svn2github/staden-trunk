@@ -41,6 +41,7 @@ proc CheckDatabase {io} {
     okcancelhelp $t.ok \
 	-ok_command "CheckDatabase2 $io $t" \
 	-cancel_command "destroy $t" \
+	-help_command "show_help gap5 CheckDatabase" \
 	-bd 2 -relief groove
 
     pack $t.infile $t.id $t.speed $t.fix $t.ok -side top -fill x

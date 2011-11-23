@@ -1,13 +1,13 @@
 @menu
 * List-Special::                Special list names
 * List-Commands::               Basic list commands
-_ifdef([[_gap4]],[[* List-ContigToRead::           Contigs To Readings command
-* List-MinCoverage::            Minimal Coverage command
+* List-ContigToRead::           Contigs To Readings command
+_ifdef([[_gap4]],[[* List-MinCoverage::            Minimal Coverage command
 * List-Unattached::             Unattached Readings command
 * List-HighlightReadings::      Highlight Readings List
 * List-SearchSequenceNames::    Search Sequence Names
 * List-SearchTemplateNames::    Search Template Names
-* List-SearchAnnotations::      Search Annotation Contents]])
+* List-SearchAnnotations::      Search Annotation Contents]],[[* List-SearchSequenceNames::    Search Sequence Names]])
 @end menu
 
 @cindex Lists
@@ -109,7 +109,6 @@ turn on hyperlinking in any text views of this list. Double-left
 clicking on an underlined reading name will bring up the contig editor
 while right-clicking will bring up a command menu.
 
-_ifdef([[_gap4]],[[
 _split()
 @node List-ContigToRead
 @section Contigs To Readings Command
@@ -121,6 +120,7 @@ This command produces a list or file of reading names for a single contig or
 for a set of contigs. The user interface provides a dialogue
 to select the contigs and to select a list name or filename.
 
+_ifdef([[_gap4]],[[
 _split()
 @node List-MinCoverage
 @section Minimal Coverage Command
@@ -234,4 +234,21 @@ the right mouse button will display a popup-menu with further options.
 For a description of the types of annotation search patterns see
 _fref(List-SearchSequenceNames, Search Sequence Names, lists)
 
+]],[[
+_split()
+@node List-SearchSequenceNames
+@section Search Sequence Names
+@cindex Lists: search sequence names
+@cindex Search sequence names: lists
+@cindex Reading names, searching for
+@cindex Sequence names, searching for
+
+This command allows searching for sequences matching a prefix. The
+function produces both a list in the text output window and a __prog__ "list" of
+reading names. The highlighted output is clickable, with the left mouse button 
+invoking the contig editor and the right mouse button displaying a popup-menu
+allowing additional operations (contig editor, template display, reading notes 
+and contig notes).
+
+All searches are case sensitive and prefix only.
 ]])

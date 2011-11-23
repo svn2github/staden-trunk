@@ -22,6 +22,7 @@ proc ShufflePads {io} {
     okcancelhelp $t.ok \
 	-ok_command "ShufflePads2 $io $t $t.infile $t.id $t.band_size" \
 	-cancel_command "destroy $t" \
+	-help_command "show_help gap5 {Tidying up alignments}" \
 	-bd 2 -relief groove
 
     pack $t.infile $t.id $t.band_size $t.ok -side top -fill x
@@ -79,6 +80,7 @@ proc RemovePadColumns {io} {
     okcancelhelp $t.ok \
 	-ok_command "RemovePadColumns2 $io $t $t.infile $t.id $t.percent_pad" \
 	-cancel_command "destroy $t" \
+	-help_command "show_help gap5 {Remove Pad Columns}" \
 	-bd 2 -relief groove
 
     pack $t.infile $t.id $t.percent_pad $t.ok -side top -fill x

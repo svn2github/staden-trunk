@@ -1,0 +1,91 @@
+@chapter Tidying up alignments
+@menu
+* Shuffle Pads::                Shuffle Pads
+* Remove Pad Columns::          Remove Pad Columns
+* Remove Contig Holes::         Remove Contig Holes
+@end menu
+
+The Shuffle Pads, Remove pad Columns and Remove Contig Holes all share a
+common goal of tidying up sequence alignments, possibly also breaking
+the contig up.
+
+@node Shuffle Pads
+@section Shuffle Pads
+@cindex Shuffle Pads
+
+This function is an implementation of the Anson and Myers ``ReAligner''
+algorithm. It analyses multiple sequence alignments to detect locations
+where the number of disagreements to the consensus could be reduced by
+realignment of sequences, possibly also correcting the consensus in the
+process. For example:
+
+@example
+Sequence1:    GATTCAAAGAC
+Sequence2:      TTCAA*GACGG
+Sequence3:       TC*AAGAC
+Consensus:    GATTCAAAGACGGATC
+@end example
+
+The consensus contains @code{AAA}, but the corrected alignment only has
+two As:
+
+@example
+Sequence1:    GATTCAAAGAC
+Sequence2:      TTC*AAGACGG
+Sequence3:       TC*AAGAC
+Consensus:    GATTC*AAGACGGATC
+@end example
+
+_picture(gap5_shuffle_pads)
+
+For speed we acknowledge that the new alignment will only deviate
+slightly from the old one and so a narrow ``band size'' is used. This
+paramater may be adjusted if required, but at the expense of speed.
+
+
+@page
+_split()
+@node Remove Pad Columns
+@section Remove Pad Columns
+@cindex Remove Pad Columns
+
+There are cases where we may have multiple alignments where every single
+sequence has a padding character such that the complete column is
+``*''. This can occur when disassembling data from a falsely made join.
+
+The Shuffle Pads algorithm will remove entire columns of pads when it
+finds them, but it is time consuming and it may also edit alignments
+elsewhere. The Remove Pad Columns function is a faster, more specific
+solution to this problem.
+
+_picture(gap5_remove_pad_columns)
+
+By default the function will only ever delete columns where 100% of the
+sequences have a pad/gap. However with appropriate due care it is
+possible to reduce this and allow removal of columns where a few
+sequences have a real base provided the overall percentage is still
+high. This is achieved by reducing the ``Percentage pad needed''
+parameter.
+
+Reducing from 100% is not recommended though as it is removal of data
+purely for tidyness sake, while the consensus algorithm will
+automatically find the correct solution.
+
+@page
+_split()
+@node Remove Contig Holes
+@section Remove Contig Holes
+@cindex Remove Contig Holes
+
+Unlike Gap4, Gap5 permits contig regions with zero coverage. These can
+naturally occur when using sequence mapping to known references. However
+in a denovo assembly context they are not desireable.
+
+_picture(gap5_remove_contig_holes)
+
+Some algorithms have check boxes querying whether you wish holes to be
+removed by breaking contigs up, but this dialogue offers a choice of
+fixing the holes at a later stage.
+
+It identifies all regions of zero coverage and will break the contig
+into multiple fragments.

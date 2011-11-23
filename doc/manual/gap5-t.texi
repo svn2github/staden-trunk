@@ -3,6 +3,13 @@ _define(_gap5)
 @c __include(gap5_org-t.texi)
 @c __include(gap5_mini-t.texi)
 @c __include(gap5_intro-t.texi)
+
+@page
+_split()
+@node Gap5_DB
+@chapter Gap5 Databases
+_include(gap5_check_db-t.texi)
+
 @page
 _split()
 @node Contig Selector and Comparator
@@ -33,6 +40,12 @@ _split()
 @chapter Editing in Gap5
 _include(gap5_contig_editor-t.texi)
  
+@page
+_split()
+@node Restrict
+@section Plotting Restriction Enzymes
+_include(restrict_enzymes-t.texi)
+
 @page
 _split()
 @chapter Importing and Exporting Data
@@ -81,8 +94,13 @@ _include(find_oligo-t.texi)
 
 @page
 _split
-@node Disassembly
+@node Disassembly and Data Deletion
 _include(gap5_disassembly-t.texi)
+
+@page
+_split
+@node Tidying up alignments
+_include(gap5_shuffle-t.texi)
 
 @page
 _split()
@@ -150,7 +168,7 @@ _include(lists-t.texi)
 @c versions of Gap4, but old and newly created 32-bit databases still work with
 @c the 64-bit Gap4 (and are maintained in 32-bit format so editing them
 @c will not invalidate their use by older Gap4s). The @code{copy_db}
-@c program (_fpref(Man-copy_db, Copy_db, manpages)) can be used to
+@c program (_f p r e f (Man-copy_db, Copy_db, manpages)) can be used to
 @c convert file formats.
 @c 
 @c @sp 1

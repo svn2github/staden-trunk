@@ -240,7 +240,7 @@ proc DisContigs { io } {
     okcancelhelp $f.ok_cancel \
         -ok_command "OK_Pressed_DisContig $io $f $cs $f.infile $f.id"\
 	-cancel_command "destroy $f" \
-	-help_command "show_help gap5 {Disassemble}" \
+	-help_command "show_help gap5 {Delete Contigs}" \
 	-bd 2 \
 	-relief groove
     ###########################################################################
@@ -310,7 +310,7 @@ proc RemoveContigHoles {io} {
     okcancelhelp $t.ok_cancel \
 	    -ok_command "RemoveContigHoles2 $io $t"\
 	    -cancel_command "destroy $t" \
-	    -help_command "show_help gap5 {RemoveContigHoles}" \
+	    -help_command "show_help gap5 {Remove Contig Holes}" \
 	    -bd 2 \
 	    -relief groove
 
