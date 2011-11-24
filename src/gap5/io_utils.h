@@ -3,7 +3,7 @@
 
 #include <errno.h>
 #include <string.h>
-#include "IO.h"
+#include "tg_gio.h"
 
 typedef struct contig_list {
     tg_rec contig;

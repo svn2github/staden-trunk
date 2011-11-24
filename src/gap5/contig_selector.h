@@ -1,6 +1,7 @@
 #ifndef _CONTIG_SELECT_H_
 #define _CONTIG_SELECT_H_
 
+#include "io_utils.h"
 #include "cs-object.h"
 #include "canvas_box.h"
 

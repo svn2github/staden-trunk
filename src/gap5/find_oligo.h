@@ -1,4 +1,4 @@
-#include "io_utils.h"
+#include "tg_gio.h"
 
 int find_oligos(GapIO *io,
 		int num_contigs,

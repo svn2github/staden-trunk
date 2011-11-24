@@ -21,7 +21,7 @@
 #include <assert.h>
 
 #include "xalloc.h"
-#include "IO.h"
+#include "tg_gio.h"
 #include "gap4_compat.h"
 #include "cs-object.h"
 #include "contig_selector.h"

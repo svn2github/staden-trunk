@@ -12,7 +12,6 @@
 #include "io_utils.h"
 #include "tk-io-reg.h"
 #include "tcl_utils.h"
-#include "IO.h"
 #include "qual.h"
 #include "qualIO.h"
 #include "gap_cli_arg.h"

@@ -1,5 +1,4 @@
 #include "io_utils.h"
-#include "IO.h"
 
 int
 find_repeats(GapIO *io,

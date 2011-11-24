@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "canvas_box.h"
-#include "IO.h"
+#include "tg_gio.h"
 #include "misc.h"
 #include "io_utils.h"
 #include "cs-object.h"

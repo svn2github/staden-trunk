@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include <tcl.h>
 
-#include "IO.h"
+#include "tg_gio.h"
 
 /*
  * ============================================================================

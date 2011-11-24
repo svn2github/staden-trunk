@@ -1,7 +1,7 @@
 #ifndef _GAP_CANVAS_BOX_H
 #define _GAP_CANVAS_BOX_H
 
-#include "IO.h"
+#include "tg_gio.h"
 #include "canvas_box.h"
 
 /* TASK_CANVAS_WORLD structure */

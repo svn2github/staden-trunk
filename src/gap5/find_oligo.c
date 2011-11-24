@@ -2,7 +2,6 @@
 #include <ctype.h>
 
 #include "io_utils.h"
-#include "IO.h"
 #include "tagdb.h"
 //#include "tagUtils.h"
 #include "gap_globals.h"

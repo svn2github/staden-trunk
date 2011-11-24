@@ -5,7 +5,7 @@
 #include <tk.h>
 
 #include "renz_utils.h"
-#include "IO.h"
+#include "tg_gio.h"
 #include "template_display.h"
 
 #define TASK_RENZ_INFO   0

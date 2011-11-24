@@ -2,7 +2,6 @@
 #define _LIST_PROC_H_
 
 #include "io_utils.h"
-#include "IO.h"
 
 /*
  * Gets the active tcl list to 'list'.

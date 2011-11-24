@@ -1,6 +1,6 @@
 #ifndef _NEWGAP_STRUCTS_H
 #define _NEWGAP_STRUCTS_H
-#include "IO.h"
+#include "tg_gio.h"
 
 typedef struct {
     GapIO *io;
