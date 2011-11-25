@@ -1357,6 +1357,11 @@ static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
 	    *cp++ = *str++;
 	}
     }
+
+    /* Gap5 doesn't support full key=value GFF syntax yet, so cheat. */
+    if (0 == strncmp(*text, "Note=", 5))
+	(*text) += 5;
+
     *text_len = cp-*text;
 
     return *str == '|' ? ++str : str;
@@ -1422,6 +1427,11 @@ static char *parse_bam_CT_tag(char *str, char *dir,
 	    *cp++ = *str++;
 	}
     }
+
+    /* Gap5 doesn't support full key=value GFF syntax yet, so cheat. */
+    if (0 == strncmp(*text, "Note=", 5))
+	(*text) += 5;
+
     *text_len = cp-*text;
 
     return *str == '|' ? ++str : str;

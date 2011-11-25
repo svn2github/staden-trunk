@@ -826,8 +826,8 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
     dstring_appendf(ds, "CT:Z:%c;", a->direction);
     dstring_append_hex_encoded(ds, type2str(fi->r.mqual, type), ";|");
     if (a->comment && *a->comment) {
-	dstring_append_char(ds, ';');
-	dstring_append_hex_encoded(ds, a->comment, "|");
+	dstring_append(ds, ";Note=");
+	dstring_append_hex_encoded(ds, a->comment, ";|");
     }
 
     dstring_append_char(ds, '\n');
@@ -1190,8 +1190,8 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
 	dstring_append_hex_encoded(ds, type2str(ti->r.mqual, type), ";|");
 	if (a->comment && *a->comment) {
-	    dstring_append_char(ds, ';');
-	    dstring_append_hex_encoded(ds, a->comment, "|");
+	    dstring_append(ds, ";Note=");
+	    dstring_append_hex_encoded(ds, a->comment, ";|");
 	}
 
 	/* Remove ti from the list (NB fifo is wrong abstract type) */
