@@ -2258,11 +2258,13 @@ proc editor_clip_contig {w where end} {
 		set l  $l2
 	    }
 
+	    #puts "$s set_clips_no_invalidate $l $r: extents $st $en"
 	    $s set_clips_no_invalidate $l $r
 	}
 	$s delete
     }
 
+    #puts "invalidate from $min to $max"
     $c invalidate_consensus $min $max
     $c delete
 
@@ -2753,7 +2755,7 @@ proc tag_editor_create {w} {
     set d(orec)    $orec
     set d(start)   $start
     set d(end)     $end
-    set d(anno)    "default"
+    set d(anno)    ""
     set d(default) "?"
     set d(rec)     $rec
 
