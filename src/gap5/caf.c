@@ -119,6 +119,7 @@ static long chomp(char *str) {
 static char *get_value(char *key, char *field) {
     size_t key_length, field_length;
     char *value = NULL;
+    int remove_quote = 0;
     
     key_length   = strlen(key);
     field_length = strlen(field);
@@ -132,10 +133,18 @@ static char *get_value(char *key, char *field) {
 	
 	if (i != field_length) {
 	    value = field + i;
-	
+
+	    if (*value == '"') {
+		remove_quote = 1;
+		value++;
+	    }
+
 	    for (i = field_length - 1; i > key_length; i--) {
 	    	if (!isspace(*(field + i))) break;
 	    }
+
+	    if (field[i] == '"' && remove_quote)
+		i--;
 	
     	    if (i != key_length) {
 	    	field[i + 1] = '\0';
@@ -1098,9 +1107,24 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 	    seq.template_name_len = strlen(template_name);
 	    if (strncmp(name, template_name, seq.template_name_len)) {
 		fprintf(stderr, "Template name '%s' must be a prefix of the"
-			" sequence name '%s'. Ignoring it.\n",
-			template_name, name);
-		seq.template_name_len = seq.name_len;
+			" sequence name '%s'. ", template_name, name);
+		/*
+		 * MIRA tends to produce 454 reads which are almost but not
+		 * exactly prefixes. We'll trim off at most two chars and
+		 * repeat the check, incase this gives us a match.
+		 */
+		if (seq.template_name_len > 2 && 
+		    (template_name[seq.template_name_len-2] == '_' ||
+		     template_name[seq.template_name_len-2] == '.' ||
+		     template_name[seq.template_name_len-2] == '/') &&
+		    !strncmp(name, template_name, seq.template_name_len-2)) {
+		    fprintf(stderr, "Trimming '%s' suffix\n",
+			    template_name + seq.template_name_len-2);
+		    seq.template_name_len -= 2;
+		} else {
+		    fprintf(stderr, "Ignoring it.\n");
+		    seq.template_name_len = seq.name_len;
+		}
 	    }
 	}
 	
