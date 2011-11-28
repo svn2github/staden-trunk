@@ -391,6 +391,8 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 	seq.seq      = ent->seq;
 	seq.len      = ent->seq_len;
 
+	seq.mapping_qual = 0;
+
 	if (dummy_qual_len < ent->seq_len) {
 	    dummy_qual_len = ent->seq_len;
 	    dummy_qual = realloc(dummy_qual, dummy_qual_len);
