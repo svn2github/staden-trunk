@@ -724,7 +724,6 @@ static int create_contig_from(GapIO *io, r_pos_t *pos, int npos,
 
     /* Create the new contig */
     c_new = contig_new(io, name);
-    contig_index_update(io, name, strlen(name), c_new->rec);
     cache_incr(io, c_new);
 
 

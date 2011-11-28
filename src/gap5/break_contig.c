@@ -1374,8 +1374,6 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     }
     cl = cache_rw(io, cl);
     cr = cache_rw(io, cr);
-    if (0 != contig_index_update(io, cname, strlen(cname), cr->rec))
-	return -1;
     gio_debug(io, 1, "Break in contig %"PRIrec", pos %d\n", crec, cpos);
 
     gio_debug(io, 1, "Existing left bin = %"PRIrec", right bin = %"PRIrec"\n",
