@@ -222,7 +222,8 @@ install:
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(S)/gap5 \
 	   $(S)/gap5rc $(S)/gap5rc_menu_full $(S)/gap5_export \
-	   $(S)/gap5_consensus $(S)/tg_index $(S)/tg_view $(DIRNAME)
+	   $(S)/gap5_consensus $(S)/tg_index $(S)/tg_view $(S)/gap5_check \
+	   $(DIRNAME)
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
