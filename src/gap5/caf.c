@@ -88,6 +88,12 @@ static long replace(char *str, char rep) {
 	
     if (str && (length = strlen(str))) {
     	if (str[length - 1] == '\n') {
+	
+	    if (str[length - 2] = '\r') {
+	    	length--;
+		str[length] = 0;
+	    }
+	
 	    str[length - 1] = rep;
 	}
     }
@@ -103,6 +109,9 @@ static long chomp(char *str) {
     if (str && (length = strlen(str))) {
     	if (str[length - 1] == '\n') {
     	    length--;
+	    
+	    if (str[length - 1] == '\r') length--; // for DOS format
+	    
     	    str[length] = '\0';
     	}
     }
@@ -452,7 +461,7 @@ static int find_caf_node(pools *pool, caf_node **caf, char *name, int add) {
 static int add_pos_data(pools *pool, caf_node *caf, char *name, long pos, entry_type type) {
     int ok = 1;
     caf_node *node = caf;
-
+    
     if (!find_caf_node(pool, &node, name, 1)) {
     	ok = 0;
     }
@@ -602,19 +611,27 @@ static int index_caf(FILE *fp, pools *pool, caf_node *caf, caf_index *contig_ent
 	if ((line_size = strlen(line))) {
 	    if ((name = get_value("Sequence :", line))) {
 		if (name) {
+		    char *keep_name = NULL;
+		    keep_name = strdup(name);		    
+		
 		    if (tg_get_line(&line, &size, fp) == -1) {
 		    	err = 1;
+			
+			if (keep_name) free(keep_name);
+			
 			continue;
 		    }
 		    
 		    if (strncmp(line, "Is_read", 7) == 0) {
-		    	err = add_pos_data(pool, caf, name, pos, IS_SEQUENCE);
+		    	err = add_pos_data(pool, caf, keep_name, pos, IS_SEQUENCE);
 			read_no++;
 		    } else if (strncmp(line, "Is_contig", 9) == 0) {
-		    	err = add_pos_data(pool, caf, name, pos, IS_SEQUENCE);
-		    	err = add_entry(contig_entry, name, strlen(name), pos);
+		    	err = add_pos_data(pool, caf, keep_name, pos, IS_SEQUENCE);
+		    	err = add_entry(contig_entry, keep_name, strlen(keep_name), pos);
 			contig_no++;
 		    }
+		    
+		    if (keep_name) free(keep_name);
 		}
 	    } else if ((name = get_value("DNA :", line))) {
     	        err = add_pos_data(pool, caf, name, pos, IS_DNA);
@@ -809,7 +826,7 @@ static long read_section_as_line(FILE *fp, long pos, char **line, int is_seq) {
     tg_get_line(&line_in, &size, fp); // skip over the header
 
     while ((length = tg_get_line(&line_in, &size, fp)) > 0) {
-    	if (isspace(line_in[0]) && length <= 1) break; // blank line at end of section
+    	if (isspace(line_in[0]) && !isblank(line_in[0])) break; // blank line at end of section
 	
 	if (is_seq) {
 	    length = chomp(line_in);
@@ -1332,7 +1349,7 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     printf("Loading %s...\n", fn);
 
     if (-1 == stat(fn, &sb) ||
-	NULL == (fp = fopen(fn, "r"))) {
+	NULL == (fp = fopen(fn, "rb"))) {
 	perror(fn);
 	return -1;
     }
