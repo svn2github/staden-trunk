@@ -255,7 +255,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 ##############################################################################
 # Exit handler - removes variable trace and deregisters the window
 ; proc ListContigsExit {io w trace_cmd} {
-    global NGList(contigs)
+    global NGList
     global $w.Reg
 
     bind $w <Destroy> {}
