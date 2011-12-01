@@ -1595,8 +1595,7 @@ int bin_invalidate_consensus(GapIO *io, tg_rec contig, int start, int end) {
     if (NULL == (c = (contig_t *)cache_search(io, GT_Contig, contig)))
 	return -1;
     
-    r = contig_bins_in_range(io, &c, start, end,
-			     CSIR_LEAVES_ONLY, CONS_BIN_SIZE, &nr);
+    r = contig_bins_in_range(io, &c, start, end, 0, CONS_BIN_SIZE/2, &nr);
 
     for (i = 0; i < nr; i++) {
 	bin_index_t *bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
