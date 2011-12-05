@@ -1,5 +1,5 @@
-Staden Package release 2.0.0b9: 22nd Nov 2011
-=============================================
+Staden Package release 2.0.0b9: 5th Dec 2011
+============================================
 
 Firstly, it has been a long time since the last flagged release
 (February). Yes Gap5 is still in beta, but stability is improving
@@ -452,6 +452,9 @@ Gap5 Bug Fixes
           Consensus and consensus iterators. This included things like
           the consensus computed for Find Internal Joins.
 
+	- Fixed a problem causing the consensus cache invalidation to
+          sometimes miss invalidating regions.
+
 *       Contig ID handling:
 
         - When using dialogues asking for a single contig and a range
@@ -487,7 +490,9 @@ Gap5 Bug Fixes
           name.
           
         - Fixed parsing errors with CAF format; quality lines starting
-          with white space are no longer a problem.
+          with white space are no longer a problem; backslash \
+          continuation line support added; improved quote handling;
+          support for reading CAF on Windows.
           
         - Removed crashes when parsing malformed FASTA files.
 
@@ -498,8 +503,6 @@ Gap5 Bug Fixes
 
         - Fixed a bug in fasta import where the last sequence in a fasta
           file often generated a blank contig.
-
-        - Added support for backslash \ continuation lines in CAF.
 
         - Use of binary I/O modes on Windows (BAM).
 
@@ -645,3 +648,4 @@ Misc
         fixing compilation issues with gcc 4.4.4 onwards and use of
         _FORTIFY_SOURCE.
 
+*	Support added for using Tcl 8.5.

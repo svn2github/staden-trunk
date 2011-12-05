@@ -1,3 +1,36 @@
+5th Dec 2011
+============
+
+Gap5 Updates
+------------
+
+*	Code tidy up - removed old defunct C header files.
+
+*	Minor edits to allow the package to use Tcl v8.5 instead of
+        8.4. (Locally we're still using 8.4 on unix, but the windows
+        build is on 8.5 now.)
+
+Gap5 Fixes
+----------
+
+*	Fixed parsing of quotes in CAF files. It's still not a full
+        CAF parser, but sufficient for observed real-world data. Also
+        fixed CAF parsing on windows by opening in binary mode.
+
+*	Fixed key=value parsing in the new SAM tag format.
+
+*	Removed "default" as the default tag comment.
+
+*	Fixed a recent bug introduced by allowing contig renaming. The
+        contig names were being added twice to the index, causing
+        problems when later removing them.
+
+*	Force the mapping quality for fasta/fastq imports to 0 rather
+        than leaving it undefined.
+
+*	Bug fix to the code that invalidates the consensus cache.
+
+
 22nd Nov 2011
 =============
 
