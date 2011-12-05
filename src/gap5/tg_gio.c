@@ -57,7 +57,8 @@ GapIO *gio_open(char *fn, int ro, int create) {
 	lock_err = actf_lock(ro, fn, create);
     }
     if (lock_err != 0) {
-	vmessage("Unable to lock and/or open the database.\n");
+	verror(ERR_WARN, "Open Database",
+	       "Unable to lock and/or open the database.");
 	return NULL;
     }
 
