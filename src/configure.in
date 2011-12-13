@@ -93,6 +93,10 @@ TEA_LOAD_TKCONFIG
 # variables set correctly for our new compiler.
 TEA_CONFIG_CFLAGS
 
+# Identify tclsh executable
+TEA_PROG_TCLSH
+TCLSH_PROG=`basename ${TCLSH_PROG}`
+
 # Handles --prefix option
 #TEA_PREFIX
 
@@ -140,6 +144,18 @@ AX_LIB_ITK(3.2,[have_itk=yes], [AC_MSG_WARN([Warning: no itk package found. The 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([system.mk])
 AC_CONFIG_FILES([shlib.conf])
+AC_CONFIG_FILES([gap5/gap5])
+AC_CONFIG_FILES([gap5/tg_view])
+AC_CONFIG_FILES([gap5/tg_index])
+AC_CONFIG_FILES([gap5/gap5_consensus])
+AC_CONFIG_FILES([gap5/gap5_export])
+AC_CONFIG_FILES([gap5/gap5_check])
+AC_CONFIG_FILES([gap4/gap4])
+AC_CONFIG_FILES([copy_reads/copy_reads])
+AC_CONFIG_FILES([trev/trev])
+AC_CONFIG_FILES([prefinish/prefinish])
+AC_CONFIG_FILES([pregap4/pregap4])
+AC_CONFIG_FILES([spin/spin])
 AC_OUTPUT
 
 #-----------------------------------------------------------------------------

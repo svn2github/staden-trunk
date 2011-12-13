@@ -32,7 +32,7 @@ distsrc: distsrc_dirs
 
 S=$(SRCROOT)/pregap4
 install:
-	cp $(S)/pregap4 $(INSTALLBIN)/pregap4
+	cp pregap4 $(INSTALLBIN)/pregap4
 	-mkdir $(INSTALLTCL)/pregap4
 	cp $(S)/*.tcl $(S)/widget_licence $(S)/tclIndex $(INSTALLTCL)/pregap4
 	-mkdir $(INSTALLTCL)/pregap4/modules

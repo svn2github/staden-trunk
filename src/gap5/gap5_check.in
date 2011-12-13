@@ -68,18 +68,8 @@ find_dir() {
 }
 
 STADENROOT=`find_dir $0`/..;                  export STADENROOT
-STADLIB=$STADENROOT/lib/staden/;              export STADLIB
-STADTABL=$STADENROOT/share/staden/etc;        export STADTABL
-STADTCL=$STADENROOT/share/staden/tcl;         export STADTCL
-if [ "x" = "x$GTAGDB" ]
-then
-    GTAGDB=GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB;  export GTAGDB
-fi
+STADEN_PREPEND=1;                             export STADEN_PREPEND
+. $STADENROOT/share/staden/staden.profile
 
-PATH=$STADENROOT/bin:$PATH
-LD_LIBRARY_PATH=$STADENROOT/lib:$STADENROOT/lib/staden:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH
-# For windows:
-PATH=$STADENROOT/lib/staden:$PATH
-
-exec tclsh "$STADTCL/gap/gap.tcl" ${@+"$@"}
+# Find tclsh vs tclsh8.5
+exec @TCLSH_PROG@ "$STADTCL/gap5/gap5_check.tcl" ${@+"$@"}

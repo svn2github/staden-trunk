@@ -37,7 +37,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE) $(L)/.dir
 
 install:
 	-mkdir $(INSTALLTCL)/copy_reads
-	cp $(S)/copy_reads $(INSTALLBIN)
+	cp copy_reads $(INSTALLBIN)
 	cp $(S)/copy_reads.tcl $(S)/copy_reads_main.tcl $(S)/tclIndex $(INSTALLTCL)/copy_reads
 	cp $(PROGLIBS) $(INSTALLLIB)
 	cp $(S)/copy_readsrc $(INSTALLETC)

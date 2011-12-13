@@ -1,5 +1,5 @@
 LIBS = gap5
-PROGS = tg_index tg_view
+PROGS = tg_index.bin tg_view.bin
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
@@ -189,7 +189,7 @@ TGILIBS = \
 	$(MISC_LIB) \
 	$(IOLIB_LIB)
 
-tg_index: $(TG_IND_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+tg_index.bin: $(TG_IND_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)
 
 TG_VIEW_OBJ = \
@@ -200,24 +200,24 @@ TGVLIBS = \
 	$(TGILIBS) \
 	$(CURSES_LIB)
 
-tg_view: $(TG_VIEW_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+tg_view.bin: $(TG_VIEW_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_VIEW_OBJ) $(TGVLIBS) $(LIBSC)
 
 DEPEND_OBJ = $(GAP5) $(TG_IND_OBJ) $(TG_VIEW_OBJ)
 
 install:
-	cp $(S)/gap5 $(INSTALLBIN)
+	cp gap5 $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/gap5
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap5
 	cp $(S)/gap5rc $(S)/gap5rc_menu_full $(INSTALLETC)
 	cp $(PROGLIBS) $(INSTALLLIB)
-	cp tg_view $(INSTALLBIN)/tg_view.bin
-	cp tg_index $(INSTALLBIN)/tg_index.bin
-	cp $(S)/tg_index $(INSTALLBIN)
-	cp $(S)/tg_view $(INSTALLBIN)
-	cp $(S)/gap5_consensus $(INSTALLBIN)
-	cp $(S)/gap5_export $(INSTALLBIN)
-	cp $(S)/gap5_check $(INSTALLBIN)
+	cp tg_view.bin $(INSTALLBIN)
+	cp tg_index.bin $(INSTALLBIN)
+	cp tg_index $(INSTALLBIN)
+	cp tg_view $(INSTALLBIN)
+	cp gap5_consensus $(INSTALLBIN)
+	cp gap5_export $(INSTALLBIN)
+	cp gap5_check $(INSTALLBIN)
 
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(S)/gap5 \

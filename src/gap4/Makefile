@@ -260,7 +260,7 @@ DEPEND_OBJ = $(GAPOBJS) $(COPYDBOBJS)
 
 install:
 	cp copy_db $(INSTALLBIN)
-	cp $(S)/gap4 $(INSTALLBIN)
+	cp gap4 $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/gap
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap
 	cp $(PROGLIBS) $(INSTALLLIB)

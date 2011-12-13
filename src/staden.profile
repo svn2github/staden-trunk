@@ -41,6 +41,12 @@ else
             DYLD_LIBRARY_PATH=$STADLIB
         fi
         export DYLD_LIBRARY_PATH
+
+	# For binary distributions we bundle portions of MacPorts in
+        # with the staden directory. Also uncomment this line and copy
+	# over MacPorts/etc/fonts/fonts.conf.
+	#
+	# FONTCONFIG_PATH=$STADTABL; export FONTCONFIG_PATH
     else
         if [ "$LD_LIBRARY_PATH" != "" ]
         then

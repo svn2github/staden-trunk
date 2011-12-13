@@ -68,15 +68,7 @@ find_dir() {
 }
 
 STADENROOT=`find_dir $0`/..;                  export STADENROOT
-STADLIB=$STADENROOT/lib/staden/;              export STADLIB
-STADTABL=$STADENROOT/share/staden/etc;        export STADTABL
-STADTCL=$STADENROOT/share/staden/tcl;         export STADTCL
-GTAGDB=GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB;  export GTAGDB
-
-PATH=$STADENROOT/bin:$PATH
-LD_LIBRARY_PATH=$STADENROOT/lib:$STADENROOT/lib/staden:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH
-# For windows:
-PATH=$STADENROOT/lib/staden:$PATH
+STADEN_PREPEND=1;                             export STADEN_PREPEND
+. $STADENROOT/share/staden/staden.profile
 
 exec tg_index.bin ${@+"$@"}
