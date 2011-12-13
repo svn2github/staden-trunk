@@ -2555,18 +2555,6 @@ plot_lines(Tcl_Interp *interp,
 
     for (i = 0; i < num; i++) {
 
-	printf("%s create line %d %d %d %d "
-		   "-fill {%s} -tags %s -width %d -arrow %s\n",
-		   win_name,
-		   array[i].l.x1,
-		   array[i].l.y1,
-		   array[i].l.x2,
-		   array[i].l.y2,
-		   array[i].colour,
-		   array[i].type,
-		   line_width,
-		   array[i].arrow);
-
 	len = flen("%s create line %d %d %d %d "
 		   "-fill {%s} -tags %s -width %d -arrow %s\n",
 		   win_name,
