@@ -61,14 +61,14 @@ TK_LIB		  = @TK_LIB_SPEC@ @TCL_LIB_SPEC@ @TK_LIBS@
 # How else do we get commas in a subst text or pattern?
 comma = ,
 
-SVNVERS := $(shell @SVNVERSION@ $(SRCROOT))
+SVNVERS := $(shell expr "`@SVNVERSION@ 2>&1 $(SRCROOT)`" : '^\([0-9].*\)')
 
 LIB_RUNTIME_DIR   = ${prefix}/lib/staden
 CC		  = @CC@
 #CDEBUG		  = -Wall -Wno-sign-compare -Wno-pointer-sign -Wno-parentheses -Wno-unused -Wno-char-subscripts -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
-CFLAGS		  = @CFLAGS@ $(DEFINES) $(INCLUDES) -DSVN_VERSION=$(SVNVERS)
+CFLAGS		  = @CFLAGS@ $(DEFINES) $(INCLUDES) -DSVN_VERSION="$(SVNVERS)"
 CXX		  = @CXX@
-CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES) -DSVN_VERSION=$(SVNVERS)
+CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES) -DSVN_VERSION="$(SVNVERS)"
 CPP		  = @CPP@
 CPPFLAGS	  = @CPPFLAGS@
 LDFLAGS		  = -L$(L) @LDFLAGS@ @CC_SEARCH_FLAGS@
