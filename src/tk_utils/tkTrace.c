@@ -2123,7 +2123,7 @@ int drawable_to_png(DNATrace *t, FILE *fp, Display *disp, Drawable d,
 	goto error;
 
     /* PNG requires setjmp/longjmp to be used */
-    if (setjmp(png_ptr->jmpbuf))
+    if (setjmp(png_jmpbuf(png_ptr)))
 	goto error;
 
     /* Create the info bits */
