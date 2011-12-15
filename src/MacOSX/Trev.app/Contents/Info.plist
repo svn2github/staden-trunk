@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDisplayName</key>
+  <string>Trev</string> 
+  <key>CFBundleGetInfoString</key>
+  <string>Trev 1.9 Copyright 2011</string>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>English</string>
+  <key>CFBundleExecutable</key>
+  <string>trev</string>
+  <key>CFBundleIconFile</key>
+  <string>appIcon.icns</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>1.0</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleSignature</key>
+  <string>????</string>
+  <key>CFBundleVersion</key>
+  <string>1.0</string>
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>abi</string>
+        <string>ab1</string>
+        <string>sff</string>
+        <string>ztr</string>
+        <string>exp</string>
+        <string>scf</string>
+        <string>scf.gz</string>
+        <string>exp.gz</string>
+        <string>ab1.gz</string>
+      </array>
+      <key>CFBundleTypeOSTypes</key>
+      <array/>
+      <key>CFBundleTypeRole</key>
+      <string>Viewer</string>
+    </dict>
+  </array>
+</dict>
+</plist>

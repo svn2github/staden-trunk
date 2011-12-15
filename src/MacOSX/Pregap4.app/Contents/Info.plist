@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDisplayName</key>
+  <string>Pregap4</string> 
+  <key>CFBundleGetInfoString</key>
+  <string>Pregap4 1.6 Copyright 2011</string>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>English</string>
+  <key>CFBundleExecutable</key>
+  <string>pregap4</string>
+  <key>CFBundleIconFile</key>
+  <string>appIcon.icns</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>1.0</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleSignature</key>
+  <string>????</string>
+  <key>CFBundleVersion</key>
+  <string>1.0</string>
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>pg4</string>
+        <string>pregap4.config</string>
+      </array>
+      <key>CFBundleTypeOSTypes</key>
+      <array/>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+    </dict>
+  </array>
+</dict>
+</plist>
