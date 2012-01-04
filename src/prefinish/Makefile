@@ -74,7 +74,7 @@ install:
 	cp $(S)/*.tcl $(S)/*.itcl $(S)/*.itk $(S)/help $(S)/args.template $(S)/tclIndex $(INSTALLTCL)/prefinish
 	cp $(S)/config.prefinish $(INSTALLTCL)/prefinish
 	cp $(PROGLIBS) $(INSTALLLIB)
-	cp prefinish $(INSTALLBIN)
+	$(INSTALL) prefinish $(INSTALLBIN)
 	cp $(S)/finish_sanger $(S)/finish_cDNA $(S)/finish_cDNA_ends_only \
 	    $(INSTALLSCRIPTS)
 	-mkdir $(INSTALLTCL)/prefinish/rules

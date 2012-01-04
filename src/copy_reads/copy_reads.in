@@ -2,7 +2,7 @@
 
 # Finds the directory holding this program
 find_dir() {
-    arg0=$1
+    arg0=$0
 
     # Protect against ls, sed and echo being exported shell functions.
     # Eg ls() { ls -F ${@+"$@"} }; export ls
@@ -22,7 +22,7 @@ find_dir() {
 	cur_dir=`pwd`
     
 	# Find directory that $arg0 resides in
-	case $arg0 in
+	case "$arg0" in
 	    /*)
 		# Full pathname, not much to do
 		dir=`echo $arg0 | sed 's:/[^/]*$::'`
@@ -33,11 +33,11 @@ find_dir() {
 		;;
 	esac
     
-	if [ -h $arg0 ]
+	if [ -h "$arg0" ]
 	then
 	    # NOTE: This statement will not work when $arg0 is a filename
 	    # containing "-> ".
-	    lnto=`ls -l -- $arg0 | sed 's/.*-> //'`
+	    lnto=`ls -l -- "$arg0" | sed 's/.*-> //'`
 	    lndir=`echo $lnto | sed 's:/[^/]*$::'`
 	    case $lndir in
 		/*)
@@ -46,12 +46,12 @@ find_dir() {
 		    ;;
 		*)
 		    # Relative symlink
-		    dirto=`echo $arg0 | sed "s:/[^/]*\$:/$lndir:"`
+		    dirto=`echo "$arg0" | sed "s:/[^/]*\$:/$lndir:"`
 		    ;;
 	    esac
 
 	    cd "$dirto"
-	    arg0=`echo $lnto | sed 's:.*/::'`
+	    arg0=`echo "$lnto" | sed 's:.*/::'`
 	    must_loop=yes
 	else
 	    must_loop=
@@ -69,7 +69,7 @@ find_dir() {
 
 STADENROOT=`find_dir $0`/..;            export STADENROOT
 STADEN_PREPEND=1;                       export STADEN_PREPEND
-. $STADENROOT/share/staden/staden.profile
+. "$STADENROOT"/share/staden/staden.profile
 
 # Find tclsh vs tclsh8.5
 exec @TCLSH_PROG@ "$STADTCL/copy_reads/copy_reads_main.tcl" ${@+"$@"}

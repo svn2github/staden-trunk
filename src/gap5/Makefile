@@ -206,18 +206,16 @@ tg_view.bin: $(TG_VIEW_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 DEPEND_OBJ = $(GAP5) $(TG_IND_OBJ) $(TG_VIEW_OBJ)
 
 install:
-	cp gap5 $(INSTALLBIN)
+	$(INSTALL) gap5 $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/gap5
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap5
 	cp $(S)/gap5rc $(S)/gap5rc_menu_full $(INSTALLETC)
 	cp $(PROGLIBS) $(INSTALLLIB)
 	cp tg_view.bin $(INSTALLBIN)
 	cp tg_index.bin $(INSTALLBIN)
-	cp tg_index $(INSTALLBIN)
-	cp tg_view $(INSTALLBIN)
-	cp gap5_consensus $(INSTALLBIN)
-	cp gap5_export $(INSTALLBIN)
-	cp gap5_check $(INSTALLBIN)
+	$(INSTALL) tg_index $(INSTALLBIN)
+	$(INSTALL) tg_view $(INSTALLBIN)
+	$(INSTALL) gap5_consensus gap5_export gap5_check $(INSTALLBIN)
 
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(S)/gap5 \

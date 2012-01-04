@@ -113,6 +113,16 @@ SHLIB_FFLAGS      = $(SHLIB_CFLAGS)
 #-----------------------------------------------------------------------------
 # Install options
 
+# Installer for executables. Most are executable already, but some
+# need chmodding such as the ones created from <prog>.in via autoconf.
+#
+# We can either do this explicitly via cp and chmod, or use the
+# preferred BSD install program instead. Uncomment as appropriate if your
+# system lacks install.
+
+# INSTALL        = ifunc() { chmod +xr $${@+"$$@"}; cp $${@+"$$@"}; }; ifunc
+INSTALL        = install
+
 # Our libraries are I think exclusively used by us, hence we pick
 # our own subdirectory.
 prefix         = @prefix@

@@ -94,7 +94,7 @@ distsrc: distsrc_dirs
 	cp $(S)/*.wts $(S)/niprc $(S)/siprc $(S)/spinrc $(DIRNAME)
 
 install:
-	cp spin $(INSTALLBIN)
+	$(INSTALL) spin $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/spin
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/spin
 	cp $(PROGLIBS) $(INSTALLLIB)
