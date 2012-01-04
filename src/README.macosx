@@ -1,3 +1,68 @@
+Dec 13th 2011 - MacOS X prebuilt binaries.
+
+1) Starting from a local compilation of MacPorts. This was built with
+-arch x86_64 and -arch i386 as the default MacPorts we seem to have
+installed is half and half (even wish and tclsh differ). This is
+installed locally in /nfs/sam_scratch/jkb/MacPorts. See
+/etc/macports/macports.conf and edit "universal_archs i386 x86_64"
+line.
+
+2) Do a full compilation as before. Configure line was:
+
+../configure --without-curl 
+	--prefix=/nfs/sam_scratch/jkb/staden.mac
+	--disable-dependency-tracking
+	--with-tcl=/nfs/sam_scratch/jkb/MacPorts/lib
+	--with-tk=/nfs/sam_scratch/jkb/MacPorts/lib
+	--with-io_lib=/nfs/sam_scratch/jkb/staden.mac/
+	--with-tklib=/nfs/sam_scratch/jkb/staden.i686/share/tcltk/tklib0.5
+	--with-lzma=/nfs/sam_scratch/jkb/MacPorts
+
+The --without-curl prevents an explosion of ssl library version
+dependencies.
+
+2.5) Edit system.mk and add "-arch x86_64 -arch i386" to CFLAGS and
+CXXFLAGS.
+
+3) Make install. From here on $STADENROOT refers to the installed location.
+
+4) Edit $STADENROOT/share/staden/staden.profile and uncomment the
+FONTCONFIG_PATH line.
+
+5) Copy bits from the MacPorts directory into staden tree, to make a
+standalone version. 
+
+cp MacPorts/etc/fonts/fonts.conf 	staden.mac/share/staden/etc/
+cp MacPorts/lib/libX11.6.dylib   	staden.mac/lib/staden
+cp MacPorts/lib/libXau.6.dylib		staden.mac/lib/staden
+cp MacPorts/lib/libXdmcp.6.dylib	staden.mac/lib/staden
+cp MacPorts/lib/libXext.6.dylib		staden.mac/lib/staden
+cp MacPorts/lib/libXft.2.dylib		staden.mac/lib/staden
+cp MacPorts/lib/libXrender.1.dylib	staden.mac/lib/staden
+cp MacPorts/lib/libfontconfig.1.dylib	staden.mac/lib/staden
+cp MacPorts/lib/libfreetype.6.dylib	staden.mac/lib/staden
+cp MacPorts/lib/libiconv.2.dylib	staden.mac/lib/staden
+cp MacPorts/lib/liblzma.5.dylib		staden.mac/lib/staden
+cp MacPorts/lib/libxcb.1.dylib		staden.mac/lib/staden
+
+At this point it's best to also rename your local
+MacPorts directory to verify the dependencies have been removed and
+test the local dir works from the command line.
+
+6) Build a drive image:
+
+hdiutil create -srcfolder staden.mac staden.mac-bundles \
+	-volname "Staden Package 2.0.0b9" \
+	-fs HFS+ -fsargs "-c c=64,a=16,e=16" staden.mac.dmg
+
+Here staden.mac-bundles is the necessary extra gubbins needed in
+addition to a standard install. (We could put the MacPorts portions
+there too infact.)
+
+It has the bin/gap5.App directories for example to make the programs
+clickable from the Finder.
+
+
 -----------------------------------------------------------------------------
 Feb 3rd 2011 - MacOS X 10.6 build notes.
 
