@@ -61,7 +61,7 @@ TK_LIB		  = @TK_LIB_SPEC@ @TCL_LIB_SPEC@ @TK_LIBS@
 # How else do we get commas in a subst text or pattern?
 comma = ,
 
-SVNVERS := $(shell expr "`@SVNVERSION@ 2>&1 $(SRCROOT)`" : '^\([0-9].*\)')
+SVNVERS := $(shell expr "`@SVNVERSION@ 2>&1 $(SRCROOT)`" : '\([0-9].*\)')
 
 LIB_RUNTIME_DIR   = ${prefix}/lib/staden
 CC		  = @CC@
