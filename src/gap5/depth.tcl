@@ -40,7 +40,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     set ${w}(xorigin) 0
     set ${w}(width) $wid
     set ${w}(pwidth) $wid; # 1st guess
-    set ${w}(height) $hei
+    set ${w}(height) 1;    # force resize in plot_redraw
     set ${w}(border) 500
     set ${w}(x1)    0
     set ${w}(x2)    100
@@ -1075,7 +1075,10 @@ proc seq_ruler {w t x1 x2 y1 y2} {
 	set ${t}(Init) 1
     }
 
-			
+    # Redraw everything even if x1..x2 are a subsection.
+    set x1 [set ${w}(x1)]
+    set x2 [set ${w}(x2)]
+
     set wx1 [x2c $w $x1]
     set wx2 [x2c $w $x2]
 
