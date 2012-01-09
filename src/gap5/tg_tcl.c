@@ -1513,6 +1513,12 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	seq_t *s;
 	sequence_get_position2(ts->io, rec, &cnum, &pos, NULL, &dir, NULL,
 			       &r, &s);
+	if (!s) {
+	    Tcl_SetResult(interp, "Unable to find sequence position.",
+			  TCL_STATIC);
+	    return TCL_ERROR;
+	}
+
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), (s->len < 0) ^ dir);
 	cache_decr(ts->io, s);
 	break;
@@ -1538,6 +1544,12 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	sequence_get_position2(ts->io, rec, &cnum, &pos, NULL, &dir, NULL,
 			       &r, &s);
+	if (!s) {
+	    Tcl_SetResult(interp, "Unable to find sequence position.",
+			  TCL_STATIC);
+	    return TCL_ERROR;
+	}
+
 	if (s->parent_type == GT_Library)
 	    get_library_stats(ts->io, s->parent_rec,
 			      NULL, NULL, &lib_type, NULL);
