@@ -236,10 +236,10 @@ void tman_reposition_traces(edview *xx, int pos, int mini_trace) {
  */
 void tman_unhighlight(tman_dc *edc) {
     edview *xx = edc->xx;
-/*
+
     if (!xx || xx->editorState == StateDown)
 	return;
-*/
+
 //    DBsetFlags(xx, edc->seq, DB_Flags(xx, edc->seq) & ~DB_FLAG_TRACE_SHOWN);
 
     edc->dc = NULL;

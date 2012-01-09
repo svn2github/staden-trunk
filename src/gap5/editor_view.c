@@ -156,6 +156,16 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
  * Deallocates an edview
  */
 void edview_destroy(edview *xx) {
+    xx->editorState = StateDown;
+    if (xx->link) {
+	xx->link->xx[0]->editorState = StateDown;
+	xx->link->xx[1]->editorState = StateDown;
+
+	xx->link->xx[xx == xx->link->xx[0]]->link = NULL;
+	free(xx->link);
+	xx->link = NULL;
+    }
+
     if (xx->cursor)
 	delete_contig_cursor(xx->io->base, xx->cnum, xx->cursor->id, 1);
 

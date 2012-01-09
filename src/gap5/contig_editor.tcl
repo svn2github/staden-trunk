@@ -1049,6 +1049,13 @@ proc editor_join {w} {
 	}
 	set ed [lindex $opt(all_editors) 0]
 
+	# Force trace shutdown first as these get updated during join,
+	# accessing now freed memory.
+	global gap5_defs
+	catch {destroy $opt(editor1)[keylget gap5_defs TRACE_DISPLAY.WIN]}
+	catch {destroy $opt(editor2)[keylget gap5_defs TRACE_DISPLAY.WIN]}
+	update idletasks
+
 	$ed join
     }
 
