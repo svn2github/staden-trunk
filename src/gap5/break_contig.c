@@ -1370,6 +1370,8 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 
     if (!(cr = contig_new(io, cname))) {
 	cache_decr(io, cl);
+	verror(ERR_WARN, "break_contig",
+	       "Failed to create a new contig with name %s", cname);
 	return -1;
     }
     cl = cache_rw(io, cl);
@@ -1476,6 +1478,9 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 	    cache_decr(io, cl);
 	    cache_decr(io, cr);
 
+	    verror(ERR_WARN, "break_contig",
+		   "Failue in remove_contig_holes(io, cr->rec, %d, %d, 0)",
+		   st, en);
 	    return -1;
 	}
     }
