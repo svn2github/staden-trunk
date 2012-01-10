@@ -1130,8 +1130,14 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 	if (rnums[i] == -1) {
 	    continue;
 	}
-	if (unlink_read(io, rnums[i], &pos[i], move == 0))
-	    return -1;
+	if (unlink_read(io, rnums[i], &pos[i], move == 0)) {
+	    verror(ERR_WARN, "disassemble_readings",
+		   "Failed to unlink seq #%"PRIrec, rnums[i]);
+	    //return -1;
+	    rnums[i] = -1;
+	    pos[i].contig = 0;
+	    continue;
+	}
 
 	pos[i].rec = rnums[i];
     }
