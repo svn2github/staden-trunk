@@ -82,7 +82,7 @@ int edview_search_uposition(edview *xx, int dir, int strand, char *value) {
     return 0;
 }
 
-int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
+int edview_search_consensus(edview *xx, int dir, int strand, char *value) {
     int mismatches = 0; /* exact match */
     int where = 2;      /* consensus */
     char *p;
@@ -217,6 +217,162 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 
     free(uppert);
     free(upperb);
+
+    return found ? 0 : -1;
+}
+
+int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
+    int mismatches = 0; /* exact match */
+    int where = 2;      /* consensus */
+    char *p;
+    int start, end;
+    int patlen;
+    char *uppert, *upperb;
+    int found = 0, at_end = 0;
+    tg_rec fseq;
+    int fpos, i, j;
+    contig_t *c;
+    contig_iterator *iter;
+    rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
+    rangec_t *r;
+    int best_pos;
+
+    if (dir) {
+	start = xx->cursor_apos + 1;
+	end = CITER_CEND;
+	iter = contig_iter_new(xx->io, xx->cnum, 1,
+			       CITER_FIRST | CITER_ISTART,
+			       start, end);
+	ifunc = contig_iter_next;
+	best_pos = INT_MAX;
+    } else {
+	start = CITER_CSTART;
+	end = xx->cursor_apos -1;
+	iter = contig_iter_new(xx->io, xx->cnum, 1,
+			       CITER_LAST | CITER_IEND,
+			       start, end);
+	ifunc = contig_iter_prev;
+	best_pos = INT_MIN;
+    }
+
+    if (!iter)
+	return -1;
+
+
+    /*
+     * Parse value search string. It optionally includes two extra params
+     * separated by #. Ie:
+     *     <string>#<N.mismatches>#<where>.
+     * <where> is 1 for readings, 2 for consensus, 3 for both.
+     */
+    if (p = strchr(value, '#')) {
+	mismatches = atoi(p+1);
+	*p = 0;
+	if (p = strchr(p+1, '#'))
+	    where = atoi(p+1);
+    }
+
+
+    /* uppercase search string, remove pads, and store fwd/rev copies */
+    patlen = strlen(value);
+    depad_seq(value, &patlen, NULL);
+    if (NULL == (uppert = (char *)xmalloc(patlen + 1)))
+	return 0;
+    if (NULL == (upperb = (char *)xmalloc(patlen + 1)))
+	return 0;
+
+    uppert[patlen] = upperb[patlen] = 0;
+    for (i = patlen-1; i >= 0; i--) {
+	upperb[i] = uppert[i] = toupper(value[i]);
+    }
+    complement_seq(upperb, patlen);
+
+    while ((r = ifunc(xx->io, iter))) {
+	seq_t *s, *sorig;
+	char *ind, *indt = NULL, *indb = NULL, *seq;
+	int seq_len, comp;
+
+	if (found && dir  && r->start > best_pos)
+	    break;
+	if (found && !dir && r->end < best_pos)
+	    break;
+
+	if (NULL == (s = sorig = cache_search(xx->io, GT_Seq, r->rec)))
+	    break;
+
+	if (r->comp ^ (s->len < 0)) {
+	    s = dup_seq(s);
+	    complement_seq_t(s);
+	}
+
+	seq = s->seq;
+	seq_len = ABS(s->len);
+
+	if (r->start < start) {
+	    seq     += start - r->start;
+	    seq_len -= start - r->start;
+	}
+	if (r->end > end)
+	    seq_len -= r->end - end;
+
+	if (dir) {
+	    if (strand == '+' || strand == '=')
+		indt = pstrnstr_inexact(seq, seq_len, uppert, patlen,
+					mismatches, NULL);
+	    if (strand == '-' || strand == '=')
+		indb = pstrnstr_inexact(seq, seq_len, upperb, patlen,
+					mismatches, NULL);
+	} else {
+	    if (strand == '+' || strand == '=')
+		indt = prstrnstr_inexact(seq, seq_len, uppert, patlen,
+					 mismatches, NULL);
+	    if (strand == '-' || strand == '=')
+		indb = prstrnstr_inexact(seq, seq_len, upperb, patlen,
+					 mismatches, NULL);
+	}
+
+	if (indt && indb)
+	    ind = MIN(indt, indb);
+	else if (indt)
+	    ind = indt;
+	else if (indb)
+	    ind = indb;
+	else
+	    ind = NULL;
+
+	if (ind) {
+	    int pos =  r->start + ind - seq;
+	    if (dir) {
+		if (best_pos > pos) {
+		    found = 1;
+		    best_pos = pos;
+		    fpos = ind - s->seq;
+		    fseq = r->rec;
+		}
+	    } else {
+		if (best_pos < pos) {
+		    found = 1;
+		    best_pos = pos;
+		    fpos = ind - s->seq;
+		    fseq = r->rec;
+		}
+	    }
+	    //printf("Matches #%"PRIrec": at abs pos %d\n", r->rec, pos);
+	}
+
+	if (s != sorig)
+	    free(s);
+    }
+
+    if (found) {
+	edSetCursorPos(xx, fseq == xx->cnum ? GT_Contig : GT_Seq,
+		       fseq, fpos, 1);
+    }
+
+    free(uppert);
+    free(upperb);
+
+    contig_iter_del(iter);
 
     return found ? 0 : -1;
 }
@@ -809,6 +965,7 @@ int edview_search(edview *xx, int dir, int strand,
     } types[] = {
 	{"position",     edview_search_position},
 	{"uposition",    edview_search_uposition},
+	{"consensus",    edview_search_consensus},
 	{"sequence",     edview_search_sequence},
 	{"consquality",  edview_search_consquality},
 	{"depth_lt",     edview_search_depth_lt},

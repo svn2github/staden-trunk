@@ -105,6 +105,69 @@ char *pstrnstr_inexact(char *text, size_t text_len,
     return NULL;
 }
 
+/*
+ * An inexact implementation of prstrnstr.
+ * It will find the last match allowing at most 'n' mismatches.
+ *
+ * Arguments:
+ *	text		The text to search through
+ *	text_len	Length of text
+ *	query		The query sequence to find within 'text'
+ *	query_len	Length of query
+ *	mismatches	Number of allowable mismatches
+ *
+ * Returns:
+ *	A pointer to the first match in text when found.
+ *	NULL when a match is not found.
+ */
+char *prstrnstr_inexact(char *text, size_t text_len,
+			char *query, size_t query_len,
+			int mismatches, int *n_mis) {
+    unsigned int t_ind = 0, q_ind;
+    int m;
+    char *match = NULL;
+    char match_mis = 0;
+
+    if (n_mis)
+	*n_mis = 0;
+
+    /*
+     * Simplest implementation.
+     * Not an efficient search, but easy to understand.
+     */
+    do {
+	unsigned int t_ind2;
+	m = 0;
+	for (t_ind2 = t_ind, q_ind = 0;
+	     q_ind < query_len && t_ind2 < text_len;) {
+	    if (text[t_ind2] == '*')
+		t_ind2++;
+	    else {
+		if (text[t_ind2] != query[q_ind]) {
+		    if (m++ >= mismatches)
+			break;
+		}
+		t_ind2++;
+		q_ind++;
+	    }
+	}
+    
+	if (q_ind == query_len) {
+	    match_mis = m;
+	    if (n_mis)
+		*n_mis = m;
+	    match = &text[t_ind];
+	}
+
+	t_ind++;
+    } while (t_ind < text_len);
+
+    if (n_mis)
+	*n_mis = match_mis;
+
+    return match;
+}
+
 
 /*
  * An implementation of strstr that skips pads.

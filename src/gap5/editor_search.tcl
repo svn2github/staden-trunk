@@ -16,6 +16,7 @@ set search_setup(problem)		"0 0 0 0"
 set search_setup(annotation)		"0 0 0 0 string"
 #set search_setup(sequence)		"0 1 0 1 sequence {num. mismatches}"
 set search_setup(sequence)		"0 1 0 0 sequence {num. mismatches}"
+set search_setup(consensus)		"0 1 0 0 consensus {num. mismatches}"
 set search_setup(quality)		"0 0 0 0"
 set search_setup(consquality)		"0 0 0 0 value"
 set search_setup(depth_lt)		"0 0 0 0 value"
@@ -134,6 +135,7 @@ proc create_search_win {w com {dir 0} {raise 1}} {
 	{l {padded position}         position}
 #	{l problem                   problem}
 	{l sequence                  sequence}
+	{l consensus                 consensus}
 #	{l quality                   quality}
 	{l {consensus quality}       consquality}
 	{l {from file}               file}
@@ -348,7 +350,7 @@ proc do_search {w com args} {
 	    || $type == "conshet"
             || $type == "consdiscrep"} {
         set r [eval $com $dir $strand $type [list $value1]]
-    } elseif {$type == "sequence"} {
+    } elseif {$type == "sequence" || $type == "consensus"} {
 	set r [eval $com $dir $strand $type [list $value1#$value2#$where]]
     } elseif {$type == "tag"} {
         set r [eval $com $dir $strand $type $tag]
