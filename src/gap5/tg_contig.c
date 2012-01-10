@@ -1418,6 +1418,10 @@ contig_t *contig_new(GapIO *io, char *name) {
     io->db = cache_rw(io, io->db);
     ARR(tg_rec, io->contig_order, io->db->Ncontigs++) = rec;
 
+    /* Add to the new contigs list */
+    if (name)
+	add_to_list("new_contigs", name);
+
     return c;
 }
 
