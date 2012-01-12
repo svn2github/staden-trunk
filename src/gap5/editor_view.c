@@ -161,6 +161,7 @@ void edview_destroy(edview *xx) {
 	xx->link->xx[0]->editorState = StateDown;
 	xx->link->xx[1]->editorState = StateDown;
 
+	/* Set other_xx->link = NULL */
 	xx->link->xx[xx == xx->link->xx[0]]->link = NULL;
 	free(xx->link);
 	xx->link = NULL;
