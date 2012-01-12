@@ -209,9 +209,9 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
  * Checks a anno_ele struct is consistent, both internally and with the
  * range that points to it.
  */
-static int check_anno(GapIO *io, bin_index_t *bin, range_t *r,
+static int check_anno(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 		      HacheTable *rec_hash, int db_vers,
-		      int valid_ctg_start, int valid_ctg_end) {
+		      int valid_ctg_start, int valid_ctg_end, int *fixed) {
     int err = 0;
     anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
 
@@ -284,11 +284,12 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r,
      */
     {
 	int astart, aend, ostart, oend;
-	tg_rec acontig, ocontig;
+	tg_rec acontig, ocontig, abinrec, obinrec;
+	range_t r;
 
 	if (-1 == bin_get_item_position(io, GT_AnnoEle, a->rec,
 					&acontig, &astart, &aend, NULL,
-					NULL, NULL, NULL)) {
+					&abinrec, &r, NULL)) {
 	    cache_decr(io, a);
 	    return err+1;
 	}
@@ -306,7 +307,7 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r,
 	} else {
 	    if (-1 == bin_get_item_position(io, a->obj_type, a->obj_rec,
 					    &ocontig, &ostart, &oend, NULL,
-					    NULL, NULL, NULL)) {
+					    &obinrec, NULL, NULL)) {
 		cache_decr(io, a);
 		return err+1;
 	    }
@@ -319,6 +320,32 @@ static int check_anno(GapIO *io, bin_index_t *bin, range_t *r,
 	    vmessage("\tObj Ctg %"PRIrec" at %d..%d\n", ocontig, ostart, oend);
 	    
 	    err++;
+
+	    if (fix && !io->base) {
+		bin_index_t *abin;
+		contig_t *ca, *co;
+
+		r.start = ostart;
+		r.end = oend;
+
+		abin = cache_search(io, GT_Bin,    abinrec);
+		if (abin) cache_incr(io, abin);
+		ca   = cache_search(io, GT_Contig, acontig);
+		if (ca) cache_incr(io, ca);
+		co   = cache_search(io, GT_Contig, ocontig);
+		if (co) cache_incr(io, co);
+
+		if (abin && ca && co) {
+		    bin_remove_item_from_bin(io, &ca, &abin,
+					     GT_AnnoEle, a->rec);
+		    bin_add_to_range(io, &co, obinrec, &r, NULL, NULL, 0);
+		    if (fixed) (*fixed)++;
+		}
+
+		if (abin) cache_decr(io, abin);
+		if (ca)   cache_decr(io, ca);
+		if (co)   cache_decr(io, co);
+	    }
 	}
     }
 
@@ -790,8 +817,8 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
 	    case GRANGE_FLAG_ISANNO:
 		bs->nanno++;
 		if (level > 1)
-		    err += check_anno(io, bin, r, rec_hash, db_vers,
-				      valid_ctg_start, valid_ctg_end);
+		    err += check_anno(io, fix, bin, r, rec_hash, db_vers,
+				      valid_ctg_start, valid_ctg_end, fixed);
 		break;
 
 	    case GRANGE_FLAG_ISREFPOS:
