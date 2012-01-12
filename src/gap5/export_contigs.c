@@ -1172,6 +1172,15 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	    dstring_append(ds, "|");
 	}
 	    
+	if (ti->r.start < fi->r.start)
+	    ti->r.start = fi->r.start;
+	if (ti->r.start > fi->r.end)
+	    ti->r.start = fi->r.end;
+	if (ti->r.end < fi->r.start)
+	    ti->r.end = fi->r.start;
+	if (ti->r.end > fi->r.end)
+	    ti->r.end = fi->r.end;
+
 	if ((s->len >= 0) ^ fi->r.comp) {
 	    st = ti->r.start - (fi->r.start-1);
 	    en = ti->r.end - (fi->r.start-1);

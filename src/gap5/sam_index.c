@@ -1700,6 +1700,11 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	    //printf("Tag %d..%d dir %c type=%.*s text=%.*s\n",
 	    //	   start, end, dir, type_len, type, text_len, text);
 
+	    if (start < 1)
+		start = 1;
+	    if (end > bs->seq_len)
+		end = bs->seq_len;
+
 	    start = bs->pad[start-1]+1;
 	    end   = bs->pad[end-1]+1;
 
