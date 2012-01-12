@@ -27,7 +27,6 @@ static Tcl_Obj*    defs_name;
 
 Tcl_Interp* GetInterp( void )
 {
-    assert(our_interp);
     return our_interp;
 }
 
