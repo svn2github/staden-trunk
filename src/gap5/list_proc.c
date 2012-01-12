@@ -75,6 +75,9 @@ void add_to_list(char *name, char *item) {
     static char last_list[100];
     static int created = 0;
 
+    if (!GetInterp())
+	return;
+
     /*
      * Check and create the list, only check if we have really to.
      */
