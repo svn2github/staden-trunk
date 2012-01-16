@@ -87,7 +87,7 @@ proc ExportSequences2 {io f} {
 	set rreg [contig_id_rreg $f.id]
 	set list [list [list $gel_name $lreg $rreg]]
     } elseif {[lorf_in_get $f.infile] == 3} {
-	set list [CreateAllContigList $io]
+	set list [CreateAllContigList=Numbers $io]
     } else {
 	set list [lorf_get_list $f.infile]
     }

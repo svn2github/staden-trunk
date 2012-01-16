@@ -901,7 +901,7 @@ proc CopyListDialog {} {
 #############################################################################
 # Some specific list creation functions
 
-#list of left reading names of all contigs
+#list of record numbers of all contigs
 proc CreateAllContigListNumbers { io } {
     global gap5_defs
 
@@ -914,7 +914,20 @@ proc CreateAllContigListNumbers { io } {
     return $clist
 }
 
-#list of left reading names of all contigs
+#list of record numbers in "=num" syntax of all contigs
+proc CreateAllContigList=Numbers { io } {
+    global gap5_defs
+
+    set clist ""
+    set num_contigs [$io num_contigs]
+    for {set i 0} {$i < $num_contigs} {incr i} {
+	set order [contig_order_to_number -io $io -order $i]
+	lappend clist =$order
+    }
+    return $clist
+}
+
+#list of names of all contigs
 proc CreateAllContigList { io } {
     global gap5_defs
 

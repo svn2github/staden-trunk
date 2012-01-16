@@ -490,6 +490,9 @@ static int lget_contig_num_base(GapIO *io,
 	HashData hd;
 	int new;
 
+	if ((*rargv)[j].contig == 0)
+	    continue;
+
 	hd.i = 1;
 	HashTableAdd(h, (char *)&(*rargv)[j].contig, sizeof(tg_rec),
 		     hd, &new);
