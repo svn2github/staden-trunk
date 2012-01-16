@@ -199,6 +199,12 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
 		int no_ins;
 
+		if (!s) {
+		    verror(ERR_WARN, "conitg_insert_base2",
+			   "failed to load seq #%"PRIrec, r->rec);
+		    continue;
+		}
+
 		if (ABS(r->end - r->start) + 1 != ABS(s->len)) {
 		    verror(ERR_WARN, "contig_insert_base2", 
 			   "Range start/end are inconsistent with seq len. ");

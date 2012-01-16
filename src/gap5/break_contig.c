@@ -772,6 +772,11 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		continue;
 
 	    s = (seq_t *)cache_search(io, GT_Seq, r->rec);
+	    if (!s) {
+		verror(ERR_WARN, "break_contig", "failed to load seq #%"PRIrec,
+		       r->rec);
+		continue;
+	    }
 	    if ((s->len < 0) ^ complement) {
 		cstart = NMAX(r->start, r->end) - (s->right-1);
 	    } else {
