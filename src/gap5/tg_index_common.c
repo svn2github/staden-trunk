@@ -41,16 +41,19 @@ bttmp_t *bttmp_file_open(void) {
      * it later on.
      */
     if (NULL == tmpnam(tmp->name)) {
+	perror("tmpnam()");
 	free(tmp);
 	return NULL;
     }
     
     if (-1 == (fd = open(tmp->name, O_RDWR|O_CREAT|O_EXCL, 0666))) {
+	perror(tmp->name);
 	free(tmp);
 	return NULL;
     }
 
     if (NULL == (tmp->fp = fdopen(fd, "wb+"))) {
+	perror(tmp->name);
 	free(tmp);
 	return NULL;
     }
@@ -106,6 +109,11 @@ void bttmp_file_sort(bttmp_t *tmp) {
 char *bttmp_file_get(bttmp_t *tmp, tg_rec *rec) {
     static char line[8192];
     int64_t recno;
+
+    if (!tmp->fp) {
+	*rec = 1;
+	return NULL;
+    }
 
     if (fscanf(tmp->fp, "%s %"PRId64"\n", line, &recno) == 2) {
 	*rec = recno;
