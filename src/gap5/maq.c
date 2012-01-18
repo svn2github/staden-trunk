@@ -42,6 +42,7 @@ static int parse_maqmap_aux(tg_args *a,
 	s->name = (char *)malloc(s->name_len + 3 + 2*m->size);
 	strcpy(s->name, n);
     }
+    s->template_name_len = 0;
     s->trace_name = s->name + s->name_len + 1;
     *s->trace_name = 0;
     s->trace_name_len = 0;

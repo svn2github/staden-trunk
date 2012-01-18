@@ -4205,6 +4205,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
 	    if (tname_lens)
 		cp += u72int(cp, (uint32_t *)&in[i].template_name_len);
+		
 	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
 		if (!in[j].bin) continue;
 		if ((in[j].parent_rec && in[j].parent_rec != in[i].parent_rec)
@@ -4229,9 +4230,13 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	}
     }
 
-    if (!tname_lens) {
-	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
-	    if (!in[i].bin) continue;
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	if (tname_lens) {
+	    if (in[i].template_name_len < 0 ||
+		in[i].template_name_len > in[i].name_len)
+		in[i].template_name_len = 0;
+	} else {
 	    in[i].template_name_len = in[i].name_len;
 	}
     }

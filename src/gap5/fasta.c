@@ -385,6 +385,7 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 	seq.left     = 1;
 	seq.right    = ent->seq_len;
 
+	seq.template_name_len = 0;
 	seq.name_len = strlen(ent->name);
 	seq.name     = strdup(ent->name);
 
