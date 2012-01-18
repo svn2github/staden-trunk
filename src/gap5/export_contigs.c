@@ -1246,6 +1246,11 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     int npads = 0, pad_to;
     int expanded_start, expanded_end;
 
+    c = (contig_t *)cache_search(io, GT_Contig, crec);
+    if (!c)
+	return -1;
+    cache_incr(io, c);
+
     iterator_expand_range(io, crec, start, end,
 			  &expanded_start, &expanded_end);
 
@@ -1253,8 +1258,6 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 				 expanded_start, expanded_end,
 				 GRANGE_FLAG_ISANY);
 
-    c = (contig_t *)cache_search(io, GT_Contig, crec);
-    cache_incr(io, c);
     pad_to = c->start;
 
     if (depad) {
