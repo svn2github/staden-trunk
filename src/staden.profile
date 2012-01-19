@@ -23,7 +23,10 @@ else
     STADLIB=$STADENROOT/lib/staden;               export STADLIB
     STADTABL=$STADENROOT/share/staden/etc;        export STADTABL
     STADTCL=$STADENROOT/share/staden/tcl;         export STADTCL
-    GTAGDB=GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB;  export GTAGDB
+    if [ "$GTAGDB" = "" ]
+    then
+        GTAGDB=GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB;  export GTAGDB
+    fi
     
     # Set up PATHS
     [ x"$STADEN_PREPEND" != "x" ] \
