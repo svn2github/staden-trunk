@@ -49,13 +49,15 @@ int edview_search_position(edview *xx, int dir, int strand, char *value) {
 	    rec = contig_name_to_number(xx->io, cp+1);
 	    if (rec) {
 		type = GT_Contig;
+		if (rec != xx->cnum)
+		    return -1;
 	    } else {
 		rec = get_gel_num(xx->io, cp+1, 0);
 		type = GT_Seq;
-	    }
 
-	    if (rec != xx->cursor_rec)
-		return -1;
+		if (rec != xx->cursor_rec)
+		    return -1;
+	    }
 
 	    edSetCursorPos(xx, type, rec, pos, 1);
 	} else {
