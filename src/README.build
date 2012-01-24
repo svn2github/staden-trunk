@@ -208,6 +208,14 @@ where PREFIX is the --prefix value used in autoconf.
 (Alternatively SElinux can be made less picky by running
  "/usr/sbin/setenforce 0")
 
+Note that if you are running a 64-bit system and have 32-bit
+compatibility libraries installed then RedHat systems will try to
+tempt configure scripts to use old 32-bit libraries in preference.
+
+To solve this you can manually override the search paths. Eg:
+
+../configure --with-tcl=/usr/lib64 --with-tk=/usr/lib64
+
 
 Linux / Centos
 --------------
@@ -218,6 +226,9 @@ yum install zlib-devel
 
 Other packages as listed in Fedora, but appeared to be installed as
 part of the base OS.
+
+Note the comment under Fedora for building on 64-bit systems with
+32-bit libraries.
 
 
 Microsoft Windows
