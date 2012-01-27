@@ -643,7 +643,7 @@ char *btree_check(btree_t *t, btree_node_t *n, char *pleaf) {
     btree_inc_ref(t->cd, n);
     for (i = 0; i < n->used; i++) {
 	assert(n->keys[i]);
-	assert(strcmp(n->keys[i], prev) > 0);
+	assert(strcmp(n->keys[i], prev) >= 0);
 	prev = n->keys[i];
 	if (n->leaf) {
 	    //assert(n->chld[i] == 0);
@@ -651,7 +651,7 @@ char *btree_check(btree_t *t, btree_node_t *n, char *pleaf) {
 
 	    if (n->next && i == n->used-1)
 		assert(strcmp(n->keys[i],
-			      btree_node_get(t->cd, n->next)->keys[0]) < 0);
+			      btree_node_get(t->cd, n->next)->keys[0]) <= 0);
 	} else {
 	    btree_node_t *c = btree_node_get(t->cd, n->chld[i]);
 	    assert(c);
@@ -663,6 +663,21 @@ char *btree_check(btree_t *t, btree_node_t *n, char *pleaf) {
     btree_dec_ref(t->cd, n);
 
     return str;
+}
+
+/* Recursively counts the number of nodes in a tree */
+int btree_count(btree_t *t, btree_node_t *n) {
+    int i, cnt = 0;
+
+    for (i = 0; i < n->used; i++) {
+	if (n->leaf) {
+	    cnt++;
+	} else {
+	    cnt += btree_count(t, btree_node_get(t->cd, n->chld[i]));
+	}
+    }
+
+    return cnt;
 }
 
 #define FRONT_COMPRESSION
@@ -716,7 +731,7 @@ void btree_list(btree_t *t, char *prefix) {
     size_t l = strlen(prefix);
 
     n = btree_find_recurse(t, prefix, &ind);
-    for (i = ind; n;) {
+    for (i = ind; n && i < n->used;) {
 	if (0 != strncmp(prefix, n->keys[i], l))
 	    break;
 
@@ -1127,7 +1142,7 @@ int main(int argc, char **argv) {
     btree_t *tree = btree_new(NULL, 0);
     FILE *fp = argc == 1 ? stdin : fopen(argv[1], "r");
     int nlines = 0;
-    int i;
+    int i, cnt;
 
     while (fgets(line, 1024, fp)) {
 	char *cp;
@@ -1150,32 +1165,40 @@ int main(int argc, char **argv) {
 
     if (argc >= 3)
 	srandom(atoi(argv[2]));
-#if 1
-    for (i = 0; i < 1000000; i++) {
+
+    cnt = btree_count(tree, tree->root);
+    printf("Entered %d lines, in tree = %d\n", nlines, cnt);
+
+    for (i = 0; i < 100000000; i++) {
 	int n = random() % nlines;
 	if (random()&1) {
 	    //fprintf(stdout, "Insert %s %d\n", lines[n], n);
-	    btree_insert(tree, lines[n], n);
+	    if (lines[n][0] & 0x80) {
+		lines[n][0] &= 0x80;
+		btree_insert(tree, lines[n], n);
+		cnt++;
+	    }
 	} else {
-	    //fprintf(stdout, "Delete %s\n", lines[n]);
-	    btree_delete(tree, lines[n]);
+	    if (!(lines[n][0] & 0x80)) {
+		btree_delete(tree, lines[n]);
+		lines[n][0] |= 0x80;
+		cnt--;
+	    }
 	}
-
-	//btree_print(tree, tree->root, 0);
 
 	if ((i % 10000) == 0) {
 	    putchar('.');
 	    fflush(stdout);
 	    btree_check(tree, tree->root, "");
+	    assert(cnt == btree_count(tree, tree->root));
 	}
 	//btree_check(tree, tree->root, "");
     }
     puts("");
-#endif
 
     btree_check(tree, tree->root, "");
-    btree_print(tree, tree->root, 2);
-    btree_list(tree, "yt");
+    //btree_print(tree, tree->root, 2);
+    //btree_list(tree, "yt");
 
     //fprintf(stderr, "btree size = %d\n", btree_size(tree->root));
 
