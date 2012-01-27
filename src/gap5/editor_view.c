@@ -2791,6 +2791,9 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
     char nline[MAX_NAME_WIDTH];
     //    int exact = (name && xx->ed->stack_mode) || !name;
 
+    if (!xx->r)
+	return -1;
+
     if (rec) *rec = -1;
     if (pos) *pos =  0;
 
