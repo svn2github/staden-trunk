@@ -2019,6 +2019,78 @@ tcl_check_assembly(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+typedef struct {
+    char *seq1;
+    char *seq2;
+    int band;
+    int g_open;
+    int g_extend;
+} align_seqs_args;
+
+int
+tcl_align_seqs(ClientData clientData, Tcl_Interp *interp,
+	       int objc, Tcl_Obj *CONST objv[]) {
+    align_seqs_args args;
+    cli_args a[] = {
+	{"-seq1",      ARG_STR, 1, NULL, offsetof(align_seqs_args, seq1)},
+	{"-seq2",      ARG_STR, 1, NULL, offsetof(align_seqs_args, seq2)},
+	{"-band",      ARG_INT, 1, "10", offsetof(align_seqs_args, band)},
+	{"-gap_open",  ARG_INT, 1, "-1", offsetof(align_seqs_args, g_open)},
+	{"-gap_extend",ARG_INT, 1, "-1", offsetof(align_seqs_args, g_extend)},
+	{NULL,	     0,	      0, NULL, 0}
+    };
+    Tcl_Obj *res, *s;
+
+    ALIGN_PARAMS *params = NULL;
+    OVERLAP *overlap = NULL;
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    if (args.g_open == -1)
+	args.g_open = gopenval;
+    if (args.g_extend == -1)
+	args.g_extend = gextendval;
+
+    overlap = create_overlap();
+    init_overlap(overlap,
+		 args.seq1, args.seq2,
+		 strlen(args.seq1), strlen(args.seq2));
+
+    params = create_align_params();
+    set_align_params(params,
+		     args.band,        // band
+		     args.g_open,      // gap_open
+		     args.g_extend,    // gap_extend
+		     EDGE_GAPS_COUNT,  // edge_mode
+		     RETURN_SEQ|RETURN_NEW_PADS, // job
+		     0,                // seq1_start
+		     0,                // seq2_start
+		     '.',              // new_pad_sym
+		     '*',              // old_pad_sym
+		     0);               // set_job
+    
+    affine_align(overlap, params);
+    destroy_alignment_params (params);
+
+    //print_overlap(overlap, stdout);
+
+    if (NULL == (res = Tcl_NewListObj(0, NULL)))
+	return TCL_ERROR;
+    Tcl_IncrRefCount(res);
+    s = Tcl_NewStringObj(overlap->seq1_out, overlap->seq_out_len);
+    Tcl_ListObjAppendElement(interp, res, s);
+    s = Tcl_NewStringObj(overlap->seq2_out, overlap->seq_out_len);
+    Tcl_ListObjAppendElement(interp, res, s);
+    Tcl_SetObjResult(interp, res);
+    Tcl_DecrRefCount(res);
+
+    if (overlap)
+	destroy_overlap(overlap);
+
+    return TCL_OK;
+}
+
 
 #ifdef VALGRIND
 tcl_leak_check(ClientData clientData,
@@ -2330,6 +2402,10 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "iter_test",
 			 tcl_iter_test,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "align_seqs",
+			 tcl_align_seqs,
 			 (ClientData) NULL, NULL);
 			 
     

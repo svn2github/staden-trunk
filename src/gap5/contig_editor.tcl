@@ -2500,6 +2500,222 @@ proc editor_set_name2 {ed w} {
 }
 
 #-----------------------------------------------------------------------------
+# Align cutoff data
+
+# Exists as "string reverse" in tcl 8.5
+proc string_reverse {str} {
+    set rstr ""
+    for {set i [expr {[string length $str]-1}]} {$i >=0} {incr i -1} {
+	append rstr [string index $str $i]
+    }
+    return $rstr
+}
+
+proc editor_align_cutoff {ed} {
+    global gap5_defs
+
+    set io [$ed io]
+
+    if {[$io read_only]} {
+	bell
+	return
+    }
+
+    # Fetch start/end relative to sequence start
+    foreach {type rec start end} [$ed select get] break
+    if {$type != 18} {
+	# Only work on sequences
+	bell
+	return
+    }
+
+    if {$end < $start} {
+	set tmp $end
+	set end $start
+	set start $tmp
+    }
+
+    # Get absolute position in consensus
+    set s [$io get_sequence $rec]
+    set pos [$s get_position]
+    $s delete
+    set cstart [expr {$start+$pos}]
+    set cend   [expr {$end  +$pos}]
+    set cons [calc_consensus \
+		  -io $io \
+		  -contigs [list [list =[$ed contig_rec] $cstart $cend]]]
+    
+    #puts "Sequence selected = '$seq', pos=$start..$end"
+    #puts "Cons =              '$cons', pos=$cstart..$cend"
+
+    # Get sequence, in contig orientation, with clip points
+    set s [$io get_sequence $rec]
+    set seq [$s get_seq]
+    foreach {sleft sright} [$s get_clips] break
+    if {[$s get_orient] != 0} {
+	set orient 1
+	set seq [string map -nocase {A T C G G C T A} [string_reverse $seq]]
+	set oleft  [expr {abs([$s get_length])-$sright+1}]
+	set oright [expr {abs([$s get_length])-$sleft+1}]
+    } else {
+	# Contig orient left/right
+	set orient 0
+	set oleft  $sleft
+	set oright $sright
+    }
+
+    incr oleft -1
+    incr oright -1
+    #puts "$start..$end vs $oleft..$oright (DIR $sleft,$sright)"
+
+    # Undo stack
+    foreach {_type _rec _pos} [$ed get_cursor relative] break
+    set undo {}
+    lappend undo [list C_SET $_type $_rec $_pos]
+    lappend undo [list B_CUT $rec $sleft $sright]
+
+    # Extend read to include the new underlined region.
+    # Somewhat fiddly due to the way complemented reads work.
+    if {$start < $oleft && $end > $oright} {
+	# extended both
+	set lmode 1
+	set rmode 1
+	if {$orient} {
+	    set sleft [expr {abs([$s get_length])-$end}]
+	    set sright [expr {abs([$s get_length])-$start}]
+	} else {
+	    set sleft [expr {$start+1}]
+	    set sright [expr {$end+1}]
+	}
+	#puts "new clips $start..$end, $sleft..$sright"
+	$s set_clips $sleft $sright
+    } elseif {$start < $oleft} {
+	# extended left
+	set lmode 1
+	set rmode 0
+	if {$orient} {
+	    set sright [expr {abs([$s get_length])-$start}]
+	} else {
+	    set sleft [expr {$start+1}]
+	}
+	#puts "new clips $start..$oright, $sleft..$sright"
+	$s set_clips $sleft $sright
+    } elseif {$end > $oright} {
+	# extended right
+	set lmode 0
+	set rmode 1
+	if {$orient} {
+	    set sleft [expr {abs([$s get_length])-$end}]
+	} else {
+	    set sright [expr {$end+1}]
+	}
+	#puts "new clips $oleft..$end, $sleft..$sright"
+	$s set_clips $sleft $sright
+    } else {
+	# Internal alignment
+	set lmode 0
+	set rmode 0
+	#puts "no new clips"
+    }
+    $s delete
+
+    #puts "Clipped region=[expr $oleft+[$s get_position]]..[expr $oright+[$s get_position]]"
+    set seq [string range $seq $start $end]
+
+    # Perform alignment
+    foreach {cons_a seq_a} [align_seqs -seq1 $cons -seq2 $seq] break
+    #puts "Orig $cons"
+    #puts "Cons $cons_a"
+    #puts "Seq  $seq_a"
+    #puts "Orig $seq"
+
+    set orig_len  [string length $cons]
+    set align_len [string length $cons_a]
+
+    # Edit alignment.
+    #
+    # Loop: i  = pos in aligned strings.
+    #       rc = relative pos in contig (relative to start of $cons)
+    #       rs = relative pos in sequence
+    #       np = number of additional pads in consensus
+    set c [$io get_contig [$ed contig_rec]]
+    for {set np 0;set i 0; set rc 0; set rs 0} {$i < $align_len} {} {
+	set c1 [string index $cons $rc]
+	set c2 [string index $cons_a $i]
+	set s1 [string index $seq $rs]
+	set s2 [string index $seq_a $i]
+
+	#puts "$i $rc $rs $c1/$c2 $s2/$s1"
+
+	# We can get ins/del to read, and ins (no del) to cons.
+	if {$s1 == $s2} {
+	    incr rs
+	    incr i
+	} elseif {$s2 == "*"} {
+	    # Ins to read
+	    #puts "INS read $rs/[expr {$rs+$start}]"
+	    set s [$io get_sequence $rec]
+	    $s insert_base [expr {$rs+$start}] * -1
+	    $s delete
+
+	    lappend undo [list B_DEL $rec [expr {$rs+$start}]]
+
+	    incr start
+	    incr i
+	} elseif {$s1 == "*"} {
+	    # Del from read
+	    #puts "DEL read $rs/[expr {$rs+$start}]"
+	    set s [$io get_sequence $rec]
+	    $s delete_base [expr {$rs+$start}]
+	    $s delete
+
+	    lappend undo [list B_INS $rec [expr {$rs+$start}] * -1]
+
+	    incr start -1
+	    incr rs
+	    continue
+	} else {
+	    puts "ERROR $s1/$s2"
+	    break
+	}
+
+	if {$c1 == $c2} {
+	    incr rc
+	} elseif {$c2 == "*"} {
+	    # Ins to cons
+	    #puts "INS cons $rc/[expr {$rc+$cstart+$np}]"
+	    $c insert_base [expr {$rc+$cstart+$np}] * -1
+	    set s [$io get_sequence $rec]
+	    $s delete_base [expr {$rs+$start-1}]
+	    $s delete
+
+	    lappend undo [list C_DEL [$ed contig_rec] [expr {$rc+$cstart+$np}] * -1]
+	    lappend undo [list B_INS $rec [expr {$rs+$start-1}] * -1]
+
+	    incr np
+	} else {
+	    puts "ERROR $c1/$c2"
+	    break
+	}
+    }
+
+    $c delete
+
+    $ed clear_visibility_cache
+    $ed redraw
+
+    set i [llength $undo]
+    set rev {}
+    while {[incr i -1] >= 0} {
+	lappend rev [lindex $undo $i]
+    }
+    #puts $undo
+    #puts $rev
+
+    store_undo $ed $rev {}
+}
+
+#-----------------------------------------------------------------------------
 # Break contig
 
 proc editor_break_contig {ed} {

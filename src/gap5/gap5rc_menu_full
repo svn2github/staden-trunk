@@ -235,6 +235,7 @@ add_separator	{Commands.S2}
 add_command	{Commands.Select Reads}		3 2 {editor_select_dialog \[curr_ed $e\] 1}
 add_command	{Commands.Deselect Reads}	3 2 {editor_select_dialog \[curr_ed $e\] 0}
 add_command     {Commands.Find primer-walk}	3 2 {editor_oligo_dialog \[curr_ed $e\]}
+add_command	{Commands.Realign Selection}	3 2 {editor_align_cutoff \[curr_ed $e\]}
 add_separator	{Commands.S4}
 add_command	{Commands.Break Contig}		3 6 {editor_break_contig \[curr_ed $e\]}
 add_command	{Commands.Change Contig Start}	3 6 {editor_set_start \[curr_ed $e\]}
