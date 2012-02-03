@@ -1371,13 +1371,14 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
     rangec_t *r;
     int qalloc = 0;
     char *q = NULL;
+    char *S = NULL;
     char *name;
     int name_len;
     
     while (r = contig_iter_next(io, ci)) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	int len = s->len < 0 ? -s->len : s->len;
-	int i;
+	int i, j;
 
 #ifdef FASTQ_COMPLEMENTED
 	seq_t *origs = s;
@@ -1390,13 +1391,21 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
 	if (len > qalloc) {
 	    qalloc = len;
 	    q = realloc(q, qalloc);
+	    S = realloc(S, qalloc);
 	}
-	for (i = 0; i < len; i++) {
-	    int v = '!' + s->conf[i];
+	for (i = j = 0; i < len; i++) {
+	    int v;
+
+	    if (s->seq[i] == '*') /* Skip pads */
+		continue;
+
+	    v = '!' + s->conf[i];
 	    if (v < '!') v = '!';
 	    if (v > 255) v = 255;
-	    q[i] = v;
+	    q[j] = v;
+	    S[j++] = s->seq[i];
 	}
+	len = j;
 
 	if (s->name_len) {
 	    name_len = s->name_len;
@@ -1407,19 +1416,21 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
 
 #ifdef FASTQ_COMPLEMENTED
 	fprintf(fp, "@%.*s %d\n%.*s\n+\n%.*s\n",
-		name_len, name, s != origs, len, s->seq, len, q);
+		name_len, name, s != origs, len, S, len, q);
 
 	if (s != origs)
 	    free(s);
 #else
 	fprintf(fp, "@%.*s\n%.*s\n+\n%.*s\n",
-		name_len, name, len, s->seq, len, q);
+		name_len, name, len, S, len, q);
 #endif
     }
     contig_iter_del(ci);
 
     if (q)
 	free(q);
+    if (S)
+	free(S);
 
     return 0;
 }
