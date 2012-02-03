@@ -176,4 +176,6 @@ int sequence_get_template_info(GapIO *io, seq_t *s,
 			       tg_rec *library,
 			       int *size);
 
+range_t *sequence_get_range(GapIO *io, seq_t *s);
+
 #endif /* _TG_SEQUENCE_H_ */

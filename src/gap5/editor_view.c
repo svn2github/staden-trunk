@@ -548,21 +548,19 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
 		add_string(status_buf, &j, l1, l2, s->len < 0 ? "<<" : ">>");
 	    break;
 
-	case 'd':
-	    {
-		int strand = sequence_get_len(&s) < 0 ? 1 : 0;
+	case 'd': {
+	    range_t *r = sequence_get_range(xx->io, s);
+	    int end = r
+		? ((r->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD
+		   ? 0 : 1)
+		: 0;
 
-		if (raw)
-		    add_number(status_buf, &j, l1, l2, strand);
-		else {
-		    char *str;
-		    if      (strand == 0) str = "+";
-		    else if (strand == 1) str = "-";
-		    else                  str = "?";
-		    add_string(status_buf, &j, l1, l2, str);
-		}
-	    }
+	    if (raw)
+		add_number(status_buf, &j, l1, l2, end);
+	    else
+		add_string(status_buf, &j, l1, l2, end ? "-" : "+");
 	    break;
+	}
 
 	case 'b':
 	    if (pos >= 0 && pos < ABS(s->len)) {

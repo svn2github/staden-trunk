@@ -805,6 +805,30 @@ tg_rec sequence_get_pair(GapIO *io, seq_t *s) {
 }
 
 /*
+ * Returns the range_t element from the bin holding this sequence.
+ * 
+ * Returns a static range_t pointer on success (valid until next call)
+ *         NULL on failure.
+ */
+range_t *sequence_get_range(GapIO *io, seq_t *s) {
+    bin_index_t *b;
+    static range_t r;
+
+    /* Get range struct for this seq */
+    if (!s->bin)
+	return NULL;
+    if (NULL == (b = (bin_index_t *)cache_search(io, GT_Bin, s->bin)))
+	return NULL;
+    if (!b->rng)
+	return NULL;
+
+    /* Jump over to pair */
+    r = arr(range_t, b->rng, s->bin_index);
+    
+    return &r;
+}
+
+/*
  * Fetches information about a template - the size, status, type, etc.
  * Status is the primary return and all other returned fields passed as
  * arguments may be NULL.
