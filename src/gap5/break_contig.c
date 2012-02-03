@@ -1484,7 +1484,7 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 	    cache_decr(io, cr);
 
 	    verror(ERR_WARN, "break_contig",
-		   "Failue in remove_contig_holes(io, cr->rec, %d, %d, 0)",
+		   "Failure in remove_contig_holes(io, cr->rec, %d, %d, 0)",
 		   st, en);
 	    return -1;
 	}
