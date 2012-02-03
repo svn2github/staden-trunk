@@ -304,6 +304,7 @@ static int check_anno(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	    ocontig = acontig;
 	    ostart  = valid_ctg_start;
 	    oend    = valid_ctg_end;
+	    obinrec = 0;
 	} else {
 	    if (-1 == bin_get_item_position(io, a->obj_type, a->obj_rec,
 					    &ocontig, &ostart, &oend, NULL,
@@ -325,8 +326,8 @@ static int check_anno(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 		bin_index_t *abin;
 		contig_t *ca, *co;
 
-		r.start = ostart;
-		r.end = oend;
+		r.start = MIN(MAX(astart, ostart), oend);
+		r.end   = MAX(MIN(aend,   oend),   ostart);
 
 		abin = cache_search(io, GT_Bin,    abinrec);
 		if (abin) cache_incr(io, abin);
