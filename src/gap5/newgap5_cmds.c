@@ -49,6 +49,7 @@
 #include "tg_index_common.h"
 #include "dis_readings.h"
 #include "shuffle_pads.h"
+#include "contig_extend.h"
 
 #include "sam_index.h"
 #include "bam.h"
@@ -2092,6 +2093,75 @@ tcl_align_seqs(ClientData clientData, Tcl_Interp *interp,
 }
 
 
+typedef struct {
+    GapIO *io;
+    char *inlist;
+    int min_depth;
+    int match_score;
+    int mismatch_score;
+} ce_args;
+int
+tcl_contig_extend(ClientData clientData,
+		  Tcl_Interp *interp,
+		  int objc,
+		  Tcl_Obj *CONST objv[])
+{
+    ce_args args;
+    contig_list_t *contig_array = NULL;
+    int i, j, ncontigs, err = 0;
+    GapIO *io;
+    tg_rec *contigs, last;
+
+    /* Parse arguments */
+    cli_args a[] = {
+	{"-io",	           ARG_IO,  1,NULL, offsetof(ce_args, io)},
+	{"-contigs",       ARG_STR, 1,NULL, offsetof(ce_args, inlist)},
+	{"-min_depth",     ARG_INT, 1,"10", offsetof(ce_args, min_depth)},
+	{"-match_score",   ARG_INT, 1,"1",  offsetof(ce_args, match_score)},
+	{"-mismatch_score",ARG_INT, 1,"-3", offsetof(ce_args, mismatch_score)},
+	{NULL,	           0,	    0,NULL, 0}
+    };
+
+    vfuncheader("Extend Contigs");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    /* Fetch the list of contig records */
+    io = args.io;
+    active_list_contigs(io, args.inlist, &ncontigs, &contig_array);
+    if (ncontigs == 0) {
+	if (contig_array)
+	    xfree(contig_array);
+	return TCL_OK;
+    }
+
+    if (NULL == (contigs = (tg_rec *)xmalloc(ncontigs * sizeof(*contigs))))
+        return TCL_ERROR;
+
+    for (i = 0; i < ncontigs; i++)
+        contigs[i] = contig_array[i].contig;
+    xfree(contig_array);
+
+    /* Remove duplicates */
+    qsort(contigs, ncontigs, sizeof(*contigs), rec_compar);
+    last = -1;
+    for (i = j = 0; i < ncontigs; i++) {
+	if (contigs[i] != last)
+	    last = contigs[j++] = contigs[i];
+    }
+    ncontigs = j;
+
+    /* Do it */
+    err = contig_extend(args.io, contigs, ncontigs, args.min_depth,
+			args.match_score, args.mismatch_score);
+
+    xfree(contigs);
+
+    return err ? TCL_ERROR : TCL_OK;
+}
+
+
 #ifdef VALGRIND
 tcl_leak_check(ClientData clientData,
 	       Tcl_Interp *interp,
@@ -2406,6 +2476,10 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "align_seqs",
 			 tcl_align_seqs,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "contig_extend",
+			 tcl_contig_extend,
 			 (ClientData) NULL, NULL);
 			 
     

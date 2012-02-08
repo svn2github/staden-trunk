@@ -1337,6 +1337,12 @@ set_def CHECK_DATABASE.INFILE	$defs_c_in
 set_def CHECK_DATABASE.FIX	0
 set_def CHECK_DATABASE.DETAIL	2; # 2=>Thorough, 1=>Fast
 
+# Extend Contigs
+set_def EXTEND_CONTIGS.INFILE		$defs_c_in
+set_def EXTEND_CONTIGS.MIN_DEPTH	5
+set_def EXTEND_CONTIGS.MATCH_SCORE	1
+set_def EXTEND_CONTIGS.MISMATCH_SCORE	-3
+
 # Set this to a Tcl list of the interpreter names of programs which Gap4 can
 # communicate with using the Send To command. If they're not already running,
 # it'll start one itself with the second half of the name. NB, interpreter

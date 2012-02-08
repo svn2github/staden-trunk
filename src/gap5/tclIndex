@@ -287,3 +287,5 @@ set auto_index(ImportGFF) [list source [file join $dir import_gff.tcl]]
 set auto_index(CheckDatabase) [list source [file join $dir check_database.tcl]]
 
 set auto_index(CheckAssembly) [list source [file join $dir check_assembly.tcl]]
+
+set auto_index(ContigExtend) [list source [file join $dir contig_extend.tcl]]

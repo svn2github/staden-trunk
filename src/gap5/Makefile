@@ -146,6 +146,7 @@ GAP5=\
 	shuffle_pads.o \
 	restriction_enzymes.o \
 	gap_canvas_box.o \
+	contig_extend.o \
 	$(GOBJS) \
 	$(TG_IO) \
 	$(CEDITOR) \
