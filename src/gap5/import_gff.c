@@ -57,7 +57,8 @@ static void decode_hex_insitu(char *str) {
     /* Initialise lookup tables */
     if (!hex_init) {
 	int i;
-	memset(hex, 0, 256*sizeof(*hex));
+	for (i = 0; i < 256; i++)
+	    hex[i] = -1;
 	for (i = 0; i <= 9; i++) {
 	    hex['0'+i] = i;
 	}
@@ -73,10 +74,10 @@ static void decode_hex_insitu(char *str) {
     /* Decode */
     while (*str) {
 	if (*str == '%') {
-	    if (!str[1]) {
-		fprintf(stderr,"Truncated %% code in unescape_hex_string()\n");
-		*out++ = 0;
-		return;
+	    if (hex[str[1]] == -1 || hex[str[2]] == -1) {
+		fprintf(stderr,"Truncated %% code in decode_hex_insitu()\n");
+		*out++ = *str++;
+		continue;
 	    }
 	    *out++ = (hex[str[1]]<<4) | hex[str[2]];
 	    str += 3;
@@ -130,7 +131,7 @@ static gff_entry *parse_gff_entry(char *line, gff_entry *gff) {
     if (*cp != '\t')
 	return NULL;
     *cp++ = 0;
-    decode_hex_insitu(gff->seqid);
+    decode_hex_insitu(gff->source);
 
     /* Type */
     gff->type = cp;
@@ -138,7 +139,7 @@ static gff_entry *parse_gff_entry(char *line, gff_entry *gff) {
     if (*cp != '\t')
 	return NULL;
     *cp++ = 0;
-    decode_hex_insitu(gff->seqid);
+    decode_hex_insitu(gff->type);
 
     /* Start */
     tmp = cp;
