@@ -2772,7 +2772,7 @@ proc editor_break_contig {ed} {
 		-io $io \
 		-contig $arec \
 		-pos $apos \
-		-break_holes 1]
+		-break_holes [keylget gap5_defs CONTIG_EDITOR.REMOVE_HOLES]]
     ContigSelector $io
     ContigInitReg $io
 

@@ -479,7 +479,7 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 
 	    /* Who knows what impact break_contig has - restart to be safe */
 	    contig_iter_del(iter);
-	    if (r != 0) {
+	    if (r == -1) {
 		cache_decr(io, c);
 		return -1;
 	    }
