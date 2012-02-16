@@ -73,8 +73,11 @@ proc gap4_text_init {t} {
 #    }
 
     set crec [db_info get_contig_num $io $text]
-
-    edit_contig -io $io -contig $crec -reading $text -reuse 1
+    if {$crec <= 0} {
+	verror ERR_WARN "Contig $text no longer exists?"
+    } else {
+	edit_contig -io $io -contig $crec -reading $text -reuse 1
+    }
 }
 
 ;proc gap4_text_SEQID_popup {io w tag X Y} {
