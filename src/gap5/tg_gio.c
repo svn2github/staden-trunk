@@ -233,6 +233,9 @@ void gio_debug(GapIO *io, int level, char *fmt, ...) {
 int gio_read_contig(GapIO *io, int cnum, contig_t **c) {
     tg_rec crec;
 
+    if (io->base)
+	io = io->base;
+
     if (!io->contig_order)
 	return -1;
 
