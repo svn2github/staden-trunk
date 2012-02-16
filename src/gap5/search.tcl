@@ -75,6 +75,10 @@ proc gap4_text_init {t} {
     set crec [db_info get_contig_num $io $text]
     if {$crec <= 0} {
 	verror ERR_WARN "Contig $text no longer exists?"
+	tk_messageBox \
+	    -icon warning \
+	    -parent $w \
+	    -message "Contig $text no longer exists"
     } else {
 	edit_contig -io $io -contig $crec -reading $text -reuse 1
     }
