@@ -225,34 +225,34 @@ proc FIJDialog { f io } {
 	-default [keylget gap5_defs FIJ.MAX_ALIGNMENT] \
 	-type "CheckIntRange 0 10000000"
 
-    ###########################################################################
-    #select mode
-    SetDefaultTags FIJ.TAGS
-
-    set sm [keylget gap5_defs FIJ.SELMODE]
-    set b1 [keylget sm BUTTON.1]
-    set b2 [keylget sm BUTTON.2]
-    set b3 [keylget sm BUTTON.3]
-    frame $f.sel_mode -bd 2 -relief groove
-    button $f.sel_mode.but \
-	    -text "Select tags" \
-	    -command "TagDialog FIJ.TAGS $f[keylget gap5_defs SELECT_TAGS.WIN] \
-			{}"
-
-    radiolist $f.sel_mode.rl \
-	    -title [keylget sm NAME] \
-	    -default [keylget sm VALUE]\
-	    -buttons [format { \
-	    {%s -command { %s configure -state disabled}} \
-	    { %s -command { %s configure -state normal; \
-	    SetDefaultTags %s }} \
-	    { %s -command { %s configure -state normal; \
-	    SetDefaultTags %s } } } \
-	    [list $b1] [list $f.sel_mode.but] \
-	    [list $b2] [list $f.sel_mode.but] FIJ.TAGS \
-	    [list $b3] [list $f.sel_mode.but] FIJ.TAGS ]
-    pack $f.sel_mode.rl -side left
-    pack $f.sel_mode.but -side right
+#    ###########################################################################
+#    #select mode
+#    SetDefaultTags FIJ.TAGS
+#
+#    set sm [keylget gap5_defs FIJ.SELMODE]
+#    set b1 [keylget sm BUTTON.1]
+#    set b2 [keylget sm BUTTON.2]
+#    set b3 [keylget sm BUTTON.3]
+#    frame $f.sel_mode -bd 2 -relief groove
+#    button $f.sel_mode.but \
+#	    -text "Select tags" \
+#	    -command "TagDialog FIJ.TAGS $f[keylget gap5_defs SELECT_TAGS.WIN] \
+#			{}"
+#
+#    radiolist $f.sel_mode.rl \
+#	    -title [keylget sm NAME] \
+#	    -default [keylget sm VALUE]\
+#	    -buttons [format { \
+#	    {%s -command { %s configure -state disabled}} \
+#	    { %s -command { %s configure -state normal; \
+#	    SetDefaultTags %s }} \
+#	    { %s -command { %s configure -state normal; \
+#	    SetDefaultTags %s } } } \
+#	    [list $b1] [list $f.sel_mode.but] \
+#	    [list $b2] [list $f.sel_mode.but] FIJ.TAGS \
+#	    [list $b3] [list $f.sel_mode.but] FIJ.TAGS ]
+#    pack $f.sel_mode.rl -side left
+#    pack $f.sel_mode.but -side right
 
     ###########################################################################
     #OK and Cancel buttons
@@ -272,7 +272,7 @@ proc FIJDialog { f io } {
     pack $f.infile -fill x
     pack $f.sel_task -fill x
     pack $f.sc -fill x
-    pack $f.sel_mode -fill x
+#    pack $f.sel_mode -fill x
     pack $f.align_length -fill x
     pack $f.hidden -fill x
     pack $f.match -fill x
@@ -330,12 +330,12 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 	set use_conf 0
 	set use_hidden 0
     }
-    set masking [radiolist_get $sel_mode]
-
-    #if masking mode is 2 or 3 (mark or mask active tags)
-    if {($masking == 2) || ($masking == 3)} {
-        set active_tags [GetDefaultTags FIJ.TAGS]
-    }
+#    set masking [radiolist_get $sel_mode]
+#
+#    #if masking mode is 2 or 3 (mark or mask active tags)
+#    if {($masking == 2) || ($masking == 3)} {
+#        set active_tags [GetDefaultTags FIJ.TAGS]
+#    }
 
 
     set word_length [lindex {? 12 8 4} [radiolist_get $word_length]]
@@ -377,7 +377,6 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 
     SetBusy
     find_internal_joins -io $io \
-	    -mask [lindex {"" none mark mask} $masking] \
 	    -mode $mode \
 	    -min_overlap $min_overlap \
 	    -max_pmismatch $max_mis \
@@ -390,11 +389,14 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 	    -min_conf $min_conf \
 	    -use_conf $use_conf \
 	    -use_hidden $use_hidden \
-	    -tag_types $active_tags \
 	    -max_display $max_align_length \
 	    -fast_mode $fast_mode \
 	    -filter_words $filter_words \
 	    -contigs $list
+
+#	    -mask [lindex {"" none mark mask} $masking] \
+#	    -tag_types $active_tags
+
     ClearBusy
 }
 

@@ -591,9 +591,10 @@ int scan_right(Hidden_params p, int1 *conf, int start_pos, int len) {
 	start_pos = i-1;
     } while (--win_len > 0);
 
-    rclip = i == len ? len + 1 : i;
+    //rclip = i == len ? len + 1 : i;
+    rclip = i == len ? len : i + 1;
     if (p.verbose)
-	printf("    right clip = %d\n", rclip);
+	printf("    right clip = %d of %d\n", rclip, len);
 
     return rclip;
 }
@@ -1003,6 +1004,345 @@ int get_hidden(GapIO *io, int contig, int max_read_length,
 }
 #endif
 
+static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
+			    char *cons, char *hidden_seq) {
+    int start;
+    rangec_t *r;
+    int nr, i, max_ext = 0;
+    contig_t *c;
+
+    if (consensus_valid_range(io, contig, &start, NULL) != 0) {
+	cache_decr(io, c);
+	return -1;
+    }
+
+    c = cache_search(io, GT_Contig, contig);
+    cache_incr(io, c);
+
+    if (!(r = contig_seqs_in_range(io, &c, start-1, start-1, 0, &nr))) {
+	cache_decr(io, c);
+	return -1;
+    }
+
+    //printf("Contig #%"PRIrec" start has %d seqs\n", contig, nr);
+
+    /* All these reads extend the contig by at least one base */
+    for (i = 0; i < nr; i++) {
+	seq_t *s = cache_search(io, GT_Seq, r[i].rec);
+	seq_t *sorig = s;
+	int cstart, cend;
+	int j, k, slen, lclip, ext;
+
+	s = dup_seq(s);
+	if ((s->len < 0) ^ r[i].comp) {
+	    complement_seq_t(s);
+	}
+
+	/* Contig start/end coords */
+	cstart = r[i].start + s->left-1;
+	cend   = r[i].start + s->right-1;
+
+	revconf(s->conf, ABS(s->len));
+	lclip = scan_right(p, s->conf, ABS(s->len) - s->left + 1, ABS(s->len));
+	lclip = ABS(s->len) - lclip+1;
+	ext = start - (r[i].start + lclip-1);
+
+	//printf("#%"PRIrec", %d %.*s\n", 
+	//       s->rec,
+	//       r[i].start + s->left-1 - start,
+	//       ext, s->seq+lclip-1);
+
+	if (ext > 0 && r[i].start + s->left-1 > start && 0) {
+	    OVERLAP *overlap;
+	    ALIGN_PARAMS *params;
+	    int j, k, jx, kx, j_end;
+	    char rseq[MAXGEL_PLUS], rcons[MAXGEL_PLUS];
+	    int rseq_len, rcons_len;
+
+	    //printf("Hidden_seq for #%"PRIrec" = %.*s\n",
+	    //	   r[i].rec, ABS(s->len)-s->right, &s->seq[s->right]);
+
+	    if (NULL == (params = create_align_params()) ||
+		NULL == (overlap = create_overlap())) {
+		if (params)
+		    destroy_alignment_params(params);
+		cache_decr(io, c);
+		return -1;
+	    }
+
+	    set_align_params (params,
+			      20, /* band */
+			      12, /* gap_open */
+			      4,  /* gap_extend */
+			      EDGE_GAPS_COUNT | BEST_EDGE_TRACE,
+			      /* RETURN_SEQ | */ RETURN_EDIT_BUFFERS,
+			      0, 0, 0, 0,0);
+
+	    /*
+	     * I've no idea why, but the consensus algorithm has big issues
+	     * anchoring itself on the right end, but anchored left with
+	     * floating right works fine. So we reverse complement to get
+	     * the sequences in a form that works. Yuk!
+	     */
+	    if (r[i].start + s->left-1 - start > MAXGEL_PLUS) {
+		memcpy(rcons, cons, MAXGEL_PLUS);
+		rcons_len = MAXGEL_PLUS;
+	    } else {
+		memcpy(rcons, cons, r[i].start + s->left-1 - start);
+		rcons_len = r[i].start + s->left-1 - start;
+	    }
+	    complement_seq(rcons, rcons_len);
+
+	    if (s->left-1 > MAXGEL_PLUS) {
+		memcpy(rseq, s->seq + s->left-1 - MAXGEL_PLUS, MAXGEL_PLUS);
+		rseq_len = MAXGEL_PLUS;
+	    } else {
+		memcpy(rseq, s->seq, s->left-1);
+		rseq_len = s->left-1;
+	    }
+	    complement_seq(rseq, rseq_len);
+
+	    init_overlap(overlap, rcons, rseq, rcons_len, rseq_len);
+
+	    affine_align(overlap, params);
+
+	    //puts(overlap->seq1_out);
+	    //puts(overlap->seq2_out);
+
+	    j = k = jx = kx = 0;
+	    /* Trim pads on end of consensus */
+	    if (overlap->S1[overlap->s1_len-1] < 0)
+		overlap->s1_len--;
+
+	    while (jx < overlap->s1_len && kx < overlap->s2_len) {
+		char bc, br;
+
+		/* Cons base */
+		if (overlap->S1[jx] > 0) {
+		    if (--overlap->S1[jx] == 0)
+			jx++;
+		    bc = overlap->seq1[j++];
+		} else {
+		    if (++overlap->S1[jx] == 0)
+			jx++;
+		    bc = '*';
+		}
+
+		/* Read base */
+		if (overlap->S2[kx] > 0) {
+		    if (--overlap->S2[kx] == 0)
+			kx++;
+		    br = overlap->seq2[k++];
+		} else {
+		    if (++overlap->S2[kx] == 0)
+			kx++;
+		    br = '*';
+		}
+
+		//printf("%3d %c/%c %3d\n", j, bc, br, k);
+	    }
+
+	    /* Complement back again */
+	    k = rseq_len - k - 1;
+	    ext = k - lclip + 1;
+
+	    destroy_alignment_params(params);
+	    destroy_overlap(overlap);
+	}
+
+	if (max_ext < ext) {
+	    max_ext = ext;
+	    memcpy(hidden_seq, &s->seq[lclip-1], ext);
+	    hidden_seq[ext] = 0;
+	    //printf("New hidden_seq=%s\n", hidden_seq);
+	}
+
+	if (sorig != s)
+	    free(s);
+    }
+
+    cache_decr(io, c);
+    return max_ext;
+}
+
+static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
+			  char *cons, char *hidden_seq) {
+    int end;
+    rangec_t *r;
+    int nr, i, max_ext = 0;
+    contig_t *c;
+
+    if (consensus_valid_range(io, contig, NULL, &end) != 0) {
+	cache_decr(io, c);
+	return -1;
+    }
+
+    c = cache_search(io, GT_Contig, contig);
+    cache_incr(io, c);
+
+    if (!(r = contig_seqs_in_range(io, &c, end+1, end+1, 0, &nr))) {
+	cache_decr(io, c);
+	return -1;
+    }
+
+    //printf("Contig #%"PRIrec" end has %d seqs\n", contig, nr);
+
+    /* All these reads extend the contig by at least one base */
+    for (i = 0; i < nr; i++) {
+	seq_t *s = cache_search(io, GT_Seq, r[i].rec);
+	seq_t *sorig = s;
+	int cstart, cend;
+	int j, k, slen, rclip, rfrom, ext;
+
+	if ((s->len < 0) ^ r[i].comp) {
+	    s = dup_seq(s);
+	    complement_seq_t(s);
+	}
+
+	/* Contig start/end coords */
+	cstart = r[i].start + s->left-1;
+	cend   = r[i].start + s->right-1;
+
+	/*
+	 * We may have a sequence that isn't at the end. Eg:
+	 *
+	 * Cons: AGACTTAGCGTAGACCC
+	 * Read: AGAgttagccgtagacccgttagcga
+	 *
+	 * It's not in alignment perfectly, so we align to work
+	 * out the precise piece to attach to the end; "gttagcga"
+	 * in this example.
+	 */
+	rclip = scan_right(p, s->conf, s->left, ABS(s->len));
+	ext = rclip-1 + r[i].start - end;
+
+	if (ext > 0 && end > r[i].start + s->right-1) {
+	    OVERLAP *overlap;
+	    ALIGN_PARAMS *params;
+	    int j, k, jx, kx;
+
+	    //printf("Hidden_seq for #%"PRIrec" = %.*s\n",
+	    //	   r[i].rec, ABS(s->len)-s->right, &s->seq[s->right]);
+
+	    if (NULL == (params = create_align_params()) ||
+		NULL == (overlap = create_overlap())) {
+		if (params)
+		    destroy_alignment_params(params);
+		cache_decr(io, c);
+		return -1;
+	    }
+
+	    set_align_params (params,
+			      20, /* band */
+			      12, /* gap_open */
+			      4,  /* gap_extend */
+			      /* left is fixed, right not */
+			      /* vs left is floating, right fixed */
+			      /* EDGE_GAPS_ZERO | FULL_LENGTH_TRACE */
+			      EDGE_GAPS_COUNT | BEST_EDGE_TRACE,
+			      /*RETURN_SEQ | */RETURN_EDIT_BUFFERS,
+			      0, 0, 0, 0,0);
+
+	    init_overlap(overlap,
+			 &cons[r[i].start + s->right-1],
+			 &s->seq[s->right],
+			 end - (r[i].start + s->right-1),
+			 rclip - s->right);
+
+	    affine_align(overlap, params);
+
+	    //puts(overlap->seq1_out);
+	    //puts(overlap->seq2_out);
+
+	    j = k = jx = kx = 0;
+	    /* Trim pads on end of consensus */
+	    if (overlap->S1[overlap->s1_len-1] < 0)
+		overlap->s1_len--;
+
+	    while (jx < overlap->s1_len && kx < overlap->s2_len) {
+		char bc, br;
+
+		/* Cons base */
+		if (overlap->S1[jx] > 0) {
+		    if (--overlap->S1[jx] == 0)
+			jx++;
+		    bc = overlap->seq1[j++];
+		} else {
+		    if (++overlap->S1[jx] == 0)
+			jx++;
+		    bc = '*';
+		}
+
+		/* Read base */
+		if (overlap->S2[kx] > 0) {
+		    if (--overlap->S2[kx] == 0)
+			kx++;
+		    br = overlap->seq2[k++];
+		} else {
+		    if (++overlap->S2[kx] == 0)
+			kx++;
+		    br = '*';
+		}
+
+		//printf("%3d %c/%c %3d\n", j, bc, br, k);
+	    }
+
+	    /*
+	     * At this stage j should be the end of the consensus
+	     * and k should be the offset into the sequence for the first
+	     * base beyond the consensus.
+	     */
+	    rfrom = k + s->right;
+	    //printf("rfrom=%d rclip=%d, sright=%d, old ext=%d, new=%d\n",
+	    //	   rfrom, rclip, s->right, ext, rclip-rfrom);
+	    ext = rclip - rfrom + 1;
+
+	    destroy_alignment_params(params);
+	    destroy_overlap(overlap);
+	} else {
+	    rfrom = s->right;
+	}
+
+	if (max_ext < ext) {
+	    max_ext = ext;
+	    memcpy(hidden_seq, &s->seq[rfrom], ext);
+	    hidden_seq[ext] = 0;
+	    //printf("New hidden_seq=%s\n", hidden_seq);
+	}
+
+	if (sorig != s)
+	    free(s);
+    }
+
+    cache_decr(io, c);
+    return max_ext;
+}
+
+/*
+ * Looks at the clipped/hidden data off either the start (end == LEFT_END) or
+ * end (end == RIGHT_END) of the contig and chooses one that extends the
+ * contig the furthest via good quality data.
+ *
+ * During this process we may need to perform sequence alignments against
+ * the existing contig if the best candidate for extension is not the same
+ * as the current leftmost or rightmost sequence. The 'p' and 'consensus'
+ * parameters govern this behaviour.
+ *
+ * Returns the number of bases extended, with the sequence in hidden_seq,
+ *         or 0 for no extension
+ *         or -1 for failure.
+ */
+static int get_hidden(GapIO *io, tg_rec contig, int end,
+		      Hidden_params p, char *consensus,
+		      char *hidden_seq) {
+    if (end == LEFT_END)
+	return get_hidden_start(io, contig, p, consensus, hidden_seq);
+    else if (end == RIGHT_END)
+	return get_hidden_end(io, contig, p, consensus, hidden_seq);
+    else
+	return -1;
+}
+
 /************************************************************/
 
 int make_consensus( int task_mask, GapIO *io,
@@ -1080,6 +1420,10 @@ int make_consensus( int task_mask, GapIO *io,
 	j += number_of_contigs * 20;
     }
 
+    if ( task_mask & ADDHIDDENDATA ) {
+	/* Worst case, but may need to shrink & fail */
+	j += number_of_contigs * MAXGEL_PLUS*2;
+    }
     max_consensus = j;
     if (NULL == (consensus = (char *)malloc(j)))
 	return -1;
@@ -1186,13 +1530,13 @@ int make_consensus( int task_mask, GapIO *io,
 	    *consensus_length += contig_length;
 	}
 
-#if 0
 	if ( task_mask & ADDHIDDENDATA ) {
 
 
-	    left_extension = get_hidden(io, contig, max_read_length,LEFT_END,
-					p, hidden_seq,
-					t_hidden_seq, &consensus[contig_start]);
+	    left_extension = get_hidden(io, contig, LEFT_END,
+					p, &consensus[contig_start],
+					hidden_seq);
+	    //printf("L %d %.*s\n", left_extension, left_extension, hidden_seq);
 	    /* check for normal operation */
 	    if ( left_extension < 0 ) {
 		if (hidden_seq) xfree(hidden_seq);
@@ -1220,9 +1564,11 @@ int make_consensus( int task_mask, GapIO *io,
 	    *consensus_length += left_extension;
 	    contig_list[i].contig_left_extension = left_extension;
 
-	    right_extension = get_hidden(io, contig, max_read_length,RIGHT_END,
-					p, hidden_seq, t_hidden_seq, 
-					 &consensus[contig_start+left_extension]);
+	    right_extension = get_hidden(io, contig, RIGHT_END,
+					 p, &consensus[contig_start +
+						       left_extension],
+					 hidden_seq);
+	    //printf("R %d %.*s\n", right_extension, right_extension, hidden_seq);
 	    /* check for normal operation */
 
 	    if ( right_extension < 0 ) {
@@ -1250,7 +1596,6 @@ int make_consensus( int task_mask, GapIO *io,
 	    contig_list[i].contig_right_extension = right_extension;
 
 	}
-#endif
 #if 0
 	if ( task_mask & MASKING ) {
 /*	    printf("do masking\n");*/
