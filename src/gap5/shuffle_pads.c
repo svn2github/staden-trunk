@@ -458,12 +458,20 @@ MALIGN *build_malign(GapIO *io, tg_rec cnum /*, int start, int end */) {
 	contig->mseg = create_mseg();
 
 	sorig = s = cache_search(io, GT_Seq, r->rec);
+
+	/* Fix reads of zero length */
+	if (s->right < s->left) {
+	    sorig = s = cache_rw(io, s);
+	    s->right = s->left;
+	    if (s->right > ABS(len))
+		s->left = s->right = ABS(len);
+	}
+
 	if ((s->len < 0) ^ r->comp) {
 	    s = dup_seq(s);
 	    complement_seq_t(s);
 	}
 
-	assert(s->right >= s->left);
 	len = s->right - s->left + 1;
 	if (NULL == (seq = malloc(len+1)))
 	    return NULL;
