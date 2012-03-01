@@ -89,7 +89,7 @@ static long replace(char *str, char rep) {
     if (str && (length = strlen(str))) {
     	if (str[length - 1] == '\n') {
 	
-	    if (str[length - 2] = '\r') {
+	    if (str[length - 2] == '\r') {
 	    	length--;
 		str[length] = 0;
 	    }
