@@ -149,7 +149,7 @@ proc tout_create_wins {f {width 81}} {
 
     tout_init $f.stdout.t $f.stderr.t
 
-    bind $f.stderr.t <c><o><n> "set tcl_interactive 1; create_console"
+    bind $f.stderr.t <c><o><n> "console show"
 }
 
 

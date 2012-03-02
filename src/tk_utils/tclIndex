@@ -546,3 +546,5 @@ set auto_index(xcombobox) [list source [file join $dir xcombobox.tcl]]
 set auto_index(xspinbox) [list source [file join $dir xspinbox.tcl]]
 set auto_index(xtwinspin) [list source [file join $dir xtwinspin.tcl]]
 set auto_index(xradiobox) [list source [file join $dir xradiobox.tcl]]
+
+set auto_index(console) [list source [file join $dir console.tcl]]
