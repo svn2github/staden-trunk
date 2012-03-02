@@ -9,10 +9,13 @@
 #include <staden_config.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "tg_gio.h"
 #include "tg_check.h"
 #include "hache_table.h"
+#include "consensus.h"
+#include "text_output.h"
 
 /* Enable debugging, which may help track down the location of some errors */
 //#define DEBUG_CHECK
@@ -1352,7 +1355,7 @@ int check_cache(GapIO *io) {
 	}
     }
 
-    close_db(ior);
+    gio_close(ior);
     return err;
 }
 

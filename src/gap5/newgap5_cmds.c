@@ -50,6 +50,8 @@
 #include "dis_readings.h"
 #include "shuffle_pads.h"
 #include "contig_extend.h"
+#include "editor_join.h"
+#include "restriction_enzymes.h"
 
 #include "sam_index.h"
 #include "bam.h"

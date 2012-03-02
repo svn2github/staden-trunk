@@ -14,6 +14,7 @@
 #include "editor_view.h"
 #include "consensus.h"
 #include "reg_exp.h"
+#include "gap4_compat.h" /* contig_name_to_number, get_gel_num */
 
 #define WIN_WIDTH 65536
 

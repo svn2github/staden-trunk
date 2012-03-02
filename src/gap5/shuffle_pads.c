@@ -79,6 +79,7 @@
 #include "text_output.h"
 #include "shuffle_pads.h"
 #include "consensus.h"
+#include "tg_contig.h"
 
 typedef struct {
     int pos;

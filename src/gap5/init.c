@@ -1,7 +1,7 @@
 #include <tcl.h>
 
 #include "newgap_cmds.h"
-#include "gap-tcl.h"
+#include "tg_tcl.h"
 #include "active_tags.h"
 
 /*
@@ -57,14 +57,14 @@ int Gap_SafeInit(Tcl_Interp *interp) {
 }
 
 int Gap_Unload(Tcl_Interp *interp, int flags) {
-    G5_Unload(interp);
+  G5_Unload(interp, flags);
     Tcl_SetResult(interp, "Pkg_Unload() function not implemented",
 		  TCL_STATIC);
     return TCL_ERROR;
 }
 
 int Gap_SafeUnload(Tcl_Interp *interp, int flags) {
-    G5_SafeUnload(interp);
+  G5_SafeUnload(interp, flags);
     Tcl_SetResult(interp, "Pkg_SafeUnload() function not implemented",
 		  TCL_STATIC);
     return TCL_ERROR;

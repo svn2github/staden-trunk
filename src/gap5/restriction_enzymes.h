@@ -137,4 +137,6 @@ Create_REnz_Tags(GapIO *io,
 		 char **enz_ids,
 		 int num_ids);
 
+int REnz_Init(Tcl_Interp *interp);
+
 #endif

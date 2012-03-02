@@ -28,9 +28,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <tg_gio.h>
+#include <ctype.h>
 
 #include "dna_utils.h"
 #include "contig_extend.h"
+#include "consensus.h"
+#include "text_output.h"
+#include "gap4_compat.h"  /* complement_contig */
 
 #define CSZ 1024 /* consensus size - how far back in contig we'll look */
 #define ESZ 1024 /* extension size - how far we can extend */

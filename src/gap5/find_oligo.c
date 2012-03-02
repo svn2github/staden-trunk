@@ -21,6 +21,7 @@
 #include "editor_view.h"
 #include "tk-io-reg.h"
 #include "consensus.h"
+#include "list_proc.h"
 
 #define TAG 0
 #define SEQUENCE 1

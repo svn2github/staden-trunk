@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "tg_gio.h"
+#include "consensus.h"
 
 #ifndef ABS
 #    define ABS(x) ((x) >= 0 ? (x) : -(x))

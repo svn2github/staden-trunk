@@ -12,6 +12,7 @@
 #include "consensus.h"
 #include "break_contig.h"
 #include "tg_check.h"
+#include "list_proc.h"
 
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))

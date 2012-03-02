@@ -5,6 +5,7 @@
 #include "break_contig.h"
 #include "misc.h"
 #include "dis_readings.h" /* bin_destroy_recurse() */
+#include "consensus.h"
 
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))

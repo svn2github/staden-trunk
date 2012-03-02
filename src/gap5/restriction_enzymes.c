@@ -16,6 +16,7 @@
 #include "text_output.h"
 #include "tcl_utils.h"
 #include "tclXkeylist.h"
+#include "gap4_compat.h" /* io_clnbr, io_clength */
 
 /*
  *---------------------------------------------------------------------------

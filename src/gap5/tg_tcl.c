@@ -22,6 +22,7 @@
 #include "tg_gio.h"
 #include "tg_check.h"
 #include "gap_cli_arg.h"
+#include "consensus.h"
 
 extern Tcl_Command Tcl_GetCommandFromObj(Tcl_Interp *interp,
 					 Tcl_Obj *objPtr);

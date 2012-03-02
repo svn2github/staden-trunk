@@ -47,6 +47,8 @@ int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf);
 
 int contig_delete_base(GapIO *io, contig_t **c, int pos);
 
+int contig_delete_pad(GapIO *io, contig_t **c, int pos);
+
 int contig_shift_base(GapIO *io, contig_t **c, int pos, int dir);
 
 

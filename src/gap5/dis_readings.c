@@ -14,6 +14,7 @@
 #include "misc.h"
 #include "break_contig.h"
 #include "bitmap.h"
+#include "consensus.h"
 
 /*-----------------------------------------------------------------------------
  * Databse checking code.

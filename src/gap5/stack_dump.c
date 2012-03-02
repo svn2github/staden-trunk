@@ -255,6 +255,8 @@ void stack_trace(void) {
  * ---------------------------------------------------------------------------
  */
 #elif defined(__linux__)
+#include <execinfo.h>
+
 void stack_trace(void) {
     void *stack[100];
     int size = backtrace(stack, 100);

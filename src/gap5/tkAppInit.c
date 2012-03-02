@@ -14,6 +14,7 @@
 /* static char sccsid[] = "@(#) tkAppInit.c 1.12 94/12/17 16:30:56"; */
 
 #include <stdlib.h>
+#include <string.h>
 #include "tk.h"
 
 #include "newgap_cmds.h"

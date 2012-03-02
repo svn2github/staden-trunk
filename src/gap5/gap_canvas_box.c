@@ -3,6 +3,7 @@
 #include "tg_gio.h"
 #include "gap_globals.h"
 #include "canvas_box.h"
+#include "gap4_compat.h" /* io_clength */
 
 /*
  * ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@
 #include "xalloc.h"
 #include "tg_gio.h"
 #include "tg_tracks.h"
+#include "consensus.h"
 
 #define get_bin(io, bnum) ((bin_index_t *)cache_search((io), GT_Bin, (bnum)))
 

@@ -12,6 +12,9 @@ int io_relpos(GapIO *io, tg_rec rnum);
 tg_rec io_lnbr(GapIO *io, tg_rec rnum);
 tg_rec io_rnbr(GapIO *io, tg_rec rnum);
 
+tg_rec contig_name_to_number(GapIO *io, char *name);
+tg_rec get_gel_num(GapIO *io, char *gel_name, int is_name);
+
 #define NumContigs(io) ((io)->db->Ncontigs)
 #define flush2t cache_flush
 

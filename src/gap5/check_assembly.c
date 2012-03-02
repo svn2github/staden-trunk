@@ -11,6 +11,8 @@
 #include "tcl_utils.h"
 #include "tclXkeylist.h"
 #include "consen.h"
+#include "tk-io-reg.h"
+#include "gap4_compat.h" /* io_clnbr, io_relpos, io_length */
 
 /*
  * Checks a single reading for correct assembly by analysing the used data.

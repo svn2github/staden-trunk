@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #include "editor_view.h"
+#include "editor_join.h"
 #include "align_lib.h"
 #include "hash_lib.h"
 #include "align.h"

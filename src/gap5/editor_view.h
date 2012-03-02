@@ -299,4 +299,7 @@ int edPrevDifference(edview *xx);
 void edview_set_sort_order(edview *xx);
 void ed_set_base_sort_point(edview *xx);
 
+/* Compute original positions array via alignments */
+int origpos(edview *xx, tg_rec srec, int pos);
+
 #endif /* _EDITOR_VIEW_H_ */

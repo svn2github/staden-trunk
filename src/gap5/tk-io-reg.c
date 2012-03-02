@@ -11,6 +11,7 @@
 #include "tcl_utils.h"
 #include "tclXkeylist.h"
 #include "canvas_box.h"
+#include "io_utils.h" /* get_gel_num, rnumtocnum, chain_left */
 
 static void reg_init_args(char *args);
 static char *reg_get_arg(char *name);

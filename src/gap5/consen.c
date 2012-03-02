@@ -36,6 +36,7 @@
 #include <io_lib/expFileIO.h>
 #include "misc.h"
 #include "consen.h"
+#include "consensus.h"
 #include "gap_globals.h"
 #include "dna_utils.h"
 #include "list_proc.h"
