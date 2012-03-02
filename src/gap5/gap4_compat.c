@@ -479,6 +479,9 @@ static int lget_contig_num_base(GapIO *io,
 	    if (cnum) {
 		(*rargv)[j].contig = cnum;
 		count++;
+	    } else {
+		verror(ERR_WARN, "lget_contig_num_base()",
+		       "Unknown contig name %s", listArgv[j]);
 	    }
 	}
     }
