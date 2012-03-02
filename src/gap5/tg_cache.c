@@ -1057,8 +1057,8 @@ int cache_flush(GapIO *io) {
 
     ArrayDestroy(to_flush);
 
-    io->iface->unlock(io->dbh);
     io->iface->commit(io->dbh);
+    io->iface->unlock(io->dbh);
 
     //printf(">>> flush done <<<\n");
     //HacheTableRefInfo(io->cache, stdout);
