@@ -1013,7 +1013,6 @@ static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
     contig_t *c;
 
     if (consensus_valid_range(io, contig, &start, NULL) != 0) {
-	cache_decr(io, c);
 	return -1;
     }
 
@@ -1174,7 +1173,6 @@ static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
     contig_t *c;
 
     if (consensus_valid_range(io, contig, NULL, &end) != 0) {
-	cache_decr(io, c);
 	return -1;
     }
 
