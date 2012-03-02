@@ -1212,6 +1212,13 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
     return err ? -1 : 0;
 }
 
+typedef struct {
+    tg_rec r,p; /* read and pair */
+} rec_rec;
+static int tg_rec_cmp(const void *v1, const void *v2) {
+    return ((const rec_rec *)v1)->r - ((const rec_rec *)v2)->r;
+}
+
 /*
  * As per disassemble readings, but removes entire contigs.
  *
@@ -1224,9 +1231,11 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
     int i;
     int ret = 0;
+    int npairs = 0;
     HashTable *pairs;
     HashIter *iter;
     HashItem *hi;
+    rec_rec *seqs;
 
     pairs = HashTableCreate(8192, HASH_DYNAMIC_SIZE | HASH_POOL_ITEMS);
 
@@ -1234,6 +1243,9 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	contig_t *c;
 	contig_iterator *iter;
 	rangec_t *r;
+
+	vmessage("Processing contig %d of %d\n", i+1, ncontigs);
+	UpdateTextOutput();
 
 	iter = contig_iter_new_by_type(io, cnums[i], 1, CITER_FIRST,
 				       CITER_CSTART, CITER_CEND,
@@ -1271,12 +1283,14 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 		    if (hi) {
 			/* Other end already removed */
 			HashTableDel(pairs, hi, 0);
+			npairs--;
 		    } else {
 			/* Mark for update of other end */
 			HashData hd;
 			hd.i = r->rec;
 			HashTableAdd(pairs, (char *)&r->pair_rec,
 				     sizeof(tg_rec), hd, NULL);
+			npairs++;
 		    }
 		}
 
@@ -1301,20 +1315,50 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	    bin_destroy_recurse(io, c->bin);
 	contig_destroy(io, cnums[i]);
     }
+    vmessage("Flushing deletions\n");
+    UpdateTextOutput();
+    cache_flush(io);
 
-		
-    /* Unlink pairs found in other contigs */ 
+    /*
+     * Sort pairs by sequence record number. This ensures that if we have
+     * a very large amount of sequences to update then we do so in a cache
+     * sensitive manner.
+     */
+    if (NULL == (seqs = (rec_rec *)xmalloc(npairs * sizeof(*seqs))))
+	return -1;
+
     iter = HashTableIterCreate();
+    i = 0;
     while (hi = HashTableIterNext(pairs, iter)) {
-	tg_rec rec = *(tg_rec *)hi->key;
-	seq_t *s = cache_search(io, GT_Seq, rec);
+	seqs[i].r = *(tg_rec *)hi->key;
+	seqs[i++].p = hi->data.i;
+    }
+    assert(i == npairs);
+    HashTableIterDestroy(iter);
+    HashTableDestroy(pairs, 0);
+
+    /* Sort the list */
+    qsort(seqs, npairs, sizeof(*seqs), tg_rec_cmp);
+
+    vmessage("Unlinking from read-pairs\n");
+    UpdateTextOutput();
+    for (i = 0; i < npairs; i++) {
+	seq_t *s = cache_search(io, GT_Seq, seqs[i].r);
 	bin_index_t *bin;
 	range_t *r;
 
 	if (!s)
 	    continue;
 
-	if (s->parent_rec == hi->data.i) {
+	if (i % 1000 == 0) {
+	    vmessage("    %d of %d\n", i, npairs);
+	    UpdateTextOutput();
+	    if (i % 10000 == 0)
+		cache_flush(io);
+	}
+
+
+	if (s->parent_rec == seqs[i].p) {
 	    s = cache_rw(io, s);
 	    s->parent_type = 0;
 	    s->parent_rec = 0;
@@ -1336,8 +1380,7 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	r->flags |=  GRANGE_FLAG_TYPE_SINGLE;
     }
 
-    HashTableDestroy(pairs, 0);
-
+    xfree(seqs);
     cache_flush(io);
 
     return ret;
