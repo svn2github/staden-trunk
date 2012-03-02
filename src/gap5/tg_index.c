@@ -394,14 +394,16 @@ int main(int argc, char **argv) {
 	puts("Sorting sequence name index");
 	bttmp_file_sort(a.tmp);
 
-	puts("Building index");
+	puts("Building index: one dot per 10k reads");
 	while (name = bttmp_file_get(a.tmp, &rec)) {
 	    sequence_index_update(io, name, strlen(name), rec);
-	    if (++cnt == 1000000) {
+	    if (++cnt == 10000) {
+		putchar('.'); fflush(stdout);
 		cnt = 0;
 		cache_flush(io);
 	    }
 	}
+	putchar('\n');
 	
 	bttmp_file_close(a.tmp);
     }
