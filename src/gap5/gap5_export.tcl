@@ -94,7 +94,7 @@ if {[catch {set io [g5::open_database -name $db -access ro]} err]} {
 }
 
 if {$opt(contigs) == "*"} {
-    set opt(contigs) [CreateAllContigList $io]
+    set opt(contigs) [CreateAllContigList=Numbers $io]
 }
 
 set opt(out) [regsub {\*} $opt(out) $opt(format)]
