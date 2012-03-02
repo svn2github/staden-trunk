@@ -84,11 +84,14 @@ proc contig_id {path args} {
             set c_num [db_info get_contig_num $io $CurContig]
         }
         set length [c_length $io $c_num]
+
+#		-type "CheckContig $io"
+#	        -command "update_limits $io $path"
+
 	entrybox $path.ent \
 		-title "Contig identifier" \
-		-type "CheckContig $io"\
+		-type "contig_id_callback $io $path.ent.entry $path"\
 		-default $default \
-	        -command "update_limits $io $path" \
 		-width $db_namelen
 
 	scalebox $path.lreg \
@@ -97,7 +100,7 @@ proc contig_id {path args} {
 		-from 1 \
 		-to $length \
 		-default $start_value\
-		-width 7 \
+		-width 9 \
 		-type CheckInt \
 		-command "CheckStartLimits $path.lreg $path.rreg 0"
 	
@@ -107,7 +110,7 @@ proc contig_id {path args} {
 		-from 1 \
 		-to $length \
 		-default $end_value \
-		-width 7 \
+		-width 9 \
 		-type CheckInt \
 		-command "CheckEndLimits $path.lreg $path.rreg 0"
     } else {
@@ -156,22 +159,6 @@ proc contig_id {path args} {
     }
 }
 
-proc update_limits {io path c_name } {
-
-if {[winfo exists $path.lreg]} {
-        if {[set c_num [db_info get_contig_num $io $c_name]] != -1} {
-	    set c [$io get_contig $c_num]
-	    set cst1 [$c get_start]
-	    set cen1 [$c get_end]
-	    set cst2 [$c get_visible_start]
-	    set cen2 [$c get_visible_end]
-	    $c delete
-            scalebox_configure $path.lreg -from $cst1 -to $cen1 -default $cst2
-            scalebox_configure $path.rreg -from $cst1 -to $cen1 -default $cen2
-        }
-}
-}
-
 #
 # The trace callback
 #
@@ -195,6 +182,8 @@ proc contig_id_trace {path io name element op} {
 		    -default $cst2
 		scalebox_configure $path.rreg -from $cst1 -to $cen1 \
 		    -default $cen2
+		scalebox_set $path.lreg $cst2
+		scalebox_set $path.rreg $cen2
 	    }
 	}
     }
@@ -296,7 +285,7 @@ proc contig_id_focus {path} {
 # Any-Leave binding. If the "last" bit is removed, make sure that the
 # bindings are also adjusted.
 #
-proc contig_id_callback {io entry path} {
+proc contig_id_callback {io entry path {_ {}}} {
     global $entry.Last
 
     if {![info exists $entry.Last]} {

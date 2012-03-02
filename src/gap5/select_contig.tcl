@@ -80,9 +80,13 @@ proc CheckDBFilename {filename {p .}} {
 #check the reading name exists in the database
 #return 0 for success
 #return 1 for failure
-proc CheckEntryName { io entry name c_len c_num } {
+proc CheckEntryName { io entry name _start _end _vstart _vend _num } {
 
-    upvar $c_len len $c_num num
+    upvar $_start  start
+    upvar $_end    end
+    upvar $_vstart vstart
+    upvar $_vend   vend
+    upvar $_num    num
     set press_ok 0
 
     set num [cname2crec $io $name]
@@ -104,8 +108,11 @@ proc CheckEntryName { io entry name c_len c_num } {
 	$entry icursor end
 	return -1
     } else {
-	set c [io_read_contig $io $num]
-	set len [keylget c length]
+	set c [$io get_contig $num]
+	set start  [$c get_start]
+	set end    [$c get_end]
+	set vstart [$c get_visible_start]
+	set vend   [$c get_visible_end]
 	return 0
     }
     #tkwait variable never_return
@@ -115,20 +122,19 @@ proc CheckEntryName { io entry name c_len c_num } {
 #if the user alters the contig name then update the start & end of contig
 proc UpdateContigLimits { io start end entry} {
     set name [$entry get]
-    set contig_len 0
+    set st 0; set en 0; set vst 0; set ven 0;
     set contig_num 0
 
-    if { [CheckEntryName $io $entry $name contig_len contig_num] == 0 } {
-	if {[$end cget -to] == [$end get]} {
-	    set atend 1
-	} else {
-	    set atend 0
-	}
-	$start configure -to $contig_len
-	$end configure -to $contig_len
-	if {[$end get] > $contig_len || $atend} {
-	    $end set $contig_len
-	}
+    if { [CheckEntryName $io $entry $name st en vst ven contig_num] == 0 } {
+	$start configure -from $st -to $en
+	$end   configure -from $st -to $en
+	#if {[$start get] < $vst} { $start set $vst }
+	#if {[$start get] > $ven} { $start set $ven }
+	#if {[$end   get] < $vst} { $end   set $vst }
+	#if {[$end   get] > $ven} { $end   set $ven }
+	$start set $vst
+	$end   set $ven
+	update idletasks
     }
 }
 
@@ -137,13 +143,13 @@ proc UpdateContigLimits { io start end entry} {
 #must check that the current selected values are correct
 proc CheckEntry { io path name rreg } {
 
-    set contig_len 0
+    set st 0; set en 0; set vst 0; set ven 0;
     set contig_num 0
 
     set checked_ok 0
 
-    if {[CheckEntryName $io $path.entry $name contig_len contig_num] == 0 } { 
-	if { $rreg > $contig_len } {
+    if {[CheckEntryName $io $path.entry $name st en vst ven contig_num] == 0 } { 
+	if { $rreg > $en } {
 	    tk_messageBox \
 		    -icon error \
 		    -title "Bad contig limits" \

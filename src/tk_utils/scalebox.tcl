@@ -205,6 +205,11 @@ proc scalebox_get {path} {
     return [$path.scale get]
 }
 
+proc scalebox_set {path val} {
+    $path.scale set $val
+    scalebox_update_entry $path.scale $path.entry $val
+}
+
 #
 # scalebox_destroy:
 #
