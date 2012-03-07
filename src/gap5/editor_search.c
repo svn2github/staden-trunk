@@ -293,7 +293,7 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
     while ((r = ifunc(xx->io, iter))) {
 	seq_t *s, *sorig;
 	char *ind, *indt = NULL, *indb = NULL, *seq;
-	int seq_len, comp;
+	int seq_len, comp, off = 0;
 
 	if (found && dir  && r->start > best_pos)
 	    break;
@@ -312,11 +312,12 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 	seq_len = ABS(s->len);
 
 	if (r->start < start) {
-	    seq     += start - r->start;
-	    seq_len -= start - r->start;
+	    off      = start - r->start;
+	    seq     += off;
+	    seq_len -= off;
 	}
-	if (r->end > end)
-	    seq_len -= r->end - end;
+	if (r->end - (patlen-1) > end)
+	    seq_len -= r->end - (patlen-1) - end;
 
 	if (dir) {
 	    if (strand == '+' || strand == '=')
@@ -344,7 +345,7 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 	    ind = NULL;
 
 	if (ind) {
-	    int pos =  r->start + ind - seq;
+	    int pos =  r->start + ind - seq + off;
 	    if (dir) {
 		if (best_pos > pos) {
 		    found = 1;
