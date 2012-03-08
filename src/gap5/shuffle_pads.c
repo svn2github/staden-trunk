@@ -464,8 +464,8 @@ MALIGN *build_malign(GapIO *io, tg_rec cnum /*, int start, int end */) {
 	if (s->right < s->left) {
 	    sorig = s = cache_rw(io, s);
 	    s->right = s->left;
-	    if (s->right > ABS(len))
-		s->left = s->right = ABS(len);
+	    if (s->right > ABS(s->len))
+		s->left = s->right = ABS(s->len);
 	}
 
 	if ((s->len < 0) ^ r->comp) {
