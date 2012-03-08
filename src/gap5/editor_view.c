@@ -280,15 +280,9 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
 
 static void add_char(char *buf, int *j, int l1, int l2, char chr) {
     if (l1)
-	if (l2)
-	    *j += sprintf(buf + *j, "%*.*c", l1, l2, chr);
-	else
-	    *j += sprintf(buf + *j, "%*c", l1, chr);
+	*j += sprintf(buf + *j, "%*c", l1, chr);
     else
-	if (l2)
-	    *j += sprintf(buf + *j, "%.*c", l2, chr);
-	else
-	    *j += sprintf(buf + *j, "%c", chr);
+	*j += sprintf(buf + *j, "%c", chr);
 }
 
 /*
@@ -442,7 +436,7 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
     int i, j, l1, l2, raw;
     char *cp;
     GapIO *io = xx->io;
-    seq_t *s1 = get_seq(io, seq), *s2 = NULL, *s;
+    seq_t *s1 = get_seq(io, seq), *s2 = NULL, *s = s1;
     tg_rec pair = 0;
 
     cache_incr(io, s1);
