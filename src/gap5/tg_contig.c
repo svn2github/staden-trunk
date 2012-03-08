@@ -1813,7 +1813,11 @@ static int simple_sort_range_by_template(const void *v1, const void *v2) {
 
 
 /* As we already have rangec_t calculated we can use this instead of the
-   slower sequence_get_base */
+ * slower sequence_get_base
+ *
+ * Returns 0 on success and fills *base, *cutoff
+ *        -1 on failure
+ */
 static int get_base(seq_t *s, const rangec_t *r, int pos, char *base, int *cutoff) {
     
     if (pos < 0 || pos >= ABS(s->len)) return -1;
@@ -1834,7 +1838,10 @@ static int get_base(seq_t *s, const rangec_t *r, int pos, char *base, int *cutof
     return 0;
 }
 
-
+/*
+ * Collate bases by alphabetical (A, C, G, T), N(123, first value are z),
+ * "*"(124), and then any arbitrary unknown/failure(125).
+ */
 static int simple_sort_by_base(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
     const rangec_t *r2 = (const rangec_t *)v2;
@@ -1853,6 +1860,8 @@ static int simple_sort_by_base(const void *v1, const void *v2) {
 	} else if (b1 == '*'){
 	    b1 = 124;
 	}
+    } else {
+	b1 = 125; /* Unknowns are sorted to end */
     }
     
     if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
@@ -1868,6 +1877,8 @@ static int simple_sort_by_base(const void *v1, const void *v2) {
 	} else if (b2 == '*') {
 	    b2 = 124;
 	}
+    } else {
+	b2 = 125;
     }
     
     return b1 - b2;
