@@ -65,8 +65,10 @@ proc cname2crec {io name} {
 	set crec [$io contig_order $i]
 	set c [$io get_contig $crec]
 	if {[string match $name [$c get_name]]} {
+	    $c delete
 	    return $crec
 	}
+	$c delete
     }
 
     return -1

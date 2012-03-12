@@ -286,6 +286,8 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			cache_decr(io, bin);
 			if (s && s != &seq)
 			    cache_decr(io, s);
+			if (r)
+			    free(r);
 			return calculate_consensus_simple2(io, contig,
 							   start, end,
 							   con, qual);
