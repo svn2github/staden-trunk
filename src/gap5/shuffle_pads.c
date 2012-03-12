@@ -861,7 +861,7 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
     /* Step 2: edit alignments */
     for (cl = malign->contigl; cl; cl = cl->next) {
 	seq_t *s, *sorig;
-	int len, update_range;
+	int len, update_range = 0;
 	int shift;
 
 	rnum = cl->id;
