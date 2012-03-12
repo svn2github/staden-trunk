@@ -113,7 +113,7 @@ static int btree_set_parent_key(btree_t *t, btree_node_t *p,
 				int ind, char *str, int recurse) {
     btree_inc_ref(t->cd, p);
 
-    if (recurse && p->parent && p->keys[ind]) {
+    if (recurse && p->parent && p->keys[ind] && ind == p->used-1) {
 	btree_node_t *par = btree_node_get(t->cd, p->parent);
 	int ind2 = btree_find_key(par, p->keys[ind]);
 	if (par->keys[ind2] &&
@@ -153,13 +153,17 @@ static int btree_insert_key(btree_t *t, btree_node_t *n, int ind,
 
     if (n->used == ind && par) {
 	/* Inserted to end of list, so update parent too */
-	ind = btree_find_key(par, n->keys[n->used-1]);
+	for (ind = 0; ind < par->used; ind++)
+	    if (par->chld[ind] == n->rec)
+		break;
+	assert(par->chld[ind] == n->rec);
 	btree_set_parent_key(t, par, ind, str, 1);
     }
 
     if (++n->used > BTREE_MAX) {
 	btree_node_t *n2;
 
+	//btree_check(t, t->root, "");
 	/*
 	 * At this point we split our tree in two.
 	 * The copy the right hand half into a new node 'n2' and insert
@@ -180,6 +184,7 @@ static int btree_insert_key(btree_t *t, btree_node_t *n, int ind,
 	n->used = BTREE_MAX/2;
 	n2->used = j;
 	n2->parent = n->parent;
+
 	if (n->leaf) {
 	    n2->next = n->next;
 	    n->next = n2->rec;
@@ -189,9 +194,17 @@ static int btree_insert_key(btree_t *t, btree_node_t *n, int ind,
 	btree_inc_ref(t->cd, n2);
 
 	if (n->parent) {
+	    /*
+	     * Be careful here - there may be multiple nodes in the parent
+	     * sharing the same key if one key is very common.
+	     */
 	    ind = btree_find_key(par, n->keys[n->used-1]);
+	    while (ind < par->used && par->chld[ind] != n->rec)
+		ind++;
 	    btree_set_parent_key(t, par, ind, n->keys[n->used-1], 0);
-	    btree_insert_key(t, par, -1, n2->keys[n2->used-1], n2->rec);
+
+	    /* Insert n2 after ind, even if key is duplicated */
+	    btree_insert_key(t, par, ind+1, n2->keys[n2->used-1], n2->rec);
 	} else {
 	    /* We need to make a new root */
 	    btree_dec_ref(t->cd, t->root);
@@ -214,6 +227,8 @@ static int btree_insert_key(btree_t *t, btree_node_t *n, int ind,
 
 	btree_dec_ref(t->cd, n);
 	btree_dec_ref(t->cd, n2);
+
+	//btree_check(t, t->root, "");
     } else {
 	btree_node_put(t->cd, n);
     }
@@ -437,6 +452,8 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
     int i, j;
     btree_node_t *left, *right;
 
+    assert(strcmp(n->keys[ind], str) == 0);
+
     do {
 	btree_node_t *par;
 
@@ -470,7 +487,10 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
 	par = n->parent ? btree_node_get(t->cd, n->parent) : NULL;
 	if (par) {
 	    btree_inc_ref(t->cd, par);
-	    ind = btree_find_key(par, str);
+	    for (ind = 0; ind < par->used; ind++)
+		if (par->chld[ind] == n->rec)
+		    break;
+	    assert(par->chld[ind] == n->rec);
 
 	    if (par->keys[ind] && 0 == strcmp(par->keys[ind], str))
 		btree_set_parent_key(t, par, ind, n->keys[n->used-1], 1);
@@ -499,7 +519,6 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
 	    ? btree_node_get(t->cd, par->chld[ind+1])
 	    : NULL;
 	if (right) btree_inc_ref(t->cd, right);
-
 
 	/* Can we redistribute? */
 	if (left && left->used  > BTREE_MIN) {
@@ -549,6 +568,7 @@ static int btree_delete_key(btree_t *t, btree_node_t *n, int ind, char *str) {
 		left->used = j;
 		right->used = 0;
 		left->next = right->next;
+		right->next = 0;
 		btree_node_put(t->cd, left);
 		
 		/* Recurse */
@@ -600,7 +620,7 @@ int btree_delete_rec(btree_t *t, char *str, BTRec rec) {
 	return 0; /* No match */
 
     /* n->keys[ind] is a hit, so search from here on finding rec */
-    while (strcmp(n->keys[ind], str) == 0) {
+    while (n && strcmp(n->keys[ind], str) == 0) {
 	/* Found it? If so remove */
 	if (n->chld[ind] == rec)
 	    return btree_delete_key(t, n, ind, str);
@@ -649,13 +669,17 @@ char *btree_check(btree_t *t, btree_node_t *n, char *pleaf) {
 	    //assert(n->chld[i] == 0);
 	    pleaf = str = n->keys[i];
 
-	    if (n->next && i == n->used-1)
-		assert(strcmp(n->keys[i],
-			      btree_node_get(t->cd, n->next)->keys[0]) <= 0);
+#ifndef NDEBUG
+	    if (n->next && i == n->used-1) {
+		btree_node_t *c = btree_node_get(t->cd, n->next);
+		assert(strcmp(n->keys[i], c->keys[0]) <= 0);
+	    }
+#endif
 	} else {
 	    btree_node_t *c = btree_node_get(t->cd, n->chld[i]);
 	    assert(c);
 	    assert(c->parent == n->rec);
+	    assert(i >= n->used-1 || c->leaf == 0 || c->next == n->chld[i+1]);
 	    str = btree_check(t, c, pleaf);
 	    assert(strcmp(n->keys[i], str) == 0);
 	}
@@ -1091,6 +1115,8 @@ unsigned char *btree_node_encode2(btree_node_t *n, size_t *size,
 /* -------------------------------------------------------------------------
  * Test code. This needs to supply the basic btree_node_* functions
  * (get, put, new and del) allow with a main() test function.
+ *
+ * cc -O2 -g -DTEST_MAIN -I../build.i386 -I. -I../Misc -I$HOME/io_lib -I/usr/include/tcl8.4 -o b+tree2 b+tree2.c tg_utils.c
  */
 
 /*
@@ -1169,26 +1195,34 @@ int main(int argc, char **argv) {
     cnt = btree_count(tree, tree->root);
     printf("Entered %d lines, in tree = %d\n", nlines, cnt);
 
-    for (i = 0; i < 100000000; i++) {
+    for (i = 0; i < 2000000000; i++) {
+	int in_tree, in_list, j;
+
 	int n = random() % nlines;
 	if (random()&1) {
-	    //fprintf(stdout, "Insert %s %d\n", lines[n], n);
 	    if (lines[n][0] & 0x80) {
-		lines[n][0] &= 0x80;
+		//		if (i > 182300) fprintf(stdout, "%d Insert %s\n", i, lines[n]);
+		lines[n][0] &= ~(unsigned char)0x80;
 		btree_insert(tree, lines[n], n);
 		cnt++;
 	    }
 	} else {
 	    if (!(lines[n][0] & 0x80)) {
-		btree_delete(tree, lines[n]);
+		//		if (i > 182300) fprintf(stdout, "%d Delete %s\n", i, lines[n]);
+		//btree_delete(tree, lines[n]);
+		btree_delete_rec(tree, lines[n], n);
 		lines[n][0] |= 0x80;
 		cnt--;
 	    }
 	}
 
+	//	if (i > 182300)
+	//	    btree_check(tree, tree->root, "");
+
 	if ((i % 10000) == 0) {
-	    putchar('.');
+	    //putchar('.');
 	    fflush(stdout);
+	    fprintf(stdout, "count=%d\n", i);
 	    btree_check(tree, tree->root, "");
 	    assert(cnt == btree_count(tree, tree->root));
 	}
