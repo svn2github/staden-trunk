@@ -165,10 +165,8 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
 	parse_maqmap_aux(a, &seq, sz, &m128, k++);
 
 	/* Read is unmapped, but placed along side the pair in the file */
-	if (m128.flag == (PAIRFLAG_SW | PAIRFLAG_NOMATCH)) {
-	    free(seq.data);
+	if (m128.flag == (PAIRFLAG_SW | PAIRFLAG_NOMATCH))
 	    continue;
-	}
 
 	/* Fetch library */
 	hd.p = NULL;
