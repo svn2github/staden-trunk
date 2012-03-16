@@ -27,6 +27,7 @@
 #define ACE_RT 9 
 #define ACE_CT 10
 #define ACE_WA 11
+#define ACE_WR 12
 
 #define MAX_NAME 128
 #define MAX_LINE_LEN 1024
@@ -117,12 +118,17 @@ typedef struct {
 /* RT{
  * data
  * }
- * Similarly CT{} and WA{}.
+ * Similarly WR{}, CT{} and WA{}.
  */
 typedef struct {
     int type;
     char *text;
 } ace_rt_t;
+
+typedef struct {
+    int type;
+    char *text;
+} ace_wr_t;
 
 typedef struct {
     int type;
@@ -144,6 +150,7 @@ typedef union {
     ace_qa_t qa;
     ace_ds_t ds;
     ace_rt_t rt;
+    ace_wr_t wr;
     ace_ct_t ct;
     ace_wa_t wa;
 } ace_item_t;
@@ -181,6 +188,11 @@ ace_item_t *next_ace_item(zfp *fp) {
     case ACE_RT:
 	if (ai.rt.text)
 	    free(ai.rt.text);
+	break;
+
+    case ACE_WR:
+	if (ai.wr.text)
+	    free(ai.wr.text);
 	break;
 
     case ACE_CT:
@@ -386,6 +398,10 @@ ace_item_t *next_ace_item(zfp *fp) {
 	ai.type = ACE_WA;
 	goto RT_code;
 
+    } else if (strncmp(line, "WR{", 3) == 0) {
+	ai.type = ACE_WR;
+	goto RT_code;
+
     } else if (strncmp(line, "RT{", 3) == 0) {
 	size_t allocated, used;
 	ai.type = ACE_RT;
@@ -435,9 +451,11 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     ace_item_t *ai;
     zfp *fp;
     af_line *af = NULL;
-    int af_count = 0, seq_count = 0, nseqs = 0, nseqs_tot = 0, ncontigs = 0;
+    int af_count = 0, seq_count = -1, nseqs = 0, nseqs_tot = 0, ncontigs = 0;
     contig_t *c = NULL;
     tg_pair_t *pair = NULL;
+    seq_t seq;
+    char tname[1024];
     
     set_dna_lookup(); /* initialise complement table */
 
@@ -449,21 +467,36 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     }
 
     while (ai = next_ace_item(fp)) {
-	seq_t seq;
-
 	switch (ai->type) {
 	case ACE_AS:
 	    nseqs_tot = ai->as.nreads;
 	    break;
 
 	case ACE_CO:
-	
+	    /* New contig => flush out last read in old contig */
+	    if (seq_count >= 0 && !(seq.left == -1 && seq.right == -1)) {
+		save_range_sequence(io, &seq, ACE_MQUAL, pair,
+				    (pair && *tname), tname, c, a,
+				    GRANGE_FLAG_TYPE_SINGLE,
+				    NULL, NULL);
+		nseqs++;
+
+		if ((nseqs & 0x3fff) == 0) {
+		    printf("\r%5.2f%%", (100.0 * nseqs) / nseqs_tot);
+		    //HacheTableStats(io->cache, stdout);
+		    fflush(stdout);
+		    cache_flush(io);
+		}
+		seq.left = -1;
+		seq.right = -1;
+	    }
+
 	    create_new_contig(io, &c, ai->co.cname, a->merge_contigs);
 
 	    if (af)
 		free(af);
 	    af = (af_line *)calloc(ai->co.nreads, sizeof(*af));
-	    seq_count = af_count = 0;
+	    seq_count = -1, af_count = 0;
 	    if (NULL == af)
 		return 1;
 
@@ -481,6 +514,21 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    break;
 
 	case ACE_RD:
+	    if (seq_count++ >= 0 && !(seq.left == -1 && seq.right == -1)) {
+		save_range_sequence(io, &seq, ACE_MQUAL, pair,
+				    (pair && *tname), tname, c, a,
+				    GRANGE_FLAG_TYPE_SINGLE,
+				    NULL, NULL);
+		nseqs++;
+
+		if ((nseqs & 0x3fff) == 0) {
+		    printf("\r%5.2f%%", (100.0 * nseqs) / nseqs_tot);
+		    //HacheTableStats(io->cache, stdout);
+		    fflush(stdout);
+		    cache_flush(io);
+		}
+	    }
+
 	    /* Add readings, assumed in same order as AF lines */
 	    if (strcmp(ai->rd.rname, af[seq_count].name)) {
 		fprintf(stderr, "AF lines and RD lines not in same order\n");
@@ -517,35 +565,42 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    break;
 
 	case ACE_QA:
-	    if (seq.flags & SEQ_COMPLEMENTED) {
-		seq.left  = ABS(seq.len) - ai->qa.aend   + 1;
-		seq.right = ABS(seq.len) - ai->qa.astart + 1;
+	    if (ai->qa.aend == -1 && ai->qa.astart == -1) {
+		/* Unaligned read */
+		seq.left = seq.right = -1;
 	    } else {
-		seq.left  = ai->qa.astart;
-		seq.right = ai->qa.aend;
+		if (seq.flags & SEQ_COMPLEMENTED) {
+		    seq.left  = ABS(seq.len) - ai->qa.aend   + 1;
+		    seq.right = ABS(seq.len) - ai->qa.astart + 1;
+		} else {
+		    seq.left  = ai->qa.astart;
+		    seq.right = ai->qa.aend;
+		}
 	    }
 	    break;
 
 	case ACE_DS:
-	    seq.template_name_len = *ai->ds.tname
-		? strlen(ai->ds.tname)
-		: seq.name_len;
-	    save_range_sequence(io, &seq, ACE_MQUAL, pair,
-				(pair && *ai->ds.tname),
-				ai->ds.tname, c, a, GRANGE_FLAG_TYPE_SINGLE,
-				NULL, NULL);
-	    seq_count++;
-	    nseqs++;
-
-	    if ((nseqs & 0x3fff) == 0) {
-		printf("\r%5.2f%%", (100.0 * nseqs) / nseqs_tot);
-		//HacheTableStats(io->cache, stdout);
-		fflush(stdout);
-		cache_flush(io);
-	    }
+	    strncpy(tname, ai->ds.tname, 1024);
+	    seq.template_name_len = *tname ? strlen(tname) : seq.name_len;
 	    break;
 	}
     }
+
+    if (seq_count++ >= 0 && !(seq.left == -1 && seq.right == -1)) {
+	save_range_sequence(io, &seq, ACE_MQUAL, pair,
+			    (pair && *tname), tname, c, a,
+			    GRANGE_FLAG_TYPE_SINGLE,
+			    NULL, NULL);
+	nseqs++;
+
+	if ((nseqs & 0x3fff) == 0) {
+	    printf("\r%5.2f%%", (100.0 * nseqs) / nseqs_tot);
+	    //HacheTableStats(io->cache, stdout);
+	    fflush(stdout);
+	    cache_flush(io);
+	}
+    }
+
     puts("");
 
     if (pair && !a->fast_mode) {    
