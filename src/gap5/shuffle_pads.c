@@ -1346,7 +1346,7 @@ int remove_pad_columns(GapIO *io, int ncontigs, contig_list_t *contigs,
 		continue;
 
 	    vmessage("  Removing column %d %d%% pad (%d of %d), conf. %f)\n",
-		     j+contigs[i].start,
+		     (int)j+contigs[i].start,
 		     100 * cons[j].counts[4] / cons[j].depth,
 		     cons[j].counts[4], cons[j].depth,
 		     cons[j].scores[cons[j].call]);

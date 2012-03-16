@@ -56,7 +56,7 @@ renz_info(char *window,
     
     vfuncheader("%s result list", name);
     
-    vmessage("Contig %s (#%d) \n", get_contig_name(io, contig),
+    vmessage("Contig %s (#%"PRIrec") \n", get_contig_name(io, contig),
 	     io_clnbr(io, contig));
 
     vmessage("Number of enzymes = %d\n", num_enzymes);
@@ -1003,7 +1003,7 @@ GetREnzName(ClientData clientData,
     if (r) {
 	vTcl_SetResult(interp, "%s", r->r_enzyme[args.item].name);
     } else {
-	vTcl_SetResult(interp, "No renz plot for id %d, contig %d\n",
+	vTcl_SetResult(interp, "No renz plot for id %d, contig %"PRIrec"\n",
 		       args.id, args.contig);
 	return TCL_ERROR;
     }

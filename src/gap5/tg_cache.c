@@ -422,7 +422,7 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
     cache_key_t *k = (cache_key_t *)key;
     static HacheData hd;
 
-    gio_debug(io, 2, "Cache load %d type %d\n", k->rec, k->type);
+    gio_debug(io, 2, "Cache load %"PRIrec" type %d\n", k->rec, k->type);
 
     load_counts[k->type]++;
 
@@ -525,7 +525,7 @@ static void cache_unload(void *clientdata, HacheData hd) {
     cached_item *ci = hd.p;
     int unlock = 1;
 
-    gio_debug(io, 2, "Cache unload %d\n", ci->rec);
+    gio_debug(io, 2, "Cache unload %"PRIrec"\n", ci->rec);
 
     assert(io->base || ci->updated == 0);
 
