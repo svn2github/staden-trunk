@@ -1781,7 +1781,7 @@ int update_uniqueness_hash(GapIO *io) {
 		return -1;
 	}
 
-	printf("%d/%d len %d\n", cnum+1, io->db->Ncontigs, len);
+	//printf("%d/%d len %d\n", cnum+1, io->db->Ncontigs, len);
 
 	calculate_consensus_simple(io, crec, c->start, c->end, cons, NULL);
 	
