@@ -162,7 +162,7 @@ int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos,
     }
 
     /* Back off trailing pads */
-    while (*(cp-1) == '*')
+    while (cp > cl->mseg->seq && *(cp-1) == '*')
 	cp--;
 
     cl->mseg->length = cp-cl->mseg->seq;
