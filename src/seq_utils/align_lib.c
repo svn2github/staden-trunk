@@ -6247,7 +6247,7 @@ int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 
 	    /* best bottom edge score */
 	    b_c = seq1_len;
-	    pF2 = t_pF2+1;
+	    pF2 = t_pF2 ? t_pF2+1 : F2+1;
 	    max_col = MIN(seq1_len, band_right);
 	    for(column = MAX(1, band_left);
 		column <= max_col;
