@@ -632,6 +632,7 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
     bin_index_t *b;
     range_t *r;
     contig_t *c;
+    tg_rec root;
 
     /* Remove from sequence name btree index */
     if (!(s = cache_search(io, GT_Seq, pos->rec)))
@@ -642,7 +643,11 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
     cache_item_remove(io, GT_Seq, pos->rec);
 
     /* Remove name,rec pair from b+tree */
-    io->iface->seq.index_del(io->dbh, s->name, s->rec);
+    root = io->iface->seq.index_del(io->dbh, s->name, s->rec);
+    if (root != -1 && root != io->db->seq_name_index) {
+	io->db = cache_rw(io, io->db);
+	io->db->seq_name_index = root;
+    }
 
     /* Deallocate seq struct itself */
     if (!(b = cache_search(io, GT_Bin, s->bin))) {
@@ -1267,6 +1272,7 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	    case GRANGE_FLAG_ISSEQ: {
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
 		seq_t *p;
+		tg_rec root;
 
 		if (!s) {
 		    ret = 1;
@@ -1274,7 +1280,11 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 		}
 
 		/* Remove from B+Tree */
-		io->iface->seq.index_del(io->dbh, s->name, s->rec);
+		root = io->iface->seq.index_del(io->dbh, s->name, s->rec);
+		if (root != -1 && root != io->db->seq_name_index) {
+		    io->db = cache_rw(io, io->db);
+		    io->db->seq_name_index = root;
+		}
 
 		/* Identify pairs */
 		if (r->pair_rec) {

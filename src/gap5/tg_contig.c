@@ -86,8 +86,13 @@ int contig_set_name(GapIO *io, contig_t **c, char *name) {
 	return -1;
 
     /* Delete old name */
-    if (n->name)
-	iob->iface->contig.index_del(iob->dbh, n->name, n->rec);
+    if (n->name) {
+	tg_rec r = iob->iface->contig.index_del(iob->dbh, n->name, n->rec);
+	if (r != -1 && r != io->db->contig_name_index) {
+	    io->db = cache_rw(io, io->db);
+	    io->db->contig_name_index = r;
+	}
+    }
 
     if (NULL == (n = cache_item_resize(n, sizeof(*n) + strlen(name)+1)))
 	return -1;
@@ -98,8 +103,13 @@ int contig_set_name(GapIO *io, contig_t **c, char *name) {
     n->name   = (char *)(&n->name+1);
     strcpy(n->name, name);
 
-    if (*name)
-	iob->iface->contig.index_add(iob->dbh, name, n->rec);
+    if (*name) {
+	tg_rec r = iob->iface->contig.index_add(iob->dbh, name, n->rec);
+	if (r != -1 && r != io->db->contig_name_index) {
+	    io->db = cache_rw(io, io->db);
+	    io->db->contig_name_index = r;
+	}
+    }
 
     return 0;
 }
@@ -1462,7 +1472,7 @@ int contig_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {
 
     if (r != io->db->contig_name_index) {
 	io->db = cache_rw(io, io->db);
-	io->db->contig_name_index = (GCardinal)r;
+	io->db->contig_name_index = r;
     }
 
     return 0;
@@ -3876,8 +3886,13 @@ int contig_destroy(GapIO *io, tg_rec rec) {
     if (!(c = cache_search(io, GT_Contig, rec)))
 	return -1;
 
-    if (c->name)
-	io->iface->contig.index_del(io->dbh, c->name, rec);
+    if (c->name) {
+	tg_rec r = io->iface->contig.index_del(io->dbh, c->name, rec);
+	if (r != -1 && r != io->db->contig_name_index) {
+	    io->db = cache_rw(io, io->db);
+	    io->db->contig_name_index = r;
+	}
+    }
 
     /* Remove from contig order */
     io->contig_order = cache_rw(io, io->contig_order);

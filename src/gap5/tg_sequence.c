@@ -643,7 +643,7 @@ int sequence_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {
 
     if (r != io->db->seq_name_index) {
 	io->db = cache_rw(io, io->db);
-	io->db->seq_name_index = (GCardinal)r;
+	io->db->seq_name_index = r;
     }
 
     return 0;

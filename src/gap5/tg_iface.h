@@ -102,8 +102,8 @@ typedef struct {
     STANDARD_IFACE
     tg_rec (*index_query)(void *dbh, char *name, int prefix);
     btree_iter_t *(*index_query_iter)(void *dbh, char *name);
-    int  (*index_add)(void *dbh, char *name, tg_rec rec);
-    int  (*index_del)(void *dbh, char *name, tg_rec rec);
+    tg_rec (*index_add)(void *dbh, char *name, tg_rec rec);
+    tg_rec (*index_del)(void *dbh, char *name, tg_rec rec);
 } io_contig;
 
 typedef struct {
@@ -111,8 +111,8 @@ typedef struct {
     tg_rec (*index_query)(void *dbh, char *name, int prefix);
     btree_iter_t *(*index_query_iter)(void *dbh, char *name);
     tg_rec *(*index_query_all)(void *dbh, char *name, int prefix, int *nrecs);
-    int  (*index_add)(void *dbh, char *name, tg_rec rec);
-    int  (*index_del)(void *dbh, char *name, tg_rec rec);
+    tg_rec (*index_add)(void *dbh, char *name, tg_rec rec);
+    tg_rec (*index_del)(void *dbh, char *name, tg_rec rec);
 } io_seq;
 
 typedef struct {

@@ -176,22 +176,6 @@ typedef struct {
 //#define DB_VERSION 3 /* 1.2.14, added template_name_len in seq_t */
 #define DB_VERSION 4 /* 2.0.0b8-p16, added direction to tags */
 
-/* g-layer equivalent of database_t : this is as it's written on disc */
-typedef struct { 
-    GCardinal version;
-
-    /* Arrays */
-    GCardinal Ncontigs;		/* N.elements in array */
-    GCardinal contig_order;	/* rec. of array of contig rec. nos */
-
-    GCardinal Nlibraries;       /* N.elements in array */
-    GCardinal library;          /* rec. of array o library rec. nos */
-
-    /* Indices */
-    GCardinal seq_name_index;	/* rec of type GT_Index */
-    GCardinal contig_name_index;/* rec of type GT_Index */
-} GDatabase; 
-
 typedef struct {
     int    version;
 

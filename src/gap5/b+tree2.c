@@ -268,7 +268,7 @@ static btree_node_t *btree_find_recurse(btree_t *t, char *str, int *index) {
 int btree_insert(btree_t *t, char *str, BTRec value) {
     btree_node_t *n;
     int ind;
-
+    
     n = btree_find_recurse(t, str, &ind);
     if (!n || !n->keys[ind] || 0 != strcmp(n->keys[ind], str))
 	return btree_insert_key(t, n, ind, str, value);

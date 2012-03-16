@@ -1889,26 +1889,31 @@ static btree_iter_t *io_contig_index_query_iter(void *dbh, char *name) {
     return btree_iter_new(io->contig_name_tree, name);
 }
 
-static int io_contig_index_add(void *dbh, char *name, tg_rec rec) {
+static tg_rec io_contig_index_add(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
     if (!io->contig_name_tree)
 	return -1;
 
-    btree_insert(io->contig_name_tree, name, rec);
-    return io->contig_name_tree->root->rec;
+    return btree_insert(io->contig_name_tree, name, rec) == 0
+	? io->contig_name_tree->root->rec
+	: -1;
 }
 
-static int io_contig_index_del(void *dbh, char *name, tg_rec rec) {
+static tg_rec io_contig_index_del(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
     if (!io->contig_name_tree)
 	return -1;
 
     if (rec)
-	return btree_delete_rec(io->contig_name_tree, name, rec);
+	return btree_delete_rec(io->contig_name_tree, name, rec) == 0
+	    ? io->contig_name_tree->root->rec
+	    : -1;
     else
-	return btree_delete(io->contig_name_tree, name);
+	return btree_delete(io->contig_name_tree, name) == 0
+	    ? io->contig_name_tree->root->rec
+	    : -1;
 }
 
 /* ------------------------------------------------------------------------
@@ -3921,26 +3926,31 @@ static btree_iter_t *io_seq_index_query_iter(void *dbh, char *name) {
     return btree_iter_new(io->seq_name_tree, name);
 }
 
-static int io_seq_index_add(void *dbh, char *name, tg_rec rec) {
+static tg_rec io_seq_index_add(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
     if (!io->seq_name_tree)
 	return -1;
 
-    btree_insert(io->seq_name_tree, name, rec);
-    return io->seq_name_tree->root->rec;
+    return btree_insert(io->seq_name_tree, name, rec) == 0
+	? io->seq_name_tree->root->rec
+	: -1;
 }
 
-static int io_seq_index_del(void *dbh, char *name, tg_rec rec) {
+static tg_rec io_seq_index_del(void *dbh, char *name, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     
     if (!io->seq_name_tree)
 	return -1;
 
     if (rec)
-	return btree_delete_rec(io->seq_name_tree, name, rec);
+	return btree_delete_rec(io->seq_name_tree, name, rec) == 0
+	    ? io->seq_name_tree->root->rec
+	    : -1;
     else
-	return btree_delete(io->seq_name_tree, name);
+	return btree_delete(io->seq_name_tree, name) == 0
+	    ? io->seq_name_tree->root->rec
+	    : -1;
 }
 
 /* ------------------------------------------------------------------------
