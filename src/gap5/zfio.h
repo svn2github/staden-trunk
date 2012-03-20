@@ -9,7 +9,7 @@
  */
 typedef struct {
     FILE   *fp;
-    gzFile *gz;
+    gzFile  gz;
 } zfp;
 
 off_t zftello(zfp *zf);
