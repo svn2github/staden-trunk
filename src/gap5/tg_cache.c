@@ -40,7 +40,7 @@ static int write_counts[100];
  *
  * When reading we create a RO view (unless explicitly asked for otherwise).
  *
- * When writing we upgrade the view to RW and increment it's reference count
+ * When writing we upgrade the view to RW and increment its reference count
  * to prevent cache expiry.
  */
 
@@ -776,6 +776,18 @@ int qsort_ci_view(const void *p1, const void *p2) {
 }
 
 /*
+ * qsort callback.
+ * Sorts cached_item * on record number.
+ */
+int qsort_ci_rec(const void *p1, const void *p2) {
+    cached_item **c1 = (cached_item **)p1;
+    cached_item **c2 = (cached_item **)p2;
+
+    return (*c1)->rec - (*c2)->rec;
+}
+
+
+/*
  * Flushes changes in the cache back to disk.
  */
 int cache_flush(GapIO *io) {
@@ -958,9 +970,9 @@ int cache_flush(GapIO *io) {
 #endif
 
 
-    /* Sort them by view number, which is likely to be approx on-disk order */
+    /* Sort them by record number, which is likely to be approx on-disk order */
     qsort(ArrayBase(cached_item *, to_flush), nflush, sizeof(cached_item *),
-	  qsort_ci_view);
+	  qsort_ci_rec);
 
 
     io->iface->lock(io->dbh);
