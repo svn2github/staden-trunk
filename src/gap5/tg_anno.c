@@ -145,7 +145,8 @@ int anno_ele_set_comment(GapIO *io, anno_ele_t **e, char *comment) {
 	ae = cache_item_resize(ae, sizeof(*ae) + clen+1);
 	ae->comment = (char *)&ae->data;
     }
-    strcpy(ae->comment, comment);
+    if (clen)
+	strcpy(ae->comment, comment);
 
     *e = ae;
 

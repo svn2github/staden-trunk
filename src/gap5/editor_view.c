@@ -2,6 +2,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <X11/Xatom.h> /* XA_PRIMARY - included in Tk distribrution */
+#include <assert.h>
 
 #include "editor_view.h"
 #include "tkSheet.h"
@@ -2786,8 +2787,11 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
     if (!xx->r)
 	return -1;
 
-    if (rec) *rec = -1;
-    if (pos) *pos =  0;
+    assert(rec);
+    assert(pos);
+
+    *rec = -1;
+    *pos =  0;
 
     /* Special case - the reserve row numbers */
     if (row == xx->y_cons) {

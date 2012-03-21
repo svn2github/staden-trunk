@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+
 #include "misc.h"
 #include "xalloc.h"
 #include "dna_utils.h"
@@ -50,8 +52,7 @@ int cmpseq_ (
     static Hash *h=NULL;
     switch (*job) {
 
-    case (1):
-
+    case 1: 
 	if ( init_hash8n ( *seq1_len, *seq2_len, 
 			  8, *max_matches, *min_mat, 1, &h )) {
 	    free_hash8n(h);
@@ -59,9 +60,9 @@ int cmpseq_ (
 	}
 
 	return 0;
-	break;
 	
-    case (2):
+    case 2:
+	assert(h);
 	
 	h->seq1_len = *seq1_len;
 	h->seq1 = seq1;
@@ -71,9 +72,9 @@ int cmpseq_ (
 	}
 	(void) store_hashn ( h );
 	return 0;
-	break;
 	
-    case (3):
+    case 3:
+	assert(h);
 	
 	h->seq1 = seq1;
 	h->seq1_len = *seq1_len;
@@ -85,32 +86,24 @@ int cmpseq_ (
 	}
 	
 	return compare_seqs ( h, seq1_match, seq2_match, len_match);
-	break;
 
-    case (4):
-	
+    case 4:
 	verror(ERR_WARN, "cmpseq", "illegal option 4");
 	return -1;
-	break;
 	
-    case (5):
-	
+    case 5:
 	verror(ERR_WARN, "cmpseq", "illegal option 5");
 	return -1;
-	break;
 	
-    case (6):
+    case 6:
+	assert(h);
 	
 	free_hash8n ( h );
 	return 0;
-	break;
 	
-	default:
-	
+    default:
 	verror(ERR_WARN, "cmpseq", "unknown job %d", *job);
 	return -2;
-	break;
-	
     }
 }
 
@@ -129,7 +122,7 @@ int repeat_search (
 		   int *num_r_matches
 		   ) {
 
-    int n_matches,seq2_len,max_matches,nres;
+    int n_matches,seq2_len,nres;
     char *seq2,sense;
     Hash *h;
     char *depadded_seq;
@@ -151,7 +144,6 @@ int repeat_search (
     seq1 = depadded_seq;
     seq1_len = depadded_len;
 
-    max_matches = max_mat;
     seq2_len = seq1_len;
     seq2 = NULL;
 

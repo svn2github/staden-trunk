@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -1424,7 +1425,7 @@ int make_consensus( int task_mask, GapIO *io,
 	j += number_of_contigs * MAXGEL_PLUS*2;
     }
     max_consensus = j;
-    if (NULL == (consensus = (char *)malloc(j)))
+    if (NULL == (consensus = (char *)malloc(j+1)))
 	return -1;
 
     if ( task_mask & SORTCONTIGS ) {
@@ -1530,7 +1531,7 @@ int make_consensus( int task_mask, GapIO *io,
 	}
 
 	if ( task_mask & ADDHIDDENDATA ) {
-
+	    assert(hidden_seq);
 
 	    left_extension = get_hidden(io, contig, LEFT_END,
 					p, &consensus[contig_start],

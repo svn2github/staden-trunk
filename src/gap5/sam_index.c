@@ -1208,7 +1208,8 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
 	s.flags |= SEQ_COMPLEMENTED;
     }
 
-    memcpy(s.sam_aux, aux, s.aux_len);
+    if (aux)
+	memcpy(s.sam_aux, aux, s.aux_len);
 
     /* Create the range, save the sequence */
     paired = (bam_flag(b) & BAM_FPAIRED) ? 1 : 0;
@@ -1611,7 +1612,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	s.flags |= SEQ_COMPLEMENTED;
     }
 
-    memcpy(s.sam_aux, aux, s.aux_len);
+    if (aux)
+	memcpy(s.sam_aux, aux, s.aux_len);
 
     /* Create the range, save the sequence */
     paired = (bam_flag(b) & BAM_FPAIRED) ? 1 : 0;

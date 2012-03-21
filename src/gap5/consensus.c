@@ -1785,7 +1785,7 @@ int update_uniqueness_hash(GapIO *io) {
 
 	calculate_consensus_simple(io, crec, c->start, c->end, cons, NULL);
 	
-	for (w = i = j = 0; i < len && j < WLEN-1; i++) {
+	for (W = w = i = j = 0; i < len && j < WLEN-1; i++) {
 	    int c = lookup[cons[i]];
 	    if (c < 4) {
 		w = (w << 2) | c;

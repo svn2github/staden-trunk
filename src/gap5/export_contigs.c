@@ -632,6 +632,7 @@ static char *sam_padded_cigar(char *seq, int left, int right, int olen) {
     //assert(cglen == len);
 
     /* Sam cannot handle gaps at the end of sequences */
+    assert(cp);
     if (*(cp-1) == 'D') {
 	cp-=2;
 	while(*cp >= '0' && *cp <= '9')
@@ -761,6 +762,7 @@ static char *sam_depadded_cigar(char *seq, int left, int right, int olen,
     //assert(cglen == len);
 
     /* Sam cannot handle gaps at the end of sequences */
+    assert(cp);
     if (*(cp-1) == 'D') {
 	cp-=2;
 	while(*cp >= '0' && *cp <= '9')

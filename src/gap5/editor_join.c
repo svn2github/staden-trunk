@@ -502,7 +502,7 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 	return ret;
 
     xx2[1]->displayPos = left1+shift - left0 + 1 + (xx2[0]->displayPos-1);
-    xx2[0]->displayPos = 1                       + (xx2[0]->displayPos-1);
+//  xx2[0]->displayPos = 1                       + (xx2[0]->displayPos-1);
 
     xx->link->lockOffset = xx2[1]->displayPos - xx2[0]->displayPos;
 

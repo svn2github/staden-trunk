@@ -241,7 +241,7 @@ static void quality_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 		if (t < conq[1]) t = conq[1], base_p = 1;
 		if (t < conq[2]) t = conq[2], base_p = 2;
 		if (t < conq[3]) t = conq[3], base_p = 3;
-		if (t < conq[4]) t = conq[4], base_p = 4;
+		if (t < conq[4])              base_p = 4;
 		
 		/* check whether data is good, bad or non existant */
 #ifdef DEBUG_QUAL
@@ -292,7 +292,7 @@ static void quality_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 		if (t < conq2[1]) t = conq2[1], base_n = 1;
 		if (t < conq2[2]) t = conq2[2], base_n = 2;
 		if (t < conq2[3]) t = conq2[3], base_n = 3;
-		if (t < conq2[4]) t = conq2[4], base_n = 4;
+		if (t < conq2[4])               base_n = 4;
 
 #ifdef DEBUG_QUAL
 		printf("base_n = %d, conq2[base_n] = %3d, conq2[5] = %3d\n",
@@ -941,7 +941,7 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 			if (t < conq[1]) t = conq[1], base = 1;
 			if (t < conq[2]) t = conq[2], base = 2;
 			if (t < conq[3]) t = conq[3], base = 3;
-			if (t < conq[4]) t = conq[4], base = 4;
+			if (t < conq[4])              base = 4;
 
 			if ((val = (float)conq[base]/conq[5]) - cons_cutoff
 			    < -FLT_EPSILON)

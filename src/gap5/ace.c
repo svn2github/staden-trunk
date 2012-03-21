@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #include "tg_gio.h"
 #include "ace.h"
@@ -506,6 +507,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    break;
 
 	case ACE_AF:
+	    assert(af);
 	    /* Accumulate assembled-from lines */
 	    strcpy(af[af_count].name, ai->af.rname);
 	    af[af_count].dir = ai->af.dir;
@@ -530,6 +532,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    }
 
 	    /* Add readings, assumed in same order as AF lines */
+	    assert(af);
 	    if (strcmp(ai->rd.rname, af[seq_count].name)) {
 		fprintf(stderr, "AF lines and RD lines not in same order\n");
 		fprintf(stderr, "%s\n%s\n",

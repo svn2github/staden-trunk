@@ -946,7 +946,7 @@ static void tk_contig_register_cmd(GapIO *io, tg_rec contig, void *fdata,
 	}
 	if (jdata->cursor_notify.cursor->job & CURSOR_DELETE) {
 	    strcat(job, first ? "DELETE" : " DELETE");
-	    first = 0;
+	    //first = 0;
 	}
 	strcat(job, "}");
 	sprintf(buf, "{id %d} {seq %"PRIrec"} {pos %d} {abspos %d} {refs %d} "
@@ -1170,7 +1170,7 @@ int str2reg_data(Tcl_Interp *interp, GapIO *io,
 	break;
 
     default:
-	verror(ERR_WARN, "str2reg_data: unsupported event type '%s'", type);
+	verror(ERR_WARN, "str2reg_data", "unsupported event type '%s'", type);
 	return -1;
     }
 

@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 #include "tg_gio.h"
 #include "tg_index_common.h"
@@ -358,7 +359,7 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
     /* Fetch sequences */
     while ((ent = next_seq(fp))) {
 	seq_t seq;
-	static int dummy_qual_len;
+	static int dummy_qual_len = 0;
 	static char *dummy_qual = NULL;
 
 	// printf("@%s\n%s\n+\n%s\n", ent->name, ent->seq, ent->qual);
@@ -402,6 +403,7 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 	}
 	
 	seq.conf = dummy_qual;
+	assert(seq.conf);
 
 	if (ent->qual) {
 	    int i;
@@ -414,6 +416,7 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
 		seq.conf[i] = q;
 	    }
 	} else {
+	    assert(dummy_qual);
 	    memset(dummy_qual, 0, dummy_qual_len);
 	}
 

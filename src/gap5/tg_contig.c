@@ -154,7 +154,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			       int pos, int apos, int start_of_contig,
 			       int offset, int aoffset, char base, int conf,
 			       int comp, HacheTable *hash) {
-    int i, ins = 0, check_used = 0;
+    int i, ins = 0;
     bin_index_t *bin;
     HacheData hd;
     int f_a, f_b;
@@ -313,7 +313,6 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		r->start++;
 		r->end++;
 		ins = 1;
-		check_used = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
 
 		if (hash) {
@@ -327,7 +326,6 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		r->start++;
 		r->end++;
 		ins = 1;
-		check_used = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
 	    }
 	} /* else pos to right of object */
@@ -757,7 +755,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			       int offset, int aoffset,
 			       int base, int comp, HacheTable *hash,
 			       int bcall) {
-    int i, ins = 0, check_used = 0;
+    int i, ins = 0;
     bin_index_t *bin;
     HacheData hd;
     int f_a, f_b;
@@ -938,7 +936,6 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		r->start--;
 		r->end--;
 		ins = 1;
-		check_used = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
 
 		if (hash) {
@@ -952,7 +949,6 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		r->start--;
 		r->end--;
 		ins = 1;
-		check_used = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
 	    }
 	} /* else pos to right of object */
@@ -4248,8 +4244,10 @@ int find_refpos_marker(GapIO *io, tg_rec cnum, int ppos,
     }
 
     if (r->start == ppos && r->end == ppos) {
-	*bin_r = r->orig_rec;
-	*bin_idx_r = r->orig_ind;
+	if (bin_r)
+	    *bin_r = r->orig_rec;
+	if (bin_idx_r)
+	    *bin_idx_r = r->orig_ind;
 	*rp = *r;
 	contig_iter_del(ci);
 	return 0;

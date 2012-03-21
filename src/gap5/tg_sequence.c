@@ -357,6 +357,8 @@ int sequence_set_name(GapIO *io, seq_t **s, char *name) {
     seq_t *n;
     char *tmp,*cp;
 
+    if (!name) name="";
+
     if (!(n = cache_rw(io, *s)))
 	return -1;
     *s = n;

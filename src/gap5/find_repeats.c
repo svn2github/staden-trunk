@@ -387,6 +387,8 @@ find_repeats(GapIO *io,
     p.rwin1 = 0;
     p.rcnt1 = 0;
     p.do_it = 0;
+    p.gap_open = 12;
+    p.gap_extend = 4;
 
     max_matches = 10000; /* FIXME: make this adjustable */
     consensus = NULL;

@@ -132,7 +132,6 @@ void GAP_ERROR_FATAL(char *reason, ...) {
 	signal(SIGBUS, SIG_DFL);
 #endif
 	stack_trace();
-	*((int *)0) = 88;
 	abort();
     } else {
 	verror(ERR_FATAL, "NOTE  ", "Continue at own risk!");

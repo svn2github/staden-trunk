@@ -282,6 +282,10 @@ static char *zlib_mem_deflate(char *data, size_t size, size_t *cdata_size) {
 
     err = deflateInit2(&s, tg_zlevel == -1 ? Z_DEFAULT_COMPRESSION : tg_zlevel,
 		       Z_DEFLATED, 15, 9, Z_DEFAULT_STRATEGY);
+    if (err != Z_OK) {
+	fprintf(stderr, "zlib deflateInit2 error: %s\n", s.msg);
+	return NULL;
+    }
 
     /* Encode to 'cdata' array */
     for (;s.avail_in;) {
@@ -338,6 +342,10 @@ static char *zlib_mem_deflate_parts(char *data,
 
     err = deflateInit2(&s, tg_zlevel == -1 ? Z_DEFAULT_COMPRESSION : tg_zlevel,
 		       Z_DEFLATED, 15, 9, Z_FILTERED);
+    if (err != Z_OK) {
+	fprintf(stderr, "zlib deflateInit2 error: %s\n", s.msg);
+	return NULL;
+    }
 
     /* Encode to 'cdata' array */
     for (i = 0; i < nparts; i++) {
@@ -400,6 +408,10 @@ static char *zlib_mem_deflate_lparts(char *data,
 
     err = deflateInit2(&s, tg_zlevel == -1 ? Z_DEFAULT_COMPRESSION : tg_zlevel,
 		       Z_DEFLATED, 15, 9, Z_FILTERED);
+    if (err != Z_OK) {
+	fprintf(stderr, "zlib deflateInit2 error: %s\n", s.msg);
+	return NULL;
+    }
 
     /* Encode to 'cdata' array */
     for (i = 0; i < nparts; i++) {
@@ -456,6 +468,10 @@ static char *zlib_mem_inflate(char *cdata, size_t csize, size_t *size) {
     s.total_out = 0;
 
     err = inflateInit(&s);
+    if (err != Z_OK) {
+	fprintf(stderr, "zlib inflateInit error: %s\n", s.msg);
+	return NULL;
+    }
 
     /* Decode to 'data' array */
     for (;s.avail_in;) {

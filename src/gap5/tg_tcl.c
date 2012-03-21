@@ -930,7 +930,6 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	    /* Check if the new bin has a different complemented status too */
 	    if (new_comp != old_comp) {
-		int tmp;
 		s->len *= -1;
 		s->flags ^= SEQ_COMPLEMENTED;
 		//tmp = s->left;
@@ -987,7 +986,6 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	    /* Check if the new bin has a different complemented status too */
 	    if (new_comp != old_comp) {
-		int tmp;
 		s->len *= -1;
 		s->flags ^= SEQ_COMPLEMENTED;
 		//tmp = s->left;
@@ -1009,7 +1007,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	bin_index_t *bin;
 	Tcl_WideInt obj_rec;
 	int obj_type;
-	tg_rec seq_bin;
+	tg_rec seq_bin = 0;
 
 	/* Parse args */
 	if (objc < 4 || objc > 7) {
@@ -1563,6 +1561,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	    break;
 
 	case LIB_T_SAME:
+	default:
 	    tdir = (s->len < 0) ^ dir;
 	}
 
@@ -1867,7 +1866,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	te->anno = t;
 	break;
     default:
-	index=index; /* nop, but prevents gcc warnings */
+	;
     }
 
     /* Perform the command proper */

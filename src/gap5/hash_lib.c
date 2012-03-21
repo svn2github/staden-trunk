@@ -858,7 +858,6 @@ int best_intercept ( Hash *h, int *seq1_i, int *seq2_i ) {
 
     double t, sum_scores, sum_moment, c_o_g, furthest;
     int match_no, matches_left, outlier = 0;
-    sum_scores = sum_moment = 0.0;
 
     for(matches_left = h->matches; matches_left > 1; matches_left--) {
 	sum_moment = sum_scores = 0.0;
@@ -1495,7 +1494,6 @@ void overlap_mismatch(Hash *h, EDIT_PAIR *edit_pair, OVERLAP *overlap,
 int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     int edge_mode = params->edge_mode;
     int i, s1, s2;
-    int len_seq;
     int band, band_in;
     OVERLAP *overlap;
     EDIT_PAIR *edit_pair;
@@ -1589,7 +1587,6 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     overlap->seq2_len = h->block_match[0].pos_seq2;
     overlap->seq1 = h->seq1;
     overlap->seq2 = h->seq2;
-    len_seq = MAX(overlap->seq1_len,overlap->seq2_len);
     
     /*
     printf("<Align pos %d+%d / %d+%d (%.10s... %.10s...)\n",
@@ -1633,9 +1630,8 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	overlap->seq2_len = h->block_match[i].pos_seq2 - s2;
 	overlap->seq1 = &(h->seq1[s1]);
 	overlap->seq2 = &(h->seq2[s2]);
-	len_seq = MAX(overlap->seq1_len,overlap->seq2_len);
 
-	if ( len_seq > 0 ) {
+	if ( MAX(overlap->seq1_len,overlap->seq2_len) > 0 ) {
 
 	    if (band_in) {
 		if (h->fast_mode)
@@ -1865,7 +1861,6 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     double best_percent;
     int more_shuffling;
 
-    gap_pen = -1;
     best_score = -1000000;
     best_prev = -1;
 
@@ -1904,7 +1899,7 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     /* sort the blocks on distance from starts of sequences */
     c1_len = h->seq1_len;
     c2_len = h->seq2_len;
-    i = sort_blocks(h->block_match, h->matches);
+    sort_blocks(h->block_match, h->matches);
 
     /* set each blocks score to its distance from the nearest edge
      * find the best score as this start score plus match length

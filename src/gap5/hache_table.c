@@ -541,6 +541,7 @@ int HacheTableEmpty(HacheTable *h, int deallocate_data) {
     int i;
     
     if (!h) return -1;
+    if (h->nbuckets == 0) return 0;
     
     // the destruction
     

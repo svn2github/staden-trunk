@@ -1524,7 +1524,7 @@ static tg_rec cache_item_create_seq(GapIO *io, void *from) {
 	b = (seq_block_t *)cache_search(io, GT_SeqBlock, brec);
     }
 
-    b = cache_rw(io, b);
+    cache_rw(io, b);
 
     /* FIXME: move this somewhere sensible */
     if (from) {
@@ -1586,7 +1586,7 @@ static tg_rec cache_item_create_anno_ele(GapIO *io, void *from) {
 	b = (anno_ele_block_t *)cache_search(io, GT_AnnoEleBlock, brec);
     }
 
-    b = cache_rw(io, b);
+    cache_rw(io, b);
 
     if (from) {
 	if (cache_item_init_anno_ele(io, from, (brec << ANNO_ELE_BLOCK_BITS) + sub_rec))

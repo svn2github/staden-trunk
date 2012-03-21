@@ -85,6 +85,7 @@ int gio_read_contig(GapIO *io, int cnum, contig_t **c);
 /* The cache aspect of the I/O mechanism */
 int cache_create(GapIO *io);
 void cache_destroy(GapIO *io);
+int cache_deallocate(GapIO *io, void *data);
 int cache_flush(GapIO *io);
 int cache_updated(GapIO *io);
 void *cache_search(GapIO *io, int type, tg_rec rec);

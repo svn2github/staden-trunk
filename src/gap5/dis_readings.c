@@ -15,6 +15,7 @@
 #include "break_contig.h"
 #include "bitmap.h"
 #include "consensus.h"
+#include "text_output.h"
 
 /*-----------------------------------------------------------------------------
  * Databse checking code.
