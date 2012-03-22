@@ -1020,7 +1020,7 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 		bin_remove_item(io, &c, GT_AnnoEle, r->rec);
 	    } else {
 		new_r.rec  = anno_ele_new(io, 0, GT_Contig, 0, 0,
-					  a->direction, r->mqual, a->comment);
+					  r->mqual, a->direction, a->comment);
 	    }
 
 	    if (new_r.start < map->dest_start)
