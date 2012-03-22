@@ -445,7 +445,7 @@ fij(GapIO *io,
 
     for (i = 0; i < counter; i++){
 	obj_fij *match = &FIJMatch->match[i];
-	int ustart, uend;
+	int ustart = 0, uend = 0;
 	tg_rec last_c = 0;
 
 	/* FIXME: Inefficient - try caching this data */

@@ -93,7 +93,7 @@ static int btree_find_key(btree_node_t *n, char *str) {
 #endif
 
     /* Binary search between low..high) */
-    low = 0; high = n->used-1; mid = 0;
+    low = 0; high = n->used-1;
     while (low < high) {
 	mid = (high-low+1)/2 + low;
 	if (strcmp(n->keys[mid], str) >= 0)
