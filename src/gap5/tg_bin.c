@@ -1277,9 +1277,14 @@ int bin_remove_refpos(GapIO *io, tg_rec crec, int pos) {
 	    if (end   < r->end)
 		end   = r->end;
 	}
-
-	bin->start_used = start;
-	bin->end_used = end;
+	
+	if (start != INT_MAX) {
+	    bin->start_used = start;
+	    bin->end_used = end;
+	} else {
+	    bin->start_used = 0;
+	    bin->end_used = 0;
+	}
     }
 
     return 0;

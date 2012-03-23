@@ -813,12 +813,6 @@ static void contig_remove_refpos_markers(GapIO *io, contig_t *c,
 	bin->flags |= BIN_BIN_UPDATED | BIN_RANGE_UPDATED;
 	bin_incr_nrefpos(io, bin, -1);
 
-	/* Mark as empty if we've removed the last object */
-	if (bin->nseqs == 0 && bin->nrefpos == 0 && bin->nanno == 0 &&
-	    bin_empty(bin)) {
-	    bin->start_used = bin->end_used = 0;
-	}
-
 	/* Otherwie adjust start/end used if we may have invalidated it */
 	/* Cache till later to avoid O(N^2) complexity in worst case? */
 	if (bin->start_used == r->start || bin->end_used == r->end) {
@@ -839,6 +833,9 @@ static void contig_remove_refpos_markers(GapIO *io, contig_t *c,
 	    if (start != INT_MAX && end != INT_MIN) { 
 		bin->start_used = start;
 		bin->end_used = end;
+	    } else {
+		bin->start_used = 0;
+		bin->end_used = 0;
 	    }
 	}
 
