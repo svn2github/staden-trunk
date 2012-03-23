@@ -818,6 +818,30 @@ static void contig_remove_refpos_markers(GapIO *io, contig_t *c,
 	    bin_empty(bin)) {
 	    bin->start_used = bin->end_used = 0;
 	}
+
+	/* Otherwie adjust start/end used if we may have invalidated it */
+	/* Cache till later to avoid O(N^2) complexity in worst case? */
+	if (bin->start_used == r->start || bin->end_used == r->end) {
+	    int i;
+	    int start = INT_MAX, end = INT_MIN;
+
+	    for (i = 0; i < ArrayMax(bin->rng); i++) {
+		range_t *r = arrp(range_t, bin->rng, i);
+		if (r->flags & GRANGE_FLAG_UNUSED)
+		    continue;
+
+		if (start > r->start)
+		    start = r->start;
+		if (end   < r->end)
+		    end   = r->end;
+	    }
+	    
+	    if (start != INT_MAX && end != INT_MIN) { 
+		bin->start_used = start;
+		bin->end_used = end;
+	    }
+	}
+
     }
 
     contig_iter_del(ci);
