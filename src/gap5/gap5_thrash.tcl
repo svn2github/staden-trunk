@@ -42,7 +42,7 @@ proc test_join {io} {
     set s [$c get_start]
     set l [$c get_length]
     set p [expr {rand()}]
-    set pos [expr {$p*$l + $s}]
+    set pos [expr {int($p*$l + $s)}]
     $c delete
 
     puts "/// join contig $crec1 to $crec2 at offset $pos ///"
