@@ -812,6 +812,12 @@ static void contig_remove_refpos_markers(GapIO *io, contig_t *c,
 
 	bin->flags |= BIN_BIN_UPDATED | BIN_RANGE_UPDATED;
 	bin_incr_nrefpos(io, bin, -1);
+
+	/* Mark as empty if we've removed the last object */
+	if (bin->nseqs == 0 && bin->nrefpos == 0 && bin->nanno == 0 &&
+	    bin_empty(bin)) {
+	    bin->start_used = bin->end_used = 0;
+	}
     }
 
     contig_iter_del(ci);
