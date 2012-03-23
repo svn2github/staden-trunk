@@ -211,7 +211,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		int no_ins;
 
 		if (!s) {
-		    verror(ERR_WARN, "conitg_insert_base2",
+		    verror(ERR_WARN, "contig_insert_base2",
 			   "failed to load seq #%"PRIrec, r->rec);
 		    continue;
 		}
@@ -2994,6 +2994,13 @@ static int range_next_by_type2(GapIO *io, contig_t *c, int bin_num,
 	    continue;
 	}
 	ch = get_bin(io, bin->child[i]);
+	if (!ch) {
+	    verror(ERR_FATAL, "range_next_by_type2",
+		   "Failed to load bin #%"PRIrec", child of bin #%"PRIrec,
+		   bin->child[i], bin->rec);
+	    continue;
+	}
+
 	child_pos[i] = NMIN(ch->pos,  ch->pos + ch->size-1);
 
 	switch (type) {
@@ -3043,6 +3050,12 @@ static int range_next_by_type2(GapIO *io, contig_t *c, int bin_num,
 	    continue;
 
 	ch = get_bin(io, bin->child[order[i]]);
+	if (!ch) {
+	    verror(ERR_FATAL, "range_next_by_type2",
+		   "Failed to load bin #%"PRIrec", child of bin #%"PRIrec,
+		   bin->child[order[i]], bin->rec);
+	    continue;
+	}
 
 	switch (type) {
 	case GRANGE_FLAG_ISSEQ:
