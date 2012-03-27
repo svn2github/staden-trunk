@@ -190,4 +190,13 @@ int bin_invalidate_consensus(GapIO *io, tg_rec contig, int start, int end);
  */
 int bin_empty(bin_index_t *bin);
 
+/*
+ * Call after updating range array to ensure that the bin start_used and
+ * end_used values are correct.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_set_used_range(GapIO *io, bin_index_t *bin);
+
 #endif /* _TG_CONTIG_H_ */

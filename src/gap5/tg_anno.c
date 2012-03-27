@@ -123,6 +123,9 @@ int anno_ele_destroy(GapIO *io, anno_ele_t *e) {
 
     bin_incr_nanno(io, bin, -1);
 
+    if (bin->start_used == r->start || bin->end_used == r->end)
+	bin_set_used_range(io, bin);
+
     return 0;
 }
 

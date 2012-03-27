@@ -664,6 +664,9 @@ static int seq_deallocate(GapIO *io, r_pos_t *pos) {
 	b = cache_rw(io, b);
 	b->flags |= BIN_RANGE_UPDATED;
 	r->flags |= GRANGE_FLAG_UNUSED;
+
+	if (b->start_used == r->start || b->end_used == r->end)
+	    bin_set_used_range(io, b);
     }
 
     cache_decr(io, s);

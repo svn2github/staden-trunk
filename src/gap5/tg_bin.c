@@ -1235,6 +1235,51 @@ int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec) {
 }
 
 /*
+ * Call after updating range array to ensure that the bin start_used and
+ * end_used values are correct.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_set_used_range(GapIO *io, bin_index_t *bin) {
+    int i;
+    int start = INT_MAX, end = INT_MIN;
+
+    for (i = 0; i < ArrayMax(bin->rng); i++) {
+	range_t *r = arrp(range_t, bin->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	if (start > r->start)
+	    start = r->start;
+	if (end   < r->end)
+	    end   = r->end;
+    }
+	
+    if (start != INT_MAX) {
+	if (bin->start_used == start && bin->end_used == end)
+	    return 0;
+
+	if (NULL == (bin = cache_rw(io, bin)))
+	    return -1;
+
+	bin->start_used = start;
+	bin->end_used = end;
+    } else {
+	if (bin->start_used == 0 && bin->end_used == 0)
+	    return 0;
+
+	if (NULL == (bin = cache_rw(io, bin)))
+	    return -1;
+
+	bin->start_used = 0;
+	bin->end_used = 0;
+    }
+
+    return 0;
+}
+
+/*
  * Removes the refpos marker at a specific position in the contig.
  *
  * Returns 0 on success
@@ -1263,29 +1308,8 @@ int bin_remove_refpos(GapIO *io, tg_rec crec, int pos) {
     bin_incr_nrefpos(io, bin, -1);
     bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
-    if (bin->start_used == r->start || bin->end_used == r->end) {
-	int i;
-	int start = INT_MAX, end = INT_MIN;
-
-	for (i = 0; i < ArrayMax(bin->rng); i++) {
-	    range_t *r = arrp(range_t, bin->rng, i);
-	    if (r->flags & GRANGE_FLAG_UNUSED)
-		continue;
-
-	    if (start > r->start)
-		start = r->start;
-	    if (end   < r->end)
-		end   = r->end;
-	}
-	
-	if (start != INT_MAX) {
-	    bin->start_used = start;
-	    bin->end_used = end;
-	} else {
-	    bin->start_used = 0;
-	    bin->end_used = 0;
-	}
-    }
+    if (bin->start_used == r->start || bin->end_used == r->end)
+	return bin_set_used_range(io, bin);
 
     return 0;
 }

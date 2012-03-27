@@ -129,7 +129,7 @@ proc test_deletions {io {cycle 0}} {
 	puts "   ///Del $p/$s..$e"
 	$c delete_base $p
 	#$io flush
-	#if {[$io check 0 2] != 0} exit
+	#if {[$io check 0 1] != 0} {exit}
     }
     $c delete
 }
@@ -362,7 +362,7 @@ if {[catch {set io [g5::open_database -name _tmp -access rw]} err]} {
     exit 1
 }
 set db [$io get_database]
-$io check 0 2
+#$io check 0 2
 $io debug_level 1
 
 if {[llength $argv] > 2} {
@@ -395,7 +395,7 @@ for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
 
     $io flush
 
-    set err [$io check 0 2]
+    set err [$io check 0 1]
     if {$err != 0} {
 	$io close
 	puts stderr "ERROR: corrupted database\n"

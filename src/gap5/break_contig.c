@@ -1131,6 +1131,10 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
 
 	    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 	    bin_incr_nrefpos(io, bin, -1);
+
+	    /* Ensure start_used/end_used are correct */
+	    if (bin->start_used == r2->start || bin->end_used == r2->end)
+		bin_set_used_range(io, bin);
 	}
 
 	r.start    = rc->start;
