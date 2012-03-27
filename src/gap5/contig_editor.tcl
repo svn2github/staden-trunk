@@ -775,7 +775,7 @@ proc contig_editor {w args} {
 		set cl [expr {abs([$s get_length])-$cr}]
 	    }
 	    $s delete
-	    set opt(-pos) [expr {$cl-1}]
+	    set opt(-pos) $cl
 	} else {
 	    set opt(-pos) 1
 	}
@@ -973,6 +973,7 @@ proc contig_editor {w args} {
 #	[font measure sheet_font A] $font(-linespace)
 
     $e redraw
+    $e show_cursor
 
     $c delete
     if {$join} {
