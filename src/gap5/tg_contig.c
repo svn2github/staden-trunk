@@ -632,6 +632,8 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 		r->rec = bin->rng_free;
 		bin->rng_free = bin_idx;
 		bin_incr_nrefpos(io, bin, -1);
+		if (bin->start_used == r->start || bin->end_used == r->end)
+		    bin_set_used_range(io, bin);
 	    } else {
 		//printf("Decrement DEL of size %d\n", rc.pair_rec);
 		r->pair_rec--;
@@ -661,6 +663,8 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 		r->rec = bin->rng_free;
 		bin->rng_free = bin_idx;
 		bin_incr_nrefpos(io, bin, -1);
+		if (bin->start_used == r->start || bin->end_used == r->end)
+		    bin_set_used_range(io, bin);
 	    } else {
 		//printf("Decrement DEL of size %d\n", rc.pair_rec);
 		r->pair_rec--;
@@ -849,6 +853,10 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			    bin->rng_free = i;
 			    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 			    bin_incr_nseq(io, bin, -1);
+
+			    if (bin->start_used == r->start ||
+				bin->end_used == r->end)
+				bin_set_used_range(io, bin);
 			} else {
 			    int bb;
 			    //printf("DEL %"PRIrec" at %d\n", r->rec,
@@ -916,6 +924,9 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 			bin_incr_nanno(io, bin, -1);
 			
+			if (bin->start_used == r->start ||
+			    bin->end_used == r->end)
+			    bin_set_used_range(io, bin);
 		    } else {
 			r->end--;
 		    }
@@ -982,6 +993,9 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    bin->rng_free = i;
 	    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 	    bin_incr_nanno(io, bin, -1);
+
+	    if (bin->start_used == r->start || bin->end_used == r->end)
+		bin_set_used_range(io, bin);
 	} else {
 	    if (comp) {
 		if (NMAX(r->start, r->end) < (int64_t)hi->data.i) {
@@ -1202,7 +1216,7 @@ static int contig_delete_base_fix(GapIO *io, tg_rec crec, tg_rec bnum,
 	    ch = get_bin(io, bin->child[i]);
 
 	    if (pos >= NMIN(ch->pos, ch->pos + ch->size-1) &&
-		pos <= NMAX(ch->pos, ch->pos + ch->size-1)) {
+		pos <= NMAX(ch->pos, ch->pos + ch->size-1)+1) {
 		r |= contig_delete_base_fix(io, crec, bin->child[i], pos,
 					    NMIN(ch->pos,
 						 ch->pos + ch->size-1),
@@ -1262,6 +1276,9 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift,
 	    r->rec = bin->rng_free;
 	    bin->rng_free = bin_idx;
 	    bin_incr_nrefpos(io, bin, -1);
+
+	    if (bin->start_used == r->start || bin->end_used == r->end)
+		bin_set_used_range(io, bin);
 	    done = 1;
 	} else {
 	    /* Existing deletion, add it to neighbouring position */
@@ -1294,6 +1311,9 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift,
 	    r->rec = bin->rng_free;
 	    bin->rng_free = bin_idx;
 	    bin_incr_nrefpos(io, bin, -1);
+
+	    if (bin->start_used == r->start || bin->end_used == r->end)
+		bin_set_used_range(io, bin);
 	} else {
 	    /* Otherwise N del + 1 ins => N-1 del */
 	    if (ins_type == GRANGE_FLAG_REFPOS_INS) {
@@ -1360,7 +1380,7 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift,
      * second pass fixing up these issues when they occur.
      */
     contig_delete_base_fix(io, n->rec, contig_get_bin(c),
-			   pos, contig_offset(io, c), 0);
+    			   pos, contig_offset(io, c), 0);
 
     /*
      * Deleting a base can change contig dimensions in unexpected ways, as
