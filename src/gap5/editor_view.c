@@ -536,12 +536,14 @@ char *edGetBriefSeq(edview *xx, tg_rec seq, int pos, char *format) {
 	    add_number(status_buf, &j, l1, l2, s->right);
 	    break;
 
-	case 'S':
+	case 'S': {
+	    int orient = sequence_get_orient(xx->io, s->rec);
 	    if (raw)
-		add_number(status_buf, &j, l1, l2, s->len < 0);
+		add_number(status_buf, &j, l1, l2, orient);
 	    else
-		add_string(status_buf, &j, l1, l2, s->len < 0 ? "<<" : ">>");
+		add_string(status_buf, &j, l1, l2, orient ? "<<" : ">>");
 	    break;
+	}
 
 	case 'd': {
 	    range_t *r = sequence_get_range(xx->io, s);

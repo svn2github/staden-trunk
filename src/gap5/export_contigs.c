@@ -950,7 +950,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     }
 
     /* strand */
-    if (sorig->len < 0)  flag |= 0x10; /* reverse strand */
+    if ((sorig->len < 0) ^ fi->r.comp)  flag |= 0x10; /* reverse strand */
 
     /*
      * 1st/2nd in pair. This is not quite the same as the fwd/rev flags
@@ -978,7 +978,13 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 		   //flag |= 0x02; /* proper pair */
 	       }
 
-	       if (fi->r.flags & GRANGE_FLAG_COMP2)
+	       /*
+		* Mate complemented flag isn't bullet proof. If the bin
+		* it is in is complemented then we need to negate the
+		* flag, but we can't tell that without finding the mate's
+		* bin and checking which is slow. Take best guess?
+		*/
+	       if (((fi->r.flags & GRANGE_FLAG_COMP2) != 0) ^ (fi->r.comp))
 		   flag |= 0x20; /* mate complemented */
 	   }
     }
