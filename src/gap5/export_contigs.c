@@ -925,9 +925,12 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     if (tname_len > s->name_len)
 	tname_len = s->name_len;
 
-    if (tname_len == s->name_len || tname_len == 0)
+    if (tname_len == s->name_len || tname_len == 0) {
 	if (cp = strchr(s->name, '/'))
 	    tname_len = (int)(cp-s->name);
+	else
+	    tname_len = s->name_len;
+    }
 
     /*--- Compute SAM flag field */
     flag = 0;

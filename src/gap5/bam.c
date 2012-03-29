@@ -909,7 +909,7 @@ int sam_next_seq(bam_file_t *b, bam_seq_t **bsp) {
     //while (*cpf && *cpf != '\t')
     if (cpf[0] == '*' && (cpf[1] == '\0' || cpf[1] == '\t')) {
 	/* no qual */
-	memset(cpt, '\0', bs->len);
+	memset(cpt, '\002', bs->len);
 	cpt += bs->len;
 	cpf++;
     } else {
