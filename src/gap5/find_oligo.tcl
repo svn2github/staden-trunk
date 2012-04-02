@@ -142,7 +142,7 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hid
 	SetContigGlobals $io $gel_name $lreg $rreg
 	set list "{$gel_name $lreg $rreg}"
     } elseif {[lorf_in_get $infile] == 3 } {
-	set list [CreateAllContigList $io]
+	set list [CreateAllContigList=Numbers $io]
     } else {
 	set list [lorf_get_list $infile]
     }
