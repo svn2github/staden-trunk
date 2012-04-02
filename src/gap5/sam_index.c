@@ -2053,19 +2053,24 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
 						 s->alloc_len * sizeof(int))))
 		return -1;
 	}
-	if (bio->a->data_type & DATA_SEQ) {
-	    s->seq [s->seq_len] = p->base;
+	if (p->seq_offset < 0 || p->first_del || (p->base == '*' && s->left == s->seq_len)) {
+	    s->pos++;
 	} else {
-	    s->seq [s->seq_len] = 'N';
+	    if (bio->a->data_type & DATA_SEQ) {
+		s->seq [s->seq_len] = p->base;
+	    } else {
+		s->seq [s->seq_len] = 'N';
+	    }
+	    if (bio->a->data_type & DATA_QUAL) {
+		s->conf[s->seq_len] = p->qual;
+	    } else {
+		s->conf[s->seq_len] = 0;
+	    }
+
+	    s->pad[s->padded_pos] = s->seq_len;
+	    s->padded_pos += 1 - p->padding;
+	    s->seq_len++;
 	}
-	if (bio->a->data_type & DATA_QUAL) {
-	    s->conf[s->seq_len] = p->qual;
-	} else {
-	    s->conf[s->seq_len] = 0;
-	}
-	s->pad[s->padded_pos] = s->seq_len;
-	s->padded_pos += 1 - p->padding;
-	s->seq_len++;
 
 	/* Remove sequence */
 	if (p->eof & 1) {

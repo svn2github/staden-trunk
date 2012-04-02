@@ -715,6 +715,14 @@ static char *sam_depadded_cigar(char *seq, int left, int right, int olen,
 		    if (op != 'D') cglen += oplen;
 		    oplen = 0;
 		}
+		/* Handle seqs starting in xPyI */
+		if (op == 'S') {
+		    int plen = 0;
+		    while (cons[j-plen-1] == '*')
+			plen++;
+		    if (plen)
+			cp += sprintf(cp, "%dP", plen);
+		}
 		op = 'I';
 		oplen++;
 	    } else {
@@ -1276,8 +1284,9 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	int last = c->end;
 	int len = last-first+1;
 
-	cons = (char *)xmalloc(len);
-	calculate_consensus_simple(io, crec, first, last, cons, NULL);
+	cons = (char *)xmalloc(len+1);
+	cons[0] = 'N'; /* To allow cons[?-1] */
+	calculate_consensus_simple(io, crec, first, last, cons+1, NULL);
     }
 
     /* Sam can only have coordinates from 1 onwards, so shift if needed */
@@ -1335,10 +1344,10 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 		fifo_queue_pop(fq);
 		if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 		    sam_export_cons_tag(io, fp, fi, c, offset,
-					depad, cons, &npads, &pad_to);
+					depad, cons+1, &npads, &pad_to);
 		} else {
 		    sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
-				   depad, cons, &npads, &pad_to);
+				   depad, cons+1, &npads, &pad_to);
 		}
 		free(fi);
 	    } else {
@@ -1352,10 +1361,10 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	fifo_queue_pop(fq);
 	if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    sam_export_cons_tag(io, fp, fi, c, offset,
-				depad, cons, &npads, &pad_to);
+				depad, cons+1, &npads, &pad_to);
 	} else {
 	    sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
-			   depad, cons, &npads, &pad_to);
+			   depad, cons+1, &npads, &pad_to);
 	}
 	free(fi);
     }

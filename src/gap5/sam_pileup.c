@@ -60,7 +60,7 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
     bam_seq_t *b = p->b;
     enum cigar_op op = p->cigar_op;
 
-    if (p->first_del)
+    if (p->first_del && op != BAM_CPAD)
 	p->first_del = 0;
 
     *is_insert = 0;
@@ -252,6 +252,11 @@ static int get_next_base(pileup_t *p, int pos, int nth, int *is_insert) {
 	break;
 
     case BAM_CSOFT_CLIP:
+	/* Last op 'S' => eof */
+	p->eof = p->cigar_ind == bam_cigar_len(b) ? 1 : 0;
+	break;
+
+    case BAM_CHARD_CLIP:
 	p->eof = 1;
 	break;
 
@@ -364,7 +369,7 @@ int pileup_loop(bam_file_t *fp,
 	    }
 
 	    /* Call our function on phead linked list */
-	    v = seq_add(client_data, fp, phead, depth, col, nth);
+	    v = seq_add(client_data, fp, phead, depth, col-1, nth);
 
 	    /* Remove dead seqs */
 	    for (p = phead, last = NULL; p; p = next) {
@@ -418,7 +423,20 @@ int pileup_loop(bam_file_t *fp,
 	    col = pos;
 	}
 
-	/* Add this seq */
+	/*
+	 * Add this seq.
+	 * Note: cigars starting with I or P ops (eg 2P3I10M) mean we have
+	 * alignment instructions that take place before the designated
+	 * starting location listed in the SAM file. They won't get included
+	 * in the callback function until they officially start, which is
+	 * already too late.
+	 *
+	 * So to workaround this, we prefix all CIGAR with 1D, move the
+	 * position by 1bp, and then force the callback code to remove
+	 * leaving pads (either P or D generated).
+	 *
+	 * Ie it's a level 10 hack!
+	 */
 	if (r >= 0) {
 	    p = pnew;
 	    p->next       = NULL;
@@ -426,15 +444,36 @@ int pileup_loop(bam_file_t *fp,
 	    p->start      = 1;
 	    p->eof        = 0;
 	    p->pos        = pos-1;
-	    p->cigar_len  = 0;
 	    p->cigar_ind  = 0;
-	    p->cigar_op   = 'X';
+	    p->b_cigar    = bam_cigar(p->b);
+	    if ((p->b_cigar[0] & BAM_CIGAR_MASK) == BAM_CHARD_CLIP) {
+		p->cigar_len  = p->b_cigar[0] >> BAM_CIGAR_SHIFT;
+		p->cigar_op   = BAM_CHARD_CLIP;
+		if ((p->b_cigar[1] & BAM_CIGAR_MASK) == BAM_CSOFT_CLIP) {
+		    /* xHxS... => xHxS1D... */
+		    p->b_cigar[0] = p->b_cigar[1];
+		    p->b_cigar[1] = (1 << BAM_CIGAR_SHIFT) | BAM_CDEL;
+		} else {
+		    /* xH... => xH1D... */
+		    p->b_cigar[0] = (1 << BAM_CIGAR_SHIFT) | BAM_CDEL;
+		}
+	    } else {
+		if ((p->b_cigar[0] & BAM_CIGAR_MASK) == BAM_CSOFT_CLIP) {
+		    /* xS... => xS1D... */
+		    p->cigar_len  = p->b_cigar[0] >> BAM_CIGAR_SHIFT;
+		    p->cigar_op   = BAM_CSOFT_CLIP;
+		    p->b_cigar[0] = (1 << BAM_CIGAR_SHIFT) | BAM_CDEL;
+		} else {
+		    /* ... => 1D... */
+		    p->cigar_len  = 1;        /* was  0  */
+		    p->cigar_op   = BAM_CDEL; /* was 'X' */
+		}
+	    }
 	    p->seq_offset = -1;
-	    p->first_del  = 0;
+	    p->first_del  = 1;
 	    p->b_strand   = bam_strand(p->b) ? 1 : 0;
 	    p->b_qual     = (unsigned char *)bam_qual(p->b);
 	    p->b_seq      = (unsigned char *)bam_seq(p->b);
-	    p->b_cigar    = bam_cigar(p->b);
 
 	    if (seq_init) {
 		int v;
