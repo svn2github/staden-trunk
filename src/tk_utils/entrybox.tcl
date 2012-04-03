@@ -289,8 +289,10 @@ proc entrybox_configure {path args} {
 
     if {[info exists entry_($path,command)]} {
         bind $path.entry <Return> "entrybox_command $path"
+        catch {bind $path.entry <KP_Enter> "entrybox_command $path"}
     } else {
 	bind $path.entry <Return> "entrybox_get $path"
+	catch {bind $path.entry <KP_Enter> "entrybox_get $path"}
     }
 }
 
