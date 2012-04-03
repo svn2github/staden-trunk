@@ -260,6 +260,8 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     pack $bf.search $bf.quit -side left -expand 1
     pack $bf.help -side right -expand 1
 
+    # key bindings
+    bind $w <<search>> "do_search $w \"$com\""
 
     # Packing/Gridding
     grid columnconfigure $w 0 -weight 1
