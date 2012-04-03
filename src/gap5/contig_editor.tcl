@@ -1249,6 +1249,7 @@ proc editor_pane {top w above ind arg_array} {
 	-font {Helvetica -12} \
 	-width 15
     bind $w.name.pos <Return> "editor_goto $ed $w.seq.sheet"
+    catch {bind $w.name.pos <KP_Enter> "editor_goto $ed $w.seq.sheet"}
     button $w.name.pos_type \
 	-textvariable ${top}(PosType) \
 	-padx 2 \
@@ -1906,7 +1907,7 @@ proc editor_insert_gap {w where} {
     $w redraw
 }
 
-proc editor_delete_base {w where {powerup 0}} {
+proc editor_delete_base {w where {dir 0} {powerup 0}} {
     upvar $w opt
 
     set io [$w io]
@@ -1918,8 +1919,12 @@ proc editor_delete_base {w where {powerup 0}} {
 
     foreach {type rec pos} $where break;
 
-    $w cursor_left
-    incr pos -1
+    # Delete base to left and move cursor, vs delete under cursor and move seq
+    if {$dir == 0} {
+	$w cursor_left
+	incr pos -1
+	#editor_move_seq $w $where 1
+    }
 
     if {$type == 18} {
 	set seq [$io get_sequence $rec]
@@ -1928,7 +1933,9 @@ proc editor_delete_base {w where {powerup 0}} {
 
 	if {$old_base != "*" && !$powerup} {
 	    bell
-	    $w cursor_right
+	    if {$dir == 0} {
+		$w cursor_right
+	    }
 	    return
 	}
 
@@ -3661,6 +3668,71 @@ Sequence	[set ${w}(sequence)]"
     U_tag_change $ed -1 [array get d]
 }
 
+proc editor_move_pad {w dir {powerup 0}} {
+    upvar $w opt
+
+    set io [$w io]
+    upvar $opt(top) top
+
+    set where [$w get_number]
+    if {$where == "" || [$io read_only]} {
+	bell
+	return
+    }
+
+    foreach {type rec pos} $where break;
+
+    if {$type != 18} { 
+	bell
+	return
+    }
+
+    if {$dir == -1 && $pos == 0} {
+	bell
+	return
+    }
+    set s [$io get_sequence $rec]
+    if {$dir == 1 && $pos >= [expr {abs([$s get_length])-1}]} {
+	$s delete
+	bell
+	return
+    }
+    
+    if {$dir == 1} {
+	set p0 $pos
+	set p1 [expr {$pos+1}]
+    } else {
+	set p0 $pos
+	set p1 [expr {$pos-1}]
+    }
+    foreach {call0 conf0} [$s get_base $p0] break
+    foreach {call1 conf1} [$s get_base $p1] break
+
+    if {$call0 != "*" && $powerup == 0} {
+	$s delete
+	bell
+	return
+    }
+
+    $s replace_base $p0 $call1 $conf1
+    $s replace_base $p1 $call0 $conf0
+    $s delete
+
+    if {$dir == 1} {
+	$w cursor_right
+    } else {
+	$w cursor_left
+    }
+
+    store_undo $w \
+	[list \
+	     [list B_REP $rec $p0 $call0 $conf0] \
+	     [list B_REP $rec $p1 $call1 $conf1] \
+	     [list C_SET $type $rec $pos]] {}
+	    
+    $w redraw
+}
+
 proc save_editor_settings {w} {
     upvar \#0 $w opt
     global gap5_defs env
@@ -3877,19 +3949,23 @@ bind Editor <<select>> {
     %W select clear
 }
 
-bind Editor <Key-Return> {
-    foreach {type rec pos} [%W get_number] break;
+proc editor_return {w} {
+    global $w
+    foreach {type rec pos} [$w get_number] break;
 
     if {$type != 17} return
 
     set upos [consensus_unpadded_pos \
-		  -io     [%W io] \
+		  -io     [$w io] \
 		  -contig $rec \
 		  -pos    $pos]
     
-    set w [set %W(top)]
+    set w [set ${w}(top)]
     set ${w}(Status) "Padded position $pos, unpadded $upos"
 }
+
+bind Editor <Key-Return> {editor_return %W}
+catch {bind Editor <Key-KP_Enter> {editor_return %W}}
 
 bind Editor <Key-Left>		{%W cursor_left; update_brief %W; order_update_on_consensus %W}
 bind Editor <Control-Key-b>	{%W cursor_left; update_brief %W; order_update_on_consensus %W}
@@ -3932,6 +4008,11 @@ bind Editor <Escape><Key-period> {%W contig_end;  update_brief %W}
 bind Editor <Double-1> {%W display_trace}
 bind Editor <Control-Key-t> {%W display_trace}
 
+bind Editor <Control-Key-l> {editor_move_pad %W -1}
+bind Editor <Control-Key-r> {editor_move_pad %W +1}
+bind Editor <Alt-Key-l> {editor_move_pad %W -1 1}
+bind Editor <Alt-Key-r> {editor_move_pad %W +1 1}
+
 # Editing commands
 bind Editor <Key-a> {editor_edit_base %W a [%W get_number]}
 bind Editor <Key-c> {editor_edit_base %W c [%W get_number]}
@@ -3943,10 +4024,10 @@ bind Editor <Key-minus> {editor_edit_base %W - [%W get_number]}
 bind Editor <Key-asterisk> {editor_edit_base %W * [%W get_number]}
 bind Editor <Key-i> {editor_insert_gap %W [%W get_number]}
 bind Editor <Key-Insert> {editor_insert_gap %W [%W get_number]}
-bind Editor <Key-Delete> {editor_delete_base %W [%W get_number]}
-bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number]}
-bind Editor <Control-Key-Delete> {editor_delete_base %W [%W get_number] 1}
-bind Editor <Control-Key-BackSpace> {editor_delete_base %W [%W get_number] 1}
+bind Editor <Key-Delete> {editor_delete_base %W [%W get_number] 1}
+bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number] 0}
+bind Editor <Control-Key-Delete> {editor_delete_base %W [%W get_number] 1 1}
+bind Editor <Control-Key-BackSpace> {editor_delete_base %W [%W get_number] 0 1}
 
 bind Editor <Key-bracketleft>  {editor_set_confidence %W [%W get_number] 0}
 bind Editor <Key-bracketright> {editor_set_confidence %W [%W get_number] 100}
