@@ -1703,6 +1703,11 @@ proc editor_undo {top} {
     upvar \#0 $top opt
     
     set w $opt(curr_editor)
+    upvar \#0 contigIO_[$w contig_rec] cio
+    if {[llength $cio(Undo)] == 0} {
+	bell
+	return
+    }
     io_undo $w [$w contig_rec]
     editor_undo_info $top
 }
@@ -1849,6 +1854,25 @@ proc editor_undo_info {top {clear 0}} {
 
 #-----------------------------------------------------------------------------
 # Basic sequence editing function
+
+# Returns original read pos as it is needed for undo
+proc editor_shift_seq {io rec dir} {
+    # Dir 1 => right, -1 => left
+    set seq [$io get_sequence $rec]
+    set rpos [$seq get_position]
+    set cnum [$seq get_contig]
+    $seq delete
+    set c [$io get_contig $cnum]
+    foreach {pair_rec flags} [$c remove_sequence $rec] break;
+    $c add_sequence $rec [expr {$rpos+$dir}] $pair_rec $flags
+    $c delete
+    set seq [$io get_sequence $rec]
+    $seq move_annos -1
+    $seq delete
+
+    return $rpos
+}
+
 proc editor_edit_base {w call where} {
     upvar $w opt
 
@@ -1878,7 +1902,9 @@ proc editor_edit_base {w call where} {
     $w redraw
 }
 
-proc editor_insert_gap {w where} {
+# End 0 means insert to left side, keeping right alignment static.
+# End 1 is an insertion to right, keeping left side static.
+proc editor_insert_gap {w where {end 1}} {
     upvar $w opt
 
     set io [$w io]
@@ -1894,10 +1920,21 @@ proc editor_insert_gap {w where} {
 	$seq insert_base $pos * -1
 	$seq delete
 
-	store_undo $w \
-	    [list \
-		 [list C_SET $type $rec $pos] \
-		 [list B_DEL $rec $pos] ] {}
+	if {$end == 0} {
+	    # Also shift sequence left one base.
+	    set rpos [editor_shift_seq $io $rec -1]
+	    store_undo $w \
+		[list \
+		     [list C_SET $type $rec $pos] \
+		     [list B_DEL $rec $pos] \
+		     [list T_MOVE $rec 1] \
+		     [list B_MOVE $rec $rpos] ] {}
+	} else {
+	    store_undo $w \
+		[list \
+		     [list C_SET $type $rec $pos] \
+		     [list B_DEL $rec $pos] ] {}
+	}
     } else {
 	set contig [$io get_contig $rec]
 	$contig insert_base $pos
@@ -1908,12 +1945,20 @@ proc editor_insert_gap {w where} {
 		 [list C_SET $type $rec $pos] \
 		 [list C_DEL $rec $pos] ] {}
     }
-    $w cursor_right
+    #$w cursor_right
+
+    # Force the editing cursor to be visible
+    eval $w set_cursor [$w get_cursor relative] 1
     
     $w redraw
 }
 
-proc editor_delete_base {w where {dir 0} {powerup 0}} {
+# Dir is 0 for delete base left of cursor (standard Backspace functionality)
+# Dir is 1 for delete base under cursor (standard Delete key)
+#
+# Do not confuse with end 0/1, which controls whether the left or right
+# portion of the alignment is fixed. Also see editor_insert_gap.
+proc editor_delete_base {w where {end 1} {dir 0} {powerup 0}} {
     upvar $w opt
 
     set io [$w io]
@@ -1959,17 +2004,38 @@ proc editor_delete_base {w where {dir 0} {powerup 0}} {
 
 	$seq delete
 
-	if {$l0 != $l1 || $r0 != $r1} {
-	    store_undo $w \
-		[list \
-		     [list C_SET $type $rec [expr {$pos+1}]] \
-		     [list B_INS $rec $pos $old_base $old_conf] \
-		     [list B_CUT $rec $l0 $r0]] {}
+	if {$end == 0} {
+	    # Also shift sequence right one base.
+	    set rpos [editor_shift_seq $io $rec 1]
+	    if {$l0 != $l1 || $r0 != $r1} {
+		store_undo $w \
+		    [list \
+			 [list C_SET $type $rec [expr {$pos+1}]] \
+			 [list B_INS $rec $pos $old_base $old_conf] \
+			 [list B_CUT $rec $l0 $r0] \
+			 [list T_MOVE $rec 1] \
+			 [list B_MOVE $rec $rpos]] {}
+	    } else {
+		store_undo $w \
+		    [list \
+			 [list C_SET $type $rec [expr {$pos+1}]] \
+			 [list B_INS $rec $pos $old_base $old_conf] \
+			 [list T_MOVE $rec 1] \
+			 [list B_MOVE $rec $rpos]] {}
+	    }
 	} else {
-	    store_undo $w \
-		[list \
-		     [list C_SET $type $rec [expr {$pos+1}]] \
-		     [list B_INS $rec $pos $old_base $old_conf]] {}
+	    if {$l0 != $l1 || $r0 != $r1} {
+		store_undo $w \
+		    [list \
+			 [list C_SET $type $rec [expr {$pos+1}]] \
+			 [list B_INS $rec $pos $old_base $old_conf] \
+			 [list B_CUT $rec $l0 $r0]] {}
+	    } else {
+		store_undo $w \
+		    [list \
+			 [list C_SET $type $rec [expr {$pos+1}]] \
+			 [list B_INS $rec $pos $old_base $old_conf]] {}
+	    }
 	}
     } else {
 	set contig [$io get_contig $rec]
@@ -4079,13 +4145,21 @@ bind Editor <Key-t> {editor_edit_base %W t [%W get_number]}
 bind Editor <Key-u> {editor_edit_base %W t [%W get_number]}
 bind Editor <Key-n> {editor_edit_base %W n [%W get_number]}
 bind Editor <Key-minus> {editor_edit_base %W - [%W get_number]}
+catch {bind Editor <Key-KP_Subtract> {editor_edit_base %W - [%W get_number]}}
 bind Editor <Key-asterisk> {editor_edit_base %W * [%W get_number]}
-bind Editor <Key-i> {editor_insert_gap %W [%W get_number]}
-bind Editor <Key-Insert> {editor_insert_gap %W [%W get_number]}
-bind Editor <Key-Delete> {editor_delete_base %W [%W get_number] 1}
-bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number] 0}
-bind Editor <Control-Key-Delete> {editor_delete_base %W [%W get_number] 1 1}
-bind Editor <Control-Key-BackSpace> {editor_delete_base %W [%W get_number] 0 1}
+catch {bind Editor <Key-KP_Multiply> {editor_edit_base %W * [%W get_number]}}
+bind Editor <Key-i> {editor_insert_gap %W [%W get_number] 1}
+bind Editor <Key-I> {editor_insert_gap %W [%W get_number] 0}
+bind Editor <Key-Insert> {editor_insert_gap %W [%W get_number] 1}
+bind Editor <Shift-Key-Insert> {editor_insert_gap %W [%W get_number] 0}
+bind Editor <Key-Delete> {editor_delete_base %W [%W get_number] 1 1}
+bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number] 1 0}
+bind Editor <Shift-Key-Delete> {editor_delete_base %W [%W get_number] 0 1}
+bind Editor <Shift-Key-BackSpace> {editor_delete_base %W [%W get_number] 0 0}
+bind Editor <Control-Key-Delete> {editor_delete_base %W [%W get_number] 1 1 1}
+bind Editor <Control-Key-BackSpace> {editor_delete_base %W [%W get_number] 1 0 1}
+bind Editor <Shift-Control-Key-Delete> {editor_delete_base %W [%W get_number] 0 1 1}
+bind Editor <Shift-Control-Key-BackSpace> {editor_delete_base %W [%W get_number] 0 0 1}
 
 bind Editor <Key-bracketleft>  {editor_set_confidence %W [%W get_number] 0}
 bind Editor <Key-bracketright> {editor_set_confidence %W [%W get_number] 100}
@@ -4101,6 +4175,8 @@ bind Editor <Control-Key-q>     {editor_toggle_annos %W}
 
 bind Editor <Key-less>          {editor_clip_seq %W [%W get_number] l}
 bind Editor <Key-greater>       {editor_clip_seq %W [%W get_number] r}
+
+bind Editor <Control-Key-z>     {editor_undo [winfo toplevel %W]}
 
 # MouseWheel scrolling
 bind Editor  <MouseWheel> {%W yview scroll [expr {-(%D)}] units}
