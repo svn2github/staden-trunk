@@ -341,6 +341,12 @@ proc io_undo_exec {w crec cmdu} {
 		if {[lsearch -exact {+ - . ?} [$tag get_direction]] != $d(strand)} {
 		    $tag set_direction [string index "+-.?" $d(strand)]
 		}
+
+		if {[$tag get_obj_type] != $d(otype) || 
+		    [$tag get_obj_rec]  != $d(orec) || 
+		    [$tag get_position] != "$d(start) $d(end)"} {
+		    $tag move $d(otype) $d(orec) $d(start) $d(end)
+		}
 		$tag delete
 	    }
 	    
@@ -2866,6 +2872,8 @@ proc U_tag_change {w rec new_a} {
 	}
 
     } else {
+	array set ot $old_a
+
 	# Modify
 	if {[$tag get_comment] != $d(anno)} {
 	    $tag set_comment $d(anno)
@@ -2876,6 +2884,21 @@ proc U_tag_change {w rec new_a} {
 	if {[lsearch -exact {+ - . ?} [$tag get_direction]] != $d(strand)} {
 	    $tag set_direction [string index "+-.?" $d(strand)]
 	}
+
+	if {[info exists d(start)] && [info exists d(end)]} {
+	    if {$ot(start) != $d(start) ||
+		$ot(end)   != $d(end)   ||
+		$ot(otype) != $d(otype) ||
+		$ot(orec)  != $d(orec)} {
+		$tag set_obj_rec  $d(orec)
+		$tag set_obj_type $d(otype)
+		puts ""
+		puts "Undo move tag"
+		puts "$tag move $d(otype) $d(orec) $d(start) $d(end)"
+		$tag move $d(otype) $d(orec) $d(start) $d(end)
+	    }
+	}
+
 	$tag delete
 
 	store_undo $w \
@@ -3033,11 +3056,46 @@ proc tag_editor_callback {w rec cmd args} {
 	}
 
 	"move" {
-	    puts "move"
+	    set w2 [selection own]
+	    if {[winfo class $w2] != "Editor"} {
+		bell
+		return
+	    }
+	    if {$w2 != $w} {
+		# Move to a different contig, so delete from here
+		# and add to there (add => rec -1)
+		U_tag_change $w $rec ""
+		set rec -1
+	    }
+	    foreach {otype orec start end} [$w2 select get] break;
+	    set d(otype) $otype
+	    set d(orec)  $orec
+	    set d(start) $start
+	    set d(end)   $end
+	    U_tag_change $w2 $rec [array get d]
+	    $w2 redraw
+	    if {$w != $w2} {
+		$w redraw
+	    }
+	    destroy $f
 	}
 
 	"copy" {
-	    puts "copy"
+	    set w2 [selection own]
+	    if {[winfo class $w2] != "Editor"} {
+		bell
+		return
+	    }
+	    foreach {otype orec start end} [$w2 select get] break;
+	    set d(otype) $otype
+	    set d(orec)  $orec
+	    set d(start) $start
+	    set d(end)   $end
+	    set d(rec)   -1
+	    puts "U_tag_change $w2 -1 [array get d]"
+	    U_tag_change $w2 -1 [array get d]
+	    $w2 redraw
+	    destroy $f
 	}
 
 	default {

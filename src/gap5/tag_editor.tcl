@@ -115,11 +115,10 @@ proc create_tag_editor {w c data} {
     pack $w.bar -side top -fill both
     pack $w.bar.cancel -side left
     pack $w.bar.save -side left
-#    if {![info exists d(macro)]} {
-#	pack $w.bar.move -side left
-#	pack $w.bar.copy -side left
-#    }
-    if {[info exists d(macro)]} {
+    if {![info exists d(macro)]} {
+	pack $w.bar.move -side left
+	pack $w.bar.copy -side left
+    } else {
 	pack $w.bar.delete -side left
     }
     pack $w.bar.type -side left -fill both

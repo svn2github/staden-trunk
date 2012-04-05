@@ -1824,7 +1824,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	"delete",       "io",           "get_rec",
 	"get_contig",   "get_position", "get_comment",
 	"get_obj_type", "get_obj_rec",  "get_anno_rec",
-	"get_type",     "get_direction",
+	"get_type",     "get_direction","move",
 	"set_contig",   "set_position", "set_comment",
 	"set_obj_type", "set_obj_rec",  "set_anno_rec",
 	"set_type",     "set_direction","remove",
@@ -1835,10 +1835,10 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	DELETE,         IO,             GET_REC,
 	GET_CONTIG,     GET_POSITION,   GET_COMMENT,
 	GET_OBJ_TYPE,   GET_OBJ_REC,    GET_ANNO_REC,
-	GET_TYPE,       GET_DIRECTION,
+	GET_TYPE,       GET_DIRECTION,  MOVE,
 	SET_CONTIG,     SET_POSITION,   SET_COMMENT,
 	SET_OBJ_TYPE,   SET_OBJ_REC,    SET_ANNO_REC,
-	SET_TYPE,	SET_DIRECTION,  REMOVE
+	SET_TYPE,	SET_DIRECTION,  REMOVE,
     };
 
     if (objc < 2) {
@@ -1861,6 +1861,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
     case SET_COMMENT:
     case SET_ANNO_REC:
     case SET_TYPE:
+    case MOVE:
 	if (NULL == (t = cache_rw(te->io, te->anno)))
 	    return TCL_ERROR;
 	te->anno = t;
@@ -1921,6 +1922,83 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
     case SET_POSITION:
 	puts("Unimplemented\n");
 	break;
+
+    case MOVE: {
+	int otype, start, end;
+	tg_rec orec, contig;
+	range_t r, *r_out;
+	tg_rec seq_bin = 0, crec;
+	contig_t *c;
+	bin_index_t *bin;
+
+	if (objc != 6) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_position obj_type obj_rec start end\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &otype);
+	Tcl_GetWideIntFromObj(interp, objv[3], &orec);
+	Tcl_GetIntFromObj(interp, objv[4], &start);
+	Tcl_GetIntFromObj(interp, objv[5], &end);
+	
+	if (otype != GT_Seq && otype != GT_Contig) {
+	    vTcl_SetResult(interp, "obj_type should be %d or %d\n",
+			   GT_Seq, GT_Contig);
+	    return TCL_ERROR;
+	}
+
+	if (anno_get_range(te->io, te->anno->rec, &contig, 0)) {
+	    contig_t *c = cache_search(te->io, GT_Contig, contig);
+	    bin_remove_item(te->io, &c, GT_AnnoEle, te->anno->rec);
+	}
+
+	memset(&r, 0, sizeof(r));
+	r.flags    = GRANGE_FLAG_ISANNO;
+	r.rec      = te->anno->rec;
+	r.mqual    = te->anno->tag_type;
+	r.pair_rec = orec;
+
+	if (otype == GT_Seq) {
+	    int st, en;
+	    sequence_get_position2(te->io, orec, &crec, &st, &en, NULL,
+				   &seq_bin, NULL, NULL);
+	    start += st;
+	    end   += st;
+	    
+	    r.flags |= GRANGE_FLAG_TAG_SEQ;
+	} else {
+	    crec = orec;
+	}
+
+	r.start    = start;
+	r.end      = end;
+
+	c = cache_search(te->io, GT_Contig, crec);
+	if (!c)
+	    return TCL_ERROR;
+	cache_incr(te->io, c);
+
+	/* Place tag in new location */
+	if (seq_bin)
+	    bin = bin_add_to_range(te->io, &c, seq_bin, &r, &r_out, NULL, 0);
+	else
+	    bin = bin_add_range(te->io, &c, &r, &r_out, NULL, 0);
+
+	te->anno = cache_rw(te->io, te->anno);
+	te->anno->obj_type = otype;
+	te->anno->obj_rec  = orec;
+
+	/* Update bin backref */	
+	if (te->anno->bin != bin->rec) {
+	    te->anno->bin = bin->rec;
+	}
+
+	cache_decr(te->io, c);
+
+	break;
+    }
 
     case GET_COMMENT:
 	Tcl_SetStringObj(Tcl_GetObjResult(interp),
