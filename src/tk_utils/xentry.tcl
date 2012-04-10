@@ -37,7 +37,7 @@ namespace eval ::Widget::Xentry {;
     pack $data(entry) -side right
 
     bind $data(entry) <Return> "$w get"
-    catch {bind $data(entry) <KP_Enter> "$w get"
+    catch {bind $data(entry) <KP_Enter> "$w get"}
 
     # Hack for windows
     if {$tcl_platform(platform) == "windows"} {
