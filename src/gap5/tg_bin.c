@@ -1069,6 +1069,7 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
     int i, start = INT_MAX, end = INT_MIN, bin_idx = -1;
     int new_contig_range = 0;
     int seq_start = INT_MAX, seq_end = INT_MIN;
+    int item_start = INT_MAX, item_end = INT_MIN;
 
     if (!(bin = cache_rw(io, *binp)))
 	return -1;
@@ -1103,6 +1104,9 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    }
 
 	    continue;
+	} else {
+	    item_start = r->start;
+	    item_end   = r->end;
 	}
 
 	bin_idx = i;
@@ -1161,17 +1165,24 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	int comp = 0;
 	tg_rec bnum;
 
-	start = seq_start;
-	end   = seq_end;
-
 	for (;;) {
 	    if (bin->flags & BIN_COMPLEMENTED) {
-		start = bin->size-1 - start;
-		end   = bin->size-1 - end;
+		if (seq_start != INT_MAX) {
+		    seq_start = bin->size-1 - seq_start;
+		    seq_end   = bin->size-1 - seq_end;
+		}
+
+		item_start = bin->size-1 - item_start;
+		item_end   = bin->size-1 - item_end;
 		comp ^= 1;
 	    }
-	    start += bin->pos;
-	    end   += bin->pos;
+	    if (seq_start != INT_MAX) {
+		seq_start += bin->pos;
+		seq_end   += bin->pos;
+	    }
+
+	    item_start += bin->pos;
+	    item_end   += bin->pos;
 
 	    if (bin->parent_type != GT_Bin)
 		break;
@@ -1185,7 +1196,16 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	 * so we always redo both clip points just incase. It's less
 	 * efficient, but robust.
 	 */
-	if (start <= (*c)->start || end >= (*c)->end) {
+	if (seq_start == INT_MAX || seq_end == INT_MIN) {
+	    /* Blank bin, possibly blank contig */
+	    int st, en;
+	    if (-1 != consensus_unclipped_range(io, (*c)->rec, &st, &en)) {
+		(*c) = cache_rw(io, *c);
+		(*c)->start = st;
+		(*c)->end   = en;
+	    }
+	} else if (seq_start  <= (*c)->start || seq_end  >= (*c)->end ||
+		   item_start <= (*c)->start || item_end >= (*c)->end) {
 	    /*
 	     * Seq is at very end of contig. So we need to do find the
 	     * new start/end and correct it.
@@ -1195,8 +1215,10 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 
 	    (*c) = cache_rw(io, *c);
 
-	    ns = start <= (*c)->start ? &new_start : NULL;
-	    ne = end   >= (*c)->end   ? &new_end   : NULL;
+	    ns = (seq_start <= (*c)->start || item_start <= (*c)->start)
+		? &new_start : NULL;
+	    ne = (seq_end   >= (*c)->end   || item_end   >= (*c)->end)
+		? &new_end   : NULL;
 	    //ns = &new_start;
 	    //ne = &new_end;
 

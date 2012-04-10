@@ -1870,6 +1870,8 @@ proc editor_shift_seq {io rec dir} {
     $seq move_annos -1
     $seq delete
 
+    # FIXME: try $c move_seq instead
+
     return $rpos
 }
 
@@ -2004,39 +2006,33 @@ proc editor_delete_base {w where {end 1} {dir 0} {powerup 0}} {
 
 	$seq delete
 
+	set undo [list [list C_SET $type $rec [expr {$pos+1}]] \
+		       [list B_INS $rec $pos $old_base $old_conf]]
 	if {$end == 0} {
 	    # Also shift sequence right one base.
 	    set rpos [editor_shift_seq $io $rec 1]
 	    if {$l0 != $l1 || $r0 != $r1} {
-		store_undo $w \
-		    [list \
-			 [list C_SET $type $rec [expr {$pos+1}]] \
-			 [list B_INS $rec $pos $old_base $old_conf] \
-			 [list B_CUT $rec $l0 $r0] \
-			 [list T_MOVE $rec 1] \
-			 [list B_MOVE $rec $rpos]] {}
+		lappend undo \
+		    [list B_CUT $rec $l0 $r0] \
+		    [list T_MOVE $rec 1] \
+		    [list B_MOVE $rec $rpos]
 	    } else {
-		store_undo $w \
-		    [list \
-			 [list C_SET $type $rec [expr {$pos+1}]] \
-			 [list B_INS $rec $pos $old_base $old_conf] \
-			 [list T_MOVE $rec 1] \
-			 [list B_MOVE $rec $rpos]] {}
+		lappend undo \
+		    [list T_MOVE $rec 1] \
+		    [list B_MOVE $rec $rpos]
 	    }
 	} else {
 	    if {$l0 != $l1 || $r0 != $r1} {
-		store_undo $w \
-		    [list \
-			 [list C_SET $type $rec [expr {$pos+1}]] \
-			 [list B_INS $rec $pos $old_base $old_conf] \
-			 [list B_CUT $rec $l0 $r0]] {}
-	    } else {
-		store_undo $w \
-		    [list \
-			 [list C_SET $type $rec [expr {$pos+1}]] \
-			 [list B_INS $rec $pos $old_base $old_conf]] {}
+		lappend undo [list B_CUT $rec $l0 $r0]
 	    }
 	}
+
+	# FIXME: to do...
+	#
+	# Also check if the deletion causes the contig extents to change.
+	# If so, we need to check consensus annotation locations and amend.
+
+	store_undo $w $undo {}
     } else {
 	set contig [$io get_contig $rec]
 
