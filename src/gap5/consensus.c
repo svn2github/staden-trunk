@@ -111,7 +111,7 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 
 int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			       char *con, float *qual) {
-    int i, nr;
+    int i, j, nr;
     rangec_t *r;
     contig_t *c;
     int left, right;
@@ -136,6 +136,33 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 			     CSIR_SORT_BY_X | CSIR_LEAVES_ONLY,
 			     CONS_BIN_SIZE, &nr);
 
+
+    /*
+     * When doing range queries, we can end up with a higher bin being
+     * labelled as a leaf from contig_bins_in_range simply because we
+     * pruned a child off. Eg:
+     *
+     *    |...|
+     * [------------------]   <- Leaf
+     *    |...|  [--------]
+     *
+     * Yet when doing full queries, the bottom node is the leaf instead.
+     * This causes caching issues as we vary which nodes we'll return as
+     * suitable for storing consensus in.
+     *
+     * We resolve this by filtering bins >= CONS_BIN_SIZE that also
+     * have at least one child node.
+     */
+    for (i = j = 0; i < nr; i++) {
+	bin_index_t *bin = cache_search(io, GT_Bin, r[i].rec);
+	
+	if (bin->size >= CONS_BIN_SIZE && (bin->child[0] || bin->child[1]))
+	    continue;
+
+	r[j++] = r[i];
+    }
+    nr = j;
+
     /* Skip through spanning bins returned */
     left = start;
     for (i = 0; i < nr; i++) {
@@ -150,7 +177,8 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 
 	bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
 	cache_incr(io, bin);
-
+	    
+	/* NB: The filtering above can cause holes too */
 	if (r[i].start > left) {
 	    gio_debug(io, 1, "Filling missing region %d..%d\n", left, right);
 	    calculate_consensus_simple2(io, contig, left, right,
