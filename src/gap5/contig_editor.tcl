@@ -2726,6 +2726,15 @@ proc editor_set_name2 {ed w} {
     $io flush
 }
 
+proc editor_template_display {ed} {
+    set io [[$ed io] base]
+    set xpos [expr {[$ed xview]-13000}]; # a hack as T.disp pos is left edge
+    CreateTemplateDisplay $io [$ed contig_rec] $xpos
+
+    # Force cursor to be visible
+    after idle "after 100 {$ed set_cursor [$ed get_cursor relative] 0}"
+}
+
 #-----------------------------------------------------------------------------
 # Align cutoff data
 

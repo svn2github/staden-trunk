@@ -241,6 +241,7 @@ add_separator	{Commands.S4}
 add_command	{Commands.Break Contig}		3 6 {editor_break_contig \[curr_ed $e\]}
 add_command	{Commands.Change Contig Start}	3 6 {editor_set_start \[curr_ed $e\]}
 add_command	{Commands.Change Contig Name}	3 6 {editor_set_name \[curr_ed $e\]}
+add_command	{Commands.Template Display}	3 6 {editor_template_display \[curr_ed $e\]}
 
 #add_command	{Commands.Save Contig}		3 2 {$e save}
 #add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}

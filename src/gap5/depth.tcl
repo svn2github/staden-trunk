@@ -17,7 +17,7 @@ package require Tk
 # The 1.5Dplot passes high level events (like scroll in X) down to all
 # suitable child tracks.
 #
-proc 1.5Dplot {w io wid hei {cnum {}}} {
+proc 1.5Dplot {w io wid hei {cnum {}} {pos {}}} {
     global $w
 
     # Create the window
@@ -50,8 +50,13 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     # something to store the common x range information
     set ${w}(grange) [g5::range -io $io -cnum $cnum]
 
-    set ${w}(x1) [set ${w}(start)]
-    set ${w}(x2) [expr {[set ${w}(x1)]+1000}]
+    if {$pos == {}} {
+	set ${w}(x1) [set ${w}(start)]
+	set ${w}(x2) [expr {[set ${w}(x1)]+1000}]
+    } else {
+	set ${w}(x1) $pos
+	set ${w}(x2) [expr {[set ${w}(x1)]+1000}]
+    }
     
     # starting tracks
     set ${w}(template) 1
@@ -87,7 +92,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
 	-orient horiz
     $w.xscroll set \
 	0 \
-	[expr {([set ${w}(x2)]-[set ${w}(start)])/double([set ${w}(length)])}]
+	[expr {([set ${w}(x2)]-[set ${w}(x1)])/double([set ${w}(length)])}]
 	
     grid $w.xscroll -column 1 -row 998 -sticky nsew
     grid rowconfigure $w 998 -weight 0
@@ -2258,9 +2263,9 @@ proc TemplateDisplay2 { io f id} {
 }
 
 # THIS ONE
-proc CreateTemplateDisplay {io cnum} {
+proc CreateTemplateDisplay {io cnum {pos {}}} {
     set pwin .read_depth[counter]
-    1.5Dplot $pwin $io 900 600 $cnum
+    1.5Dplot $pwin $io 900 600 $cnum $pos
 #    add_plot $pwin seq_seqs    250  1 1 -bd 0 -relief raised
 #    add_separator $pwin 1
 #    add_plot $pwin depth_track 150  1 1 -bd 0 -relief raised
