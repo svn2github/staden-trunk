@@ -3270,9 +3270,13 @@ proc tag_editor_callback {w rec cmd args} {
 
 	"move" {
 	    set w2 [selection own]
-	    if {[winfo class $w2] != "Editor"} {
-		bell
-		return
+	    if {$w2 == ""} {
+		set w2 $w
+	    } else {
+		if {[winfo class $w2] != "Editor"} {
+		    bell
+		    return
+		}
 	    }
 	    if {$w2 != $w} {
 		# Move to a different contig, so delete from here
@@ -3295,9 +3299,13 @@ proc tag_editor_callback {w rec cmd args} {
 
 	"copy" {
 	    set w2 [selection own]
-	    if {[winfo class $w2] != "Editor"} {
-		bell
-		return
+	    if {$w2 == ""} {
+		set w2 $w
+	    } else {
+		if {[winfo class $w2] != "Editor"} {
+		    bell
+		    return
+		}
 	    }
 	    foreach {otype orec start end} [$w2 select get] break;
 	    set d(otype) $otype
@@ -3305,7 +3313,6 @@ proc tag_editor_callback {w rec cmd args} {
 	    set d(start) $start
 	    set d(end)   $end
 	    set d(rec)   -1
-	    puts "U_tag_change $w2 -1 [array get d]"
 	    U_tag_change $w2 -1 [array get d]
 	    $w2 redraw
 	    destroy $f

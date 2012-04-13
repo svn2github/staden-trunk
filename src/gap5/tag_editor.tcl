@@ -293,18 +293,8 @@ proc tag_editor_save {com data w} {
 proc tag_editor_moveorcopy {method com data anno} {
     upvar #0 $data d
 
-    set owner [selection own]
-    if {$owner == ""} {
-	bell
-	return
-    }
-    if {[winfo class $owner] != "Editor"} {
-	bell
-	return
-    }
-
     set d(anno) $anno
-    eval $com $method $owner
+    eval $com $method [selection own]
 }
 
 proc tag_editor_strand {strand} {
