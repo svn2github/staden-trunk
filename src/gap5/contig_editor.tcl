@@ -4248,6 +4248,7 @@ proc editor_return {w} {
 		  -pos    $pos]
     
     set w [set ${w}(top)]
+    global $w
     set ${w}(Status) "Padded position $pos, unpadded $upos"
 }
 
