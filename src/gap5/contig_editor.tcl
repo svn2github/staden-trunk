@@ -690,8 +690,7 @@ proc create_or_move_editor {io contig cursor_rec cursor_pos} {
 
     # If found, send a cursor movement event
     if {$found} {
-	puts "1 contig_notify -io $io -cnum $contig -type GENERIC \
-	    -args [list TASK_GENERIC "" data "set_cursor $cursor_rec $cursor_pos"]"
+	#puts "1 contig_notify -io $io -cnum $contig -type GENERIC -args [list TASK_GENERIC "" data "set_cursor $cursor_rec $cursor_pos"]"
 	contig_notify -io $io -cnum $contig -type GENERIC \
 	    -args [list TASK_GENERIC "" data "set_cursor $cursor_rec $cursor_pos"]
     } else {
@@ -1856,7 +1855,7 @@ proc editor_undo_info {top {clear 0}} {
 # Basic sequence editing function
 
 # Returns original read pos as it is needed for undo
-proc editor_shift_seq {io rec dir} {
+proc editor_shift_seq {io rec dir {move_anno 1}} {
     # Dir 1 => right, -1 => left
     set seq [$io get_sequence $rec]
     set rpos [$seq get_position]
@@ -1866,9 +1865,11 @@ proc editor_shift_seq {io rec dir} {
     foreach {pair_rec flags} [$c remove_sequence $rec] break;
     $c add_sequence $rec [expr {$rpos+$dir}] $pair_rec $flags
     $c delete
-    set seq [$io get_sequence $rec]
-    $seq move_annos -1
-    $seq delete
+    if {$move_anno} {
+	set seq [$io get_sequence $rec]
+	$seq move_annos -1
+	$seq delete
+    }
 
     # FIXME: try $c move_seq instead
 
@@ -1920,23 +1921,29 @@ proc editor_insert_gap {w where {end 1}} {
     if {$type == 18} {
 	set seq [$io get_sequence $rec]
 	$seq insert_base $pos * -1
+	set cmp [expr {([$seq get_length] < 0) ^ [$seq get_orient]}] 
 	$seq delete
+	set undo ""
+
+	if {$cmp} {
+	    set rpos [editor_shift_seq $io $rec 1 0]
+	    lappend undo [list B_MOVE $rec $rpos]
+	}
+
+	lappend undo \
+	    [list C_SET $type $rec $pos] \
+	    [list B_DEL $rec $pos]
+	eval lprepend undo [editor_handle_tag_insertion $io $rec $pos]
 
 	if {$end == 0} {
 	    # Also shift sequence left one base.
 	    set rpos [editor_shift_seq $io $rec -1]
-	    store_undo $w \
-		[list \
-		     [list C_SET $type $rec $pos] \
-		     [list B_DEL $rec $pos] \
-		     [list T_MOVE $rec 1] \
-		     [list B_MOVE $rec $rpos] ] {}
-	} else {
-	    store_undo $w \
-		[list \
-		     [list C_SET $type $rec $pos] \
-		     [list B_DEL $rec $pos] ] {}
+	    lprepend undo \
+		[list T_MOVE $rec 1] \
+		[list B_MOVE $rec $rpos]
 	}
+	
+	store_undo $w $undo {}
     } else {
 	set contig [$io get_contig $rec]
 	$contig insert_base $pos
@@ -1953,6 +1960,132 @@ proc editor_insert_gap {w where {end 1}} {
     eval $w set_cursor [$w get_cursor relative] 1
     
     $w redraw
+}
+
+# Handles the shifting of tags when we remove from a sequence srec at
+# position pos.
+#
+# Returns a portion of Undo list to reverse the process
+proc editor_handle_tag_deletion {io srec pos} {
+    set s [$io get_sequence $srec]
+    set crec [$s get_contig]
+    set lpos [$s get_position]
+    set rpos [expr {$lpos + abs([$s get_length])}]
+    $s delete
+
+    incr pos $lpos
+    #puts "DEL $lpos..$rpos $pos in $crec"
+
+    set c [$io get_contig $crec]
+    set annos [$c anno_in_range $pos $rpos]
+    $c delete
+
+    set undo ""
+
+    foreach anno $annos {
+	if {[lindex $anno 8] != $srec} continue
+	foreach {astart aend arec} $anno break
+	#puts -nonewline "#$arec\t$astart..$aend"
+
+	set a [$io get_anno_ele $arec]
+	set d(type)   [$a get_type]
+	foreach {d(start) d(end)} [$a get_position] break;
+	set d(otype)  [$a get_obj_type]
+	set d(orec)   [$a get_obj_rec]
+	set d(anno)   [$a get_comment]
+	set d(strand) [lsearch -exact {+ - . ?} [$a get_direction]]
+	set d(rec)    $arec
+
+	if {$astart > $pos} {
+	    #puts "Move left"
+	    incr astart -1
+	    incr aend   -1
+	    incr astart [expr {-1*$lpos}]
+	    incr aend   [expr {-1*$lpos}]
+	    $a move $astart $aend
+	    $a delete
+
+	    lappend undo [list T_MOD $arec [array get d]]
+	} elseif {$aend >= $pos} {
+	    incr aend   -1
+	    incr astart [expr {-1*$lpos}]
+	    incr aend   [expr {-1*$lpos}]
+	    if {$aend - $astart < 0} {
+		#puts "Delete"
+		$a remove
+		lappend undo [list T_NEW [array get d]]
+	    } else {
+		#puts "Shrink"
+		$a move $astart $aend
+		$a delete
+		lappend undo [list T_MOD $arec [array get d]]
+	    }
+	} else {
+	    #puts "To left => do nothing"
+	    $a delete
+	}
+    }
+
+    return $undo
+}
+
+# Handles the insertion to and movement of tags when we insert to a sequence
+# at position 'pos'.
+#
+# Returns a portion of Undo list to reverse the process
+proc editor_handle_tag_insertion {io srec pos} {
+    set s [$io get_sequence $srec]
+    set crec [$s get_contig]
+    set lpos [$s get_position]
+    set rpos [expr {$lpos + abs([$s get_length])}]
+    $s delete
+
+    incr pos $lpos
+    #puts "INS $lpos..$rpos $pos in $crec"
+
+    set c [$io get_contig $crec]
+    set annos [$c anno_in_range $pos $rpos]
+    $c delete
+
+    set undo ""
+
+    foreach anno $annos {
+	if {[lindex $anno 8] != $srec} continue
+	foreach {astart aend arec} $anno break
+	#puts -nonewline "#$arec\t$astart..$aend"
+
+	set a [$io get_anno_ele $arec]
+	set d(type)   [$a get_type]
+	foreach {d(start) d(end)} [$a get_position] break;
+	set d(otype)  [$a get_obj_type]
+	set d(orec)   [$a get_obj_rec]
+	set d(anno)   [$a get_comment]
+	set d(strand) [lsearch -exact {+ - . ?} [$a get_direction]]
+	set d(rec)    $arec
+
+	if {$astart >= $pos} {
+	    #puts "Move right"
+	    incr astart 1
+	    incr aend   1
+	    incr astart [expr {-1*$lpos}]
+	    incr aend   [expr {-1*$lpos}]
+	    $a move $astart $aend
+	    lappend undo [list T_MOD $arec [array get d]]
+	} elseif {$aend >= $pos} {
+	    incr aend   1
+	    incr astart [expr {-1*$lpos}]
+	    incr aend   [expr {-1*$lpos}]
+	    #puts "Grow"
+	    $a move $astart $aend
+	    lappend undo [list T_MOD $arec [array get d]]
+	} else {
+	    #puts "To left => do nothing"
+	}
+
+	$a delete
+    }
+
+    return $undo
 }
 
 # Dir is 0 for delete base left of cursor (standard Backspace functionality)
@@ -1983,6 +2116,7 @@ proc editor_delete_base {w where {end 1} {dir 0} {powerup 0}} {
 	set seq [$io get_sequence $rec]
 	foreach {old_base old_conf} [$seq get_base $pos] break
 	foreach {l0 r0} [$seq get_clips] break;
+	set cmp [expr {([$seq get_length] < 0) ^ [$seq get_orient]}] 
 
 	if {$old_base != "*" && !$powerup} {
 	    bell
@@ -1992,7 +2126,14 @@ proc editor_delete_base {w where {end 1} {dir 0} {powerup 0}} {
 	    return
 	}
 
+	set undo ""
+	if {$cmp} {
+	    $seq move_annos 1
+	    lappend undo [list T_MOVE $rec -1]
+	}
+
 	$seq delete_base $pos
+
 
 	# Identify if we're in a situation where we need to undo the clip
 	# points too. This occurs when, for example, we delete the last base
@@ -2006,24 +2147,34 @@ proc editor_delete_base {w where {end 1} {dir 0} {powerup 0}} {
 
 	$seq delete
 
-	set undo [list [list C_SET $type $rec [expr {$pos+1}]] \
-		       [list B_INS $rec $pos $old_base $old_conf]]
+	lprepend undo [list C_SET $type $rec [expr {$pos+1}]] \
+	              [list B_INS $rec $pos $old_base $old_conf]
+
+	eval lprepend undo [editor_handle_tag_deletion $io $rec $pos]
+
 	if {$end == 0} {
+	    # Move annos
+	    set seq [$io get_sequence $rec]
+	    $seq move_annos 2
+	    $seq delete
+	    lprepend undo [list T_MOVE $rec -2]
+
 	    # Also shift sequence right one base.
 	    set rpos [editor_shift_seq $io $rec 1]
+	    
 	    if {$l0 != $l1 || $r0 != $r1} {
-		lappend undo \
+		lprepend undo \
 		    [list B_CUT $rec $l0 $r0] \
 		    [list T_MOVE $rec 1] \
 		    [list B_MOVE $rec $rpos]
 	    } else {
-		lappend undo \
+		lprepend undo \
 		    [list T_MOVE $rec 1] \
 		    [list B_MOVE $rec $rpos]
 	    }
 	} else {
 	    if {$l0 != $l1 || $r0 != $r1} {
-		lappend undo [list B_CUT $rec $l0 $r0]
+		lprepend undo [list B_CUT $rec $l0 $r0]
 	    }
 	}
 

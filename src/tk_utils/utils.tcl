@@ -287,3 +287,21 @@ proc tmpnam {{prefix tmp}} {
     return $fname
 }
 
+#
+# Equivalent calling syntax to lappend.
+# You may want to look at http://wiki.tcl.tk/1482 for information.
+# Note the $v[set v {}] code is trickery to cheat the reference counting,
+# which prevents linsert from making a complete new copy of the list.
+#
+# With Tcl8.5 the foreach loop can be replaced by
+#     set v [linsert $v[set v {}] 0 {*}$args]
+#
+proc lprepend {var args} {
+    upvar 1 $var v
+    lappend v   ;# Used as a an "is a list" check and to do var creation
+    set p 0
+    foreach a $args {
+	set v [linsert $v[set v {}] $p $a]
+	incr p
+    }
+}

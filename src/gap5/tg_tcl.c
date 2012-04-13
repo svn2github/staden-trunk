@@ -1931,17 +1931,24 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	contig_t *c;
 	bin_index_t *bin;
 
-	if (objc != 6) {
+	if (objc != 6 && objc != 4) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
-			   "\"%s set_position obj_type obj_rec start end\"\n",
+			   "\"%s move ?obj_type obj_rec? start end\"\n",
 			   Tcl_GetStringFromObj(objv[0], NULL));
 	    return TCL_ERROR;
 	}
 
-	Tcl_GetIntFromObj(interp, objv[2], &otype);
-	Tcl_GetWideIntFromObj(interp, objv[3], &orec);
-	Tcl_GetIntFromObj(interp, objv[4], &start);
-	Tcl_GetIntFromObj(interp, objv[5], &end);
+	if (objc == 6) {
+	    Tcl_GetIntFromObj(interp, objv[2], &otype);
+	    Tcl_GetWideIntFromObj(interp, objv[3], &orec);
+	    Tcl_GetIntFromObj(interp, objv[4], &start);
+	    Tcl_GetIntFromObj(interp, objv[5], &end);
+	} else {
+	    otype = te->anno->obj_type;
+	    orec  = te->anno->obj_rec;
+	    Tcl_GetIntFromObj(interp, objv[2], &start);
+	    Tcl_GetIntFromObj(interp, objv[3], &end);
+	}
 	
 	if (otype != GT_Seq && otype != GT_Contig) {
 	    vTcl_SetResult(interp, "obj_type should be %d or %d\n",
