@@ -155,10 +155,12 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     static char *optionStrings[] = {
 	"configure", "io",   "xview",	"yview",  "get_number",
+	"recs_between",
 	NULL
     };
     enum options {
-	CONFIGURE, IO, XVIEW,	YVIEW,     GET_NUMBER
+	CONFIGURE, IO, XVIEW,	YVIEW,     GET_NUMBER,
+	RECS_BETWEEN,
     };
 
     if (argc < 2) {
@@ -291,6 +293,42 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 		    xx->cursor_pos);
 	    Tcl_AppendResult(interp, buf, NULL);
 	}
+	break;
+    }
+
+    case RECS_BETWEEN: {
+	char buf[100];
+	int x, y, type, pos;
+	tg_rec from_rec, to_rec;
+	Array a;
+	int i;
+	Tcl_Obj *rec_list;
+
+	if (argc != 4) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " recs_between from_rec to_rec\"",
+			     (char *) NULL);
+	    return TCL_ERROR;
+	}
+
+	from_rec = atol(argv[2]);
+	to_rec   = atol(argv[3]);
+
+	a = edview_items_between(xx, from_rec, to_rec);
+	if (!a)
+	    return TCL_ERROR;
+
+	rec_list = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < ArrayMax(a); i++) {
+	    Tcl_Obj *o;
+	    tg_rec rec = arr(tg_rec, a, i);
+
+	    o = Tcl_NewWideIntObj(rec);
+	    Tcl_ListObjAppendElement(interp, rec_list, o);
+	}
+	Tcl_SetObjResult(interp, rec_list);
+
+	ArrayDestroy(a);
 	break;
     }
     }

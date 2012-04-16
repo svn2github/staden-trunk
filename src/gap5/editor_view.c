@@ -2903,6 +2903,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
     return !exact || best_delta == 0 ? type : -1;
 }
 
+
 /*
  * More or less the opposite of the above function. Given a record and type
  * this returns the row number on screen. If non-NULL xmin and xmax are the
@@ -2945,6 +2946,118 @@ int edview_row_for_item(edview *xx, tg_rec rec, int *xmin, int *xmax) {
     r = xx->r[i].y + xx->y_seq_start - xx->displayYPos;
     
     return r >= xx->y_seq_start ? r : -1;
+}
+
+
+/*
+ * As above, but an absolute Y location ignoring the scroll bar. This means
+ * we can query the location of items off screen, as needed by the
+ * edview_items_between function.
+ *
+ * Returns Y coordinate (and optionally min/max X coordinates) if found
+ *        -1 if not (with xmin/xmax unset).
+ */
+int edview_abs_row_for_item(edview *xx, tg_rec rec, int *xmin, int *xmax) {
+    int i, r = -1;
+    HacheItem *hi;
+
+    if (rec == 0)
+	return -1;
+
+    if (rec == xx->cnum) {
+	if (xmin) *xmin = -xx->displayPos;
+	if (xmax) *xmax = -xx->displayPos;
+	return 0;
+    }
+
+    if (xx->nr <= 0 || !xx->r)
+	return -1;
+
+    /* A sequence, so find out what's visible */
+    edview_visible_items(xx, xx->displayPos,
+			 xx->displayPos + xx->displayWidth);
+
+    /* And search for rec in this list */
+    if (!xx->rec_hash)
+	return -1;
+    hi = HacheTableSearch(xx->rec_hash, (char *)&rec, sizeof(rec));
+    if (!hi)
+	return -1;
+
+    i = hi->data.i;
+    if (xmin) *xmin = xx->r[i].start - xx->displayPos;
+    if (xmax) *xmax = xx->r[i].end   - xx->displayPos;
+    return xx->r[i].y;
+}
+
+
+/*
+ * Returns an array of record numbers after from_rec and before to_rec.
+ * The "between" function uses the Y coordinates. It is designed for use
+ * with multi-selection methods; eg click followed by shift+click.
+ *
+ * When in stack_mode where multiple sequences reside on the same line, the
+ * between function will take heed of the X location of sequences in the
+ * names panel too.
+ *
+ * Returns an array on success (caller to free)
+ *         NULL on failure
+ */
+Array edview_items_between(edview *xx, tg_rec from_rec, tg_rec to_rec) {
+    int from_x, from_y;
+    int to_x, to_y;
+    int i;
+    Array a = ArrayCreate(sizeof(tg_rec), 0);
+    tg_rec *r;
+
+    if (xx->nr <= 0 || !xx->r)
+	return NULL;
+
+    from_y = edview_abs_row_for_item(xx, from_rec, &from_x, NULL);
+    to_y   = edview_abs_row_for_item(xx, to_rec,   &to_x, NULL);
+
+    if (xx->ed->stack_mode) {
+	if (from_x < 0) from_x = 0;
+	from_x = from_x * ((double)xx->names->sw.columns / xx->displayWidth);
+	if (from_x > xx->names->sw.columns)
+	    from_x = xx->names->sw.columns;
+	if (to_x < 0) to_x = 0;
+	to_x = to_x * ((double)xx->names->sw.columns / xx->displayWidth);
+	if (to_x > xx->names->sw.columns)
+	    to_x = xx->names->sw.columns;
+    }
+
+    if (from_y > to_y) {
+	int tmp;
+	tmp = from_y; from_y = to_y; to_y = tmp;
+	tmp = from_x; from_x = to_x; to_x = tmp;
+    }
+
+
+    for (i = 0; i < xx->nr; i++) {
+	int y = xx->r[i].y;
+	
+	if (y < from_y || y > to_y)
+	    continue;
+
+	if ((y == from_y || y == to_y) && xx->ed->stack_mode) {
+	    int p1 = xx->r[i].start - xx->displayPos;
+	    if (p1 < 0) p1 = 0;
+	    p1 = p1 * ((double)xx->names->sw.columns / xx->displayWidth);
+
+	    if (y == from_y && p1 <= from_x)
+		continue;
+	    if (y == to_y   && p1 >= to_x)
+		continue;
+	}
+
+	r = (tg_rec *)ArrayRef(a, ArrayMax(a));
+	if (!r)
+	    return NULL;
+	*r = xx->r[i].rec;
+    }
+    
+    return a;
 }
 
 

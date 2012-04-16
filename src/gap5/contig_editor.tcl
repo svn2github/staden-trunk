@@ -4397,7 +4397,8 @@ bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
 bind EdNames <2> {editor_name_select %W [%W get_number @%x @%y] 1}
 
 bind EdNames <<select>> {
-    global EdNames_select
+    global EdNames_select EdNames_select_last
+    global EdNames_select_x EdNames_select_ctg
     set EdNames_select 1
 
     set where [%W get_number @%x @%y]
@@ -4408,6 +4409,42 @@ bind EdNames <<select>> {
 
     set EdNames_select [UpdateReadingListItem [list "\#$rec"] -1]
     editor_name_select %W [%W get_number @%x @%y]
+
+    if {$type == 18} {
+	set EdNames_select_last $rec
+    } else {
+	set EdNames_select_last -1
+    }
+
+    set ed [name2ed %W]
+    set EdNames_select_ctg [$ed contig_rec]
+    set EdNames_select_x   [$ed xview]
+}
+
+bind EdNames <<select-to>> {
+    global EdNames_select EdNames_select_last
+    global EdNames_select_x EdNames_select_ctg
+
+    if {![info exists EdNames_select_last]} return
+    if {$EdNames_select_last == -1} return
+
+    # Disallow scrolling or attempts to select between two editors
+    set ed [name2ed %W]
+    if {$EdNames_select_ctg != [$ed contig_rec]} {bell; return}
+    if {$EdNames_select_x   != [$ed xview]}      {bell; return}
+
+    set where [%W get_number @%x @%y]
+    if {$where == ""} return
+
+    foreach {type rec pos} $where break
+    if {$type != 18} return
+
+    set recs [%W recs_between $EdNames_select_last $rec]
+    lappend recs $rec; #include "to" reading
+
+    set reads ""
+    foreach r $recs { lappend reads "#$r" }
+    UpdateReadingListItem $reads $EdNames_select
 }
 
 bind EdNames <<select-drag>> {

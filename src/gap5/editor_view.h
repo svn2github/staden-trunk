@@ -302,4 +302,7 @@ void ed_set_base_sort_point(edview *xx);
 /* Compute original positions array via alignments */
 int origpos(edview *xx, tg_rec srec, int pos);
 
+/* Find records between from_rec and to_rec in the names layout. */
+Array edview_items_between(edview *xx, tg_rec from_rec, tg_rec to_rec);
+
 #endif /* _EDITOR_VIEW_H_ */
