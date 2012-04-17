@@ -32,6 +32,7 @@ widget create Xcombobox -type frame -base entry -components {
     {-foreground	ALIAS entry -foreground}
     {-values 		values		Values		{}}
     {-command 		command		Command		{}}
+    {-postcommand 	postCommand	PostCommand	{}}
 }
 
 namespace eval ::Widget::Xcombobox {;
@@ -100,6 +101,10 @@ namespace eval ::Widget::Xcombobox {;
 ;proc dots {w} {
     variable $w
     upvar 0 $w data
+
+    if {$data(-postcommand) != {}} {
+	uplevel #0 $data(-postcommand)
+    }
 
     if {[winfo exists $w.list]} {
 	raise $w.list

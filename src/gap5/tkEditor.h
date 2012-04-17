@@ -27,6 +27,7 @@ typedef struct {
     char *xScrollCmd;
     char *yScrollCmd;
     char *highlight_cmd;
+    char *output_list;
     int max_height;
     
     /* And our data to edit */

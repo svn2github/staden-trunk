@@ -1278,12 +1278,11 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
 
 /* Returns 1 if rec is in the global "readings" list, 0 if not */
 static int seq_in_readings_list(edview *xx, tg_rec rec) {
-    char srec[20];
-    
+    char srec[20], list[1024];
+
+    sprintf(list, "NGList_read_hash_%s", xx->ed->output_list);
     sprintf(srec, "#%"PRIrec, rec);
-    return Tcl_GetVar2(xx->interp,
-		       "NGList_read_hash",
-		       srec, TCL_GLOBAL_ONLY) ? 1 : 0;
+    return Tcl_GetVar2(xx->interp, list, srec, TCL_GLOBAL_ONLY) ? 1 : 0;
 }
 
 static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {

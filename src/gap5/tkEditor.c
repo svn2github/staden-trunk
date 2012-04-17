@@ -238,7 +238,10 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_INT,
          "-group_by_secondary", "groupBySecondary", "GroupBySecondary",
          "0", offset(group_secondary), 0, NULL},
-   {TK_CONFIG_END,
+    {TK_CONFIG_STRING,
+         "-output_list", "outputList", "OutputList",
+         "readings", offset(output_list), TK_CONFIG_NULL_OK, NULL},
+    {TK_CONFIG_END,
 	 (char *)NULL,	(char *)NULL,	(char *)NULL,	(char *) NULL,
          0,	0,	NULL},
 };
@@ -415,6 +418,7 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
     ed->xScrollCmd = NULL;
     ed->yScrollCmd = NULL;
     ed->highlight_cmd = NULL;
+    ed->output_list = NULL;
     ed->max_height = 0;
     ed->xx = NULL;
     /*

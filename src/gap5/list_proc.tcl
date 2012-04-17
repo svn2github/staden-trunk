@@ -205,7 +205,7 @@ proc ListPrint {name} {
 }
 
 proc ListDelete {name {parent .}} {
-    global NGList NGLists NGSpecial NGListTag
+    global NGList NGLists NGSpecial NGListTag NGList_traced
 
     if {[ListExists2 $name]} {
 	if {[info exists NGSpecial] && [lsearch -exact $NGSpecial $name] != -1 } {
@@ -217,7 +217,14 @@ proc ListDelete {name {parent .}} {
 
 	unset NGList($name)
 	unset NGListTag($name)
+	global NGList_read_hash_$name
+	catch {unset NGList_read_hash_$name}
 	set NGLists [lreplace $NGLists [lsearch -exact $NGLists $name] [lsearch -exact $NGLists $name]]
+
+	if {[info exists NGList_traced($name)]} {
+	    unset NGList_traced($name)
+	    trace remove variable NGList_traced($name) write [list UpdateReadingDisplays $name]
+	}
 	return 1
     } else {
 	tk_messageBox -icon error -type ok -title "No such list" \
@@ -725,16 +732,22 @@ proc LoadList2 {t file name {tag {}}} {
     ListEdit $name
 }
 
-proc LoadListDialog {} {
+proc LoadListDialog {{t {}} {listname {}}} {
     global gap5_defs
 
-    set t [keylget gap5_defs LOAD_LIST.WIN]
+    if {$t == ""} {
+	set t [keylget gap5_defs LOAD_LIST.WIN]
+    }
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Load list"
 
     getFname $t.file [keylget gap5_defs LOAD_LIST.FILENAME] load
     getLname $t.list [keylget gap5_defs LOAD_LIST.LISTNAME] load
     xyn $t.seqid -label "Reading list?"
+
+    if {$listname != ""} {
+	$t.list.entry.entry insert end $listname
+    }
 
     okcancelhelp $t.ok \
         -ok_command "LoadList2 $t \[entrybox_get $t.file.entry\] \
@@ -844,7 +857,7 @@ proc CreateList2 {t list} {
     if {[ListCreate $list ""]} {ListEdit $list}
 }
 
-proc CreateListDialog {} {
+proc CreateListDialog {{wait 0}} {
     global gap5_defs
 
     set t [keylget gap5_defs CREATE_LIST.WIN]
@@ -853,7 +866,7 @@ proc CreateListDialog {} {
 
     entrybox_configure [getLname $t.list \
 			    [keylget gap5_defs CREATE_LIST.LISTNAME] create] \
-	-command "CreateList2 $t"
+	-command "CreateListDialog2 $t"
 
 
     okcancelhelp $t.ok \
@@ -863,6 +876,17 @@ proc CreateListDialog {} {
         -bd 2 -relief groove
 
     pack $t.list $t.ok -side top -fill x
+    if {$wait} {
+	global $t._list
+	vwait $t._list
+	return [set $t._list]
+    }
+}
+
+proc CreateListDialog2 {t list} {
+    global $t._list
+    set $t._list $list
+    CreateList2 $t $list
 }
 
 
@@ -958,11 +982,16 @@ proc InitLists {} {
 
 }
 
-proc InitListTrace { } {
-    global NGList NGList_read_hash
+proc InitListTrace { {list readings} } {
+    global NGList NGList_traced
 
-    #update displays when list is changed eg editted or deleted
-    trace variable NGList(readings) w "UpdateReadingDisplays"
+    if {![info exists NGList_traced]} {array set NGList_traced {}}
+
+    if {![info exists NGList_traced($list)]} {
+	#update displays when list is changed eg editted or deleted
+	trace variable NGList($list) w [list UpdateReadingDisplays $list]
+	set NGList_traced($list) 1
+    }
 
     # While fun, tracing each independent set and unset within the array
     # has the potential to spam events if we load an entire new list from 
@@ -970,6 +999,7 @@ proc InitListTrace { } {
     # So for now we just disable this feature until we can find an
     # efficient route, if any exists.
 
+    #global NGList_read_hash
     #trace variable NGList_read_hash wu "UpdateReadingDisplaysHash"
 }
 
@@ -1095,8 +1125,8 @@ proc GetContigList { } {
 }
 
 proc InitReadingList { } {
-    global NGList_read_hash
-    array set NGList_read_hash ""
+    global NGList_read_hash_readings
+    array set NGList_read_hash_readings ""
 
 }
 
@@ -1117,8 +1147,9 @@ set NGList_urd 1
 # Converts from NGList(readings) text contents to NGList_read_hash.
 # This automatically generates reg_notify_highlight events for changes
 # to the hash.
-proc UpdateReadingDisplays {args} {
-    global NGList io NGList_urd NGList_read_hash
+proc UpdateReadingDisplays {list args} {
+    global NGList io NGList_urd NGList_read_hash_$list
+    upvar #0 NGList_read_hash_$list hash
 
     # Optimisation for when this gets triggered LOTS of times, eg
     # when adding many many items to the readings list.
@@ -1126,10 +1157,10 @@ proc UpdateReadingDisplays {args} {
 	return
     }
 
-    PruneReadingList
+    PruneReadingList $list
 
     array set tmp ""
-    foreach r_name $NGList(readings) {
+    foreach r_name $NGList($list) {
 	set tmp($r_name) 1
     }
 
@@ -1137,7 +1168,7 @@ proc UpdateReadingDisplays {args} {
 
     #look for new readings
     foreach r_name [array names tmp] {
-	if {![info exists NGList_read_hash($r_name)]} {
+	if {![info exists hash($r_name)]} {
 	    if {[regexp {^\#(\d+)} $r_name _ rec]} {
 		if {[$io rec_exists 18 $rec] == 0} {
 		    verror ERR_WARN UpdateReadingDisplays \
@@ -1145,18 +1176,18 @@ proc UpdateReadingDisplays {args} {
 		    continue
 		}
 	    }
-	    set NGList_read_hash($r_name) ""
+	    set hash($r_name) ""
 	}
     }
 
     #look for deleted readings
-    foreach r_name [array names NGList_read_hash] {
+    foreach r_name [array names hash] {
 	if {![info exists tmp($r_name)]} {
-	    unset NGList_read_hash($r_name)
+	    unset hash($r_name)
 	}
     }
 
-    set NGList(readings) [array names NGList_read_hash]
+    set NGList($list) [array names hash]
 
     contig_notify -io $io -type BUFFER_END -cnum 0 -args {}
 
@@ -1165,6 +1196,12 @@ proc UpdateReadingDisplays {args} {
     # stream of events for windows that only just care about whether they
     # should redraw.
     contig_notify -io $io -type HIGHLIGHT_READ -cnum 0 -args {}
+}
+
+# Returns the number of elements in a list
+proc ListSize {list} {
+    global NGList
+    return [llength $NGList($list)]
 }
 
 proc UpdateReadingDisplaysHash {var subvar op} {
@@ -1178,16 +1215,16 @@ proc UpdateReadingDisplaysHash {var subvar op} {
 }
 
 # Requires a global io variable
-proc PruneReadingList {} {
+proc PruneReadingList { {list readings} } {
     global NGList io
-    set l $NGList(readings)
+    set l $NGList($list)
     set l2 ""
     foreach i $l {
 	if {[db_info get_read_num $io $i] != -1} {
 	    lappend l2 $i
 	}
     }
-    set NGList(readings) $l2
+    set NGList($list) $l2
 }
 
 proc GetReadingList { } {
@@ -1200,35 +1237,36 @@ proc GetReadingList { } {
 #called from contig editor
 #
 #Returns 1 if last item is selected, 0 if unselected
-proc UpdateReadingListItem { r_names highlight } {
-    global r_list NGList NGListTag NGList_read_hash
+proc UpdateReadingListItem { list r_names highlight } {
+    global r_list NGList NGListTag NGList_read_hash_$list
+    upvar #0 NGList_read_hash_$list hash
 
     foreach r_name $r_names {
 	if {$highlight == -1} {
 	    # Toggle
-	    if {[info exists NGList_read_hash($r_name)]} {
-		unset NGList_read_hash($r_name)
+	    if {[info exists hash($r_name)]} {
+		unset hash($r_name)
 		set r 0
 	    } else {
-		set NGList_read_hash($r_name) ""
+		set hash($r_name) ""
 		set r 1
 	    }
 	} else {
 	    if {$highlight == 1} {
-		if {![info exists NGList_read_hash($r_name)]} {
-		    set NGList_read_hash($r_name) ""
+		if {![info exists hash($r_name)]} {
+		    set hash($r_name) ""
 		}
 		set r 1
 	    } else {
-		if {[info exists NGList_read_hash($r_name)]} {
-		    unset NGList_read_hash($r_name)
+		if {[info exists hash($r_name)]} {
+		    unset hash($r_name)
 		}
 		set r 0
 	    }
 	}
     }
 
-    ListCreate2 readings [array names NGList_read_hash] $NGListTag(readings)
+    ListCreate2 $list [array names hash] $NGListTag($list)
 
 #    if {$highlight} {
 #	lappend NGList(readings) $r_name

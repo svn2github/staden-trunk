@@ -587,6 +587,7 @@ proc contig_register_callback {ed type id args} {
 	}
 
 	HIGHLIGHT_READ {
+	    set ${w}(ListSize) [ListSize [set ${w}(OutputList)]]
 	    $ed redraw
 	}
 
@@ -842,6 +843,47 @@ proc contig_editor {w args} {
 	-variable ${w}(Quality) \
 	-text Quality \
 	-command "editor_quality $w"
+    
+    xcombobox $tool.list_xc \
+	-label "          List:" \
+	-textvariable ${w}(OutputList) \
+	-command editor_olist_switch \
+ 	-postcommand "editor_olist_populate $tool.list_xc" \
+	-default readings \
+	-width 15
+    bind $tool.list_xc <Any-Leave> {
+	editor_olist_switch %W [%W get]
+	focus [winfo toplevel %W]
+    }
+
+    label $tool.list_cl -text "  Size:"
+    menubutton $tool.list_c \
+	-textvariable ${w}(ListSize) \
+	-menu $tool.list_c.opts \
+	-indicatoron 1
+    menu $tool.list_c.opts -tearoff 0
+    $tool.list_c.opts add command \
+	-label Save \
+	-command "SaveListDialog $tool.list_save \[set ${w}(OutputList)\]"
+    $tool.list_c.opts add command \
+	-label Load \
+	-command "LoadListDialog $tool.list_load \[set ${w}(OutputList)\]"
+    $tool.list_c.opts add command \
+	-label Edit \
+	-command "ListEdit \[set ${w}(OutputList)\]"
+    $tool.list_c.opts add separator
+    $tool.list_c.opts add command \
+	-label Clear \
+	-command "ListClear \[set ${w}(OutputList)\]"
+    $tool.list_c.opts add command \
+	-label Delete \
+	-command "ListDelete \[set ${w}(OutputList)\]; \
+                  editor_olist_switch $w readings"
+
+    global $w
+    set ${w}(OutputList) readings
+    set ${w}(ListSize) [ListSize [set ${w}(OutputList)]]
+
     button $tool.undo    -text Undo -command "editor_undo $w" \
 	-state [io_undo_state $opt(contig)]
 #    button $tool.redo    -text Redo -command "editor_redo $w" \
@@ -890,6 +932,8 @@ proc contig_editor {w args} {
 	    $tool.join configure -state disabled
 	}
     }
+
+    pack $tool.list_xc $tool.list_cl $tool.list_c -side left
 
     if {[$opt(io) read_only]} {
 	$tool.save configure -state disabled
@@ -1690,6 +1734,39 @@ proc order_update_on_consensus {w} {
     	    $ed redraw
 	}
     }
+}
+
+#-----------------------------------------------------------------------------
+# Output list handling
+proc editor_olist_populate {w} {
+    global NGLists NGSpecial
+
+    # Filter some.
+    set valid_lists ""
+    foreach l $NGLists {
+	if {[lsearch -exact $NGSpecial $l] == -1 || $l == "readings"} {
+	    lappend valid_lists $l
+	}
+    }
+    $w configure -values $valid_lists
+}
+
+proc editor_olist_switch {w l} {
+    set w [winfo toplevel $w]
+    upvar #0 $w opt
+
+    global NGList
+    if {![ListExists2 $l]} {
+	ListCreate2 $l {} SEQID
+    }
+    InitListTrace $l
+    set opt(OutputList) $l
+    set opt(ListSize) [ListSize $opt(OutputList)]
+
+    foreach ed $opt(all_editors) {
+	$ed configure -output_list $l 
+	$ed redraw
+   }
 }
 
 #-----------------------------------------------------------------------------
@@ -3455,6 +3532,9 @@ proc editor_select_dialog {ed sel} {
 proc editor_select_reads {ed sel contained start end} {
     SetBusy
 
+    global $ed
+    upvar #0 [set ${ed}(top)] opt
+
     set io [$ed io]
     set c [$io get_contig [$ed contig_rec]]
     set rlist {}
@@ -3484,7 +3564,12 @@ proc editor_select_reads {ed sel contained start end} {
     $c delete
 
     if {$rlist != {}} {
-	UpdateReadingListItem $rlist $sel
+	if {![ListExists2 $opt(OutputList)]} {
+	    ListCreate2 $opt(OutputList) {} SEQID
+	    InitListTrace $opt(OutputList)
+	}
+
+	UpdateReadingListItem $opt(OutputList) $rlist $sel
     }
 
     ClearBusy
@@ -4397,6 +4482,8 @@ bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
 bind EdNames <2> {editor_name_select %W [%W get_number @%x @%y] 1}
 
 bind EdNames <<select>> {
+    upvar #0 [winfo toplevel %W] opt
+
     global EdNames_select EdNames_select_last
     global EdNames_select_x EdNames_select_ctg
     set EdNames_select 1
@@ -4404,10 +4491,15 @@ bind EdNames <<select>> {
     set where [%W get_number @%x @%y]
     if {$where == ""} return
 
+    if {![ListExists2 $opt(OutputList)]} {
+	ListCreate2 $opt(OutputList) {} SEQID
+	InitListTrace $opt(OutputList)
+    }
+
     foreach {type rec pos} $where break
 #    if {$type != 18} return
 
-    set EdNames_select [UpdateReadingListItem [list "\#$rec"] -1]
+    set EdNames_select [UpdateReadingListItem $opt(OutputList) [list "\#$rec"] -1]
     editor_name_select %W [%W get_number @%x @%y]
 
     if {$type == 18} {
@@ -4422,6 +4514,8 @@ bind EdNames <<select>> {
 }
 
 bind EdNames <<select-to>> {
+    upvar #0 [winfo toplevel %W] opt
+
     global EdNames_select EdNames_select_last
     global EdNames_select_x EdNames_select_ctg
 
@@ -4442,20 +4536,32 @@ bind EdNames <<select-to>> {
     set recs [%W recs_between $EdNames_select_last $rec]
     lappend recs $rec; #include "to" reading
 
+    if {![ListExists2 $opt(OutputList)]} {
+	ListCreate2 $opt(OutputList) {} SEQID
+	InitListTrace $opt(OutputList)
+    }
+
     set reads ""
     foreach r $recs { lappend reads "#$r" }
-    UpdateReadingListItem $reads $EdNames_select
+    UpdateReadingListItem $opt(OutputList) $reads $EdNames_select
 }
 
 bind EdNames <<select-drag>> {
+    upvar #0 [winfo toplevel %W] opt
+
     set where [%W get_number @%x @%y]
     if {$where == ""} return
 
     foreach {type rec pos} $where break
     if {$type != 18} return
 
+    if {![ListExists2 $opt(OutputList)]} {
+	ListCreate2 $opt(OutputList) {} SEQID
+	InitListTrace $opt(OutputList)
+    }
+
     global EdNames_select
-    UpdateReadingListItem [list "\#$rec"] $EdNames_select
+    UpdateReadingListItem $opt(OutputList) [list "\#$rec"] $EdNames_select
     editor_name_select %W [%W get_number @%x @%y]
 }
 
