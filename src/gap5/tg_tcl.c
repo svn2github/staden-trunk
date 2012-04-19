@@ -1860,6 +1860,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	"set_contig",   "set_position", "set_comment",
 	"set_obj_type", "set_obj_rec",  "set_anno_rec",
 	"set_type",     "set_direction","remove",
+	"get_abs_position",
 	(char *)NULL,
     };
 
@@ -1871,6 +1872,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	SET_CONTIG,     SET_POSITION,   SET_COMMENT,
 	SET_OBJ_TYPE,   SET_OBJ_REC,    SET_ANNO_REC,
 	SET_TYPE,	SET_DIRECTION,  REMOVE,
+	GET_ABS_POSITION,
     };
 
     if (objc < 2) {
@@ -1939,7 +1941,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
     }
 
-    case GET_POSITION: {
+    case GET_POSITION: { /* Pos. relative to object being annotation */
 	tg_rec contig;
 	range_t *r = anno_get_range(te->io, te->anno->rec, &contig, 1);
 	if (NULL == r)
@@ -1947,6 +1949,17 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	vTcl_SetResult(interp, "%d %d %"PRIrec, 
 		       r->start, r->end, contig);
+	break;
+    }
+
+    case GET_ABS_POSITION: { /* Absolute position in contig */
+	tg_rec contig;
+	int start, end;
+
+	anno_get_position(te->io, te->anno->rec, &contig, &start, &end, NULL);
+
+	vTcl_SetResult(interp, "%d %d %"PRIrec, 
+		       start, end, contig);
 	break;
     }
 

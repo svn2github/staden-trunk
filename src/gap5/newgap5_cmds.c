@@ -700,6 +700,29 @@ DisplayContigComparator(ClientData clientData,
 
 
 int
+DisplayCSTags(ClientData clientData,
+	      Tcl_Interp *interp,
+	      int objc,
+	      Tcl_Obj *CONST objv[])
+{
+    reg_anno ra;
+    cs_tags_arg args;
+    cli_args a[] = {
+	{"-io",	ARG_IO,  1, NULL, offsetof(cs_tags_arg, io)},
+	{"-id", ARG_INT, 1, NULL, offsetof(cs_tags_arg, id)},
+	{NULL,	0,	 0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    ra.job = REG_ANNO;
+    result_notify(args.io, args.id, (reg_data *)&ra, 0);
+    return TCL_OK;
+}
+
+
+int
 DisplayCSDiagonal(ClientData clientData,
 		  Tcl_Interp *interp,
 		  int objc,
@@ -2383,6 +2406,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 NULL);
     Tcl_CreateObjCommand(interp, "matchresult_configure",
 			 tk_matchresult_configure,
+			 (ClientData) NULL,
+			 NULL);
+    Tcl_CreateObjCommand(interp, "display_cs_tags", DisplayCSTags,
 			 (ClientData) NULL,
 			 NULL);
     Tcl_CreateObjCommand(interp, "display_cs_diagonal", DisplayCSDiagonal,

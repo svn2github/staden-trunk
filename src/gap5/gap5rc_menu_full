@@ -576,8 +576,8 @@ add_command {File.Exit} 	1 0 {CSStartShutdown $io $f}
 add_command {Edit.Save contig order}	 8 26 {flush_contig_order -io \$io}
 add_command {View.Results manager} 	1 0 {ListResults $io}
 add_command {View.Contig list}		1 0 {InitListContigs $io ""} 
-#add_command {View.Select tags}		1 0 {CSTagCheckList $io $f \
-#		    $f[keylget gap5_defs SELECT_TAGS.WIN] $csh_win}
+add_command {View.Select tags}		1 0 {CSTagCheckList $io $f \
+		    $f[keylget gap5_defs SELECT_TAGS.WIN] $csh_win}
 add_command {View.Clear selection} 	1 0 {ClearContigSelection $io $csh_win}
 add_check   {View.Display diagonal} 	1 0 {$f.diagonal} \
 	{DisplayDiagonal $f $csp_win $io}

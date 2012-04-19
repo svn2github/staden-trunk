@@ -760,19 +760,19 @@ proc PrintCSTagDetails { io canvas current } {
 	    set t_num [string trim $tag t_]
 	}
     }
-    set a [io_read_annotation $io $t_num]
+    set a [$io get_anno_ele $t_num]
 
     set str ""
-    append str  "position [keylget a position] \n"
-    append str "length [keylget a length] \n"
-    append str "type [keylget a type] \n"
-    if {[keylget a annotation] != 0} {
-	append str "comment '[io_read_text $io [keylget a annotation]]' \n"
+    foreach {st en} [$a get_abs_position] break;
+    append str  "position $st \n"
+    append str "length [expr {$en-$st+1}] \n"
+    append str "type [$a get_type] \n"
+    if {[$a get_comment] != {}} {
+	append str "comment '[$a get_comment]' \n"
     }
+    $a delete
 
-    
     vfuncgroup 3 "Contig selector"
-    #vfuncheader "Contig selector"
     vmessage $str
     messagebox $canvas $str
 }
@@ -797,20 +797,11 @@ proc EditCSTagDetails { io canvas current } {
 	    set r_num [string trim $tag rnum_]
 	}
     }
-    set a [io_read_annotation $io $t_num]
 
-    set t_pos [keylget a position]
-    if {$r_num != 0} {
-	set r [io_read_reading $io $r_num]
-	if {[keylget r sense] == 0} {
-	    set t_pos [expr {[keylget r position]+$t_pos-[keylget r start]-1}]
-	} else {
-	    set t_pos [expr {[keylget r position]+[keylget r length]-
-			     ($t_pos + [keylget a length]-1) -
-			     [keylget r start]}]
-	}
-    }
-    
+    set a [$io get_anno $t_num]
+    foreach {t_pos t_end c_num} [$a get_abs_position] break;
+    $a delete
+
     edit_contig -io $io -contig $c_num -pos $t_pos
 }
 

@@ -578,53 +578,42 @@ DoClipping(GapIO *io,                                                  /* in */
     return 0;
 }
 
-#if 0
 void
 DrawCSTags(Tcl_Interp *interp,                                       /* in */
 	   int x1,
 	   int x2,
-	   int tag_num,
-	   GAnnotations *annotation,
+	   tg_rec tag_num,
+	   int tag_type,
 	   int offset,
 	   char *win_name,
 	   int width,
-	   int contig_num,
-	   int read_num)
+	   tg_rec contig_num,
+	   tg_rec read_num)
 {
     char type[100];
     char *colour = tag_db[0].bg_colour;
     char cmd[1024], str[5];
-    int k;                                                       /* counter */
+    int k;
 
-    sprintf(type, "{tag %s t_%d num_%d rnum_%d}",
-	    type2str(annotation->type,str), tag_num, contig_num, read_num);
+    sprintf(type, "{tag %s t_%"PRIrec" num_%"PRIrec" rnum_%"PRIrec"}",
+	    type2str(tag_type,str), tag_num, contig_num, read_num);
 
     /* find tag colour in tag_db */
     for (k = 0; k < tag_db_count; k++){
-
-	if (annotation->type == str2type(tag_db[k].id)) {
-
-/*
-	    sprintf(type, "{tag %s t_%d num_%d}", tag_db[k].search_id,
-		    tag_num, contig_num);
-*/
+	if (tag_type == str2type(tag_db[k].id)) {
 	    colour = tag_db[k].bg_colour;
 	    break;
 
-	}  /* end if */
-
-    } /* end for */
-
+	}
+    }
 
     sprintf(cmd, "%s create rectangle %d %d %d %d "
 	    "-fill %s -tags %s -width %d -outline %s\n",
 	    win_name, x1, offset, x2 + 1, offset, colour, type, width, colour);
 
     Tcl_Eval(interp, cmd);
-
-    /* printf("cmd %s \n", cmd); */
 }
-#endif
+
 
 #if 0
 /*
@@ -663,31 +652,24 @@ get_tag_num(GapIO *io,                                                 /* in */
 }
 #endif
 
-#if 0
 int
 display_cs_tags(Tcl_Interp *interp,                                   /* in */
 		GapIO *io,                                            /* in */
 		obj_cs *cs)                                           /* in */
 {
-    GAnnotations *annotation;                       /* annotation structure */
     char **tag_types = NULL;
-    int num_tags;
-    int tag_pos;                                         /* tag LH position */
-    int whole_reading = 0;                /* if TRUE display entire reading */
-    int r_pos, r_len;                     /* reading LH position and length */
-    int c_num;
-    int r_num;
-    GContigs contig;
-    GReadings reading;
-    int x1, x2;
-    int tag_num = 0;
+    int num_tags, i, cstart, clen;
+    HashTable *ttype;
+    
 
-   /* get template display tag list */
+    /* get template display tag list */
     /* HACK - put in registration structure ? */
     if (TCL_ERROR == Tcl_VarEval(interp, "GetDefaultTags ", "CONTIG_SEL.TAGS ", NULL)) {
 	printf("ERROR %s\n", Tcl_GetStringResult(interp));
     }
 
+
+    /* Build a hash for fast lookup of tag type */
     if (SetActiveTags2(Tcl_GetStringResult(interp), &num_tags, &tag_types) == -1) {
 	return -1;
     }
@@ -698,79 +680,64 @@ display_cs_tags(Tcl_Interp *interp,                                   /* in */
 	return 0;
     }
 
-    for (c_num = 1; c_num <= NumContigs(io); c_num++) {
-
-	/* reading tags */
-	contig_read(io, c_num, contig);
-
-	for (r_num=contig.left; r_num; r_num=reading.right) {
-
-	    gel_read(io, r_num, reading);
-	    /* like vtagget except also returns tag_num */
-	    annotation = get_tag_num(io, r_num, num_tags,
-				     tag_types, &tag_num);
-
-	    while (annotation && annotation != (GAnnotations *)-1){
-
-		/* if reading has been complemented, find new pos of tag */
-		if (reading.sense) {
-
-		    tag_pos = (reading.position - reading.start) +
-			(reading.length - annotation->position -
-			 annotation->length + 1);
-		    tag_pos = find_position_in_DB(io, c_num, tag_pos);
-
-		} else {
-
-		    tag_pos = annotation->position - (reading.start -
-						      reading.position +1);
-		    tag_pos = find_position_in_DB(io, c_num, tag_pos);
-
-		} /* end if */
-
-	       /*
-		   printf("num %d tag_pos %d len %d \n",
-		   c_num, tag_pos, annotation->length);
-		 */
-		SetReadingPosLen(whole_reading, io, r_num, &r_pos, &r_len);
-		r_pos = find_position_in_DB(io, c_num, r_pos);
-		CalcXCoords(tag_pos, annotation->length, &x1, &x2);
-
-		/* clip tag at cutoff data */
-		x1 = MAX(x1, r_pos);
-		x2 = MIN(x2, r_pos + r_len - 1);
-		if (x2 >= x1) {
-		    DrawCSTags(interp, x1, x2, tag_num, annotation,
-			       cs->tag.offset,
-			       cs->hori, cs->tag.width, c_num, r_num);
-		}
-		annotation = get_tag_num(io, 0, num_tags, tag_types, &tag_num);
-	    } /* end while */
-	} /* end for each reading */
-
-	/* consensus tags */
-	annotation = get_tag_num(io, -c_num, num_tags, tag_types, &tag_num);
-
-	while (annotation && annotation != (GAnnotations *)-1){
-
-	    tag_pos = annotation->position;
-	    tag_pos = find_position_in_DB(io, c_num, tag_pos);
-
-	    CalcXCoords(tag_pos, annotation->length, &x1, &x2);
-
-	    DrawCSTags(interp, x1, x2, tag_num, annotation, cs->tag.offset+20,
-		       cs->hori, cs->tag.width, c_num, 0);
-	    annotation = get_tag_num(io, 0, num_tags, tag_types, &tag_num);
-
-	} /* end while */
-
-    } /* end for each contig */
-
+    ttype = HashTableCreate(64, HASH_POOL_ITEMS | HASH_DYNAMIC_SIZE);
+    for (i = 0; i < num_tags; i++) {
+	int t = str2type(tag_types[i]);
+	HashData hd;
+	hd.i = 1;
+	HashTableAdd(ttype, &t, sizeof(t), hd, 0);
+    }
     if (tag_types)
 	Tcl_Free((char *)tag_types);
+
+
+    /* Use contig_iterator to loop through all tags on all contigs */
+    for (cstart = i = 0; i < NumContigs(io); i++, cstart += clen) {
+	tg_rec crec;
+	rangec_t *r;
+	contig_iterator *iter;
+	int x1, x2;
+
+	if (arr(tg_rec, io->contig_order, i) <= 0) {
+	    clen = 0;
+	    continue;
+	}
+
+	crec = arr(tg_rec, io->contig_order, i);
+	clen = io_clength(io, crec);
+	iter = contig_iter_new_by_type(io, crec, 1,
+				       CITER_FIRST | CITER_ISTART,
+				       CITER_CSTART, CITER_CEND,
+				       GRANGE_FLAG_ISANNO);
+
+	while (r = contig_iter_next(io, iter)) {
+	    int t;
+	    x1 = cstart + r->start;
+	    x2 = cstart + r->end;
+
+	    /* Check it is a type we've requested to display */
+	    t = r->mqual;
+	    if (!HashTableSearch(ttype, &t, sizeof(t)))
+		continue;
+
+	    if (r->flags & GRANGE_FLAG_TAG_SEQ) {
+		/* read */
+		DrawCSTags(interp, x1, x2, r->rec, r->mqual,
+			   cs->tag.offset, cs->hori, cs->tag.width,
+			   crec, r->pair_rec);
+	    } else {
+		/* cons */
+		DrawCSTags(interp, x1, x2, r->rec, r->mqual,
+			   cs->tag.offset+20, cs->hori, cs->tag.width,
+			   crec, 0);
+	    }
+	}
+	contig_iter_del(iter);
+    }
+
+    HashTableDestroy(ttype, 0);
     return 0;
 }
-#endif
 
 /*
  * plot horizontal contigs
@@ -806,7 +773,7 @@ update_contig_selector(Tcl_Interp *interp,
 	pushZoom(&cs->zoom, cs->world->visible);
     }
 
-    //display_cs_tags(interp, io, cs);
+    display_cs_tags(interp, io, cs);
 
     scaleSingleCanvas(interp, cs->world, cs->canvas, cs->hori, 'x', "all");
 
@@ -1023,7 +990,7 @@ cs_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
 
 		} else if (cs->do_update & REG_ANNO) {
 		    Tcl_VarEval(GetInterp(), cs->hori, " delete tag", NULL);
-		    //display_cs_tags(GetInterp(), io, cs);
+		    display_cs_tags(GetInterp(), io, cs);
 		    scaleSingleCanvas(GetInterp(), cs->world, cs->canvas,
 				      cs->hori, 'x', "tag");
 		} else if (cs->do_update & REG_ORDER) {
@@ -1054,7 +1021,7 @@ cs_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
 #endif
 	    if (!cs->do_update) {
 		Tcl_VarEval(GetInterp(), cs->hori, " delete tag", NULL);
-		//display_cs_tags(GetInterp(), io, cs);
+		display_cs_tags(GetInterp(), io, cs);
 		scaleSingleCanvas(GetInterp(), cs->world, cs->canvas,
 				  cs->hori, 'x', "tag");
 	    } else {
