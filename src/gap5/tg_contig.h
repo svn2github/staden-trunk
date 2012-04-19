@@ -234,7 +234,13 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
 /*
  * Produces a postscript file containing a plot of the contig bin structure.
  */
-void contig_dump_ps(GapIO *io, contig_t **c, char *fn);
+int contig_dump_ps(GapIO *io, contig_t **c, char *fn,
+		    int depth_first, int draw_seqs);
+
+/*
+ * Produces a graphviz file containing the contig bin structure.
+ */
+int contig_dump_graph(GapIO *io, contig_t **c, char *fn);
 
 /*
  * Destroys contig 'rec'.

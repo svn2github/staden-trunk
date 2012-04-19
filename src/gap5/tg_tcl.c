@@ -642,6 +642,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"check",        "move_seq",
 	"get_visible_start", "get_visible_end", "get_visible_length",
 	"set_visible_start", "invalidate_consensus",    "set_name",
+	"dump_graph",
 	(char *)NULL,
     };
 
@@ -654,7 +655,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	NREFPOS,        NANNO,	        SHIFT_BASE,     MOVE_ANNO,
 	CHECK,          MOVE_SEQ,
 	GET_VISIBLE_START, GET_VISIBLE_END, GET_VISIBLE_LENGTH,
-	SET_VISIBLE_START, INVALIDATE_CONSENSUS,        SET_NAME
+	SET_VISIBLE_START, INVALIDATE_CONSENSUS,        SET_NAME,
+	DUMP_GRAPH
     };
 
     if (objc < 2) {
@@ -679,16 +681,46 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case DUMP_PS:
-	if (objc != 3) {
+      {
+	typedef struct {
+	  int breadth;
+	  int seqs;
+	} dump_args;
+	dump_args args = { 0, 0 };
+	cli_args a[] = {
+	  {"-breadth", ARG_INT, 0, "0", offsetof(dump_args, breadth)},
+	  {"-seqs",    ARG_INT, 0, "0", offsetof(dump_args, seqs) },
+	  { NULL, 0, 0, NULL, 0 }
+	};
+
+	if (objc < 3) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
-			   "\"%s dump_ps filename\"\n",
+			   "\"%s dump_ps filename ?-seqs? ?-breadth?\"\n",
 			   Tcl_GetStringFromObj(objv[0], NULL));
 	    return TCL_ERROR;
 	}
-	contig_dump_ps(tc->io, &tc->contig,
-		       Tcl_GetStringFromObj(objv[2], NULL));
+	if (-1 == gap_parse_obj_args(a, &args, objc - 2, objv + 2))
+	  return TCL_ERROR;
+
+	contig_dump_ps(tc->io, &tc->contig, Tcl_GetStringFromObj(objv[2], NULL),
+		       !args.breadth, args.seqs);
 	Tcl_ResetResult(interp);
 	break;
+      }
+    case DUMP_GRAPH:
+      if (objc != 3) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s dump_ps filename\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+      }
+      if (contig_dump_graph(tc->io, &tc->contig,
+			    Tcl_GetStringFromObj(objv[2], NULL))) {
+	vTcl_SetResult(interp, "Error running dump_graph\n");
+	return TCL_ERROR;
+      }
+      Tcl_ResetResult(interp);
+      break;
 
     case GET_REC:
 	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), ci_ptr(tc->contig)->rec);

@@ -18,6 +18,16 @@
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
+typedef struct bin_list {
+  tg_rec rec;
+  int parent_comp;
+  int parent_offset;
+  int parent_size;
+  int parent_level;
+  int child_index;
+  struct bin_list *next;
+} bin_list;
+
 /*
  * Sets the contig start position
  *
@@ -3961,214 +3971,660 @@ int contig_destroy(GapIO *io, tg_rec rec) {
  * pright	The parent bin/-contig in the right new contig
  * child_no     0 or 1 - whether this bin is the left/right child of its parent
  */
-#define H 30
-#define G 10
-static int bin_dump_recurse(GapIO *io, contig_t **c,
-			    char *fn, int child,
-			    tg_rec bin_num, int offset,
-			    int level, int complement,
-			    double rootx, double rooty,
-			    int do_seqs) {
-    int i, f_a, f_b;
-    bin_index_t *bin = get_bin(io, bin_num);
-    static FILE *gv = NULL;
-    static double scale = 0;
-    static double level_end[100];
-    static double level_st[100];
-    double g;
 
-    cache_incr(io, bin);
+#define DRAW_LINKS 1
+#define DRAW_BINS  2
+#define DRAW_SEQS  4
 
-    if (bin->flags & BIN_COMPLEMENTED) {
+static int bin_dump_ps_recurse(FILE *gv, GapIO *io, tg_rec rec,
+			       int (*levels)[2], int nlevels,
+			       int depth_first, int to_draw) {
+  int empty;
+  int i;
+  int complement;
+  int offset;
+  int end;
+  int level;
+  bin_list *head = NULL;
+  bin_list *tail = NULL;
+  bin_list *item;
+  bin_index_t *bin = NULL;
+
+  for (i = 0; i < nlevels; i++) {
+    levels[i][0] =  INT_MAX;
+    levels[i][1] = -INT_MAX;
+  }
+
+  head = malloc(sizeof(bin_list));
+  if (!head) return -1;
+
+  head->rec = rec;
+  head->parent_comp   = 0;
+  head->parent_offset = 0;
+  head->parent_size   = 0;
+  head->parent_level  = -1;
+  head->child_index   = 0;
+  head->next = NULL;
+  if (!depth_first) tail = head;
+
+  while (head) {
+    complement = head->parent_comp;
+
+    bin = get_bin(io, head->rec);
+    if (bin) {
+      if (bin->flags & BIN_COMPLEMENTED) {
 	complement ^= 1;
-    }
+      }
+      offset = (head->parent_comp
+		? head->parent_offset + head->parent_size - bin->pos - bin->size
+		: head->parent_offset + bin->pos);
+      end = offset + bin->size;
 
-    if (complement) {
-	f_a = -1;
-	f_b = offset + bin->size-1;
-    } else {
-	f_a = +1;
-	f_b = offset;
-    }
+      for (level = head->parent_level + 1; level < nlevels; level++) {
+	if (offset >= levels[level][1] || end <= levels[level][0]) break;
+      }
+      assert(level < nlevels);
 
-    if (!gv) {
-	int o = 20;
-	gv = fopen(fn, "w+");
-	if (!gv) {
-	    cache_decr(io, bin);
-	    return -1;
-	}
-	scale = 800.0 / bin->size;
-	o -= offset * scale;
-	fprintf(gv, "%%!\n"
-		"/l{lineto}def\n"
-		"/L{rlineto}def\n"
-		"/m{moveto}def\n"
-		"/M{rmoveto}def\n"
-		"/g{setgray}def\n"
-		"/s{stroke}def\n"
-		"/S{show}def\n"
-		"/w{setlinewidth}def\n"
-		"/f{\n"
-		"    /Times-Roman findfont\n"
-		"    exch 2 mul scalefont\n"
-		"    setfont\n"
-		"}def\n"
-		"5 f\n"
-		"%d %d translate\n"
-		"90 rotate\n"
-		"newpath\n\n",
-		90+H, o);
+      if (levels[level][0] > offset) levels[level][0] = offset;
+      if (levels[level][1] < end)    levels[level][1] = end;
+  
+      empty = bin_empty(bin);
 
-	for (i = 0; i < 100; i++) {
-	    level_end[i] = -1e10;
-	    level_st[i] = 1e10;
-	}
-
-	fprintf(gv, "%g %d m (%d) S\n",
-		scale * (*c)->start, level*(H+G)+H+20+7, (*c)->start);
-	fprintf(gv, "%g %d m (%d) S\n",
-		scale * (*c)->end, level*(H+G)+H+20+7, (*c)->end);
-	fprintf(gv, "2 w\n"
-		"1 setlinecap\n"
-		"%g %d m 0 3 M 0 -6 L 0 3 M\n"
-		"%g %d l 0 3 M 0 -6 L 0 3 M s\n"
-		"1 w\n",
-		scale * (*c)->start, level*(H+G)+H+20,
-		scale * (*c)->end,    level*(H+G)+H+20);
-    }
-
-    //fprintf(gv, "\n%g f\n", 5 * pow(0.8, -level));
-    //fprintf(gv, "%g w\n", 2 * pow(0.8, -level));
-
-    for (i = -level; i < 100; i++) {
-	double p1 = scale * offset;
-	double p2 = scale * (offset + bin->size);
-	if (p1 >= level_end[i] || p2 <= level_st[i])
-	    break;
-    }
-    level = -i;
-
-    if (level < -200)
-	goto skip;
-
-    /* linking lines */
-    if (rootx || rooty) {
-	g = child == 0 ? 0.6 : 0.9;
-	fprintf(gv, "%g g %g %g m %g %d l s\n",
-		g, rootx, rooty,
-		scale*(offset+bin->size/2),
-		level*(H+G)+H);
-    }
-    rootx = scale*(offset+bin->size/2);
-    rooty = level*(H+G);
-
-    if (level >= -8) {
-	/* Inner grey box showing the used portion */
-	fprintf(gv, "0.8 g %g %d m %g 0 L 0 %d L -%g 0 L 0 -%d L s\n",
-		scale * NMIN(bin->start_used, bin->end_used), level*(H+G)+3,
-		scale * (NMAX(bin->start_used, bin->end_used) -
-			 NMIN(bin->start_used, bin->end_used)),
-		H-6,
-		scale * (NMAX(bin->start_used, bin->end_used) -
-			 NMIN(bin->start_used, bin->end_used)),
-		H-6);
+      if ((to_draw & DRAW_LINKS) && head->parent_level >= 0) {
+	/* Linking lines */
+	fprintf(gv, "%d %d %d %d %d l\n",
+		head->parent_offset + head->parent_size / 2,
+		head->parent_level,
+		offset + bin->size / 2, level, head->child_index);
+      }
+      
+      /* The bin itself */
+      if (to_draw & DRAW_BINS) {
+	fprintf(gv, "%d %d (%"PRIrec") %d %s %d %d %s %d %d sb ",
+		bin->nrefpos, bin->nseqs, bin->rec, bin->size,
+		complement ? "t" : "f",
+		empty ? 0 : bin->start_used,
+		empty ? 0 : bin->end_used,
+		empty ? "f" : "t",
+		level, offset);
 	
-	/* bin offset */
-	fprintf(gv, "0.5 g %g %d m (%d) S\n",
-		scale * offset, level*(H+G)-7, offset);
-    }
+	if ((to_draw & DRAW_SEQS) && bin->rng && ArrayMax(bin->rng)) {
+	  /* Bin contents */
+	  int n = ArrayMax(bin->rng);
+	  int last_type  = -1;
+	  int draw_count = 0;
+	  int dup_count = 0;
+	  int last_start =  0;
+	  int last_end   = -1;
+	  int skipped = 0;
+	  /* fprintf(gv, "%d %d sqb\n", level, offset); */
+	  fprintf(gv, "%d sqb\n", n);
+	  for (i = 0; i < n; i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
 
-    /* Sequence lines */
-    if (do_seqs) {
-	int n;
+	    if (dup_count && ((r->flags & GRANGE_FLAG_UNUSED)
+			      || (r->flags & GRANGE_FLAG_ISMASK) != last_type
+			      || r->start != last_start
+			      || r->end != last_end
+			      || draw_count > 200)) {
+	      if (dup_count > 1) { fprintf(gv, "%d { ", dup_count); }
+	      fprintf(gv, "%d %d sq%s", last_start, last_end,
+		      dup_count > 1 ? " } repeat\n" : "\n");
+	      dup_count = 0;
+	      if (draw_count > 200) {
+		fprintf(gv, "stroke\n");
+		draw_count = 0;
+	      }
+	    }
 
-	cache_incr(io, bin);
-	for (n = 0; bin->rng && n < ArrayMax(bin->rng); n++) {
-	    range_t *r = arrp(range_t, bin->rng, n);
-	    int start = NORM(r->start), end = NORM(r->end);
-
-	    if (r->flags & GRANGE_FLAG_UNUSED)
-		continue;
-	    
-	    fprintf(gv, "%g g ",
-		    (r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ
-		    ? 0 : 0.5);
-	    fprintf(gv, "%g %g m %g 0 L s\n",
-		    scale * MIN(start, end),
-		    level*(H+G)+3 + ((double)(n+1)/(ArrayMax(bin->rng)+1))*(H-6),
-		    scale * abs(end-start));
+	    if (r->flags & GRANGE_FLAG_UNUSED) {
+	      skipped++;
+	      continue;
+	    }
+	    if (skipped) {
+	      fprintf(gv, "%d add\n", skipped);
+	      skipped = 0;
+	    }
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != last_type) {
+	      last_type = r->flags & GRANGE_FLAG_ISMASK;
+	      fprintf(gv, "%d sqg ", last_type == GRANGE_FLAG_ISSEQ ? 1 : 0);
+	      draw_count = 0;
+	    }
+	    last_start = r->start;
+	    last_end   = r->end;
+	    dup_count++;
+	    draw_count++;
+	  }
+	  if (dup_count) {
+	    if (dup_count > 1) { fprintf(gv, "%d { ", dup_count); }
+	    fprintf(gv, "%d %d sq%s", last_start, last_end,
+		    dup_count > 1 ? " } repeat\n" : "\n");
+	  }
+	  fprintf(gv, "sqe\n");
 	}
-	cache_decr(io, bin);
-    }
 
-    /* Outer bin bounding box */
-    g = complement ? 0.5 : 0;
-    fprintf(gv, "%g g %g %d m %g 0 L 0 %d L -%g 0 L 0 -%d L s\n",
-	    g, scale * offset, level*(H+G), scale * bin->size,
-	    H, scale * bin->size, H);
+	fprintf(gv, "eb\n");
+      }
 
-    if (scale * offset < level_st[-level])
-	level_st[-level] = scale * offset;
-    if (scale * (offset + bin->size) > level_end[-level])
-	level_end[-level] = scale * (offset + bin->size);
-
-    /* bin start_used position */
-    if (!bin_empty(bin))
-	fprintf(gv, "%g %d m (%d) S\n",
-		scale * NMIN(bin->start_used, bin->end_used),
-		level*(H+G)+H+2,
-		NMIN(bin->start_used, bin->end_used));
-    else
-	fprintf(gv, "%g %d m (empty) S\n",
-		scale * offset,
-		level*(H+G)+H+2);
-
-    /* Bin record ID */
-    fprintf(gv, "%g %d m (#%"PRIrec"/%d/%d) S\n",
-	    scale * (offset+bin->size/2)-10, level*(H+G)+H/2-2, bin->rec,
-	    bin->nseqs, bin->nrefpos);
-
-    fflush(gv);
-
- skip:
-    /* Recurse */
-    for (i = 0; i < 2; i++) {
-	bin_index_t *ch;
-	if (!bin->child[i])
-	    continue;
-
-	ch = get_bin(io, bin->child[i]);
-	if (0 != bin_dump_recurse(io, c, fn, i, bin->child[i],
-				  NMIN(ch->pos, ch->pos + ch->size-1),
-				  level-1, complement, rootx, rooty,
-				  do_seqs)) {
-	    cache_decr(io, bin);
-	    return -1;
+      for (i = 0; i < 2; i++) {
+	if (bin->child[i]) {
+	  item = malloc(sizeof(bin_list));
+	  if (!item) goto unwind;
+	  item->rec = bin->child[i];
+	  item->parent_comp   = complement;
+	  item->parent_offset = offset;
+	  item->parent_size   = bin->size;
+	  item->parent_level  = level;
+	  item->child_index   = i;
+	  if (depth_first) {
+	    /* Put item one down in the list, as head will be removed later */
+	    item->next = head->next;
+	    head->next = item;	    
+	  } else {
+	    item->next = NULL;
+	    tail->next = item;
+	    tail = item;
+	  }
 	}
+      }
+    } else {
+      fprintf(stderr, "Couldn't get bin %"PRIrec"\n", head->rec);
     }
+    item = head;
+    head = head->next;
+    free(item);
+  }
 
-    cache_decr(io, bin);
+  return 0;
+ unwind:
+  while (head) {
+    item = head;
+    head = head->next;
+    free(item);
+  }
+  return -1;
+}
 
-    if (level == 0) {
-	fprintf(gv, "showpage\n");
-	fclose(gv);
-	gv = NULL;
+static int count_levels_recurse(GapIO *io, tg_rec rec,
+				int (**levels)[2], int *nlevels,
+				int depth_first) {
+  int maxlevel = 0;
+  int i;
+  int complement;
+  int offset;
+  int end;
+  int level;
+  bin_list *head = NULL;
+  bin_list *tail = NULL;
+  bin_list *item;
+  bin_index_t *bin = NULL;
+
+  head = malloc(sizeof(bin_list));
+  if (!head) return -1;
+
+  head->rec = rec;
+  head->parent_comp   = 0;
+  head->parent_offset = 0;
+  head->parent_size   = 0;
+  head->parent_level  = -1;
+  head->child_index   = 0;
+  head->next = NULL;
+  if (!depth_first) tail = head;
+
+  while (head) {
+    complement = head->parent_comp;
+
+    bin = get_bin(io, head->rec);
+    if (bin) {
+      if (bin->flags & BIN_COMPLEMENTED) {
+	complement ^= 1;
+      }
+      offset = (head->parent_comp
+		? head->parent_offset + head->parent_size - bin->pos - bin->size
+		: head->parent_offset + bin->pos);
+      end = offset + bin->size;
+
+      for (level = head->parent_level + 1; ; level++) {
+	if (level == *nlevels) {
+	  int new_n = *nlevels * 2;
+	  int (*new_l)[2] = realloc(*levels, sizeof(**levels) * new_n);
+	  
+	  if (!new_l) {
+	    perror("count_levels_recurse");
+	    goto unwind;
+	  }
+	  for (i = *nlevels; i < new_n; i++) {
+	    new_l[i][0] =  INT_MAX;
+	    new_l[i][1] = -INT_MAX;
+	  }
+	  *levels = new_l;
+	  *nlevels = new_n;
+	}
+	if (offset >= (*levels)[level][1] || end <= (*levels)[level][0]) break;
+      }
+
+      if ((*levels)[level][0] > offset) (*levels)[level][0] = offset;
+      if ((*levels)[level][1] < end)    (*levels)[level][1] = end;
+      if (level > maxlevel) maxlevel = level;
+      
+      for (i = 0; i < 2; i++) {
+	if (bin->child[i]) {
+	  item = malloc(sizeof(bin_list));
+	  if (!item) goto unwind;
+	  item->rec = bin->child[i];
+	  item->parent_comp   = complement;
+	  item->parent_offset = offset;
+	  item->parent_size   = bin->size;
+	  item->parent_level  = level;
+	  item->child_index   = i;
+	  if (depth_first) {
+	    /* Put item one down in the list, as head will be removed later */
+	    item->next = head->next;
+	    head->next = item;
+	  } else {
+	    item->next = NULL;
+	    tail->next = item;
+	    tail = item;
+	  }
+	}
+      }
+    } else {
+      fprintf(stderr, "Couldn't get bin %"PRIrec"\n", head->rec);
     }
+    item = head;
+    head = head->next;
+    free(item);
+  }
 
-    return 0;
+  return maxlevel;
+
+ unwind:
+  while (head) {
+    item = head;
+    head = head->next;
+    free(item);
+  }
+  return -1;
 }
 
 /*
  * Produces a postscript file containing a plot of the contig bin structure.
  */
-void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
-    //HacheTableRefInfo(io->cache, stdout);
-    cache_incr(io, *c);
-    bin_dump_recurse(io, c, fn, 0, contig_get_bin(c),
-		     contig_offset(io, c), 0, 0, 0.0, 0.0, 1);
+int contig_dump_ps(GapIO *io, contig_t **c, char *fn,
+		   int depth_first, int draw_seqs) {
+  FILE *gv = NULL;
+  const char *preamble =
+    "%!PS-Adobe-3.0\n"
+    "%%Pages: 1\n"
+    "%%BoundingBox: (atend)\n"
+    "%%EndComments\n"
+    "%%BeginProlog\n"
+    "/f false def\n"
+    "/t true def\n"
+    "/fnt {\n"
+    "    /Times-Roman findfont\n"
+    "    exch 2 mul scalefont\n"
+    "    setfont\n"
+    "} bind def\n"
+    "/itoa { 20 string cvs } bind def\n"
+    "/sw { stringwidth pop } bind def\n"
+    "/ruler {\n"
+    "    % <start> <end> ruler\n"
+    "    gsave\n"
+    "    2 setlinewidth 1 setlinecap\n"
+    "    exch dup dup sc mul 27 H add moveto\n"
+    "    itoa dup sw neg 0 rmoveto show   % left number\n"
+    "    sc mul 20 H add moveto\n"
+    "    0 3 rmoveto 0 -6 rlineto 0 3 rmoveto          % left tick\n"
+    "    dup sc mul 20 H add lineto                    % line\n"
+    "    0 3 rmoveto 0 -6 rlineto 0 3 rmoveto          % right tick\n"
+    "    dup sc mul 27 H add moveto itoa show % right number\n"
+    "    stroke\n"
+    "    grestore\n"
+    "} bind def\n"
+    "/strscale {\n"
+    "    % <string> strscale\n"
+    "    dup sw (999999) sw 2 copy gt { pop } { exch pop } ifelse\n"
+    "    G 0.707 mul exch div dup scale\n"
+    "} bind def\n"
+    "/norm {\n"
+    "    % <bin_size> <complemented> <pos>\n"
+    "    exch\n"
+    "    { neg add 1 sub }   % bin_size - 1 - pos\n"
+    "    { exch pop }        % pos\n"
+    "    ifelse\n"
+    "} bind def\n"
+    "/nmin {\n"
+    "    % <bin_size> <complemented> <pos1> <pos2>\n"
+    "    4 2 roll 2 copy 6 -1 roll norm  % norm_pos1\n"
+    "    4 1 roll 3 -1 roll norm         % norm_pos1 norm_pos2\n"
+    "    2 copy lt { pop } { exch pop } ifelse  % => min\n"
+    "} bind def\n"
+    "/nmax {\n"
+    "    % <bin_size> <complemented> <pos1> <pos2>\n"
+    "    4 2 roll 2 copy 6 -1 roll norm  % norm_pos1\n"
+    "    4 1 roll 3 -1 roll norm         % norm_pos1 norm_pos2\n"
+    "    2 copy gt { pop } { exch pop } ifelse  % => max\n"
+    "} bind def\n"
+    "/nminmax {\n"
+    "    % <bin_size> <complemented> <pos1> <pos2>\n"
+    "    4 2 roll 2 copy 6 -1 roll norm  % norm_pos1\n"
+    "    4 1 roll 3 -1 roll norm         % norm_pos1 norm_pos2\n"
+    "    2 copy gt { exch } if           % => min max\n"
+    "} bind def\n"
+    "/usedbox {\n"
+    "    % <bin_size> <complemented> <used_start> <used_end> usedbox\n"
+    "    gsave\n"
+    "    0.8 setgray\n"
+    "    nminmax 1 index sub sc mul H 6 sub\n"
+    "    3 -1 roll sc mul 3 4 2 roll rectstroke\n"
+    "    grestore\n"
+    "} bind def\n"
+    "/usedpos {\n"
+    "    %<bin_size> <complemented> <used_start> <used_end> <offset> usedpos\n"
+    "    gsave\n"
+    "    4 index 6 2 roll nmin dup sc mul H 2 add moveto\n"
+    "    dup 4 -1 roll add itoa dup sw 4 2 roll sub sc mul lt\n"
+    "    { 0.8 0.8 scale show } { 45 rotate strscale show } ifelse\n"
+    "    stroke\n"
+    "    grestore\n"
+    "} bind def\n"
+    "/emptymark {\n"
+    "    % <bin_size> emptymark\n"
+    "    gsave\n"
+    "    0 H 2 add moveto sc mul (empty) dup sw 3 -1 roll lt\n"
+    "    { 0.8 0.8 scale show } { 45 rotate strscale show } ifelse\n"
+    "    stroke\n"
+    "    grestore\n"
+    "} bind def\n"
+    "/outerbox {\n"
+    "    % <bin_size> <complemented> outerbox\n"
+    "    gsave\n"
+    "    exch sc mul exch\n"
+    "    { 0.5 } { 0.0 } ifelse setgray\n"
+    "    0 0 3 2 roll H rectstroke\n"
+    "    grestore\n"
+    "} bind def\n"
+    "/binoffset {\n"
+    "    % <offset> <bin_size> binoffset\n"
+    "    gsave\n"
+    "    sc mul exch itoa dup sw 3 -1 roll lt\n"
+    "    { 0 -7 moveto 0.8 0.8 scale show }\n"
+    "    { 0 -2 moveto 315 rotate strscale show } ifelse\n"
+    "    stroke grestore\n"
+    "} bind def\n"
+    "/strcat {\n"
+    "    % [(a) (b) (c)] strcat\n"
+    "    0 1 index { length add } forall string\n"
+    "    0 3 2 roll\n"
+    "    { 3 copy putinterval length add } forall pop\n"
+    "} bind def\n"
+    "/recid {\n"
+    "    % <nrefpos> <nseqs> <recno_str> <bin_size> recid\n"
+    "    gsave\n"
+    "    dup sc mul 5 1 roll\n"
+    "    2 div sc mul H 2 div 2 sub moveto\n"
+    "    (#) exch (/) 5 3 roll itoa (/) 3 2 roll itoa\n"
+    "    6 array astore strcat\n"
+    "    dup sw dup dup\n"
+    "    4 index dup H 2 sub gt {\n"
+    "        gt { 4 -1 roll exch div dup scale } { 4 -1 roll pop pop } ifelse\n"
+    "    } {\n"
+    "        6 -1 roll pop pop H 2 sub\n"
+    "        gt { H 2 sub exch div dup scale } { pop } ifelse\n"
+    "        90 rotate 2 -2.5 rmoveto\n"
+    "    } ifelse\n"
+    "    2 div neg 0 rmoveto show stroke\n"
+    "    grestore\n"
+    "} bind def\n"
+    "/sqb {\n"
+    "    % <bin_size> <complemented> <nseqs> sqb\n"
+    "    gsave 1 setlinecap\n"
+    "    H 8 sub exch 1 add div /vsc exch def\n"
+    "    dup { 1 index 1 sub sc mul 0 translate -1 1 scale } if 1\n"
+    "    % stack: <bin_size> <complemented> <vpos = 1>\n"
+    "} bind def\n"
+    "/sqg {\n"
+    "    % <is_seq> sqg\n"
+    "    stroke dup 1 exch sub exch 2 div dup setrgbcolor\n"
+    "} bind def\n"
+    "/sqe {\n"
+    "    pop stroke grestore\n"
+    "} bind def\n"
+    "/sq {\n"
+    "    % <vpos> <start> <end> sq\n"
+    "    2 index vsc mul 4 add dup 4 1 roll\n"
+    "    exch sc mul exch moveto\n"
+    "    sc mul exch lineto\n"
+    "    1 add\n"
+    "} bind def\n"
+    "/l {\n"
+    "    % <root_pos> <root_level> <bin_pos> <bin_level> <child_index> l\n"
+    "    gsave\n"
+    "    0 eq { 1.0 0 0 setrgbcolor } { 0 0 1.0 setrgbcolor} ifelse\n"
+    "    dup 3 index sub dup 1 gt {\n"
+    "      2 div 5 1 roll\n"
+    "	   exch sc mul exch\n"
+    "      H G add mul H sub neg 2 copy moveto 4 2 roll\n"
+    "      exch sc mul exch H G add mul neg 4 2 roll\n"
+    "      4 index G mul add 4 2 roll 2 copy 6 index G mul sub\n"
+    "      1 index 6 index lt\n"
+    "      { 7 -1 roll G mul } { 7 -1 roll G neg mul } ifelse\n"
+    "      dup 4 -1 roll add 3 1 roll\n"
+    "      7 -1 roll add 6 1 roll 4 2 roll curveto\n"
+    "    } {\n"
+    "      pop\n"
+    "      exch sc mul exch\n"
+    "      H G add mul H sub neg moveto\n"
+    "      exch sc mul exch\n"
+    "      H G add mul neg lineto\n"
+    "    } ifelse\n"
+    "    stroke\n"
+    "    grestore\n"
+    "} bind def\n"
+    "/sb {\n"
+    "    % <nrefpos> <nseqs> <recno_str> <bin_size> <complemented>\n"
+    "    %    <used_start> <used_end> <filled> <level> <offset>\n"
+    "    gsave\n"
+    "    dup 3 1 roll\n"
+    "    sc mul exch\n"
+    "    H G add mul neg translate\n"
+    "    dup 6 index binoffset exch\n"
+    "    { 5 copy pop usedbox 5 copy usedpos pop }\n"
+    "    { pop 3 index emptymark } ifelse\n"
+    "    pop pop 2 copy outerbox\n"
+    "    % stack: <nrefpos> <nseqs> <recno_str> <bin_size> <complemented>\n"
+    "} bind def\n"
+    "/eb {\n"
+    "    % <nrefpos> <nseqs> <recno_str> <bin_size> <complemented> eb\n"
+    "    pop recid\n"
+    "    grestore\n"
+    "} bind def\n"
+    "%%EndProlog\n"
+    "%%Page: 1 1\n";
+  
+  const int h = 30;
+  const int g = 20;
+  int (*levels)[2];
+  int nlevels = 16;
+  int landscape;
+  double pwidth;
+  double pheight;
+  tg_rec rec;
+  bin_index_t *bin = NULL;
+  int i;
+  int maxlevel;
+  double scy;
+
+  levels = malloc(nlevels * sizeof(levels[0]));
+  if (!levels) {
+    perror("bin_dump_ps");
+    return -1;
+  }
+
+  for (i = 0; i < nlevels; i++) {
+    levels[i][0] =  INT_MAX;
+    levels[i][1] = -INT_MAX;
+  }
+
+  gv = fopen(fn, "w+");
+  if (!gv) { perror(fn); return -1; }
+  fprintf(gv, "%s", preamble);
+  cache_incr(io, *c);
+  rec = contig_get_bin(c);
+  bin = get_bin(io, rec);
+  if (!bin) {
+    fprintf(stderr, "Couldn't get bin %"PRIrec"\n", rec);
     cache_decr(io, *c);
-    //HacheTableRefInfo(io->cache, stdout);
+    return -1;
+  }
+  cache_incr(io, bin);
+
+  maxlevel = count_levels_recurse(io, rec, &levels, &nlevels, depth_first);
+
+  if (maxlevel < 0) {
+    cache_decr(io, bin);
+    fclose(gv);
+    return -1;
+  }
+
+  landscape = (h + g) * (maxlevel + 1) < 500;
+  pwidth  = landscape ? 800.0 : 550.0;
+  pheight = landscape ? 550.0 : 800.0;
+  scy = ((h + g) * (maxlevel + 1) > pheight
+	 ? pheight / ((h + g) * (maxlevel + 1)) : 1.0);
+  
+  fprintf(gv, 
+	  "%%%%PageOrientation: %s\n"
+	  "%%%%BeginPageSetup\n"
+	  "5 fnt\n"
+	  "/H %d def\n"
+	  "/G %d def\n"
+	  "/sc %f def\n"
+	  "%d rotate\n"
+	  "%d %d translate\n"
+	  "%f %f scale\n"
+	  "%d sc mul 0 translate\n"
+	  "%%%%EndPageSetup\n"
+	  "newpath\n"
+	  "%d %d ruler\n",
+	  landscape ? "Landscape" : "Portrait",
+	  h, g, pwidth / bin->size / scy, 
+	  landscape ? 90 : 0,
+	  20, landscape ? -h - g - 30 : (int) pheight + 20,
+	  scy, scy,
+	  -contig_offset(io, c), (*c)->start, (*c)->end);
+
+  bin_dump_ps_recurse(gv, io, rec, levels, nlevels,
+		      depth_first, DRAW_LINKS);
+  bin_dump_ps_recurse(gv, io, rec, levels, nlevels, depth_first,
+		      DRAW_BINS | (draw_seqs ? DRAW_SEQS : 0));
+  cache_decr(io, bin);
+  cache_decr(io, *c);
+  if (landscape) {
+    fprintf(gv, "showpage\n"
+	    "%%%%Trailer\n"
+	    "%%%%BoundingBox: 0 0 %.0f %.0f\n"
+	    "%%%%EOF\n",
+	    pheight + 40, pwidth + 40);
+  } else {
+    fprintf(gv, "showpage\n"
+	    "%%%%Trailer\n"
+	    "%%%%BoundingBox: 0 0 %.0f %.0f\n"
+	    "%%%%EOF\n",
+	    pwidth + 40, pheight + 40);
+  }
+  if (fclose(gv)) { perror(fn); return -1; }
+  return 0;
+}
+
+static int bin_dump_graphviz_recurse(FILE *out, GapIO *io,
+				     tg_rec bin_num,  bin_index_t *bin,
+				     int offset, int complement) {
+  int res = 0;
+  int i;
+
+  if (bin->flags & BIN_COMPLEMENTED) {
+    complement ^= 1;
+  }
+  if (bin_empty(bin)) {
+    fprintf(out,
+	    "%"PRIrec" [label=\"\\N\\l"
+	    "offset=%d\\lsize=%d\\ldirn=%s\\lused=empty\\l"
+	    "nrefpos=%d\\lnseqs=%d\\l\" shape=hexagon fontsize=10 "
+	    "fontname=\"Courier\" style=filled fillcolor=\"%s\"]\n",
+	    bin->rec, offset, bin->size, complement ? "rev" : "fwd",
+	    bin->nrefpos, bin->nseqs, complement ? "#98fb98" : "#87ceeb");
+  } else {
+    fprintf(out,
+	    "%"PRIrec" [label=\"\\N\\l"
+	    "offset=%d\\lsize=%d\\ldirn=%s\\lused=%d..%d\\l"
+	    "nrefpos=%d\\lnseqs=%d\\l\" shape=box fontsize=10 "
+	    "fontname=\"Courier\" style=filled fillcolor=\"%s\"];\n",
+	    bin->rec, offset, bin->size, complement ? "rev" : "fwd",
+	    bin->start_used, bin->end_used,
+	    bin->nrefpos, bin->nseqs, complement ? "#98fb98" : "#87ceeb");
+  }
+  for (i = 0; i < 2; i++) {
+    bin_index_t *ch;
+    int child_offset;
+    
+    if (!bin->child[i]) continue;
+    ch = get_bin(io, bin->child[i]);
+    if (!ch) {
+      fprintf(stderr, "Couldn't get bin %"PRIrec"\n", bin->child[i]);
+      continue;
+    }
+    
+    cache_incr(io, ch);
+    child_offset = (complement ? offset + bin->size - ch->pos - ch->size
+		    : offset + ch->pos);
+    res |= bin_dump_graphviz_recurse(out, io, bin->child[i], ch, child_offset,
+				     complement);
+    fprintf(out, "%"PRIrec" -> %"PRIrec" [dir=forward arrowhead=normal];\n",
+	    bin->rec, bin->child[i]);
+    cache_decr(io, ch);
+  }
+
+  return res;
+}
+
+/*
+ * Produces a dump of the bin structure in graphviz format, can be used
+ * with dot, dotty etc.
+ */
+
+int contig_dump_graph(GapIO *io, contig_t **c, char *fn) {
+  FILE *out = NULL;
+  bin_index_t *bin = NULL;
+  tg_rec rec;
+
+  out = fopen(fn, "w+");
+  if (!out) { perror(fn); return -1; }
+  cache_incr(io, *c);
+  rec = contig_get_bin(c);
+  bin = get_bin(io, rec);
+  if (!bin) {
+    fprintf(stderr, "Couldn't get bin %"PRIrec"\n", rec);
+    cache_decr(io, *c);
+    fclose(out);
+    return -1;
+  }
+  fprintf(out,
+	  "digraph Contig%"PRIrec" {\n"
+	  "root=\"%"PRIrec"\";\n",
+	  (*c)->rec, rec);
+  cache_incr(io, bin);
+  bin_dump_graphviz_recurse(out, io, rec, bin, contig_offset(io, c), 0);
+  cache_decr(io, bin);
+  fprintf(out, "}\n");
+  cache_decr(io, *c);
+  if (fclose(out)) {
+    perror(fn);
+    return -1;
+  }
+
+  return 0;
 }
 
 
