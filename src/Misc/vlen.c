@@ -51,7 +51,7 @@ int vflen(const char *fmt, va_list ap)
     int len = 0;
     const char *cp;
     char c;
-    long l;
+    long long l;
     int i;
     double d; 
 
@@ -120,6 +120,10 @@ int vflen(const char *fmt, va_list ap)
 	    } else if ('l' == *cp) {
 		arg_size = 1; /* long */
 		cp++;
+		if ('l' == *cp) {
+		    arg_size = 2; /* long long */
+		    cp++;
+		}
 	    } else {
 		arg_size = 0; /* int */
 	    }
@@ -145,6 +149,8 @@ int vflen(const char *fmt, va_list ap)
 		    l = (long)va_arg(ap, int);
 		else if (arg_size == 1)
 		    l = va_arg(ap, long); 
+		else if (arg_size == 2)
+		    l = va_arg(ap, long long); 
 		else 
 		    l = (long)va_arg(ap, int);
 
