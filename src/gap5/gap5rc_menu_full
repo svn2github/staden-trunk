@@ -242,6 +242,8 @@ add_command	{Commands.Break Contig}		3 6 {editor_break_contig \[curr_ed $e\]}
 add_command	{Commands.Change Contig Start}	3 6 {editor_set_start \[curr_ed $e\]}
 add_command	{Commands.Change Contig Name}	3 6 {editor_set_name \[curr_ed $e\]}
 add_command	{Commands.Template Display}	3 6 {editor_template_display \[curr_ed $e\]}
+add_separator 	{Commands.S5}
+add_command 	{Commands.Sort By Sequence} 	3 6 {editor_sort_by_sequence \[curr_ed $e\]}
 
 #add_command	{Commands.Save Contig}		3 2 {$e save}
 #add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}
@@ -358,6 +360,8 @@ add_radio   	{Settings.Group Readings.     By strand}  	   1 0 {${w}(GroupPrimar
     5 {editor_group_by $w}
 add_radio   	{Settings.Group Readings.     By base}  	   1 0 {${w}(GroupPrimary)} \
     6 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     By sequence}  	   1 0 {${w}(GroupPrimary)} \
+    7 {editor_group_by $w}
 add_check   	{Settings.Group Readings.Secondary}	1 0 {${w}(GroupBySecondary)} \
 	{editor_group_by $w}
 add_radio   	{Settings.Group Readings.     2nd by technology}  	   1 0 {${w}(GroupSecondary)} \

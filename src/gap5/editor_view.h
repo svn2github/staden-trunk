@@ -298,6 +298,7 @@ int edPrevDifference(edview *xx);
 /* Set the group_by/sort settings */
 void edview_set_sort_order(edview *xx);
 void ed_set_base_sort_point(edview *xx);
+void ed_set_sequence_sort(edview *xx);
 
 /* Compute original positions array via alignments */
 int origpos(edview *xx, tg_rec srec, int pos);

@@ -1721,6 +1721,10 @@ static int (*secondary)(const void *, const void *);
 static int p_sort;
 static int s_sort;
 static int base_sort_pos = 1;
+static int sort_sequence_type = GT_Seq;
+static tg_rec sort_sequence_rec = -1;
+static int sort_sequence_start = 1;
+static int sort_sequence_end = 1;
 
 
 // empty sort
@@ -1858,7 +1862,7 @@ static int get_base(seq_t *s, const rangec_t *r, int pos, char *base, int *cutof
     
     if (pos < 0 || pos >= ABS(s->len)) return -1;
 
-    if ((s->len < 0) ^ r->comp) {             // is comlemented
+    if ((s->len < 0) ^ r->comp) {             // is complemented
     	pos = ABS(s->len) - 1 - pos;
 	*base = complement_base(s->seq[pos]);
     } else {
@@ -1946,6 +1950,13 @@ static int simple_sort_range_by_tech_x(const void *v1, const void *v2) {
     return r1->seq_tech - r2->seq_tech;
 }
 
+static int simple_sort_by_sequence(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+
+    return r2->seq_match - r1->seq_match;
+}
+
 
 /* runs the simple sort choices */
 static int chosen_sort(const void *v1, const void *v2) {
@@ -1964,6 +1975,14 @@ static int chosen_sort(const void *v1, const void *v2) {
 
 void contig_set_base_sort_point(int pos) {
     base_sort_pos = pos;
+}
+
+
+void contig_set_sequence_sort(int type, tg_rec rec, int start, int end) {
+    sort_sequence_type  = type;
+    sort_sequence_rec   = rec;
+    sort_sequence_start = start;
+    sort_sequence_end   = end;
 }
 
 
@@ -1992,6 +2011,10 @@ void contig_set_default_sort(int pri, int sec) {
 
 	case 6:
 	    p_sort = CSIR_SORT_BY_BASE;
+	break;
+	
+	case 7:
+	    p_sort = CSIR_SORT_BY_SEQUENCE;
 	break;
 
 	default:
@@ -2023,6 +2046,10 @@ void contig_set_default_sort(int pri, int sec) {
 	    s_sort = CSIR_SORT_BY_BASE;
 	break;
 
+	case 7:
+	    s_sort = CSIR_SORT_BY_SEQUENCE;
+	break;
+
 	default:
 	    s_sort = CSIR_SORT_BY_Y;
     }
@@ -2035,6 +2062,8 @@ static int (*set_sort(int job))(const void *, const void *) {
 
     if (job & CSIR_SORT_BY_TEMPLATE) {
 	return simple_sort_range_by_template;
+    }else if (job & CSIR_SORT_BY_SEQUENCE) {
+    	return simple_sort_by_sequence;
     } else if (job & CSIR_SORT_BY_STRAND) {
     	return simple_sort_by_strand;
     } else if (job & CSIR_SORT_BY_BASE) {
@@ -2057,6 +2086,108 @@ static int (*set_sort(int job))(const void *, const void *) {
     
     return no_sort;
 }
+
+
+int find_string_match_values(GapIO *io, rangec_t *r, int count) {
+    char *seq = NULL;
+    int seq_size = (sort_sequence_end - sort_sequence_start) + 1;
+    int i, j, k;
+    int c_start = sort_sequence_start;
+    int c_end   = sort_sequence_end;
+    
+    if (NULL == (seq = (char *)malloc(seq_size * sizeof(char)))) {
+    	fprintf(stderr, "Error: memory allocation failure in find_string_match_values\n");
+	return 1;
+    }
+    
+    seq[seq_size - 1] = 0;
+    
+    // get the selection, either from the consensus or a read
+
+    if (sort_sequence_type == GT_Contig) {
+    	if (-1 == (calculate_consensus_simple(io, sort_sequence_rec,
+	    	     sort_sequence_start, sort_sequence_end, seq, NULL))) {
+	    fprintf(stderr, "Error: unable to retrieve consensus data\n");
+	    free(seq);
+	    return 1;
+	}
+    } else {
+    	seq_t *s = cache_search(io, GT_Seq, sort_sequence_rec);
+	
+	// look for the right record in range for the pos info
+	// there is probably a better way but do this for now
+	
+	for (i = 0; i < count; i++) {
+	    if (r[i].rec == sort_sequence_rec) break;
+	}
+	
+	if (i == count) { // rec not there, probably out of range
+	    free(seq);
+	    return 1;
+	}
+	
+	
+	k = 0;
+	
+	// map the select start to the consensus start
+	c_start += r[i].start;
+	c_end   += r[i].start;;
+	
+    	for (j = sort_sequence_start; j <=  sort_sequence_end; j++) {
+	    char base;
+	    int cutoff;
+	    
+	    if (get_base(s, &r[i], j, &base, &cutoff) || cutoff) {
+	    	seq[k] = '_';
+	    } else {
+	    	seq[k] = base;
+	    }
+	    
+	    k++;
+	}
+    }
+    
+    // go through the reads and assign matching scores
+    
+    for (i = 0; i < count; i++) {
+    	rangec_t *rn = &r[i];
+	
+    	if ((rn->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	    seq_t *s = cache_search(io, GT_Seq, rn->rec);
+
+	    k = 0;
+	    rn->seq_match = 0;
+
+	    for (j = (c_start - rn->start); j <= (c_end - rn->start); j++) {
+		char base;
+		int cutoff;
+
+		if (get_base(s, &r[i], j, &base, &cutoff) || cutoff) {
+		    base = '_';
+		}
+		
+		// naive match scoring, +1 match, -1 mismatch, 0 for off the read end
+
+		if (seq[k] == base) {
+	    	    rn->seq_match++;
+		} else if (base != '_') {
+	    	    rn->seq_match--;
+		}
+
+		k++;
+	    }
+
+	} else {
+	   rn->seq_match = 0; 
+	} 
+    }
+    
+    free(seq);
+
+    return 0;
+}
+
+
 
 
 /* Pick Y coordinates for ranges */
@@ -2487,7 +2618,7 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
 		(*results)[count].pair_start = 0;
 		(*results)[count].pair_end   = 0;
 		(*results)[count].pair_mqual = 0;
-
+		
 		(*results)[count].flags = l->flags;
 		(*results)[count].y = l->y;
 		(*results)[count].orig_rec = bin->rec;
@@ -2598,6 +2729,14 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,int start, int 
 		    } else {
 			r[i].seq_tech = -1;
 		    }
+		}
+	    }
+	    
+	    if (job & CSIR_SORT_BY_SEQUENCE) {
+	    	if (find_string_match_values(io, r, *count)) {
+		    // something wrong, possibly selection not set. Default to tech sort
+		    first ^= CSIR_SORT_BY_SEQUENCE;
+		    first |= CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
 		}
 	    }
 	    

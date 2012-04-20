@@ -74,6 +74,7 @@ rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 			       
 void contig_set_default_sort(int primary, int secondary);
 void contig_set_base_sort_point(int pos);
+void contig_set_sequence_sort(int type, tg_rec rec, int start, int end); 
 
 #define CSIR_PAIR                  (1<<0)
 #define CSIR_ALLOCATE_Y_SINGLE     (1<<1)
@@ -94,6 +95,7 @@ void contig_set_base_sort_point(int pos);
 #define CSIR_SORT_BY_TEMPLATE      (1<<11)
 #define CSIR_SORT_BY_STRAND        (1<<12)
 #define CSIR_SORT_BY_BASE          (1<<13)
+#define CSIR_SORT_BY_SEQUENCE      (1<<14)
 
 
 /* ---------------------------------------------------------------------- */

@@ -3704,4 +3704,9 @@ int origpos(edview *xx, tg_rec srec, int pos) {
 void ed_set_base_sort_point(edview *xx) {
     contig_set_base_sort_point(xx->cursor_apos);
 }
+
+void ed_set_sequence_sort(edview *xx) {
+    contig_set_sequence_sort(xx->select_seq == xx->cnum ? GT_Contig : GT_Seq,
+    	    	    	     xx->select_seq, xx->select_start, xx->select_end);
+}
     

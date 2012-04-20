@@ -1736,6 +1736,39 @@ proc order_update_on_consensus {w} {
     }
 }
 
+
+proc editor_sort_by_sequence {w} {
+    set w2 [selection own]
+    
+    if {$w2 == ""} {
+    	set w2 $w
+    } else {
+    	if {[winfo class $w2] != "Editor"} {
+	    bell
+	    return
+	}
+    }
+    
+    foreach {otype orec start end} [$w2 select get] break
+    
+    set tl [winfo toplevel $w2]
+    
+    upvar \#0 $tl opt
+    
+    foreach ed $opt(all_editors) {
+    	set opt(GroupByPrimary) 1
+	set opt(GroupPrimary) 7
+	$ed configure -group_by_primary $opt(GroupPrimary)
+	
+    	$ed set_sequence_sort
+	$ed set_sort_order
+	
+	# Force the editing cursor to be visible
+    	eval $w set_cursor [$w get_cursor relative] 1
+	$ed redraw
+    }
+}
+
 #-----------------------------------------------------------------------------
 # Output list handling
 proc editor_olist_populate {w} {

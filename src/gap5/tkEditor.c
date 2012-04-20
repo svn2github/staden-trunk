@@ -490,7 +490,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"cursor_id",     "get_cursor",	  "search",      "get_xy",
 	"change_contig", "select_oligo","show_cursor",
 	"reference_pos", "next_difference", "prev_difference",
-	"set_sort_order", "set_trace_lock", "set_base_sort_point", NULL
+	"set_sort_order", "set_trace_lock", "set_base_sort_point", 
+	"set_sequence_sort", NULL
     };
     enum options {
 	_CONFIGURE,      _INIT,          _IO,            _REDRAW,
@@ -505,7 +506,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,	 _GET_XY,
 	_CHANGE_CONTIG,  _SELECT_OLIGO,  _SHOW_CURSOR,
 	_REFERENCE_POS,  _NEXT_DIFFERENCE, _PREV_DIFFERENCE,
-	_SET_SORT_ORDER, _SET_TRACE_LOCK, _SET_BASE_SORT_POINT
+	_SET_SORT_ORDER, _SET_TRACE_LOCK, _SET_BASE_SORT_POINT,
+	_SET_SEQUENCE_SORT
     };
 
     if (argc < 2) {
@@ -1267,6 +1269,11 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
             tman_set_lock(ed->xx, lock);
         }
     }
+    
+    case _SET_SEQUENCE_SORT:
+    	ed_set_sequence_sort(ed->xx);
+    	break;
+    
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));
