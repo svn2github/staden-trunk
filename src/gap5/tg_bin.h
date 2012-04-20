@@ -128,6 +128,20 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec);
 
 /*
+ * A faster alternative to bin_remove_item_from_bin(). Note this does not
+ * ensure the contig is consistent afterwards or that the bin ranges are
+ * valid. These checks need to be done afterwards by calling
+ * bin_set_used_range() and possibly consensus_unclipped_range().
+ *
+ * If bin_idx is already known, pass it in. Otherwise pass in -1.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int fast_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
+			      int type, tg_rec rec, int bin_idx);
+
+/*
  * Removes the refpos marker at a specific position in the contig.
  *
  * Returns 0 on success

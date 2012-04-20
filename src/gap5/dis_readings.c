@@ -133,6 +133,7 @@ int check_contig_bin(GapIO *io, tg_rec crec) {
 
 typedef struct {
     tg_rec contig;
+    tg_rec bin;
     int start;
     int end;
     int clipped_start;
@@ -189,10 +190,17 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
     contig_t *c;
     bin_index_t *bin;
     seq_t *seq;
-    tg_rec brec;
     int i, j, comp;
 
     //printf("%soving record #%d\n", remove ? "Rem" : "M", rec);
+
+    /*
+     * Check if brec hasn't changed?
+     * If not, then we can cache the bin location and speed up the
+     * bin_get_item_position. However to do this we must be sure that
+     * bin locations aren't moving, so we restrict this to specific
+     * algorithms.
+     */
 
     /* Get location */
     if (bin_get_item_position(io, GT_Seq, rec,
@@ -200,7 +208,7 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
 			      &pos->start,
 			      &pos->end,
 			      &pos->comp,
-			      &brec,
+			      &pos->bin,
 			      &pos->rng,
 			      (void **)&seq)) {
 	return -1;
@@ -237,64 +245,43 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
 	pos->clipped_end   = pos->start + seq->right-1;
     }
 
-    /* Find annotations in this region */
-    c = cache_search(io, GT_Contig, pos->contig);
-    cache_incr(io, c);
-    pos->anno = contig_anno_in_range(io, &c, pos->start, pos->end, 0,
-				     &pos->n_anno);
-
-    /* Filter for only those from this read */
-    for (i = j = 0; i < pos->n_anno; i++) {
-	if (pos->anno[i].pair_rec == rec)
-	    pos->anno[j++] = pos->anno[i];
-    }
-    pos->n_anno = j;
+    /*
+     * We compute the list of annotations for this read later on, when we
+     * know which other reads are covering the same contig region.
+     */
+    pos->n_anno = 0;
+    pos->anno = NULL;
 
     /*
-     * Remove from bin range array
-     *
-     * FIXME: could be done more optimal if we knew bin->rng[]
-     * index. Maybe update bin_get_item_position to return this
-     * value so we can directly manipulate r->flags.
-     *
-     * FIXME2: if we're removing lots of items from the same bin,
-     * then we could aggregate the nseq adjustment and call
-     * bin_incr_nseq with something other than -1 (ie -nseq_in_bin).
+     * Remove from bin range array. Delay consistency checking until
+     * we've removed everything.
      */
-    bin = cache_search(io, GT_Bin, brec);
+    bin = cache_search(io, GT_Bin, pos->bin);
     if (!c || !bin) {
 	cache_decr(io, seq);
-	cache_decr(io, c);
 	return -1;
     }
 
-    if (bin_remove_item_from_bin(io, &c, &bin, GT_Seq, rec)) {
+    c = cache_search(io, GT_Contig, pos->contig);
+    cache_incr(io, c);
+    if (fast_remove_item_from_bin(io, &c, &bin, GT_Seq, rec, seq->bin_index)) {
 	cache_decr(io, seq);
 	cache_decr(io, c);
 	return -1;
-    }
-
-    /* FIXME: optimise by only calling this once per contig rather
-     * than once per read.
-     */
-    if (pos->start <= c->start || pos->end >= c->end) {
-	int ns, ne;
-	if (-1 != consensus_unclipped_range(io, c->rec, &ns, &ne)) {
-	    //printf("Old range=%d..%d new range=%d..%d\n",
-	    //       c->start, c->end, ns, ne);
-	    if (c->start != ns || c->end != ne) {
-		c = cache_rw(io, c);
-		c->start = ns;
-		c->end   = ne;
-	    }
-	}
     }
 
     cache_decr(io, seq);
     cache_decr(io, c);
 
-
-    /* For read-pairs, unlink with rest of template */
+    /*
+     * For read-pairs, unlink with rest of template.
+     * If we're removing huge volumes of data (eg a repeat) with the other
+     * ends being scattered to the four winds, this will be very slow.
+     *
+     * Maybe we are better off not removing the link and just handling
+     * the subsequent errors we will get later on during normal gap5
+     * usage.
+     */
     if (remove && pos->rng.pair_rec &&
 	(seq = cache_search(io, GT_Seq, pos->rng.pair_rec))) {
 	range_t *r;
@@ -1051,6 +1038,160 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
     return 0;
 }
 
+/*
+ * Ensure contig extents are consistent.
+ *
+ * Identify minimum and maximum coordinates per contig. If these
+ * match the known start and end of that contig then we need to 
+ * recompute the contig extents.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int fix_contigs(GapIO *io, r_pos_t *pos, int nreads) {
+    int *ends, i;
+    HacheTable *c_hash = HacheTableCreate(256, HASH_DYNAMIC_SIZE |
+					  HASH_NONVOLATILE_KEYS);
+    HacheIter *iter;
+    HacheItem *hi;
+
+    /* Accumulate start/end values per contig */
+    for (i = 0 ; i < nreads; i++) {
+	hi = HacheTableQuery(c_hash, (char *)&pos[i].contig,
+			     sizeof(pos[i].contig));
+	if (hi) {
+	    ends = (int *)hi->data.p;
+	    if (ends[0] > pos[i].start)
+		ends[0] = pos[i].start;
+	    if (ends[1] < pos[i].end)
+		ends[1] = pos[i].end;
+	} else {
+	    ends = (int *)malloc(2 * sizeof(int));
+	    ends[0] = pos[i].start;
+	    ends[1] = pos[i].end;
+	}
+    }
+
+    /* Iterate through contigs to check if extents need fixing */
+    iter = HacheTableIterCreate();
+    while (hi = HacheTableIterNext(c_hash, iter)) {
+	tg_rec crec = *(tg_rec *)hi->key;
+	contig_t *c = cache_search(io, GT_Contig, crec);
+	int new_start, *ns;
+	int new_end, *ne;
+
+	ends = (int *)hi->data.p;
+	    
+	ns = ends[0] <= c->start ? &new_start : NULL;
+	ne = ends[1] >= c->end   ? &new_end   : NULL;
+	if (ns || ne) {
+	    if (-1 != consensus_unclipped_range(io, c->rec, ns, ne)) {
+		c = cache_rw(io, c);
+		if (ns) c->start = *ns;
+		if (ne) c->end   = *ne;
+	    }
+	}
+    }
+    HacheTableIterDestroy(iter);
+
+    HacheTableDestroy(c_hash, 0);
+
+    return 0;
+}
+
+/*
+ * Find annotations attached to the reads in rnums[].
+ *
+ * The easy way to do this is to find the positions for each read (already
+ * supplied in pos[i]), then query all annotations over that region, and
+ * finally then search those annotations for ones attached to the correct
+ * record.
+ *
+ * This is slow when nreads is large and if our reads are all from the same
+ * region we end up repeating the same searches many times and iterating
+ * through the same list of annotations many times.
+ *
+ * So the new algorithm is:
+ * 1) cluster reads into overlapping sets
+ * 2) per set: identify all annotations in that set range
+ * 3) loop through annotation in the set assigning to their appropriate
+ *    reads.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int anno_range(GapIO *io, tg_rec contig, int start, int end,
+		      r_pos_t *pos, int rfrom, int rto) {
+    rangec_t *anno;
+    int n_anno;
+    contig_t *c;
+    HacheTable *rmap;
+    HacheData hd;
+    HacheItem *hi;
+    int i, j;
+
+    if (NULL == (c = cache_search(io, GT_Contig, contig)))
+	return -1;
+
+    /* Build a hash per sequence holding the count of annotations */
+    if (NULL == (rmap = HacheTableCreate(rto-rfrom, HASH_DYNAMIC_SIZE |
+					 HASH_NONVOLATILE_KEYS)))
+	return -1;
+    for (i = rfrom; i <= rto; i++) {
+	hd.i = i;
+	HacheTableAdd(rmap, (char *)&pos[i].rec, sizeof(tg_rec), hd, NULL);
+    }
+
+    /* Find annotations in this region */
+    anno = contig_anno_in_range(io, &c, start, end, 0, &n_anno);
+
+    /* Copy to the pos[] array */
+    for (i = 0; i < n_anno; i++) {
+	if (!(hi = HacheTableQuery(rmap, (char *)&anno[i].pair_rec,
+				   sizeof(anno[i].pair_rec))))
+	    continue;
+	
+	/* Could be more efficient, but not likely the slow bit now */
+	j = hi->data.i;
+	pos[j].n_anno++;
+	pos[j].anno = realloc(pos[j].anno, pos[j].n_anno * sizeof(rangec_t));
+	pos[j].anno[pos[j].n_anno-1] = anno[i];
+    }
+
+    free(anno);
+
+    HacheTableDestroy(rmap, 0);
+    return 0;
+}
+
+static int find_annos(GapIO *io, r_pos_t *pos, int nreads) {
+    int i, j;
+    tg_rec contig;
+    int start, end;
+
+    if (nreads == 0)
+	return 0;
+
+    contig = pos[0].contig;
+    start  = pos[0].start;
+    end    = pos[0].end;
+
+    for (j = 0, i = 1; i < nreads; i++) {
+	if (pos[i].start > end || pos[i].contig != contig) {
+	    anno_range(io, contig, start, end, pos, j, i-1);
+	    j = i;
+	    contig = pos[i].contig;
+	    start  = pos[i].start;
+	    end    = pos[i].end;
+	} else if (pos[i].end > end) {
+	    end = pos[i].end;
+	}
+    }
+    anno_range(io, contig, start, end, pos, j, i-1);
+
+    return 0;
+}
+
 /*-----------------------------------------------------------------------------
  * External interfaces
  */
@@ -1082,7 +1223,9 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 {
     int i,err = 0;
     r_pos_t *pos;
-    HacheTable *dup_hash;
+    HacheTable *dup_hash, *bin_hash;
+    HacheIter *iter;
+    HacheItem *hi;
     Array cmap;
 
     vfuncheader("Disassemble_readings");
@@ -1123,7 +1266,11 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
      */
     dup_hash = HacheTableCreate(8192, HASH_DYNAMIC_SIZE |
 				      HASH_NONVOLATILE_KEYS);
+    bin_hash = HacheTableCreate(256, HASH_DYNAMIC_SIZE |
+				HASH_NONVOLATILE_KEYS);
     cmap = ArrayCreate(sizeof(contig_map), 0);
+
+    //puts("Part 1 - unlink read"); system("date");
 
     for (i = 0; i < nreads; i++) {
 	HacheData hd;
@@ -1140,6 +1287,8 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 	if (rnums[i] == -1) {
 	    continue;
 	}
+
+	/* This doesn't tidy up the bin, so remember those to fix later */
 	if (unlink_read(io, rnums[i], &pos[i], move == 0)) {
 	    verror(ERR_WARN, "disassemble_readings",
 		   "Failed to unlink seq #%"PRIrec, rnums[i]);
@@ -1148,12 +1297,26 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 	    pos[i].contig = 0;
 	    continue;
 	}
+	HacheTableAdd(bin_hash, (char *)&pos[i].bin, sizeof(pos[i].bin),
+		      hd, NULL);
 
 	pos[i].rec = rnums[i];
     }
 
-    HacheTableDestroy(dup_hash, 0);
+    /* Ensure bins are consistent */
+    iter = HacheTableIterCreate();
+    while (hi = HacheTableIterNext(bin_hash, iter)) {
+	tg_rec brec = *(tg_rec *)hi->key;
+	bin_index_t *bin = cache_search(io, GT_Bin, brec);
+	bin_set_used_range(io, bin);
+    }
+    HacheTableIterDestroy(iter);
 
+    HacheTableDestroy(dup_hash, 0);
+    HacheTableDestroy(bin_hash, 0);
+
+
+    //puts("Part 2 - Sort by pos"); system("date");
 
     /* Sort position table and drop the duplicate entries */
     xio = io;
@@ -1165,6 +1328,21 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 	memmove(&pos[0], &pos[i], (nreads-i) * sizeof(pos[0]));
 	nreads -= i;
     }
+
+
+    //puts("Part 2.1 - Find annos"); system("date");
+
+    /* Identify annotations attached to the reads */
+    find_annos(io, pos, nreads);
+
+
+    //puts("Part 2.2 - Fix contig extents"); system("date");
+
+    /* Ensure contig extents are consistent */
+    fix_contigs(io, pos, nreads);
+
+
+    //puts("Part 3 - Del or move"); system("date");
 
     /* Part 3: */
     switch (move) {
@@ -1199,6 +1377,8 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 
     cache_flush(io);
 
+    //puts("Part 4 - Copy annos"); system("date");
+
     /* Part 4: Move/copy any consensus annotations. */
     copy_contig_anno(io, cmap);
 
@@ -1208,6 +1388,8 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 	err = 1;
 
     cache_flush(io);
+
+    //puts("Part 5 - Deallocate"); system("date");
 
     // check_contig_bins(io);
 

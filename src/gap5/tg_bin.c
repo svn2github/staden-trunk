@@ -949,6 +949,7 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
     tg_rec bnum;
     int i, offset1 = 0, offset2 = 0, found = 0;
     int comp = 0;
+    int idx = -1;
 
     if (type == GT_AnnoEle) {
 	anno_ele_t *a = cache_search(io, GT_AnnoEle, rec);
@@ -970,6 +971,7 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 	    *i_out = s;
 	}
 	bnum = s->bin;
+	idx = s->bin_index;
     } else {
 	fprintf(stderr, "Unsupported record type %d in bin_get_item_position\n",
 		type);
@@ -981,19 +983,35 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 
     /* Find the position of this anno within the bin */
     bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
-    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
-        range_t *r = arrp(range_t, bin->rng, i);
-	if (r->flags & GRANGE_FLAG_UNUSED)
-	    continue;
-
+    if (idx != -1) {
+	/* Check it's valid */
+	range_t *r = arrp(range_t, bin->rng, idx);
 	if (r->rec == rec) {
 	    found = 1;
 	    offset1 = r->start;
 	    offset2 = r->end;
-
 	    if (r_out)
 		*r_out = *r;
-	    break;
+	} else {
+	    idx = -1;
+	}
+    }
+
+    if (idx == -1) {
+	for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
+
+	    if (r->rec == rec) {
+		found = 1;
+		offset1 = r->start;
+		offset2 = r->end;
+
+		if (r_out)
+		    *r_out = *r;
+		break;
+	    }
 	}
     }
 
@@ -1058,7 +1076,13 @@ int bin_get_orient(GapIO *io, tg_rec rec) {
 }
 
 /*
- * Removes a record referenced from a known bin
+ * Removes a record referenced from a known bin.
+ * This function is exhaustive in its checking, but slow. So it is suitable
+ * for removing small numbers of items and not for removing large numbers
+ * in a loop.
+ *
+ * See fast_remove_item_from_bin() and fixup_bin() for a better way to
+ * do bulk removal.
  *
  * Returns 0 on success
  *        -1 on failure
@@ -1078,11 +1102,6 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
     bin->flags &= ~BIN_CONS_VALID;
     bin->flags |= BIN_BIN_UPDATED;
 
-    /* FIXME: use seq->bin_index or anno_ele->bin_idx here as a short-cut?
-     * Is loading a seq or anno in addition slower than simply scanning
-     * this? It'll depend whether it is in the cache, so the simple
-     * approach for now works.
-     */
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
 	if (r->flags & GRANGE_FLAG_UNUSED)
@@ -1255,6 +1274,79 @@ int bin_remove_item(GapIO *io, contig_t **c, int type, tg_rec rec) {
 
     return bin_remove_item_from_bin(io, c, &bin, type, rec);
 }
+
+/*
+ * A faster alternative to bin_remove_item_from_bin(). Note this does not
+ * ensure the contig is consistent afterwards or that the bin ranges are
+ * valid. These checks need to be done afterwards by calling
+ * bin_set_used_range() and possibly consensus_unclipped_range().
+ *
+ * If bin_idx is already known, pass it in. Otherwise pass in -1.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int fast_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
+			      int type, tg_rec rec, int bin_idx) {
+    bin_index_t *bin;
+
+    if (!(bin = cache_rw(io, *binp)))
+	return -1;
+    *binp = bin;
+
+    bin->flags &= ~BIN_CONS_VALID;
+    bin->flags |= BIN_BIN_UPDATED;
+
+    if (bin_idx != -1) {
+	/*  Check validity */
+	if (bin->rng) {
+	    range_t *r = arrp(range_t, bin->rng, bin_idx);
+	    if (r->rec != rec) {
+		bin_idx = -1;
+	    }
+	} else {
+	    bin_idx = -1;
+	}
+    }
+
+    if (bin_idx == -1) {
+	int i;
+
+	for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
+
+	    if (r->rec != rec)
+		continue;
+
+	    bin_idx = i;
+	}
+    }
+
+    /* Found it */
+    if (bin_idx != -1) {
+	range_t *r = arrp(range_t, bin->rng, bin_idx);
+
+	/* Remove from bin */
+	r->flags |= GRANGE_FLAG_UNUSED;
+	r->rec = (tg_rec)bin->rng_free;
+	bin->rng_free = bin_idx;
+	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+	    bin_incr_nseq(io, bin, -1);
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+	    bin_incr_nrefpos(io, bin, -1);
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+	    bin_incr_nanno(io, bin, -1);
+    }
+
+    return 0;
+}
+
 
 /*
  * Call after updating range array to ensure that the bin start_used and
