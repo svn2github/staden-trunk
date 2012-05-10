@@ -51,6 +51,7 @@ typedef struct {
     tg_pair_t *pair;
     HacheTable *libs;
     contig_t *c;
+    int c_start;   /* First used based in an existing contig */
     int n_inserts; /* Insertions to seq? */
     int npads;     /* Cons inserts due to new data */
     int npads2;    /* Seq inserts due to old cons pads */
@@ -1072,6 +1073,7 @@ void bio_new_contig(bam_io_t *bio, int tid) {
     if (bio->a->repad) {
 	bio->tree = depad_consensus(bio->io, bio->c->rec);
 	//padtree_dump(bio->tree);
+	consensus_valid_range(bio->io, bio->c->rec, &bio->c_start, NULL);
     }
 	
     bio->last_tid = tid;
@@ -1157,7 +1159,7 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
 
     s.pos = bio->npads +
 	get_padded_coord(bio->tree, b->pos + 1 + bio->n_inserts
-			 - bio->npads);
+			 - bio->npads) + bio->c_start-1;
     //s.pos = b->pos+1;
     s.len = b->len;
     s.rec = 0;
@@ -1955,6 +1957,8 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
 
     /* tg_index -g mode */
     if (bio->a->repad) {
+	pos += bio->c_start-1;
+
 	/* Pad these sequences based on existing pads in the padded contig */
 	if ((np=padtree_pad_at(bio->tree, pos+bio->n_inserts-bio->npads))) {
 	    int j;
