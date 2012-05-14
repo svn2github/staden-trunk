@@ -176,7 +176,7 @@ add_command	{Assembly.Import Fasta/Fastq as single-read contigs} \
 						12 22 {AssemblySingle \$io}
 add_cascade	{Assembly.Map Reads}		12 22
 add_command	{Assembly.Map Reads.Bwa aln}    12 22 {MapReads_bwa_aln \$io}
-add_command	{Assembly.Map Reads.Bwa dbwtsw} 12 22 {MapReads_bwa_dbwtsw \$io}
+add_command	{Assembly.Map Reads.Bwa bwasw} 12 22 {MapReads_bwa_bwasw \$io}
 
 #add_command	{Assembly.Normal shotgun assembly} \
 #			12 22 {AutoAssemble \$io 1}

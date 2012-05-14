@@ -98,9 +98,18 @@ proc MapReads_bwa_aln {io} {
 
     frame $w.sep1 -bd 2 -relief groove -height 2
 
-    #save failures as file or list
-#    lorf_out $w.fails [keylget gap5_defs AUTO_ASSEMBLE.FAILS] \
-	"" -bd 2 -relief groove
+    radiolist $w.out_format \
+	-title "Output failed readings as" \
+	-orient horizontal \
+	-buttons {fasta fastq} \
+	-default 2
+
+    xentry $w.out_fn \
+	-label "Sequence output filename" \
+	-checkcommand "check_fileoutput" \
+	-default [keylget gap5_defs MAP_READS.OUTPUT_FN]
+
+    frame $w.sep2 -bd 2 -relief groove -height 2
 
     entrybox $w.aln_opt   -title "'bam aln' options"
     entrybox $w.sampe_opt -title "'bam sampe' options"
@@ -119,6 +128,7 @@ proc MapReads_bwa_aln {io} {
 	    -relief groove
 
     pack $w.contigs $w.id $w.format $w.fwd $w.rev $w.sep1 \
+	$w.out_format $w.out_fn $w.sep2 \
 	$w.index_names $w.aln_opt $w.sampe_opt $w.ok_cancel \
 	-side top -fill both
 }
@@ -156,6 +166,10 @@ proc MapReads_bwa_aln2 {io w} {
 	}
     }
     set rev [$w.rev get]
+
+    # Output name for failure
+    set out_fn [$w.out_fn get]
+    set out_fmt [radiolist_get $w.out_format]
 
     # options for various stages
     set aln_opt   [entrybox_get $w.aln_opt]
@@ -224,6 +238,12 @@ proc MapReads_bwa_aln2 {io w} {
 	-format bam \
 	-index_names $no_tree
 
+    # Process failures from SAM file. Convert back to fasta or fastq.
+    # $w.out_format: 1=fasta, 2=fastq
+    if {$out_fn != ""} {
+	sam_failures $prefix.sam $out_fn [expr {$out_fmt-1}]
+    }
+
     vmessage "Flushing"
     $io flush
 
@@ -237,14 +257,14 @@ proc MapReads_bwa_aln2 {io w} {
 
 
 #-----------------------------------------------------------------------------
-# BWA using dbwtsw option
+# BWA using dbwtsw option (now bwasw)
 
-proc MapReads_bwa_dbwtsw {io} {
+proc MapReads_bwa_bwasw {io} {
     global gap5_defs
 
     set w .map_reads2
     if {[xtoplevel $w -resizable 0] == ""} return
-    wm title $w "Mapped assembly - bwa dbwtsw"
+    wm title $w "Mapped assembly - bwa bwasw"
 
     # Sequences to map against
     contig_id $w.id -io $io 
@@ -267,11 +287,24 @@ proc MapReads_bwa_dbwtsw {io} {
 
     frame $w.sep1 -bd 2 -relief groove -height 2
 
+    radiolist $w.out_format \
+	-title "Output failed readings as" \
+	-orient horizontal \
+	-buttons {fasta fastq} \
+	-default 2
+
+    xentry $w.out_fn \
+	-label "Sequence output filename" \
+	-checkcommand "check_fileoutput" \
+	-default [keylget gap5_defs MAP_READS.OUTPUT_FN]
+
+    frame $w.sep2 -bd 2 -relief groove -height 2
+
     #save failures as file or list
 #    lorf_out $w.fails [keylget gap5_defs AUTO_ASSEMBLE.FAILS] \
 	"" -bd 2 -relief groove
 
-    entrybox $w.dbwtsw_opt   -title "'bam dbwtsw' options"
+    entrybox $w.bwasw_opt   -title "'bam bwasw' options"
 
     xyn $w.index_names \
 	-label "Index sequence names" \
@@ -280,17 +313,18 @@ proc MapReads_bwa_dbwtsw {io} {
 
     #OK and Cancel buttons
     okcancelhelp $w.ok_cancel \
-	    -ok_command "MapReads_bwa_dbwtsw2 $io $w" \
+	    -ok_command "MapReads_bwa_bwasw2 $io $w" \
 	    -cancel_command "destroy $w" \
-	    -help_command "show_help gap5 {Assembly-Map-bwa-dbwtsw}" \
+	    -help_command "show_help gap5 {Assembly-Map-bwa-bwasw}" \
 	    -bd 2 \
 	    -relief groove
 
-    pack $w.contigs $w.id $w.format $w.fwd $w.sep1 $w.index_names \
-	$w.dbwtsw_opt $w.ok_cancel -side top -fill both
+    pack $w.contigs $w.id $w.format $w.fwd $w.sep1 \
+	$w.out_format $w.out_fn $w.sep2 $w.index_names \
+	$w.bwasw_opt $w.ok_cancel -side top -fill both
 }
 
-proc MapReads_bwa_dbwtsw2 {io w} {
+proc MapReads_bwa_bwasw2 {io w} {
     set prefix [tmpnam]
 
     # Contigs to map against
@@ -321,8 +355,12 @@ proc MapReads_bwa_dbwtsw2 {io w} {
 	}
     }
 
+    # Output name for failure
+    set out_fn [$w.out_fn get]
+    set out_fmt [radiolist_get $w.out_format]
+
     # options for various stages
-    set dbwtsw_opt   [entrybox_get $w.dbwtsw_opt]
+    set bwasw_opt   [entrybox_get $w.bwasw_opt]
 
     destroy $w
     SetBusy
@@ -344,7 +382,7 @@ proc MapReads_bwa_dbwtsw2 {io w} {
     }
 
     # Align our input data.
-    if {[MapReads_run "bwa dbwtsw $dbwtsw_opt $prefix.cons $fwd > $prefix.sam"]} {
+    if {[MapReads_run "bwa bwasw $bwasw_opt $prefix.cons $fwd > $prefix.sam"]} {
 	ClearBusy
 	return [MapReads_tidyup $prefix]
     }
@@ -369,6 +407,12 @@ proc MapReads_bwa_dbwtsw2 {io w} {
 	-format bam \
 	-index_names $no_tree
 
+    # Process failures from SAM file. Convert back to fasta or fastq.
+    # $w.out_format: 1=fasta, 2=fastq
+    if {$out_fn != ""} {
+	sam_failures $prefix.sam $out_fn [expr {$out_fmt-1}]
+    }
+
     vmessage "Flushing"
     $io flush
 
@@ -376,4 +420,36 @@ proc MapReads_bwa_dbwtsw2 {io w} {
     ClearBusy
 
     return 0;
+}
+
+# Reads the sam file extracting unmapped reads, outputting them to $out in
+# either fastq ($fastq=1) or fasta format.
+#
+# Returns the number of unmapped reads.
+proc sam_failures {sam out {fastq 1}} {
+    set unmapped 0
+    set in_fd  [open $sam]
+    set out_fd [open $out w]
+
+    while {[gets $in_fd line] != -1} {
+	if {[string match "@*" $line]} continue
+	if {[lindex $line 1] & 4} {
+	    # Unmapped
+	    if {$fastq} {
+		set s [lindex $line 9]
+		set q [lindex $line 10]
+		if {$q == "*"} {
+		    set q [string repeat "!" [string length $s]]
+		}
+		puts $out_fd "@[lindex $line 0]\n$s\n+\n$q"
+	    } else {
+		puts $out_fd ">[lindex $line 0]\n[lindex $line 9]"
+	    }
+	    incr unmapped
+	}
+    }
+    close $in_fd
+    close $out_fd;
+
+    return $unmapped
 }

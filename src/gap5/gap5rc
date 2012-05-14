@@ -548,6 +548,7 @@ set_def READING_LIST.INFILE.WHICH.VALUE		1
 set_def MAP_READS.INFILE		$defs_c_in
 set_def MAP_READS.INFILE.WHICH.NAME	"Contig(s) to compare against"
 set_def MAP_READS.INDEX_SEQUENCE_NAMES	1
+set_def MAP_READS.OUTPUT_FN		"failures.seq"
 
 #find read pair
 set_def READPAIR.INFILE			$defs_c_in
