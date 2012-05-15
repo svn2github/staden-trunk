@@ -948,10 +948,12 @@ int sequence_get_template_info(GapIO *io, seq_t *s1,
 	   ? "ok" : "invalid");
     */
 
-    return (lib->counts[orient] >= .05 * total_count &&
-	    ABS(dist - lib->insert_size[orient]) < 3*lib->sd[orient])
-	? TEMPLATE_PAIRED
-	: TEMPLATE_DISTANCE;
+    if (lib->counts[orient] >= .05 * total_count &&
+	ABS(dist - lib->insert_size[orient]) < 3*lib->sd[orient])
+	return TEMPLATE_PAIRED;
+
+    return (lib->counts[orient] >= total_count * .4)
+	? TEMPLATE_DISTANCE : TEMPLATE_ORIENT;
 }
 
 

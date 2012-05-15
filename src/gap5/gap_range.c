@@ -363,10 +363,10 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    
 	    /* Check consistency */
 	    if (r->pair_rec && r->flags & GRANGE_FLAG_CONTIG) {
-		if (!((((r->start < r->pair_start)^r->comp) &&
+		if (!((((r->start < r->pair_start)/*^r->comp*/) &&
 		       ((r->flags & GRANGE_FLAG_COMP1)) == 0 &&
 		       ((r->flags & GRANGE_FLAG_COMP2)) != 0) ||
-		      (((r->pair_start < r->start)^r->comp) &&
+		      (((r->pair_start < r->start)/*^r->comp*/) &&
 		     ((r->flags & GRANGE_FLAG_COMP1)) != 0 &&
 		     ((r->flags & GRANGE_FLAG_COMP2)) == 0)))
 			col = inconsistent_col;
