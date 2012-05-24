@@ -3573,6 +3573,61 @@ static int range_populate(GapIO *io, contig_iterator *ci,
 	ci->r = contig_items_in_range(io, &c, start, end,
 				      ci->sort_mode, 0, &ci->nitems);
 
+    /*
+     * If we've requested a CLIPPED_START or CLIPPED_END then filter out
+     * any sequences that when clipped do not overlap out start..end range.
+     *
+     * The reason is that these will be brought in during a subsequent
+     * 
+     */
+    if (ci->sort_mode == (CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED)) {
+	int i, j;
+	for (i = j = 0; i < ci->nitems; i++) {
+	    int c_start;
+	    seq_t *s;
+
+	    if ((ci->r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ) {
+		ci->r[j++] = ci->r[i];
+		continue;
+	    }
+
+	    s = cache_search(io, GT_Seq, ci->r[i].rec);
+	    if ((s->len < 0) ^ ci->r[i].comp) {
+		c_start = ci->r[i].start + ABS(s->len) - (s->right-1) - 1;
+	    } else {
+		c_start = ci->r[i].start + s->left-1;
+	    }
+	    if (c_start > end)
+		continue;
+	    ci->r[j++] = ci->r[i];
+	}
+	ci->nitems = j;
+    }
+
+    if (ci->sort_mode == (CSIR_SORT_BY_XEND | CSIR_SORT_BY_CLIPPED)) {
+	int i, j;
+	for (i = j = 0; i < ci->nitems; i++) {
+	    int c_end;
+	    seq_t *s;
+
+	    if ((ci->r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ) {
+		ci->r[j++] = ci->r[i];
+		continue;
+	    }
+
+	    s = cache_search(io, GT_Seq, ci->r[i].rec);
+	    if ((s->len < 0) ^ ci->r[i].comp) {
+		c_end = ci->r[i].start + ABS(s->len) - (s->left-1) - 1;
+	    } else {
+		c_end = ci->r[i].start + s->right-1;
+	    }
+	    if (c_end < start)
+		continue;
+	    ci->r[j++] = ci->r[i];
+	}
+	ci->nitems = j;
+    }
+
     ci->index = 0;
     return 0;
 }
