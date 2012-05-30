@@ -856,7 +856,7 @@ static int g_unlock_views(GDB *gdb, GView v)
     /* Now free the storage, having successfully written new data */
     if (old_images) {
 	for (i = 0; i < countv; i++) {
-	    if (old_images[i] == G_NO_IMAGE)
+	    if (old_images[i] == G_NO_IMAGE || old_images[i] == 0)
 		continue;
 
 	    heap_free(gfile->dheap, old_images[i]);
