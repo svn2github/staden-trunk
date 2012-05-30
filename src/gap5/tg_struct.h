@@ -26,26 +26,36 @@ typedef int64_t tg_rec;
 #define MAX_SEQ_LEN 100000
 
 /* ----------------------------------------------------------------------
+ * Primary data types. The holes in the numbering are simply ancient history
+ * from the xgap and earlier era.
+ */
+#define GT_Generic        0
+#define GT_RecArray       3
+#define GT_Bin            5
+#define GT_Range          6
+#define GT_BTree          7
+#define GT_Database      16
+#define GT_Contig        17
+#define GT_Seq           18
+#define GT_Library       19
+#define GT_Track         20
+#define GT_AnnoEle       21
+#define GT_Anno          22
+#define GT_SeqBlock      23
+#define GT_AnnoEleBlock  24
+#define GT_SeqCons       25
+#define GT_ContigBlock   26
+#define GT_ScaffoldBlock 27
+
+
+/* ----------------------------------------------------------------------
  * Structures in a more database 'on disk' representation. This is basically
  * as it's stored.
+ *
+ * These should be moved to tg_iface_g.h as they should only be used within
+ * the "g" specific implementation of the database layer.
  */
  
-#define GT_Generic       0
-#define GT_RecArray      3
-#define GT_Bin           5
-#define GT_Range         6
-#define GT_BTree         7
-#define GT_Database     16
-#define GT_Contig       17
-#define GT_Seq          18
-#define GT_Library      19
-#define GT_Track        20
-#define GT_AnnoEle      21
-#define GT_Anno         22
-#define GT_SeqBlock     23
-#define GT_AnnoEleBlock 24
-#define GT_SeqCons      25
-
 typedef struct {
     GCardinal pos;
     GCardinal size;
@@ -162,6 +172,13 @@ typedef struct {
 } GContig_header;
 
 
+/* ----------------------------------------------------------------------
+ * In-memory versions of the above structures where we deem it more
+ * efficient to encode in a different format.
+ *
+ * Main database struct.
+ */
+
 /*
  * A global version number used to indicate the maximum version number of
  * any contents in this database.
@@ -174,7 +191,8 @@ typedef struct {
 //#define DB_VERSION 1 /* 1.2.6 */
 //#define DB_VERSION 2 /* 1.2.12, annotation range fixes */
 //#define DB_VERSION 3 /* 1.2.14, added template_name_len in seq_t */
-#define DB_VERSION 4 /* 2.0.0b8-p16, added direction to tags */
+//#define DB_VERSION 4 /* 2.0.0b8-p16, added direction to tags */
+#define DB_VERSION 5 /* ?, added ContigBlocks and Scaffolds */
 
 typedef struct {
     int    version;
@@ -182,6 +200,9 @@ typedef struct {
     /* Arrays */
     int    Ncontigs;		/* N.elements in array */
     tg_rec contig_order;	/* rec. of array of contig rec. nos */
+                                /* Unused if scaffold_order is present. */
+    int    Nscaffolds;
+    tg_rec scaffold_order;	/* rec. of array of scaffold rec. nos */
 
     int    Nlibraries;       /* N.elements in array */
     tg_rec library;          /* rec. of array o library rec. nos */
@@ -191,11 +212,11 @@ typedef struct {
     tg_rec contig_name_index;/* rec of type GT_Index */
 } database_t;
 
+
+#define DB_VERS(io) (((io)->base ? (io)->base : (io))->db->version)
+
 /* ----------------------------------------------------------------------
- * In-memory versions of the above structures where we deem it more
- * efficient to encode in a different format.
- *
- * (Also see bin_index_t from binning.h)
+ * Sequences and SequenceBlocks
  *
  * Note that this object is one single block of memory *at least* as large
  * as sizeof(seq_t). All the pointers in here (names, seq, conf) except for
@@ -276,16 +297,61 @@ typedef struct seq_block {
 #define SEQ_FORMAT_CNF4  2      /* 8-bit base, 4 confidence values */
 #define SEQ_FORMAT_CNF6  3      /* 8-bit base, 6 conf (ins/del too) */
 
+
+/* ----------------------------------------------------------------------
+ * Scaffolds, Contigs and Contig/Scaffold blocks
+ */
+struct contig_block;
 typedef struct {
     tg_rec rec;
     signed int start, end;
+    signed int clipped_start, clipped_end;
     tg_rec bin;
-    tg_rec anno_rec; /* FIXME */
-    char *name;
-    char data[1];
+    tg_rec scaffold;
+    tg_rec flags; /* Placeholder for clipped_start/end updating. Unused atm */
+    int nseqs;
+    int nanno;
+    int nrefpos;
+    struct contig_block *block;
+    int    idx;   /* Index to block */
+    char  *name;
+    char   data[1];
 } contig_t;
 
+#define CONTIG_FLAG_CLIPPED_VALID 1 /* Indicates clipped start/end are valid */
 
+#define CONTIG_BLOCK_BITS 10
+#define CONTIG_BLOCK_SZ (1<<CONTIG_BLOCK_BITS)
+typedef struct contig_block {
+    contig_t *contig[CONTIG_BLOCK_SZ];
+} contig_block_t;
+
+
+struct scaffold_block;
+typedef struct {
+    int   ncontigs;
+    int  *contig;   /* Array of size ncontigs */
+    int  *gap_size; /* Array of size ncontigs */
+    struct scaffold_block *block;
+    int   idx;      /* Index to block */
+    char *name;
+    char  data[1];
+} scaffold_t;
+
+#define SCAFFOLD_BLOCK_BITS 10
+#define SCAFFOLD_BLOCK_SZ (1<<SCAFFOLD_BLOCK_BITS)
+typedef struct scaffold_block {
+    int    est_size;
+    scaffold_t *scaffold[SCAFFOLD_BLOCK_SZ];
+} scaffold_block_t;
+
+
+/* ----------------------------------------------------------------------
+ * Bins and ranges (and tracks, but they're unused at present)
+ *
+ * These form the main recursive data structure for holding sequences and
+ * annotations.
+ */
 typedef struct index {
     tg_rec rec;
     int pos;
@@ -407,8 +473,10 @@ typedef struct {
 #define TRACK_FLAG_VALID  (1<<0)
 #define TRACK_FLAG_FREEME (1<<1)
 
-/*
- * Annotations:
+
+/* ----------------------------------------------------------------------
+ * Annotations
+ *
  * These now have a two-way relationship. A sequence refers to an annotation
  * struct. Likewise an annotation record consists of multiple fragments
  * possibly spanning multiple reads. This means we can annotate pairs of reads
@@ -449,8 +517,10 @@ typedef struct {
     Array ele;        /* recs of anno_ele_t */
 } anno_t;
 
-/*
- * Libraries:
+
+/* ----------------------------------------------------------------------
+ * Libraries
+ *
  * These hold data on how a set of sequences were produced, describing the
  * processes involved in producing our single or paired-end reads.
  *

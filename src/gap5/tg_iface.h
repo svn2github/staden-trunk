@@ -145,6 +145,14 @@ typedef struct {
 
 typedef struct {
     STANDARD_IFACE
+} io_contig_block;
+
+typedef struct {
+    STANDARD_IFACE
+} io_scaffold_block;
+
+typedef struct {
+    STANDARD_IFACE
 } io_anno_ele_block;
 
 typedef enum io_opt {OPT_COMP_MODE, OPT_DEBUG_LEVEL} io_opt;
@@ -173,6 +181,8 @@ typedef struct {
     io_library        library;
     io_vector         vector;
     io_seq_block      seq_block;
+    io_contig_block   contig_block;
+    io_scaffold_block scaffold_block;
     io_anno_ele_block anno_ele_block;
 } iface;
 

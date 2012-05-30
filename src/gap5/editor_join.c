@@ -972,6 +972,10 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     binr->flags |= BIN_BIN_UPDATED;
 #endif
 
+    cl->nseqs += cr->nseqs;
+    cl->nanno += cr->nanno;
+    cl->nrefpos += cr->nrefpos;
+
     cache_decr(io, binp);
     cache_decr(io, binl);
     cache_decr(io, binr);

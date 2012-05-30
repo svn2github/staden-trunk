@@ -723,7 +723,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
       break;
 
     case GET_REC:
-	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), ci_ptr(tc->contig)->rec);
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), tc->contig->rec);
 	break;
 
     case GET_START:
@@ -1125,12 +1125,17 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case NSEQS: {
 	int nseqs;
-	if (!tc->contig->bin) {
-	    nseqs = 0;
+	if (DB_VERS(tc->io) >= 5) {
+	    nseqs = tc->contig->nseqs;
 	} else {
-	    bin_index_t *bin;
-	    bin = (bin_index_t *)cache_search(tc->io, GT_Bin, tc->contig->bin);
-	    nseqs = bin->nseqs;
+	    if (!tc->contig->bin) {
+		nseqs = 0;
+	    } else {
+		bin_index_t *bin;
+		bin = (bin_index_t *)cache_search(tc->io, GT_Bin,
+						  tc->contig->bin);
+		nseqs = bin->nseqs;
+	    }
 	}
 
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(nseqs));
@@ -1139,12 +1144,17 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case NREFPOS: {
 	int nrefpos;
-	if (!tc->contig->bin) {
-	    nrefpos = 0;
+	if (DB_VERS(tc->io) >= 5) {
+	    nrefpos = tc->contig->nrefpos;
 	} else {
-	    bin_index_t *bin;
-	    bin = (bin_index_t *)cache_search(tc->io, GT_Bin, tc->contig->bin);
-	    nrefpos = bin->nrefpos;
+	    if (!tc->contig->bin) {
+		nrefpos = 0;
+	    } else {
+		bin_index_t *bin;
+		bin = (bin_index_t *)cache_search(tc->io, GT_Bin,
+						  tc->contig->bin);
+		nrefpos = bin->nrefpos;
+	    }
 	}
 
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(nrefpos));
@@ -1153,12 +1163,17 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case NANNO: {
 	int nanno;
-	if (!tc->contig->bin) {
-	    nanno = 0;
+	if (DB_VERS(tc->io) >= 5) {
+	    nanno = tc->contig->nanno;
 	} else {
-	    bin_index_t *bin;
-	    bin = (bin_index_t *)cache_search(tc->io, GT_Bin, tc->contig->bin);
-	    nanno = bin->nanno;
+	    if (!tc->contig->bin) {
+		nanno = 0;
+	    } else {
+		bin_index_t *bin;
+		bin = (bin_index_t *)cache_search(tc->io, GT_Bin,
+						  tc->contig->bin);
+		nanno = bin->nanno;
+	    }
 	}
 
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(nanno));

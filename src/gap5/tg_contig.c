@@ -1442,19 +1442,23 @@ int contig_shift_base(GapIO *io, contig_t **c, int pos, int dir) {
 
 contig_t *contig_new(GapIO *io, char *name) {
     tg_rec rec;
-    contig_t *c;
+    contig_t *c, init_c;
+
+    memset(&init_c, 0, sizeof(contig_t));
+    init_c.name = name;
 
     /* Allocate our contig */
-    rec = io->iface->contig.create(io->dbh, NULL);
+    //rec = io->iface->contig.create(io->dbh, NULL);
+    rec = cache_item_create(io, GT_Contig, &init_c);
 
     /* Initialise it */
     c = (contig_t *)cache_search(io, GT_Contig, rec);
     c = cache_rw(io, c);
     c->bin = bin_new(io, 0, io->min_bin_size, rec, GT_Contig);
     if (name)
-	contig_set_name(io, &c, name);
+        contig_set_name(io, &c, name);
     else
-	c->name = NULL;
+        c->name = NULL;
 
     /* Add it to the contig order too */
     io->contig_order = cache_rw(io, io->contig_order);
@@ -5268,4 +5272,36 @@ int contig_set_visible_start(GapIO *io, tg_rec contig, int pos) {
 	return -1;
 
     return move_contig(io, contig, pos - cstart);
+}
+
+
+/*
+ * Copies the nseq, nanno and nrefpos from the root bin to the contig
+ * struct.
+ *
+ * This can be necessary during algorithms that move data around, for example
+ * break_contig().
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int contig_fix_nseq(GapIO *io, contig_t *c) {
+    if (!c)
+	return -1;
+
+    if (c->bin) {
+	bin_index_t *bin = cache_search(io, GT_Bin, c->bin);
+	if (!bin)
+	    return -1;
+
+	c->nseqs = bin->nseqs;
+	c->nanno = bin->nanno;
+	c->nrefpos = bin->nrefpos;
+    } else {
+	c->nseqs = 0;
+	c->nanno = 0;
+	c->nrefpos = 0;
+    }
+    
+    return 0;
 }

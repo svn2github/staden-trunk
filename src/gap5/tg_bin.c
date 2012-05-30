@@ -504,6 +504,8 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
  *        -1 on failure
  */
 int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
+    contig_t *c;
+
     while (bin) {
 	if (!(bin = cache_rw(io, bin)))
 	    return -1;
@@ -519,6 +521,11 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
 	bin = get_bin(io, bin->parent);
     }
 
+    assert(bin->parent_type == GT_Contig);
+    c = cache_search(io, GT_Contig, bin->parent);
+    c = cache_rw(io, c);
+    c->nseqs += n;
+
     return 0;
 }
 
@@ -531,6 +538,8 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
  *        -1 on failure
  */
 int bin_incr_nrefpos(GapIO *io, bin_index_t *bin, int n) {
+    contig_t *c;
+
     while (bin) {
 	if (!(bin = cache_rw(io, bin)))
 	    return -1;
@@ -546,6 +555,11 @@ int bin_incr_nrefpos(GapIO *io, bin_index_t *bin, int n) {
 	bin = get_bin(io, bin->parent);
     }
 
+    assert(bin->parent_type == GT_Contig);
+    c = cache_search(io, GT_Contig, bin->parent);
+    c = cache_rw(io, c);
+    c->nrefpos += n;
+
     return 0;
 }
 
@@ -558,6 +572,8 @@ int bin_incr_nrefpos(GapIO *io, bin_index_t *bin, int n) {
  *        -1 on failure
  */
 int bin_incr_nanno(GapIO *io, bin_index_t *bin, int n) {
+    contig_t *c;
+
     while (bin) {
 	if (!(bin = cache_rw(io, bin)))
 	    return -1;
@@ -572,6 +588,11 @@ int bin_incr_nanno(GapIO *io, bin_index_t *bin, int n) {
 
 	bin = get_bin(io, bin->parent);
     }
+
+    assert(bin->parent_type == GT_Contig);
+    c = cache_search(io, GT_Contig, bin->parent);
+    c = cache_rw(io, c);
+    c->nanno += n;
 
     return 0;
 }
@@ -627,139 +648,6 @@ static tg_rec last_bin = 0;
 static int incr_svalue = 0;
 static int incr_rvalue = 0;
 static int incr_avalue = 0;
-#if 0
-bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
-			   range_t **r_out, int *complemented,
-			   int delay_nseq) {
-
-    bin_index_t *bin;
-    range_t *r2;
-    int nr, offset, comp;
-
-    /* Tidy-up operation when adding ranges in bulk */
-    if (delay_nseq == -1) {
-	if (last_bin && (incr_svalue || incr_rvalue)) {
-	    bin = cache_search(io, GT_Bin, last_bin);
-	    bin_incr_nseq(io, bin, incr_svalue);
-	    bin_incr_nrefpos(io, bin, incr_rvalue);
-	    bin_incr_nanno(io, bin, incr_avalue);
-	}
-	last_bin = 0;
-	incr_svalue = incr_rvalue = incr_avalue = 0;
-
-	return NULL;
-    }
-
-    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-	if (contig_get_start(c) == contig_get_end(c)
-	    && contig_get_start(c) == 0) {
-	    contig_set_start(io, c, r->start);
-	    contig_set_end(io, c, r->end);
-	}
-	if (contig_get_start(c) > r->start)
-	    contig_set_start(io, c, r->start);
-
-	if (contig_get_end(c) < r->end)
-	    contig_set_end(io, c, r->end);
-    }
-
-    if (!(bin = bin_for_range(io, c, r->start, r->end, 1, &offset,
-			      &comp))) //complemented)))
-	return NULL;
-
-    if (complemented)
-	*complemented = comp;
-
-    if (!(bin = cache_rw(io, bin)))
-	return NULL;
-
-    /* Adjust start/end used in bin */
-    if (!bin_empty(bin)) {
-	if (comp) {
-	    if (bin->start_used > bin->size-1 - (r->end - offset))
-		bin->start_used = bin->size-1 - (r->end - offset);
-	    if (bin->end_used   < bin->size-1 - (r->start - offset))
-		bin->end_used   = bin->size-1 - (r->start - offset);
-	} else {
-	    if (bin->start_used > r->start - offset)
-		bin->start_used = r->start - offset;
-	    if (bin->end_used   < r->end - offset)
-		bin->end_used   = r->end - offset;
-	}
-    } else {
-	/* Initial case */
-	if (comp) {
-	    bin->start_used = bin->size-1 - (r->end - offset);
-	    bin->end_used   = bin->size-1 - (r->start - offset);
-	} else {
-	    bin->start_used = r->start - offset;
-	    bin->end_used   = r->end - offset;
-	}
-    }
-    
-    /* Update Range array */
-    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
-    bin->flags &= ~BIN_CONS_VALID;
-    if (!bin->rng)
-	bin->rng = ArrayCreate(sizeof(range_t), 0);
-
-    nr = next_range(io, bin);
-    r2 = arrp(range_t, bin->rng, nr);
-
-    *r2 = *r; /* struct copy */
-    r2->start -= offset;
-    r2->end -= offset;
-
-    if (comp) {
-	int tmp = r2->start;
-	r2->start = bin->size-1 - r2->end;
-	r2->end   = bin->size-1 - tmp;
-    }
-
-    if (r_out)
-	*r_out = r2;
-
-    /* Update nseq in bins, delaying this to avoid needless writes */
-    if (delay_nseq == 1 && bin->rec != last_bin
-	&& (incr_svalue || incr_rvalue)) {
-	bin_index_t *b2 = cache_search(io, GT_Bin, last_bin);
-	bin_incr_nseq(io, b2, incr_svalue);
-	bin_incr_nrefpos(io, b2, incr_rvalue);
-	bin_incr_nanno(io, b2, incr_avalue);
-	incr_svalue = incr_rvalue = incr_avalue = 0;
-	last_bin = bin->rec;
-    }
-
-    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
-	if (delay_nseq == 0) {
-	    bin_incr_nseq(io, bin, 1);
-	} else {
-	    incr_svalue++;
-	    last_bin = bin->rec;
-	}
-    }
-
-    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
-	if (delay_nseq == 0) {
-	    bin_incr_nrefpos(io, bin, 1);
-	} else {
-	    incr_rvalue++;
-	    last_bin = bin->rec;
-	}
-    }
-
-    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	if (delay_nseq == 0) {
-	    bin_incr_nanno(io, bin, 1);
-	} else {
-	    incr_avalue++;
-	    last_bin = bin->rec;
-	}
-    }
-
-    return bin;
-}
-#endif
 
 /*
  * As per bin_add_range() but add the range to a specific bin.
@@ -783,6 +671,7 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
     /* Tidy-up operation when adding ranges in bulk */
     if (delay_nseq == -1) {
 	if (last_bin && (incr_svalue || incr_rvalue)) {
+	    if (c) *c = cache_rw(io, *c);
 	    bin = cache_search(io, GT_Bin, last_bin);
 	    bin_incr_nseq(io, bin, incr_svalue);
 	    bin_incr_nrefpos(io, bin, incr_rvalue);
@@ -882,6 +771,7 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
     if (delay_nseq == 1 && bin->rec != last_bin
 	&& (incr_svalue || incr_rvalue)) {
 	bin_index_t *b2 = cache_search(io, GT_Bin, last_bin);
+	if (c) *c = cache_rw(io, *c);
 	bin_incr_nseq(io, b2, incr_svalue);
 	bin_incr_nrefpos(io, b2, incr_rvalue);
 	bin_incr_nanno(io, b2, incr_avalue);
@@ -891,6 +781,7 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 
     if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	if (delay_nseq == 0) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nseq(io, bin, 1);
 	} else {
 	    incr_svalue++;
@@ -900,6 +791,7 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 
     if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
 	if (delay_nseq == 0) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nrefpos(io, bin, 1);
 	} else {
 	    incr_rvalue++;
@@ -909,6 +801,7 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 
     if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	if (delay_nseq == 0) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nanno(io, bin, 1);
 	} else {
 	    incr_avalue++;
@@ -1165,14 +1058,20 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	bin->rng_free = bin_idx;
 	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
-	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nseq(io, bin, -1);
+	}
 
-	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nrefpos(io, bin, -1);
+	}
 
-	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nanno(io, bin, -1);
+	}
     }
 
     /*
@@ -1334,14 +1233,20 @@ int fast_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	bin->rng_free = bin_idx;
 	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
-	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nseq(io, bin, -1);
+	}
 
-	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS)
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nrefpos(io, bin, -1);
+	}
 
-	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	    *c = cache_rw(io, *c);
 	    bin_incr_nanno(io, bin, -1);
+	}
     }
 
     return 0;

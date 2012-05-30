@@ -1527,6 +1527,12 @@ static int io_database_disconnect(void *dbh) {
 	fprintf(io->debug_fp, "GT_AnnoEleBlock \t%7d\t%14d\t%7d\t%14d\n",
 		wrcounts[GT_AnnoEleBlock], wrstats[GT_AnnoEleBlock],
 		rdcounts[GT_AnnoEleBlock], rdstats[GT_AnnoEleBlock]);
+	fprintf(io->debug_fp, "GT_ContigBlock         \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_ContigBlock], wrstats[GT_ContigBlock],
+		rdcounts[GT_ContigBlock], rdstats[GT_ContigBlock]);
+	fprintf(io->debug_fp, "GT_ScaffoldBlock \t%7d\t%14d\t%7d\t%14d\n",
+		wrcounts[GT_ScaffoldBlock], wrstats[GT_ScaffoldBlock],
+		rdcounts[GT_ScaffoldBlock], rdstats[GT_ScaffoldBlock]);
     }
 
     free(io);
@@ -1535,6 +1541,10 @@ static int io_database_disconnect(void *dbh) {
 }
 
 
+/*
+ * Format 1: original
+ *        2: with scaffold_order
+ */
 static cached_item *io_database_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
     database_t *db;
@@ -1542,7 +1552,8 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
     GView v;
     unsigned char *buf, *cp;
     size_t buf_len;
-    uint32_t nitems, i32;
+    uint32_t nitems;
+    uint64_t i64;
     int fmt;
 
     /* Load from disk */
@@ -1555,7 +1566,7 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 
     fmt = cp[1] & 0x3f;
     g_assert(cp[0] == GT_Database, NULL);
-    g_assert(fmt <= 1, NULL); /* initial format */
+    g_assert(fmt <= 2, NULL); /* initial format */
     cp += 2;
 
     if (fmt == 0) {
@@ -1569,11 +1580,18 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 
     cp += u72int(cp, (uint32_t *)&db->version);
     cp += u72int(cp, (uint32_t *)&db->Ncontigs);
-    cp += u72int(cp, &i32); db->contig_order = i32;
+    cp += u72intw(cp, &i64); db->contig_order = i64;
     cp += u72int(cp, (uint32_t *)&db->Nlibraries);
-    cp += u72int(cp, &i32); db->library = i32;
-    cp += u72int(cp, &i32); db->seq_name_index = i32;
-    cp += u72int(cp, &i32); db->contig_name_index = i32;
+    cp += u72intw(cp, &i64); db->library = i64;
+    cp += u72intw(cp, &i64); db->seq_name_index = i64;
+    cp += u72intw(cp, &i64); db->contig_name_index = i64;
+    if (fmt >= 2) {
+	cp += u72int(cp, (uint32_t *)&db->Nscaffolds);
+	cp += u72intw(cp, &i64); db->scaffold_order = i64;
+    } else {
+	db->Nscaffolds = 0;
+	db->scaffold_order = 0;
+    }
 
     g_assert(cp-buf == buf_len, NULL);
     free(buf);
@@ -1623,7 +1641,7 @@ static int io_database_write_view(g_io *io, database_t *db, GView v) {
 
     /* Construct the on-disc format */
     *cp++ = GT_Database;
-    *cp++ = 1; /* format */
+    *cp++ = (db->scaffold_order && io->db_vers >= 5) ? 2 : 1; /* format */
 
     cp += int2u7(db->version, cp);
     cp += int2u7(db->Ncontigs, cp);
@@ -1632,6 +1650,10 @@ static int io_database_write_view(g_io *io, database_t *db, GView v) {
     cp += intw2u7(db->library, cp);
     cp += intw2u7(db->seq_name_index, cp);
     cp += intw2u7(db->contig_name_index, cp);
+    if (db->scaffold_order && io->db_vers >= 5) {
+	cp += int2u7(db->Nscaffolds, cp);
+	cp += intw2u7(db->scaffold_order, cp);
+    }
     
     /* Write it out */
     if (-1 == g_write(io, v, buf, cp-buf))
@@ -1663,6 +1685,8 @@ static tg_rec io_database_create(void *dbh, void *from, int version) {
     GView v;
     database_t db;
 
+    io->db_vers = version;
+
     /* init_db is only called on a blank database => first record is 0 */
     assert(db_rec == 0);
 
@@ -1676,6 +1700,9 @@ static tg_rec io_database_create(void *dbh, void *from, int version) {
     //	return -1;
     g_flush(io, v);
     unlock(io, v);
+
+    /* Scaffold order - TODO */
+    db.scaffold_order = 0;
 
     /* Libraries */
     db.Nlibraries = 0;
@@ -1813,6 +1840,15 @@ static cached_item *io_contig_read(void *dbh, tg_rec rec) {
     memcpy(c->name, cp, nlen);
     c->name[nlen] = 0;
 
+    /* Unused in older DB formats */
+    c->scaffold = 0;
+    c->block = NULL;
+    c->idx = 0;
+    c->flags = 0;
+    c->nseqs = 0;
+    c->nanno = 0;
+    c->nrefpos = 0;
+
     free(ch);
 
     return ci;
@@ -1883,6 +1919,13 @@ static tg_rec io_contig_create(void *dbh, void *vfrom) {
 	c.start = c.end = 0;
 	c.bin = 0;
 	c.name = NULL;
+	c.scaffold = 0;
+	c.block = NULL;
+	c.idx = 0;
+	c.flags = 0;
+	c.nseqs = 0;
+	c.nanno = 0;
+	c.nrefpos = 0;
 	io_contig_write_view(io, &c, v);
     }
     unlock(io, v);
@@ -4848,7 +4891,323 @@ static tg_rec io_seq_block_create(void *dbh, void *vfrom) {
 
 
 /* ------------------------------------------------------------------------
- * seq_block access methods
+ * contig_block access methods
+ */
+
+static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
+    g_io *io = (g_io *)dbh;
+    GView v;
+    cached_item *ci;
+    contig_block_t *b;
+    unsigned char *buf, *cp;
+    size_t buf_len;
+    contig_t in[CONTIG_BLOCK_SZ];
+    int i;
+    int32_t s32;
+    uint64_t last, i64;
+    int name_len[CONTIG_BLOCK_SZ];
+    int fmt;
+
+    /* Load from disk */
+    if (-1 == (v = lock(io, rec, G_LOCK_RO)))
+	return NULL;
+
+    if (!(ci = cache_new(GT_ContigBlock, rec, v, NULL, sizeof(*b))))
+	return NULL;
+
+    b = (contig_block_t *)&ci->data;
+    cp = buf = (unsigned char *)g_read_alloc((g_io *)dbh, v, &buf_len);
+
+    if (!buf_len) {
+	memset(&b->contig[0],  0, CONTIG_BLOCK_SZ*sizeof(b->contig[0]));
+	free(buf);
+	return ci;
+    }
+
+    g_assert(buf[0] == GT_ContigBlock, NULL);
+    fmt = buf[1] & 0x3f;
+    g_assert(fmt < 1, NULL); /* Format */
+
+    rdstats[GT_ContigBlock] += buf_len;
+    rdcounts[GT_ContigBlock]++;
+
+    /* Ungzip it too */
+    if (1) {
+	size_t ssz;
+	int comp_mode = ((unsigned char)buf[1]) >> 6;
+	buf = (unsigned char *)mem_inflate(comp_mode,
+					   (char *)buf+2, buf_len-2, &ssz);
+	free(cp);
+	cp = buf;
+	buf_len = ssz;
+    }
+
+    /* Decode the fixed size components of our sequence structs */
+    /* Bin, 0 => unused entry */
+    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+	cp += u72intw(cp, &i64);
+	in[i].bin = i64;
+    }
+
+    /* Start */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += s72int(cp, (int32_t *)&in[i].start);
+    }
+
+    /* End */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += s72int(cp, (int32_t *)&in[i].end);
+    }
+
+    /* Clipped start */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += s72int(cp, &s32);
+	in[i].clipped_start = (in[i].flags & CONTIG_FLAG_CLIPPED_VALID)
+	    ? in[i].start + s32 : 0;
+    }
+
+    /* Clipped end */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += s72int(cp, &s32);
+	in[i].clipped_end = (in[i].flags & CONTIG_FLAG_CLIPPED_VALID)
+	    ? in[i].end - s32 : 0;
+    }
+
+    /* Scaffold */
+    for (last = i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	int64_t tmp;
+	if (!in[i].bin) continue;
+	cp += s72intw(cp, &tmp);
+	in[i].scaffold = last + tmp;
+	last = in[i].scaffold;
+    }
+
+    /* Flags */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, (uint32_t *)&in[i].flags);
+    }
+
+    /* Nseqs */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, (uint32_t *)&in[i].nseqs);
+    }
+
+    /* NAnno */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, (uint32_t *)&in[i].nanno);
+    }
+
+    /* NRefPos */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, (uint32_t *)&in[i].nrefpos);
+    }
+
+    /* Name length */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, (uint32_t *)&name_len[i]);
+    }
+
+
+    /* Convert our static structs to cached_items */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (in[i].bin) {
+	    cached_item *si;
+	    size_t extra_len;
+
+	    extra_len = sizeof(contig_t) + name_len[i];
+	    if (!(si = cache_new(GT_Contig, 0, 0, NULL, extra_len)))
+		return NULL;
+
+	    b->contig[i]  = (contig_t *)&si->data;
+	    in[i].rec = ((tg_rec)rec << ANNO_ELE_BLOCK_BITS) + i;
+	    *b->contig[i] = in[i];
+	    b->contig[i]->block = b;
+	    b->contig[i]->idx = i;
+	    b->contig[i]->name = (char *)&b->contig[i]->data;
+	} else {
+	    b->contig[i] = NULL;
+	}
+    }
+
+
+    /* Decode variable sized components */
+    /* Name */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	memcpy(b->contig[i]->name, cp, name_len[i]);
+	b->contig[i]->name[name_len[i]] = 0;
+	cp += name_len[i];
+    }
+
+    g_assert(cp - buf == buf_len, NULL);
+    free(buf);
+
+    return ci;
+}
+
+static int io_contig_block_write(void *dbh, cached_item *ci) {
+    int err;
+    g_io *io = (g_io *)dbh;
+    contig_block_t *b = (contig_block_t *)&ci->data;
+    int i;
+    unsigned char *cp, *cp_start;
+    unsigned char *out[12], *out_start[12];
+    size_t out_size[12], total_size;
+    GIOVec vec[2];
+    char fmt[2];
+    int nparts = 12;
+    tg_rec last_scaffold_rec;
+
+    assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
+    check_view_rec(io, ci);
+
+    /* Compute worst-case sizes, for memory allocation */
+    for (i = 0; i < nparts; i++) {
+	out_size[i] = 0;
+    }
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	contig_t *c = b->contig[i];
+	if (!c) {
+	    out_size[0]++;
+	    continue;
+	}
+
+	out_size[ 0] += 10;/* bin */
+	out_size[ 1] += 5; /* start */
+	out_size[ 2] += 5; /* end */
+	out_size[ 3] += 5; /* clipped_start */
+	out_size[ 4] += 5; /* clipped_end */
+	out_size[ 5] += 10;/* scaffold rec */
+	out_size[ 6] += 5; /* flags */
+	out_size[ 7] += 5; /* nseqs */
+	out_size[ 8] += 5; /* nanno */
+	out_size[ 9] += 5; /* nrefpos */
+	out_size[10] += 5; /* name length */
+	out_size[11] += c->name ? strlen(c->name) : 0; /* name */
+    }
+    for (i = 0; i < nparts; i++)
+	out_start[i] = out[i] = malloc(out_size[i]+1);
+    
+    /* serialised contigs */
+    last_scaffold_rec = 0;
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	tg_rec delta;
+	int32_t s32;
+	contig_t *c = b->contig[i];
+
+	if (!c) {
+	    *out[0]++=0; /* signifies contig not present */
+	    continue;
+	}
+
+	/* Fixed sized data */
+	out[0] += intw2u7(c->bin, out[0]);
+	out[1] += int2s7(c->start, out[1]);
+	out[2] += int2s7(c->end, out[2]);
+
+	s32 = (c->flags & CONTIG_FLAG_CLIPPED_VALID)
+	    ? c->clipped_start - c->start
+	    : 0;
+	out[3] += int2s7(s32, out[3]);
+
+	s32 = (c->flags & CONTIG_FLAG_CLIPPED_VALID)
+	    ? c->end - c->clipped_end
+	    : 0;
+	out[4] += int2s7(s32, out[4]);
+
+	delta = c->scaffold - last_scaffold_rec;
+	last_scaffold_rec = c->scaffold;
+	out[5] += intw2s7(delta, out[5]);
+
+	out[6] += int2u7(c->flags,   out[6]);
+	out[7] += int2u7(c->nseqs,   out[7]);
+	out[8] += int2u7(c->nanno,   out[8]);
+	out[9] += int2u7(c->nrefpos, out[9]);
+
+	if (c->name && *c->name) {
+	    size_t name_len = strlen(c->name);
+	    out[10] += int2u7(name_len, out[10]);
+	    memcpy(out[11], c->name, name_len);
+	    out[11] += name_len;
+	} else {
+	    out[10] += int2u7(0, out[10]);
+	}
+    }
+
+    /* Concatenate data types together and adjust out_size to actual usage */
+    for (total_size = i = 0; i < nparts; i++) {
+	out_size[i] = out[i] - out_start[i];
+	total_size += out_size[i];
+    }
+    cp = cp_start = malloc(total_size+1);
+    for (i = 0; i < nparts; i++) {
+	memcpy(cp, out_start[i], out_size[i]);
+	cp += out_size[i];
+	free(out_start[i]);
+    }
+    assert(cp - cp_start == total_size);
+
+    /* Gzip it too */
+    if (1) {
+	unsigned char *gzout;
+	size_t ssz;
+
+	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
+	gzout = (unsigned char *)mem_deflate_parts(io->comp_mode,
+						   (char *)cp_start,
+						   out_size, nparts,
+						   &ssz);
+	free(cp_start);
+	cp_start = gzout;
+	cp = cp_start + ssz;
+    }
+
+    /* Finally write the serialised data block */
+    fmt[0] = GT_ContigBlock;
+    fmt[1] = 0;
+    vec[0].buf = fmt;      vec[0].len = 2;
+    vec[1].buf = cp_start; vec[1].len = cp - cp_start;
+
+    assert(ci->lock_mode >= G_LOCK_RW);
+    wrstats[GT_ContigBlock] += cp-cp_start + 2;
+    wrcounts[GT_ContigBlock]++;
+    err = g_writev(io, ci->view, vec, 2);
+    if (err == 0)
+	g_flush(io, ci->view);
+    
+    free(cp_start);
+
+    return err ? -1 : 0;
+}
+
+static tg_rec io_contig_block_create(void *dbh, void *vfrom) {
+    g_io *io = (g_io *)dbh;
+    tg_rec rec;
+    GView v;
+
+    rec = allocate(io, GT_SeqBlock);
+    v = lock(io, rec, G_LOCK_EX);
+
+    /* Write blank data here? */
+
+    unlock(io, v);
+    
+    return rec;
+}
+
+
+/* ------------------------------------------------------------------------
+ * anno_ele_block access methods
  */
 static cached_item *io_anno_ele_block_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
@@ -5320,6 +5679,32 @@ static iface iface_g = {
 	io_generic_abandon,
 	io_seq_block_read,
 	io_seq_block_write,
+	io_generic_info,
+    },
+
+    {
+	/* Contig_block */
+	io_contig_block_create,
+	io_generic_destroy,
+	io_generic_lock,
+	io_generic_unlock,
+	io_generic_upgrade,
+	io_generic_abandon,
+	io_contig_block_read,
+	io_contig_block_write,
+	io_generic_info,
+    },
+
+    {
+	/* Scaffold_block */
+	0, //io_scaffold_block_create,
+	io_generic_destroy,
+	io_generic_lock,
+	io_generic_unlock,
+	io_generic_upgrade,
+	io_generic_abandon,
+	0, //io_scaffold_block_read,
+	0, //io_scaffold_block_write,
 	io_generic_info,
     },
 
