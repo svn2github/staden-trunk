@@ -670,7 +670,7 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 
     /* Tidy-up operation when adding ranges in bulk */
     if (delay_nseq == -1) {
-	if (last_bin && (incr_svalue || incr_rvalue)) {
+	if (last_bin && (incr_svalue || incr_rvalue || incr_avalue)) {
 	    if (c) *c = cache_rw(io, *c);
 	    bin = cache_search(io, GT_Bin, last_bin);
 	    bin_incr_nseq(io, bin, incr_svalue);
@@ -769,7 +769,7 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 
     /* Update nseq in bins, delaying this to avoid needless writes */
     if (delay_nseq == 1 && bin->rec != last_bin
-	&& (incr_svalue || incr_rvalue)) {
+	&& (incr_svalue || incr_rvalue || incr_avalue)) {
 	bin_index_t *b2 = cache_search(io, GT_Bin, last_bin);
 	if (c) *c = cache_rw(io, *c);
 	bin_incr_nseq(io, b2, incr_svalue);
