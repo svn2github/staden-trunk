@@ -1708,8 +1708,12 @@ proc editor_group_by {w} {
 	    $ed configure -group_by_secondary 0
 	}
 	
-	$ed set_sort_order 
-	$ed redraw
+	if {$opt(GroupByPrimary) && $opt(GroupPrimary) == 7} {
+	    editor_sort_by_sequence $ed
+	} else {
+	    $ed set_sort_order 
+	    $ed redraw
+	}
     }
 }
 
@@ -1737,6 +1741,21 @@ proc order_update_on_consensus {w} {
 }
 
 
+# if there is a new selection and group by sequence
+# is chosen then sort.
+proc editor_new_select_sort {w} {
+    global $w
+    
+    set tl [winfo toplevel $w]
+    upvar \#0 $tl opt
+
+    if {$opt(GroupByPrimary) && $opt(GroupPrimary) == 7} {
+    	editor_sort_by_sequence $w
+    }
+}
+    
+
+
 proc editor_sort_by_sequence {w} {
     set w2 [selection own]
     
@@ -1750,6 +1769,10 @@ proc editor_sort_by_sequence {w} {
     }
     
     foreach {otype orec start end} [$w2 select get] break
+    
+    if {$start == $end} {
+    	return
+    }
     
     set tl [winfo toplevel $w2]
     
@@ -4511,7 +4534,7 @@ bind Editor <Shift-Control-Key-Prior>   {%W xview scroll -100000 units}
 # Selection control for adding tags
 bind Editor <<select-drag>> {%W select to @%x; editor_select_scroll %W %x}
 bind Editor <<select-to>>   {%W select to @%x}
-bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
+bind Editor <<select-release>>	{editor_autoscroll_cancel %W; editor_new_select_sort %W}
 bind EdNames <2> {editor_name_select %W [%W get_number @%x @%y] 1}
 
 bind EdNames <<select>> {
