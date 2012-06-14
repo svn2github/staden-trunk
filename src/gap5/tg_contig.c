@@ -2231,7 +2231,7 @@ int find_string_match_values(GapIO *io, rangec_t *r, int count) {
 		// naive match scoring, +1 match, -1 mismatch, 0 for off the read end
 
 		if (seq[k] == base) {
-	    	    rn->seq_match++;
+	    	    rn->seq_match += 3;
 		} else if (base != '_') {
 	    	    rn->seq_match--;
 		}
