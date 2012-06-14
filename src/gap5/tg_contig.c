@@ -2043,8 +2043,16 @@ void contig_set_base_sort_point(int pos) {
 void contig_set_sequence_sort(int type, tg_rec rec, int start, int end) {
     sort_sequence_type  = type;
     sort_sequence_rec   = rec;
-    sort_sequence_start = start;
-    sort_sequence_end   = end;
+    
+    
+    if (start <= end) {
+    	sort_sequence_start = start;
+    	sort_sequence_end   = end;
+    } else {
+    	sort_sequence_start = end;
+    	sort_sequence_end   = start;
+    }
+    	
 }
 
 
