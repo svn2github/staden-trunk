@@ -2015,8 +2015,12 @@ static int simple_sort_range_by_tech_x(const void *v1, const void *v2) {
 static int simple_sort_by_sequence(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
     const rangec_t *r2 = (const rangec_t *)v2;
-
-    return r2->seq_match - r1->seq_match;
+    
+    if (r2->seq_match != r1->seq_match) {
+    	return r2->seq_match - r1->seq_match;
+    } else {
+    	return r2->seq_hash - r1->seq_hash;
+    }
 }
 
 
@@ -2044,6 +2048,9 @@ void contig_set_sequence_sort(int type, tg_rec rec, int start, int end) {
     sort_sequence_type  = type;
     sort_sequence_rec   = rec;
     
+    /* As it is possible to select from right to left
+       we need to make sure start is smaller than end.
+       (left to right select works as expected.) */        
     
     if (start <= end) {
     	sort_sequence_start = start;
@@ -2227,6 +2234,9 @@ int find_string_match_values(GapIO *io, rangec_t *r, int count) {
 
 	    k = 0;
 	    rn->seq_match = 0;
+	    
+	    // create a hash to group like sequences together
+	    rn->seq_hash = 1315423911;
 
 	    for (j = (c_start - rn->start); j <= (c_end - rn->start); j++) {
 		char base;
@@ -2236,19 +2246,24 @@ int find_string_match_values(GapIO *io, rangec_t *r, int count) {
 		    base = '_';
 		}
 		
-		// naive match scoring, +1 match, -1 mismatch, 0 for off the read end
-
+		// naive match scoring, +3 match, -1 mismatch, 0 for off the read end
+		
 		if (seq[k] == base) {
 	    	    rn->seq_match += 3;
 		} else if (base != '_') {
-	    	    rn->seq_match--;
+	    	    rn->seq_match --;
 		}
 
 		k++;
+		
+		rn->seq_hash ^= ((rn->seq_hash << 5) + base + (rn->seq_hash >> 2));
 	    }
+	    
+	    rn->seq_hash &= 0x0FFF;
 
 	} else {
-	   rn->seq_match = 0; 
+	   rn->seq_match = 0;
+	   rn->seq_hash  = 0; 
 	} 
     }
     
@@ -2693,6 +2708,8 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
 		(*results)[count].y = l->y;
 		(*results)[count].orig_rec = bin->rec;
 		(*results)[count].orig_ind = n;
+		(*results)[count].seq_match = 0;
+		(*results)[count].seq_hash  = 0;
 		count++;
 	    }
 	}

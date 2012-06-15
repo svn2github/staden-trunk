@@ -428,6 +428,7 @@ typedef struct {
     /* Derived fields, placed here to make sorting easier */
     int seq_tech;
     int seq_match; // for sorting by sequence
+    unsigned int seq_hash; // for grouping sequences
 
     tg_rec orig_rec; /* From bin record and index into bin->rng array. */
     int orig_ind;    /*    Used to update cached range_t->y field. */
