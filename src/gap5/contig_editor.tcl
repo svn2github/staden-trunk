@@ -751,10 +751,10 @@ proc contig_editor {w args} {
     set opt(PosType)	      [keylget gap5_defs CONTIG_EDITOR.POS_TYPE]
     set opt(HideAnno)         0
     set opt(Status)           "--- Status info here ---"
-    set opt(GroupByPrimary)   1
-    set opt(GroupBySecondary) 1
-    set opt(GroupPrimary)     1
-    set opt(GroupSecondary)   3
+    set opt(GroupByPrimary)   [keylget gap5_defs CONTIG_EDITOR.GROUP_BY_PRIMARY]
+    set opt(GroupBySecondary) [keylget gap5_defs CONTIG_EDITOR.GROUP_BY_SECONDARY]
+    set opt(GroupPrimary)     [keylget gap5_defs CONTIG_EDITOR.GROUP_PRIMARY]
+    set opt(GroupSecondary)   [keylget gap5_defs CONTIG_EDITOR.GROUP_SECONDARY]
 
     set opt(io_base) $opt(-io)
     set opt(io) [io_child $opt(-io) $opt(-contig)]
@@ -4173,16 +4173,20 @@ proc save_editor_settings {w} {
     set ed_hei [lindex [$ed configure -height] 4]
 
     set C CONTIG_EDITOR
-    keylset gap5_defs $C.DISAGREEMENTS    $opt(Disagreements)
-    keylset gap5_defs $C.DISAGREE_MODE    $opt(DisagreeMode)
-    keylset gap5_defs $C.DISAGREE_CASE    $opt(DisagreeCase)
-    keylset gap5_defs $C.DISAGREE_QUAL    $opt(DisagreeQuality)
-    keylset gap5_defs $C.PACK_SEQUENCES   $opt(PackSequences)
-    keylset gap5_defs $C.SHOW_QUALITY     $opt(Quality)
-    keylset gap5_defs $C.SHOW_CUTOFFS     $opt(Cutoffs)
-    keylset gap5_defs $C.NAMES_WIDTH      $name_wid
-    keylset gap5_defs $C.MAX_HEIGHT	  $ed_hei
-    keylset gap5_defs $C.SEQ_WIDTH	  $ed_wid
+    keylset gap5_defs $C.DISAGREEMENTS      $opt(Disagreements)
+    keylset gap5_defs $C.DISAGREE_MODE      $opt(DisagreeMode)
+    keylset gap5_defs $C.DISAGREE_CASE      $opt(DisagreeCase)
+    keylset gap5_defs $C.DISAGREE_QUAL      $opt(DisagreeQuality)
+    keylset gap5_defs $C.PACK_SEQUENCES     $opt(PackSequences)
+    keylset gap5_defs $C.SHOW_QUALITY       $opt(Quality)
+    keylset gap5_defs $C.SHOW_CUTOFFS       $opt(Cutoffs)
+    keylset gap5_defs $C.NAMES_WIDTH        $name_wid
+    keylset gap5_defs $C.MAX_HEIGHT	    $ed_hei
+    keylset gap5_defs $C.SEQ_WIDTH	    $ed_wid
+    keylset gap5_defs $C.GROUP_BY_PRIMARY   $opt(GroupByPrimary)
+    keylset gap5_defs $C.GROUP_BY_SECONDARY $opt(GroupBySecondary)
+    keylset gap5_defs $C.GROUP_PRIMARY      $opt(GroupPrimary)
+    keylset gap5_defs $C.GROUP_SECONDARY    $opt(GroupSecondary)
 
     # Write to the .gaprc file
     update_defs gap5_defs $env(HOME)/.gap5rc \
@@ -4195,7 +4199,11 @@ proc save_editor_settings {w} {
 	$C.SHOW_CUTOFFS     \
 	$C.NAMES_WIDTH	    \
 	$C.MAX_HEIGHT       \
-	$C.SEQ_WIDTH
+	$C.SEQ_WIDTH	    \
+    	$C.GROUP_BY_PRIMARY  	\
+    	$C.GROUP_BY_SECONDARY 	\
+    	$C.GROUP_PRIMARY    	\
+    	$C.GROUP_SECONDARY
 }
 
 #-----------------------------------------------------------------------------
