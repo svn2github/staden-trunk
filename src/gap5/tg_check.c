@@ -294,6 +294,8 @@ static int check_anno(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 					&acontig, &astart, &aend, NULL,
 					&abinrec, &r, NULL)) {
 	    cache_decr(io, a);
+	    vmessage("Anno %"PRIrec": failed in bin_get_item_position()\n",
+		     a->rec);
 	    return err+1;
 	}
 
@@ -313,6 +315,9 @@ static int check_anno(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 					    &ocontig, &ostart, &oend, NULL,
 					    &obinrec, NULL, NULL)) {
 		cache_decr(io, a);
+		vmessage("Anno %"PRIrec": failed in bin_get_item_position() "
+			 "while looking up obj %d/%"PRIrec"\n",
+			 a->rec, a->obj_type, a->obj_rec);
 		return err+1;
 	    }
 	}
@@ -1085,6 +1090,41 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 		}
 	    }
 	}
+
+	if (bin->parent == crec && io->db->version >= 5) {
+	    if (bin->nseqs != c->nseqs) {
+		vmessage("Contig %"PRIrec" nseqs does not match root bin\n",
+			 crec);
+		err++;
+		if (fix) {
+		    c = cache_rw(io, c);
+		    c->nseqs = bin->nseqs;
+		    if (fixed) (*fixed)++;
+		}
+	    }
+
+	    if (bin->nanno != c->nanno) {
+		vmessage("Contig %"PRIrec" nanno does not match root bin\n",
+			 crec);
+		err++;
+		if (fix) {
+		    c = cache_rw(io, c);
+		    c->nanno = bin->nanno;
+		    if (fixed) (*fixed)++;
+		}
+	    }
+
+	    if (bin->nrefpos != c->nrefpos) {
+		vmessage("Contig %"PRIrec" nseqs does not match root bin\n",
+			 crec);
+		err++;
+		if (fix) {
+		    c = cache_rw(io, c);
+		    c->nrefpos = bin->nrefpos;
+		    if (fixed) (*fixed)++;
+		}
+	    }
+	}
     }
 
     err += bin_walk(io, fix, c->bin, contig_offset(io, &c), 0, level,
@@ -1309,7 +1349,7 @@ int check_cache(GapIO *io) {
 		anno_ele_block_t *b2 = (anno_ele_block_t *)&ci2->data;
 		anno_ele_t *a1, *a2;
 
-		for (j = 0; j < SEQ_BLOCK_SZ; j++) {
+		for (j = 0; j < ANNO_ELE_BLOCK_SZ; j++) {
 		    if ((b1->ae[j] == NULL) != (b2->ae[j] == NULL)) {
 			mis++;
 			continue;
@@ -1334,6 +1374,44 @@ int check_cache(GapIO *io) {
 			    if (strcmp(a1->comment, a2->comment))
 				mis++;
 			} else if (a1->comment || a2->comment) {
+			    mis++;
+			}
+		    }
+		}
+		break;
+	    }
+
+	    case GT_ContigBlock: {
+		contig_block_t *b1 = (contig_block_t *)&ci->data;
+		contig_block_t *b2 = (contig_block_t *)&ci2->data;
+		contig_t *c1, *c2;
+
+		for (j = 0; j < CONTIG_BLOCK_SZ; j++) {
+		    if ((b1->contig[j] == NULL) != (b2->contig[j] == NULL)) {
+			mis++;
+			continue;
+		    }
+
+		    if (!b1->contig[j])
+			continue;
+
+		    c1 = b1->contig[j];
+		    c2 = b2->contig[j];
+
+		    if (c1->rec      != c2->rec ||
+			c1->start    != c2->start ||
+			c1->end      != c2->end ||
+			c1->bin      != c2->bin ||
+			c1->nseqs    != c2->nseqs ||
+			c1->nanno    != c2->nanno ||
+			c1->nrefpos  != c2->nrefpos) {
+			mis++;
+		    } else {
+			if (c1->name && c2->name) {
+			    if (strcmp(c1->name, c2->name))
+				mis++;
+			    
+			} else if (c1->name || c2->name) {
 			    mis++;
 			}
 		    }
