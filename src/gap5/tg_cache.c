@@ -2250,7 +2250,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 
 	    /* Already duplicated? */
 	    if (b->seq[os->idx]) {
-		sub_new = sub_ci;
+		sub_new = ci_ptr(b->seq[os->idx]);
 		break;
 	    }
 	    
@@ -2286,7 +2286,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 
 	    /* Already duplicated? */
 	    if (b->contig[oc->idx]) {
-		sub_new = sub_ci;
+		sub_new = ci_ptr(b->contig[oc->idx]);
 		break;
 	    }
 	    
@@ -2313,7 +2313,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 
 	    /* Already duplicated? */
 	    if (b->ae[oe->idx]) {
-		sub_new = sub_ci;
+		sub_new = ci_ptr(b->ae[oe->idx]);
 		break;
 	    }
 	    
