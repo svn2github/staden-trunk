@@ -1115,7 +1115,7 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 	    }
 
 	    if (bin->nrefpos != c->nrefpos) {
-		vmessage("Contig %"PRIrec" nseqs does not match root bin\n",
+		vmessage("Contig %"PRIrec" nrefpos does not match root bin\n",
 			 crec);
 		err++;
 		if (fix) {
