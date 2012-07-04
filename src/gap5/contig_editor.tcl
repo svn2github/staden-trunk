@@ -342,6 +342,7 @@ proc io_undo_exec {w crec cmdu} {
 		    $tag set_direction [string index "+-.?" $d(strand)]
 		}
 
+
 		if {[$tag get_obj_type] != $d(otype) || 
 		    [$tag get_obj_rec]  != $d(orec) || 
 		    [$tag get_position] != "$d(start) $d(end)"} {
@@ -2834,29 +2835,17 @@ proc editor_set_name2 {ed w} {
 	return
     }
 
-    if {[$io contig_name2rec $nm] > 0} {
-	bell
-	tk_messageBox -type ok -icon error -parent $w \
-	    -message "Contig name already exists"
-	return
-    }
-
-    destroy $w
-
     set c [$io get_contig [$ed contig_rec]]
     set old_name [$c get_name]
-    $c set_name $nm
+    $c delete
+
+    if {![rename_contig $io [$ed contig_rec] $nm $w]} {
+	return
+    }
 
     store_undo $ed \
 	[list \
 	     [list C_RENAME [$ed contig_rec] $old_name $nm]] {}
-
-    contig_notify \
-	-io $io \
-	-type RENAME \
-	-cnum [$ed contig_rec] \
-	-args [list name $nm]
-    $io flush
 }
 
 proc editor_template_display {ed} {

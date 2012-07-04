@@ -326,4 +326,42 @@ int move_contig(GapIO *io, tg_rec crec, int distance);
  */
 int contig_set_visible_start(GapIO *io, tg_rec contig, int pos);
 
+/*
+ * Copies the nseq, nanno and nrefpos from the root bin to the contig
+ * struct.
+ *
+ * This can be necessary during algorithms that move data around, for example
+ * break_contig().
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int contig_fix_nseq(GapIO *io, contig_t *c);
+
+/*
+ * Adds a bi-directional contig link.
+ * The data to link from/to is in the passed in abs_link. Coordinates here
+ * are all contig absolute coords.
+ *
+ * Internally this link gets created at both ends (rec1, rec2) and the
+ * positions are converted into relative coordinates. (The end1 and end2
+ * fields in abs_link are ignored and computed as required.)
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int contig_add_link(GapIO *io, contig_link_t *abs_link);
+
+/*
+ * Converts a specific link number from relative coordinates to absolute
+ * contig coordinates.
+ *
+ * Input is rel_link, output is abs_link.
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int contig_get_link_positions(GapIO *io,
+			      contig_link_t *rel_link,
+			      contig_link_t *abs_link);
+
 #endif /* _TG_CONTIG_H_ */

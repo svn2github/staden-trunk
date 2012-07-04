@@ -257,9 +257,17 @@ static int bin_write(GapIO *io, cached_item *ci) {
 }
 
 
+/*
+ * Contig callbacks
+ */
 static void contig_unload(GapIO *io, cached_item *ci, int unlock) {
+    contig_t *c = (contig_t *)&ci->data;
+
     if (ci->forgetme)
 	io->iface->contig.destroy(io->dbh, ci->rec, ci->view);
+
+    if (c->link)
+	ArrayDestroy(c->link);
 
     if (unlock)
 	io->iface->contig.unlock(io->dbh, ci->view);
@@ -273,15 +281,20 @@ static void contig_block_unload(GapIO *io, cached_item *ci, int unlock) {
     if (unlock)
 	io->iface->contig_block.unlock(io->dbh, ci->view);
 
-    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
 	if (b->contig[i]) {
-	    cached_item *si = ci_ptr(b->contig[i]);
+	    contig_t *c = b->contig[i];
+	    cached_item *si = ci_ptr(c);
+
+	    if (c->link)
+		ArrayDestroy(c->link);
 	    if (si)
 		free(si);
 	}
     }
     cache_free(ci);
 }
+
 
 /*
  * Writes a contig structure to disc.
@@ -297,6 +310,39 @@ static int contig_block_write(GapIO *io, cached_item *ci) {
     return io->iface->contig_block.write(io->dbh, ci);
 }
 
+
+/*
+ * Scaffold block calbacks
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+static void scaffold_block_unload(GapIO *io, cached_item *ci, int unlock) {
+    int i;
+    scaffold_block_t *b = (scaffold_block_t *)&ci->data;
+
+    if (unlock)
+	io->iface->scaffold_block.unlock(io->dbh, ci->view);
+
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	if (b->scaffold[i]) {
+	    if (b->scaffold[i]->contig)
+		free(b->scaffold[i]->contig);
+	    cached_item *si = ci_ptr(b->scaffold[i]);
+	    if (si)
+		free(si);
+	}
+    }
+    cache_free(ci);
+}
+
+static int scaffold_block_write(GapIO *io, cached_item *ci) {
+    return io->iface->scaffold_block.write(io->dbh, ci);
+}
+
+/*
+ * Array callbacks
+ */
 static int array_write(GapIO *io, cached_item *ci) {
     return io->iface->array.write(io->dbh, ci);
 }
@@ -420,6 +466,13 @@ void *cache_item_resize(void *item, size_t size) {
 	break;
     }
 
+    case GT_Scaffold: {
+	scaffold_t *f = (scaffold_t *)&new->data;
+	f->block->scaffold[f->idx] = f;
+	f->name = (char *)&f->data;
+	break;
+    }
+
     case GT_Contig: {
 	contig_t *c = (contig_t *)&new->data;
 	if (c->block) {
@@ -483,6 +536,10 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 
     case GT_ContigBlock:
 	ci = io->iface->contig_block.read(io->dbh, k->rec);
+	break;
+
+    case GT_ScaffoldBlock:
+	ci = io->iface->scaffold_block.read(io->dbh, k->rec);
 	break;
 
     case GT_RecArray:
@@ -609,6 +666,10 @@ static void cache_unload(void *clientdata, HacheData hd) {
 	contig_block_unload(io, ci, unlock);
 	break;
 
+    case GT_ScaffoldBlock:
+	scaffold_block_unload(io, ci, unlock);
+	break;
+
     case GT_RecArray:
 	array_unload(io, ci, unlock);
 	break;
@@ -723,6 +784,11 @@ int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
 	
     case GT_ContigBlock:
 	ret = io->iface->contig_block.upgrade(io->dbh, ci->view, mode);
+	ci->lock_mode = mode;
+	break;
+
+    case GT_ScaffoldBlock:
+	ret = io->iface->scaffold_block.upgrade(io->dbh, ci->view, mode);
 	ci->lock_mode = mode;
 	break;
 
@@ -911,6 +977,27 @@ int cache_flush(GapIO *io) {
 		    break;
 		}
 
+		case GT_ScaffoldBlock: {
+		    HacheItem *htmp;
+		    scaffold_block_t *bn = (scaffold_block_t *)&ci->data;
+		    scaffold_block_t *bo;
+		    int j;
+
+		    htmp = HacheTableSearch(io->base->cache,
+					    hi->key, hi->key_len);
+		    bo = (scaffold_block_t *)&((cached_item*)htmp->data.p)->data;
+
+		    for (j = 0; j < SCAFFOLD_BLOCK_SZ; j++) {
+			if (!bn->scaffold[j]) {
+			    bn->scaffold[j] = bo->scaffold[j];
+			    if (bn->scaffold[j])
+				bn->scaffold[j]->block = bn;
+			}
+		    }
+
+		    break;
+		}
+
 		case GT_AnnoEleBlock: {
 		    HacheItem *htmp;
 		    anno_ele_block_t *bn = (anno_ele_block_t *)&ci->data;
@@ -1078,6 +1165,10 @@ int cache_flush(GapIO *io) {
 	    ret = contig_block_write(io, ci);
 	    break;
 
+	case GT_ScaffoldBlock:
+	    ret = scaffold_block_write(io, ci);
+	    break;
+
 	case GT_Seq:
 	    ret = seq_write(io, ci);
 	    break;
@@ -1171,6 +1262,10 @@ int cache_flush(GapIO *io) {
 	   load_counts[GT_Contig],
 	   unload_counts[GT_Contig],
 	   write_counts[GT_Contig]);
+    printf("Scaffold     %d\t%d\t%d\n",
+	   load_counts[GT_Scaffold],
+	   unload_counts[GT_Scaffold],
+	   write_counts[GT_Scaffold]);
     printf("Seq          %d\t%d\t%d\n",
 	   load_counts[GT_Seq],
 	   unload_counts[GT_Seq],
@@ -1250,6 +1345,7 @@ int cache_flush(GapIO *io) {
 		    seq_block_t *sb;
 		    anno_ele_block_t *eb;
 		    contig_block_t *cb;
+		    scaffold_block_t *fb;
 		    cached_item *si;
 
 		case GT_SeqBlock:
@@ -1266,7 +1362,18 @@ int cache_flush(GapIO *io) {
 		case GT_ContigBlock:
 		    cb = (contig_block_t *)&ci->data;
 		    for (j = 0; j < CONTIG_BLOCK_SZ; j++) {
-			contig_t *c = sb->contig[j];
+			contig_t *c = cb->contig[j];
+			if (c) {
+			    si = ci_ptr(c);
+			    sz[ci->type] += sizeof(*si) + si->data_size + 8;
+			}
+		    }
+		    break;
+
+		case GT_ScaffoldBlock:
+		    fb = (scaffold_block_t *)&ci->data;
+		    for (j = 0; j < CONTIG_BLOCK_SZ; j++) {
+			scaffold_t *c = fb->scaffold[j];
 			if (c) {
 			    si = ci_ptr(c);
 			    sz[ci->type] += sizeof(*si) + si->data_size + 8;
@@ -1429,6 +1536,12 @@ void *cache_search(GapIO *io, int type, tg_rec rec) {
 	}
 	break;
 	
+    case GT_Scaffold:
+	sub_rec = rec & (SEQ_BLOCK_SZ-1);
+	rec >>= SCAFFOLD_BLOCK_BITS;
+	type = GT_ScaffoldBlock;
+	break;
+
     case GT_Seq:
 	sub_rec = rec & (SEQ_BLOCK_SZ-1);
 	rec >>= SEQ_BLOCK_BITS;
@@ -1489,7 +1602,23 @@ void *cache_search(GapIO *io, int type, tg_rec rec) {
 	} else {
 	    return b->contig[sub_rec];
 	}
+	break;
+    }
 
+    case GT_Scaffold: {
+	scaffold_block_t *b =
+	    (scaffold_block_t *)&((cached_item *)hi->data.p)->data;
+
+	/*
+	 * If this is a child I/O then it's possible this block has partial
+	 * data. Hence we look both here and also the parent I/O.
+	 */
+	if (!b->scaffold[sub_rec] && io->base) {
+	    return cache_search(io->base, otype, orec);
+	} else {
+	    return b->scaffold[sub_rec];
+	}
+	break;
     }
 
     case GT_AnnoEle: {
@@ -1533,6 +1662,12 @@ void *cache_search_no_load(GapIO *io, int type, tg_rec rec) {
 	type = GT_SeqBlock;
 	break;
 
+    case GT_Scaffold:
+	sub_rec = rec & (SCAFFOLD_BLOCK_SZ-1);
+	rec >>= SCAFFOLD_BLOCK_BITS;
+	type = GT_ScaffoldBlock;
+	break;
+
     case GT_Contig:
 	if (DB_VERS(io) >= 5) {
 	    sub_rec = rec & (CONTIG_BLOCK_SZ-1);
@@ -1567,6 +1702,13 @@ void *cache_search_no_load(GapIO *io, int type, tg_rec rec) {
 	    return b->seq[sub_rec];
 	}
 
+    case GT_Scaffold:
+	{
+	    scaffold_block_t *b =
+		(scaffold_block_t *)&((cached_item *)hi->data.p)->data;
+	    return b->scaffold[sub_rec];
+	}
+
     case GT_Contig:
 	{
 	    contig_block_t *b =
@@ -1598,8 +1740,13 @@ int cache_exists(GapIO *io, int type, int rec) {
 				rec >> CONTIG_BLOCK_BITS)
 	    : io->iface->exists(io->dbh, type, rec);
 
+    case GT_Scaffold:
+	return io->iface->exists(io->dbh, GT_ScaffoldBlock,
+				 rec >> SCAFFOLD_BLOCK_BITS);
+
     case GT_Seq:
-	return io->iface->exists(io->dbh, GT_SeqBlock, rec >> SEQ_BLOCK_BITS);
+	return io->iface->exists(io->dbh, GT_SeqBlock,
+				 rec >> SEQ_BLOCK_BITS);
 
     case GT_AnnoEle:
 	return io->iface->exists(io->dbh, GT_AnnoEleBlock,
@@ -1723,6 +1870,78 @@ static tg_rec cache_item_create_contig(GapIO *io, void *from) {
 }
 
 /*
+ * Creates a new scaffold_t item.
+ */
+static int cache_item_init_scaffold(GapIO *io, void *from, tg_rec rec) {
+    scaffold_t *c, *f = (scaffold_t *)from;
+    size_t clen = sizeof(scaffold_t) + strlen(f->name)+1;
+    cached_item *ci = cache_new(GT_Scaffold, 0, 0, NULL, clen);
+    tg_rec brec, sub_rec;
+    scaffold_block_t *b;
+    int i;
+
+    sub_rec = rec & (SCAFFOLD_BLOCK_SZ-1);
+    brec    = rec >> SCAFFOLD_BLOCK_BITS;
+
+    c = (scaffold_t *)&ci->data;
+    *c = *f;
+
+    if (f->contig) {
+	c->contig = ArrayCreate(sizeof(scaffold_member_t),
+				ArrayMax(f->contig));
+	memcpy(ArrayBase(scaffold_member_t, c->contig),
+	       ArrayBase(scaffold_member_t, f->contig),
+	       ArrayMax(f->contig) * sizeof(scaffold_member_t));
+    } else {
+	c->contig = ArrayCreate(sizeof(scaffold_member_t), 0);
+    }
+    c->name = (char *)&c->data;
+    strcpy(c->name, f->name ? f->name : "");
+
+
+    b = (scaffold_block_t *)cache_search(io, GT_ScaffoldBlock, brec);
+
+    c->rec = rec;
+    c->block = b;
+    c->idx = (int)sub_rec;
+    b->scaffold[sub_rec] = c;
+    b->est_size += 10 + ArrayMax(c->contig)*8;
+
+    return 0;
+}
+
+static tg_rec cache_item_create_scaffold(GapIO *io, void *from) {
+    static tg_rec brec = 0; /* FIXME: store and load from GDatabase? */
+    static tg_rec sub_rec = SCAFFOLD_BLOCK_SZ;
+    scaffold_block_t *b;
+
+    if (sub_rec == SCAFFOLD_BLOCK_SZ) {
+	sub_rec = 0;
+	brec = io->iface->scaffold_block.create(io->dbh, NULL);
+    }
+
+    b = (scaffold_block_t *)cache_search(io, GT_ScaffoldBlock, brec);
+
+    /* Start new blocks if they contain too much data too */
+    if (b->est_size > (1<<20)) {
+	sub_rec = 0;
+	brec = io->iface->scaffold_block.create(io->dbh, NULL);
+	b = (scaffold_block_t *)cache_search(io, GT_ScaffoldBlock, brec);
+    }
+
+    cache_rw(io, b);
+
+    /* FIXME: move this somewhere sensible */
+    if (from) {
+	if (cache_item_init_scaffold(io, from,
+				   (brec << SCAFFOLD_BLOCK_BITS) + sub_rec))
+	    return -1;
+    }
+
+    return (brec << SCAFFOLD_BLOCK_BITS) + sub_rec++;
+}
+
+/*
  * Creates a new anno_ele_t item.
  */
 static int cache_item_init_anno_ele(GapIO *io, void *from, tg_rec rec) {
@@ -1801,6 +2020,9 @@ tg_rec cache_item_create(GapIO *io, int type, void *from) {
     case GT_Seq:
 	return cache_item_create_seq(io, from);
 
+    case GT_Scaffold:
+	return cache_item_create_scaffold(io, from);
+
     case GT_Contig:
 	if (DB_VERS(io) >= 5)
 	    return cache_item_create_contig(io, from);
@@ -1828,9 +2050,10 @@ int cache_item_remove(GapIO *io, int type, tg_rec rec) {
     seq_block_t *sb;
     anno_ele_block_t *ab;
     contig_block_t *cb;
+    scaffold_block_t *fb;
     cache_key_t k;
 
-    if (DB_VERS(io) < 5)
+    if (DB_VERS(io) < 5 && type == GT_Contig)
 	return 0;
 
     switch (type) {
@@ -1850,6 +2073,14 @@ int cache_item_remove(GapIO *io, int type, tg_rec rec) {
 	cb->contig[sub_rec] = NULL;
 	break;
 
+    case GT_Scaffold:
+	sub_rec = rec & (SCAFFOLD_BLOCK_SZ-1);
+	rec >>= SCAFFOLD_BLOCK_BITS;
+	fb = cache_search(io, GT_ScaffoldBlock, rec);
+	fb = cache_rw(io, cb);
+	fb->scaffold[sub_rec] = NULL;
+	break;
+
     case GT_AnnoEle:
 	sub_rec = rec & (ANNO_ELE_BLOCK_SZ-1);
 	rec >>= ANNO_ELE_BLOCK_BITS;
@@ -1860,7 +2091,7 @@ int cache_item_remove(GapIO *io, int type, tg_rec rec) {
 
     default:
 	fprintf(stderr, "cache_item_remove only implemented for "
-		"GT_Seq/GT_AnnoEle/GT_Contig.\n");
+		"GT_Seq/GT_AnnoEle/GT_Contig/GT_Scaffold.\n");
 	return -1;
     }
 
@@ -1884,6 +2115,9 @@ int cache_item_init(GapIO *io, int type, void *from, tg_rec rec) {
     case GT_Contig:
 	return cache_item_init_contig(io, from, rec);
 
+    case GT_Scaffold:
+	return cache_item_init_scaffold(io, from, rec);
+
     default:
 	fprintf(stderr,
 		"cache_item_init only implemented for GT_Seq/GT_AnnoEle right now\n");
@@ -1903,6 +2137,7 @@ cached_item *cache_master(cached_item *ci) {
     seq_t *s;
     anno_ele_t *e;
     contig_t *c;
+    scaffold_t *f;
 
     if (!ci)
 	return NULL;
@@ -1914,6 +2149,13 @@ cached_item *cache_master(cached_item *ci) {
 	    return ci;
 	else
 	    return ci_ptr(s->block);
+
+    case GT_Scaffold:
+	f = (scaffold_t *)&ci->data;
+	if (!f->block)
+	    return ci;
+	else
+	    return ci_ptr(f->block);
 
     case GT_Contig:
 	c = (contig_t *)&ci->data;
@@ -2131,6 +2373,35 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    break;
 	}
 
+	case GT_Scaffold: {
+	    /* reset internal name/seq/conf pointers */
+	    scaffold_t *of = (scaffold_t *)&ci->data;
+	    scaffold_t *f  = (scaffold_t *)&ci_new->data;
+
+	    f->name = (char *)&f->data;
+
+	    /* Duplicate the contig members array */
+	    if (of->contig) {
+		f->contig = ArrayCreate(sizeof(scaffold_member_t),
+					ArrayMax(of->contig));
+		memcpy(ArrayBase(scaffold_member_t, f->contig),
+		       ArrayBase(scaffold_member_t, of->contig),
+		       ArrayMax(of->contig) * sizeof(scaffold_member_t));
+	    }
+	    break;
+	}
+
+	case GT_ScaffoldBlock: {
+	    int i;
+	    /* Duplicate our arrays */
+	    scaffold_block_t *b = (scaffold_block_t *)&ci_new->data;
+
+	    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+		b->scaffold[i] = NULL;
+	    }
+	    break;
+	}
+
 	case GT_ContigBlock: {
 	    int i;
 	    /* Duplicate our arrays */
@@ -2144,8 +2415,17 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 
 	case GT_Contig: {
 	    /* reset internal name pointers */
+	    contig_t *oc = (contig_t *)&ci->data;
 	    contig_t *c  = (contig_t *)&ci_new->data;
 	    c->name = (char *)&c->data;
+
+	    if (oc->link) {
+		c->link = ArrayCreate(sizeof(contig_link_t),
+					ArrayMax(oc->link));
+		memcpy(ArrayBase(contig_link_t, c->link),
+		       ArrayBase(contig_link_t, oc->link),
+		       ArrayMax(c->link) * sizeof(contig_link_t));
+	    }
 	    break;
 	}
 
@@ -2280,6 +2560,40 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    break;
 	}
 
+	case GT_Scaffold: {
+	    scaffold_block_t *b = (scaffold_block_t *)&ci_new->data;
+	    scaffold_t *of  = (scaffold_t *)&sub_ci->data, *f;
+
+	    /* Already duplicated? */
+	    if (b->scaffold[of->idx]) {
+		sub_new = sub_ci;
+		break;
+	    }
+	    
+	    sub_new = (cached_item *)malloc(sizeof(*ci) + sub_ci->data_size);
+	    memcpy(sub_new, sub_ci, sizeof(*ci) + sub_ci->data_size);
+	    f = (scaffold_t *)&sub_new->data;
+	    f->name = (char *)&f->data;
+
+	    /* Duplicate the contig members array */
+	    if (of->contig) {
+		f->contig = ArrayCreate(sizeof(scaffold_member_t),
+					ArrayMax(f->contig));
+
+		memcpy(ArrayBase(scaffold_member_t, f->contig),
+		       ArrayBase(scaffold_member_t, of->contig),
+		       ArrayMax(of->contig) * sizeof(scaffold_member_t));
+	    }
+
+	    f->block = b;
+	    b->scaffold[f->idx] = f;
+
+	    /* Bump reference count of master again */
+	    HacheTableIncRef(ci_new->hi->h, ci_new->hi);
+
+	    break;
+	}
+
 	case GT_Contig: {
 	    contig_block_t *b = (contig_block_t *)&ci_new->data;
 	    contig_t *oc  = (contig_t *)&sub_ci->data, *c;
@@ -2296,6 +2610,14 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    memcpy(sub_new, sub_ci, sizeof(*ci) + sub_ci->data_size);
 	    c = (contig_t *)&sub_new->data;
 	    c->name = (char *)&c->data;
+
+	    if (c->link) {
+		c->link = ArrayCreate(sizeof(contig_link_t),
+				      ArrayMax(oc->link));
+		memcpy(ArrayBase(contig_link_t, c->link),
+		       ArrayBase(contig_link_t, oc->link),
+		       ArrayMax(oc->link) * sizeof(contig_link_t));
+	    }
 
 	    c->block = b;
 	    b->contig[c->idx] = c;
@@ -2421,7 +2743,8 @@ int cache_rec_deallocate(GapIO *io, int type, tg_rec rec) {
     void *v = cache_search(io, type, rec);
     cached_item *ci;
 
-    if (type == GT_Contig && DB_VERS(io) >= 5) {
+    if ((type == GT_Contig || type == GT_Scaffold)
+	&& DB_VERS(io) >= 5) {
 	return cache_item_remove(io, type, rec);
     }
 

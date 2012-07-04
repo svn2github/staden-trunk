@@ -107,6 +107,16 @@ GapIO *gio_open(char *fn, int ro, int create) {
     io->contig_order = cache_search(io, GT_RecArray, io->db->contig_order);
     cache_incr(io, io->contig_order);
 
+    /* Load the scaffold array */
+    if (io->db->scaffold) {
+	io->scaffold =
+	    cache_search(io, GT_RecArray, io->db->scaffold);
+	cache_incr(io, io->scaffold);
+    } else {
+	/* FIXME: create a dummy order of 1 per contig? */
+	io->scaffold = 0;
+    }
+    
     /* Load the library array */
     io->library = cache_search(io, GT_RecArray, io->db->library);
     cache_incr(io, io->library);
@@ -145,6 +155,8 @@ void gio_close(GapIO *io) {
 
     cache_decr(io, io->db);
     cache_decr(io, io->contig_order);
+    if (io->scaffold)
+	cache_decr(io, io->scaffold);
     cache_decr(io, io->library);
 
     cache_flush(io);

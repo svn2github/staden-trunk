@@ -142,3 +142,63 @@ proc complement_tag_list {io tags} {
  
     return $new_tags 
 } 
+
+
+# Renames a contig
+#
+# If $w is specified it will assume this is being called from within a
+# dialogue box and will generate appropriate parented errors. It will also
+# destroy the parent on success.
+#
+# If you do not wish the parent to be destroyed, skip the $w parameter.
+#
+# Returns 1 on success
+#         0 on failure
+proc contig_rename {io crec name {w {}}} {
+    if {[$io contig_name2rec $name] > 0} {
+	bell
+	if {$w} {
+	    tk_messageBox -type ok -icon error -parent $w \
+		-message "Contig name already exists"
+	} else {
+	    verror ERR_WARN "rename_contig" "Contig name already exists"
+	}
+	return
+    }
+
+    set c [$io get_contig $crec]
+    $c set_name $name
+    $c delete
+
+    contig_notify \
+	-io $io \
+	-type RENAME \
+	-cnum $crec \
+	-args [list name $name]
+
+    $io flush
+
+    if {$w != ""} {
+	destroy $w
+    }
+}
+
+# Adds a contig to a named scaffold
+proc contig_add_to_scaffold {io crec scaf_name {w {}}} {
+    set c [$io get_contig $crec]
+    if {[$c get_scaffold]} {
+	# Remove from old scaffold
+	$c remove_from_scaffold
+    }
+    if {$scaf_name != ""} {
+	# Add to new scaffold
+	$c add_to_scaffold $scaf_name 0 0 0
+    }
+    $c delete
+
+    $io flush
+
+    if {$w != ""} {
+	destroy $w
+    }
+}

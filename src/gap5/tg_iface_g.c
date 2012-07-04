@@ -1543,7 +1543,7 @@ static int io_database_disconnect(void *dbh) {
 
 /*
  * Format 1: original
- *        2: with scaffold_order
+ *        2: with scaffold array
  */
 static cached_item *io_database_read(void *dbh, tg_rec rec) {
     g_io *io = (g_io *)dbh;
@@ -1587,10 +1587,10 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
     cp += u72intw(cp, &i64); db->contig_name_index = i64;
     if (fmt >= 2) {
 	cp += u72int(cp, (uint32_t *)&db->Nscaffolds);
-	cp += u72intw(cp, &i64); db->scaffold_order = i64;
+	cp += u72intw(cp, &i64); db->scaffold = i64;
     } else {
 	db->Nscaffolds = 0;
-	db->scaffold_order = 0;
+	db->scaffold = 0;
     }
 
     g_assert(cp-buf == buf_len, NULL);
@@ -1641,7 +1641,7 @@ static int io_database_write_view(g_io *io, database_t *db, GView v) {
 
     /* Construct the on-disc format */
     *cp++ = GT_Database;
-    *cp++ = (db->scaffold_order && io->db_vers >= 5) ? 2 : 1; /* format */
+    *cp++ = (db->scaffold && io->db_vers >= 5) ? 2 : 1; /* format */
 
     cp += int2u7(db->version, cp);
     cp += int2u7(db->Ncontigs, cp);
@@ -1650,9 +1650,9 @@ static int io_database_write_view(g_io *io, database_t *db, GView v) {
     cp += intw2u7(db->library, cp);
     cp += intw2u7(db->seq_name_index, cp);
     cp += intw2u7(db->contig_name_index, cp);
-    if (db->scaffold_order && io->db_vers >= 5) {
+    if (db->scaffold && io->db_vers >= 5) {
 	cp += int2u7(db->Nscaffolds, cp);
-	cp += intw2u7(db->scaffold_order, cp);
+	cp += intw2u7(db->scaffold, cp);
     }
     
     /* Write it out */
@@ -1701,8 +1701,12 @@ static tg_rec io_database_create(void *dbh, void *from, int version) {
     g_flush(io, v);
     unlock(io, v);
 
-    /* Scaffold order - TODO */
-    db.scaffold_order = 0;
+    /* Scaffold order */
+    db.Nscaffolds = 0;
+    db.scaffold = allocate(io, GT_RecArray);
+    v = lock(io, db.scaffold, G_LOCK_EX);
+    g_flush(io, v);
+    unlock(io, v);
 
     /* Libraries */
     db.Nlibraries = 0;
@@ -1845,6 +1849,7 @@ static cached_item *io_contig_read(void *dbh, tg_rec rec) {
     c->block = NULL;
     c->idx = 0;
     c->flags = 0;
+    c->link = NULL;
     c->nseqs = 0;
     c->nanno = 0;
     c->nrefpos = 0;
@@ -1923,6 +1928,7 @@ static tg_rec io_contig_create(void *dbh, void *vfrom) {
 	c.block = NULL;
 	c.idx = 0;
 	c.flags = 0;
+	c.link = NULL;
 	c.nseqs = 0;
 	c.nanno = 0;
 	c.nrefpos = 0;
@@ -2358,11 +2364,12 @@ static char *pack_rng_array(int comp_mode, int fmt,
     int i;
     size_t part_sz[7];
     GRange last, last_tag, last_refpos;
-    unsigned char *cp[6], *cp_orig[6], *out;
+    unsigned char *cp[7], *cp_orig[7], *out;
     char *out_orig;
     //char *cpt, *cpt_orig;
     //HacheTable *h = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
     //int ntags;
+    int np = 6 + (fmt >= 3);
 
     int last_r_rec = 0;
     int last_r_mqual = 0;
@@ -2373,7 +2380,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
     memset(&last_refpos, 0, sizeof(last_refpos));
 
     /* Pack the 6 structure elements to their own arrays */
-    for (i = 0; i < 6; i++)
+    for (i = 0; i < np; i++)
 	cp[i] = cp_orig[i] = malloc(nr * 10);
 
     for (i = 0; i < nr; i++) {
@@ -2435,7 +2442,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 		last = rng[i];
 	    }
 	} else {
-	    /* fmt2 with ISREFPOS markers */
+	    /* fmt2 or 3 with ISREFPOS markers */
 	    int flags;
 
 	    switch (r.flags & GRANGE_FLAG_ISMASK) {
@@ -2487,6 +2494,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 		break;
 
 	    default:
+		/* Seqs */
 		cp[0] += int2s7 (r.start, cp[0]);
 		cp[1] += int2u7 (r.end,   cp[1]);
 		cp[2] += intw2s7(r.rec,   cp[2]);
@@ -2495,28 +2503,33 @@ static char *pack_rng_array(int comp_mode, int fmt,
 
 		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
 		    cp[5] += intw2s7(r.pair_rec - last.pair_rec, cp[5]);
+
+		if (fmt >= 3)
+		    cp[6] += intw2u7(r.library_rec, cp[6]);
 		last = rng[i];
 		break;
 	    }
 	}
     }
 
-    for (i = 0; i < 6; i++)
+    for (i = 0; i < np; i++) {
 	part_sz[i+1] = cp[i]-cp_orig[i];
+    }
 
     /* Construct a header with nr and the size of the 6 packed struct fields */
-    *sz =  7*5 + part_sz[1] + part_sz[2] + part_sz[3] +
-	part_sz[4] + part_sz[5] + part_sz[6];
+    *sz =  7*5;
+    for (i = 1; i <= np; i++)
+	*sz += part_sz[i];
 
     out = malloc(*sz);
     out_orig = (char *)out;
     out += int2u7(nr, out);
-    for (i = 0; i < 6; i++)
+    for (i = 0; i < np; i++)
 	out += int2u7(cp[i]-cp_orig[i], out);
     part_sz[0] = (char *)out-out_orig;
 
     /* Followed by the serialised 6 packed fields themselves */
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < np; i++) {
 	int len = cp[i]-cp_orig[i];
 	memcpy(out, cp_orig[i], len);
 	out += len;
@@ -2533,7 +2546,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 	if (*sz < 1024)
 	    gzout = mem_deflate(comp_mode, out_orig, *sz, &ssz);
 	else
-	    gzout = mem_deflate_parts(comp_mode, out_orig, part_sz, 7, &ssz);
+	    gzout = mem_deflate_parts(comp_mode, out_orig, part_sz, np+1,&ssz);
 	*sz = ssz;
 
     	free(out_orig);
@@ -2552,12 +2565,12 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 				int packed_sz, int *nrp) {
     uint32_t i, off[6];
     int32_t i32;
-    unsigned char *cp[6], *zpacked = NULL;
+    unsigned char *cp[7], *zpacked = NULL;
     GRange last, *r, *ls = &last, *lt = &last, lastr, *lr = &lastr;
     size_t ssz;
     int64_t last_r_rec = 0, last_r_pair_rec = 0;
     int32_t last_r_mqual = 0;
-    int nr;
+    int nr, np = 6 + (fmt >= 3);
 
     /* First of all, inflate the compressed data */
     zpacked = packed = (unsigned char *)mem_inflate(comp_mode,
@@ -2570,10 +2583,10 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
     nr = *nrp;
 
     /* Unpack offsets of the 6 range components */
-    for (i = 0; i < 6; i++) 
+    for (i = 0; i < np; i++) 
 	packed += u72int(packed, &off[i]);
     cp[0] = packed;
-    for (i = 1; i < 6; i++)
+    for (i = 1; i < np; i++)
 	cp[i] = cp[i-1] + off[i-1];
 
     r = (GRange *)malloc(nr * sizeof(*r));
@@ -2583,6 +2596,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 
     /* And finally unpack from the 6 components in parallel for each struct */
     for (i = 0; i < nr; i++) {
+	r[i].library_rec = 0;
 	r[i].y = 0;
 
 	switch (fmt) {
@@ -2683,6 +2697,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 	    break;
 	}
 
+	case 3:
 	case 2: {
 	    int64_t rec_tmp;
 
@@ -2756,6 +2771,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 		break;
 
 	    default:
+		/* Seq */
 		cp[0] += s72int (cp[0], (int32_t *)&r[i].start);
 		cp[1] += u72int (cp[1], (uint32_t *)&r[i].end);
 		cp[2] += s72intw(cp[2], (int64_t *)&rec_tmp);
@@ -2774,6 +2790,12 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 		r[i].start += ls->start;
 		r[i].end += r[i].start;
 
+		if (fmt >= 3) {
+		    uint64_t i64;
+		    cp[6] += u72intw(cp[6], &i64);
+		    r[i].library_rec = i64;
+		}
+
 		ls = &r[i];
 		break;
 	    }
@@ -2782,8 +2804,8 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 	}
 	}
     }
-	
-    g_assert(cp[5] - zpacked == packed_sz, NULL);
+
+    g_assert(cp[np-1] - zpacked == packed_sz, NULL);
 
     if (zpacked)
 	free(zpacked);
@@ -2946,6 +2968,12 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
     bin->rng_free    = b->rng_free;
 
     /* Load ranges */
+    /*
+     * fmt 0 - orig, 32bit
+     *     1 - 64-bit records
+     *     2 - added refpos
+     *     3 - added library record
+     */
     if (b->range) {
 	GViewInfo vi;
 	int nranges;
@@ -2962,7 +2990,7 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 	    g_read(io, v, buf, vi.used);
 	    fmt = buf[1] & 0x3f;
 	    g_assert(buf[0] == GT_Range, NULL);
-	    g_assert(fmt <= 2, NULL);
+	    g_assert(fmt <= 3, NULL);
 	    comp_mode = ((unsigned char)buf[1]) >> 6;
 	    r = unpack_rng_array(comp_mode, fmt, buf+2, vi.used-2, &nranges);
 	    free(buf);
@@ -3039,6 +3067,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	int sz;
 	GIOVec vec[2];
 	int fmt2 = io->db_vers >= 2 ? 2 : 1;
+	if (io->db_vers >= 5) fmt2 = 3;
 
 	fmt[0] = GT_Range;
 	fmt[1] = fmt2 | (io->comp_mode << 6);
@@ -4906,7 +4935,7 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
     int32_t s32;
     uint64_t last, i64;
     int name_len[CONTIG_BLOCK_SZ];
-    int fmt;
+    int fmt, have_links;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -4926,7 +4955,9 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 
     g_assert(buf[0] == GT_ContigBlock, NULL);
     fmt = buf[1] & 0x3f;
-    g_assert(fmt < 1, NULL); /* Format */
+    g_assert(fmt < 2, NULL); /* Format */
+
+    have_links = fmt >= 1;
 
     rdstats[GT_ContigBlock] += buf_len;
     rdcounts[GT_ContigBlock]++;
@@ -4947,6 +4978,12 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
 	cp += u72intw(cp, &i64);
 	in[i].bin = i64;
+    }
+
+    /* Flags */
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, (uint32_t *)&in[i].flags);
     }
 
     /* Start */
@@ -4984,12 +5021,6 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 	cp += s72intw(cp, &tmp);
 	in[i].scaffold = last + tmp;
 	last = in[i].scaffold;
-    }
-
-    /* Flags */
-    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
-	if (!in[i].bin) continue;
-	cp += u72int(cp, (uint32_t *)&in[i].flags);
     }
 
     /* Nseqs */
@@ -5048,6 +5079,98 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 	cp += name_len[i];
     }
 
+    /* Links */
+    if (have_links) {
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    uint32_t nl;
+
+	    if (!in[i].bin) continue;
+	    cp += u72int(cp, (uint32_t *)&nl);
+	    if (!nl) {
+		b->contig[i]->link = NULL;
+		continue;
+	    }
+
+	    b->contig[i]->link = ArrayCreate(sizeof(contig_link_t), nl);
+	    ArrayRef(b->contig[i]->link, nl-1);
+	}	    
+
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    int j, nl;
+	    if (!in[i].bin) continue;
+
+	    nl = b->contig[i]->link ? ArrayMax(b->contig[i]->link) : 0;
+	    for (j = 0; j < nl; j++) {
+		contig_link_t *l = arrp(contig_link_t, b->contig[i]->link, j);
+		l->rec1 = in[i].rec;
+		cp += u72intw(cp, &i64); l->rec2 = i64;
+	    }
+	}	    
+
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    int j, nl;
+	    if (!in[i].bin) continue;
+
+	    nl = b->contig[i]->link ? ArrayMax(b->contig[i]->link) : 0;
+	    for (j = 0; j < nl; j++) {
+		contig_link_t *l = arrp(contig_link_t, b->contig[i]->link, j);
+		cp += s72int(cp, &l->pos1);
+		cp += s72int(cp, &l->pos2);
+	    }
+	}	    
+
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    int j, nl;
+	    if (!in[i].bin) continue;
+
+	    nl = b->contig[i]->link ? ArrayMax(b->contig[i]->link) : 0;
+	    for (j = 0; j < nl; j++) {
+		contig_link_t *l = arrp(contig_link_t, b->contig[i]->link, j);
+		cp += u72int(cp, &l->end1);
+		cp += u72int(cp, &l->end2);
+		cp += u72int(cp, &l->orientation);
+	    }
+	}	    
+
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    int j, nl;
+	    if (!in[i].bin) continue;
+
+	    nl = b->contig[i]->link ? ArrayMax(b->contig[i]->link) : 0;
+	    for (j = 0; j < nl; j++) {
+		contig_link_t *l = arrp(contig_link_t, b->contig[i]->link, j);
+		cp += u72int(cp, &l->size);
+	    }
+	}	    
+
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    int j, nl;
+	    if (!in[i].bin) continue;
+
+	    nl = b->contig[i]->link ? ArrayMax(b->contig[i]->link) : 0;
+	    for (j = 0; j < nl; j++) {
+		contig_link_t *l = arrp(contig_link_t, b->contig[i]->link, j);
+		cp += u72int(cp, &l->type);
+	    }
+	}	    
+
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    int j, nl;
+	    if (!in[i].bin) continue;
+
+	    nl = b->contig[i]->link ? ArrayMax(b->contig[i]->link) : 0;
+	    for (j = 0; j < nl; j++) {
+		contig_link_t *l = arrp(contig_link_t, b->contig[i]->link, j);
+		cp += s72int(cp, &l->score);
+	    }
+	}
+    } else {
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    b->contig[i]->link = NULL;
+	}
+    }
+
     g_assert(cp - buf == buf_len, NULL);
     free(buf);
 
@@ -5060,19 +5183,20 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
     contig_block_t *b = (contig_block_t *)&ci->data;
     int i;
     unsigned char *cp, *cp_start;
-    unsigned char *out[12], *out_start[12];
-    size_t out_size[12], total_size;
+    unsigned char *out[19], *out_start[19];
+    size_t out_size[19], total_size;
     GIOVec vec[2];
     char fmt[2];
     int nparts = 12;
     tg_rec last_scaffold_rec;
+    int have_links = 0;
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
     check_view_rec(io, ci);
 
     /* Compute worst-case sizes, for memory allocation */
-    for (i = 0; i < nparts; i++) {
+    for (i = 0; i < 19; i++) {
 	out_size[i] = 0;
     }
     for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
@@ -5082,19 +5206,36 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 	    continue;
 	}
 
+	if (c->link && ArrayMax(c->link) && io->db_vers >= 5)
+	    have_links = 1;
+
 	out_size[ 0] += 10;/* bin */
-	out_size[ 1] += 5; /* start */
-	out_size[ 2] += 5; /* end */
-	out_size[ 3] += 5; /* clipped_start */
-	out_size[ 4] += 5; /* clipped_end */
-	out_size[ 5] += 10;/* scaffold rec */
-	out_size[ 6] += 5; /* flags */
+	out_size[ 1] += 5; /* flags */
+	out_size[ 2] += 5; /* start */
+	out_size[ 3] += 5; /* end */
+	out_size[ 4] += 5; /* clipped_start */
+	out_size[ 5] += 5; /* clipped_end */
+	out_size[ 6] += 10;/* scaffold rec */
 	out_size[ 7] += 5; /* nseqs */
 	out_size[ 8] += 5; /* nanno */
 	out_size[ 9] += 5; /* nrefpos */
 	out_size[10] += 5; /* name length */
 	out_size[11] += c->name ? strlen(c->name) : 0; /* name */
+	out_size[12] += 5; /* no. links */
+	if (c->link) {
+	    int nl = ArrayMax(c->link);
+	    out_size[13] += nl*10; /* link rec */
+	    out_size[14] += nl*10; /* pos1, pos2 */
+	    out_size[15] += nl*3;  /* end1, end2, orientation */
+	    out_size[16] += nl*5;  /* size */
+	    out_size[17] += nl*1;  /* type */
+	    out_size[18] += nl*5;  /* score */
+	} else {
+	}
     }
+    if (have_links)
+	nparts = 19;
+
     for (i = 0; i < nparts; i++)
 	out_start[i] = out[i] = malloc(out_size[i]+1);
     
@@ -5111,25 +5252,27 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 	}
 
 	/* Fixed sized data */
-	out[0] += intw2u7(c->bin, out[0]);
-	out[1] += int2s7(c->start, out[1]);
-	out[2] += int2s7(c->end, out[2]);
+	out[0] += intw2u7(c->bin,  out[0]);
+
+	out[1] += int2u7(c->flags, out[1]);
+
+	out[2] += int2s7(c->start, out[2]);
+	out[3] += int2s7(c->end,   out[3]);
 
 	s32 = (c->flags & CONTIG_FLAG_CLIPPED_VALID)
 	    ? c->clipped_start - c->start
 	    : 0;
-	out[3] += int2s7(s32, out[3]);
+	out[4] += int2s7(s32, out[4]);
 
 	s32 = (c->flags & CONTIG_FLAG_CLIPPED_VALID)
 	    ? c->end - c->clipped_end
 	    : 0;
-	out[4] += int2s7(s32, out[4]);
+	out[5] += int2s7(s32, out[5]);
 
 	delta = c->scaffold - last_scaffold_rec;
 	last_scaffold_rec = c->scaffold;
-	out[5] += intw2s7(delta, out[5]);
+	out[6] += intw2s7(delta, out[6]);
 
-	out[6] += int2u7(c->flags,   out[6]);
 	out[7] += int2u7(c->nseqs,   out[7]);
 	out[8] += int2u7(c->nanno,   out[8]);
 	out[9] += int2u7(c->nrefpos, out[9]);
@@ -5141,6 +5284,327 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 	    out[11] += name_len;
 	} else {
 	    out[10] += int2u7(0, out[10]);
+	}
+
+	if (have_links) {
+	    int nl = c->link ? ArrayMax(c->link) : 0, j;
+	    out[12] += int2u7(nl, out[12]);
+
+	    for (j = 0; j < nl; j++) {
+		contig_link_t *l = arrp(contig_link_t, c->link, j);
+		out[13] += intw2u7(l->rec2, out[13]);
+		out[14] += int2s7(l->pos1, out[14]);
+		out[14] += int2s7(l->pos2, out[14]);
+		out[15] += int2u7(l->end1, out[15]);
+		out[15] += int2u7(l->end2, out[15]);
+		out[15] += int2u7(l->orientation, out[15]);
+		out[16] += int2u7(l->size, out[16]);
+		out[17] += int2u7(l->type, out[17]);
+		out[18] += int2s7(l->score, out[18]);
+	    }
+	}
+    }
+
+    /* Concatenate data types together and adjust out_size to actual usage */
+    for (total_size = i = 0; i < nparts; i++) {
+	out_size[i] = out[i] - out_start[i];
+	total_size += out_size[i];
+    }
+    cp = cp_start = malloc(total_size+1);
+    for (i = 0; i < nparts; i++) {
+	memcpy(cp, out_start[i], out_size[i]);
+	cp += out_size[i];
+	free(out_start[i]);
+    }
+    assert(cp - cp_start == total_size);
+
+    printf("Writing contig block with nparts=%d\n", nparts);
+
+    /* Gzip it too */
+    if (1) {
+	unsigned char *gzout;
+	size_t ssz;
+
+	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
+	gzout = (unsigned char *)mem_deflate_parts(io->comp_mode,
+						   (char *)cp_start,
+						   out_size, nparts,
+						   &ssz);
+	free(cp_start);
+	cp_start = gzout;
+	cp = cp_start + ssz;
+    }
+
+    /* Finally write the serialised data block */
+    fmt[0] = GT_ContigBlock;
+    fmt[1] = have_links ? 1 : 0;
+
+    vec[0].buf = fmt;      vec[0].len = 2;
+    vec[1].buf = cp_start; vec[1].len = cp - cp_start;
+
+    assert(ci->lock_mode >= G_LOCK_RW);
+    wrstats[GT_ContigBlock] += cp-cp_start + 2;
+    wrcounts[GT_ContigBlock]++;
+    err = g_writev(io, ci->view, vec, 2);
+    if (err == 0)
+	g_flush(io, ci->view);
+    
+    free(cp_start);
+
+    return err ? -1 : 0;
+}
+
+static tg_rec io_contig_block_create(void *dbh, void *vfrom) {
+    g_io *io = (g_io *)dbh;
+    tg_rec rec;
+    GView v;
+
+    rec = allocate(io, GT_SeqBlock);
+    v = lock(io, rec, G_LOCK_EX);
+
+    /* Write blank data here? */
+
+    unlock(io, v);
+    
+    return rec;
+}
+
+
+/* ------------------------------------------------------------------------
+ * scaffold_block access methods
+ *
+ * Scaffolds hold arrays of contigs and gaps containing sufficient data to
+ * fill out an AGP file.
+ */
+
+static cached_item *io_scaffold_block_read(void *dbh, tg_rec rec) {
+    g_io *io = (g_io *)dbh;
+    GView v;
+    cached_item *ci;
+    scaffold_block_t *b;
+    unsigned char *buf, *cp;
+    size_t buf_len;
+    scaffold_t in[SCAFFOLD_BLOCK_SZ];
+    int i;
+    int32_t s32;
+    uint64_t last, i64;
+    int name_len[SCAFFOLD_BLOCK_SZ];
+    int ncontigs[SCAFFOLD_BLOCK_SZ];
+    int fmt;
+
+    /* Load from disk */
+    if (-1 == (v = lock(io, rec, G_LOCK_RO)))
+	return NULL;
+
+    if (!(ci = cache_new(GT_ScaffoldBlock, rec, v, NULL, sizeof(*b))))
+	return NULL;
+
+    b = (scaffold_block_t *)&ci->data;
+    cp = buf = (unsigned char *)g_read_alloc((g_io *)dbh, v, &buf_len);
+
+    if (!buf_len) {
+	b->est_size = 0;
+	memset(&b->scaffold[0],  0, SCAFFOLD_BLOCK_SZ*sizeof(b->scaffold[0]));
+	free(buf);
+	return ci;
+    }
+
+    g_assert(buf[0] == GT_ScaffoldBlock, NULL);
+    fmt = buf[1] & 0x3f;
+    g_assert(fmt < 1, NULL); /* Format */
+
+    rdstats[GT_ScaffoldBlock] += buf_len;
+    rdcounts[GT_ScaffoldBlock]++;
+
+    /* Ungzip it too */
+    if (1) {
+	size_t ssz;
+	int comp_mode = ((unsigned char)buf[1]) >> 6;
+	buf = (unsigned char *)mem_inflate(comp_mode,
+					   (char *)buf+2, buf_len-2, &ssz);
+	free(cp);
+	cp = buf;
+	buf_len = ssz;
+    }
+    b->est_size = buf_len;
+
+    /* Decode the fixed size components of our sequence structs */
+    /* ncontigs, 0 => unused entry */
+    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+	cp += u72int(cp, &ncontigs[i]);
+    }
+
+    /* Size */
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	if (!ncontigs[i]) continue;
+	cp += s72int(cp, (int32_t *)&in[i].size);
+    }
+
+    /* Name length */
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	if (!ncontigs[i]) continue;
+	cp += u72int(cp, (uint32_t *)&name_len[i]);
+    }
+
+    /* Convert our static structs to cached_items */
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	if (ncontigs[i]) {
+	    cached_item *si;
+	    size_t extra_len;
+
+	    extra_len = sizeof(scaffold_t) + name_len[i];
+	    if (!(si = cache_new(GT_Scaffold, 0, 0, NULL, extra_len)))
+		return NULL;
+
+	    b->scaffold[i]  = (scaffold_t *)&si->data;
+	    in[i].rec = ((tg_rec)rec << ANNO_ELE_BLOCK_BITS) + i;
+	    *b->scaffold[i] = in[i];
+	    b->scaffold[i]->block = b;
+	    b->scaffold[i]->idx = i;
+	    b->scaffold[i]->contig = ArrayCreate(sizeof(scaffold_member_t),
+						 ncontigs[i]);
+	    ArrayRef(b->scaffold[i]->contig, ncontigs[i]-1);
+	    b->scaffold[i]->name = (char *)&b->scaffold[i]->data;
+	} else {
+	    b->scaffold[i] = NULL;
+	}
+    }
+
+
+    /* Decode variable sized components */
+    /* Name */
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	if (!ncontigs[i]) continue;
+	memcpy(b->scaffold[i]->name, cp, name_len[i]);
+	b->scaffold[i]->name[name_len[i]] = 0;
+	cp += name_len[i];
+    }
+
+    /* Scaffold members */
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	int j;
+	for (j = 0; j < ncontigs[i]; j++) {
+	    scaffold_member_t *m = arrp(scaffold_member_t,
+					b->scaffold[i]->contig,
+					j);
+	    cp += u72intw(cp, &i64); m->rec = i64;
+	}
+    }
+
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	int j;
+	for (j = 0; j < ncontigs[i]; j++) {
+	    scaffold_member_t *m = arrp(scaffold_member_t,
+					b->scaffold[i]->contig,
+					j);
+	    cp += u72int (cp, &m->gap_type);
+	}
+    }
+
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	int j;
+	for (j = 0; j < ncontigs[i]; j++) {
+	    scaffold_member_t *m = arrp(scaffold_member_t,
+					b->scaffold[i]->contig,
+					j);
+	    cp += s72int (cp, &m->gap_size);
+	}
+    }
+
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	int j;
+	for (j = 0; j < ncontigs[i]; j++) {
+	    scaffold_member_t *m = arrp(scaffold_member_t,
+					b->scaffold[i]->contig,
+					j);
+	    cp += u72int (cp, &m->evidence);
+	}
+    }
+
+    g_assert(cp - buf == buf_len, NULL);
+    free(buf);
+
+    return ci;
+}
+
+static int io_scaffold_block_write(void *dbh, cached_item *ci) {
+    int err;
+    g_io *io = (g_io *)dbh;
+    scaffold_block_t *b = (scaffold_block_t *)&ci->data;
+    int i, j;
+    unsigned char *cp, *cp_start;
+    unsigned char *out[8], *out_start[8];
+    size_t out_size[8], total_size;
+    GIOVec vec[2];
+    char fmt[2];
+    int nparts = 8;
+    tg_rec last_scaffold_rec;
+
+    assert(ci->lock_mode >= G_LOCK_RW);
+    assert(ci->rec > 0);
+    check_view_rec(io, ci);
+
+    /* Compute worst-case sizes, for memory allocation */
+    for (i = 0; i < nparts; i++) {
+	out_size[i] = 0;
+    }
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	scaffold_t *c = b->scaffold[i];
+	int ncontigs;
+
+	if (!c) {
+	    out_size[0]++;
+	    continue;
+	}
+
+	ncontigs = ArrayMax(c->contig);
+
+	out_size[ 0] += 5;                             /* ncontigs */
+	out_size[ 1] += 5;                             /* size */
+	out_size[ 2] += 5;                             /* name length */
+	out_size[ 3] += c->name ? strlen(c->name) : 0; /* name */
+	out_size[ 4] += ncontigs * 10;                 /* contig rec */
+	out_size[ 5] += ncontigs * 5;                  /* gap type */
+	out_size[ 6] += ncontigs * 5;                  /* gap size */
+	out_size[ 7] += ncontigs * 5;                  /* evidence */
+    }
+    for (i = 0; i < nparts; i++)
+	out_start[i] = out[i] = malloc(out_size[i]+1);
+    
+    /* serialised scaffolds */
+    last_scaffold_rec = 0;
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
+	tg_rec delta;
+	int32_t s32;
+	scaffold_t *c = b->scaffold[i];
+
+	if (!c) {
+	    *out[0]++=0; /* signifies scaffold not present */
+	    continue;
+	}
+
+	/* Fixed sized data */
+	out[0] += int2u7(ArrayMax(c->contig), out[0]);
+	out[1] += int2s7(c->size, out[1]);
+
+	if (c->name && *c->name) {
+	    size_t name_len = strlen(c->name);
+	    out[2] += int2u7(name_len, out[2]);
+	    memcpy(out[3], c->name, name_len);
+	    out[3] += name_len;
+	} else {
+	    out[2] += int2u7(0, out[2]);
+	}
+
+	/* Scaffold member data */
+	for (j = 0; j < ArrayMax(c->contig); j++) {
+	    scaffold_member_t *m = arrp(scaffold_member_t,
+					b->scaffold[i]->contig,
+					j);
+	    out[4] += intw2u7(m->rec, out[4]);
+	    out[5] += int2u7 (m->gap_type, out[5]);
+	    out[6] += int2s7 (m->gap_size, out[6]);
+	    out[7] += int2u7 (m->evidence, out[7]);
 	}
     }
 
@@ -5173,14 +5637,14 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
     }
 
     /* Finally write the serialised data block */
-    fmt[0] = GT_ContigBlock;
+    fmt[0] = GT_ScaffoldBlock;
     fmt[1] = 0;
     vec[0].buf = fmt;      vec[0].len = 2;
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
 
     assert(ci->lock_mode >= G_LOCK_RW);
-    wrstats[GT_ContigBlock] += cp-cp_start + 2;
-    wrcounts[GT_ContigBlock]++;
+    wrstats[GT_ScaffoldBlock] += cp-cp_start + 2;
+    wrcounts[GT_ScaffoldBlock]++;
     err = g_writev(io, ci->view, vec, 2);
     if (err == 0)
 	g_flush(io, ci->view);
@@ -5190,7 +5654,7 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
     return err ? -1 : 0;
 }
 
-static tg_rec io_contig_block_create(void *dbh, void *vfrom) {
+static tg_rec io_scaffold_block_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
     tg_rec rec;
     GView v;
@@ -5697,14 +6161,14 @@ static iface iface_g = {
 
     {
 	/* Scaffold_block */
-	0, //io_scaffold_block_create,
+	io_scaffold_block_create,
 	io_generic_destroy,
 	io_generic_lock,
 	io_generic_unlock,
 	io_generic_upgrade,
 	io_generic_abandon,
-	0, //io_scaffold_block_read,
-	0, //io_scaffold_block_write,
+	io_scaffold_block_read,
+	io_scaffold_block_write,
 	io_generic_info,
     },
 

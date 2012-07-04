@@ -45,7 +45,8 @@ typedef int64_t tg_rec;
 #define GT_AnnoEleBlock  24
 #define GT_SeqCons       25
 #define GT_ContigBlock   26
-#define GT_ScaffoldBlock 27
+#define GT_Scaffold      27
+#define GT_ScaffoldBlock 28
 
 
 /* ----------------------------------------------------------------------
@@ -81,8 +82,8 @@ typedef struct {
     tg_rec    rec; /* recno */
     tg_rec    pair_rec; /* paired end data */
     GCardinal flags; /* see below */
-    /* Move library here? */
     GCardinal y; /* Not stored on disc, just cached */
+    tg_rec    library_rec;
 } GRange; /* An element of the bin->rng record */
 
 
@@ -192,7 +193,7 @@ typedef struct {
 //#define DB_VERSION 2 /* 1.2.12, annotation range fixes */
 //#define DB_VERSION 3 /* 1.2.14, added template_name_len in seq_t */
 //#define DB_VERSION 4 /* 2.0.0b8-p16, added direction to tags */
-#define DB_VERSION 5 /* ?, added ContigBlocks and Scaffolds */
+#define DB_VERSION 5 /* ?, added ContigBlocks, Scaffolds and Range library */
 
 typedef struct {
     int    version;
@@ -200,12 +201,12 @@ typedef struct {
     /* Arrays */
     int    Ncontigs;		/* N.elements in array */
     tg_rec contig_order;	/* rec. of array of contig rec. nos */
-                                /* Unused if scaffold_order is present. */
+
     int    Nscaffolds;
-    tg_rec scaffold_order;	/* rec. of array of scaffold rec. nos */
+    tg_rec scaffold;	     /* rec. of array of scaffold rec. nos */
 
     int    Nlibraries;       /* N.elements in array */
-    tg_rec library;          /* rec. of array o library rec. nos */
+    tg_rec library;          /* rec. of array of library rec. nos */
 
     /* Indices */
     tg_rec seq_name_index;	/* rec of type GT_Index */
@@ -314,6 +315,7 @@ typedef struct {
     int nrefpos;
     struct contig_block *block;
     int    idx;   /* Index to block */
+    Array  link;  /* Array of contig_link_t fields */
     char  *name;
     char   data[1];
 } contig_t;
@@ -327,15 +329,38 @@ typedef struct contig_block {
 } contig_block_t;
 
 
+typedef struct {
+    tg_rec rec1, rec2;          /* records being linked (rec1 = this contig) */
+    int pos1, pos2;             /* pos1 = this contig, pos2 = other contig */
+    int end1, end2;             /* pos relative to end (0=left, 1=right) */
+                                /* pos 100 end 1 => contig->end-100 */
+                                /* pos 100 end 0 => contig->start+100 */
+    int orientation;            /* 0 => same, 1 => reversed */
+    int size;                   /* 0 if unknown. Length of link in bp */
+    int type;                   /* CLINK_TYPE_* macros */
+    int score;                  /* eg no. read pairs, length of seq overlap */
+} contig_link_t;
+
+#define CLINK_TYPE_UNKNOWN  0
+#define CLINK_TYPE_READPAIR 1
+#define CLINK_TYPE_SCAFFOLD 2
+
+typedef struct {
+    tg_rec rec;
+    int gap_type; /* 0 => no gap, for last contig. Otherwise AGP codes */
+    int gap_size; /* size */
+    int evidence; /* see AGP evidence fields */
+} scaffold_member_t;
+
 struct scaffold_block;
 typedef struct {
-    int   ncontigs;
-    int  *contig;   /* Array of size ncontigs */
-    int  *gap_size; /* Array of size ncontigs */
+    tg_rec rec;
+    int    size;       /* Total scaffold size */
+    Array  contig;     /* Array of type scaffold_member_t */
     struct scaffold_block *block;
-    int   idx;      /* Index to block */
-    char *name;
-    char  data[1];
+    int    idx;        /* Index to block */
+    char  *name;
+    char   data[1];
 } scaffold_t;
 
 #define SCAFFOLD_BLOCK_BITS 10
@@ -423,7 +448,6 @@ typedef struct {
     int flags;
     int y;     /* nominal display position, not stored on disc */
     int pair_ind; /* -1 if not found, or index into array of rangec_t */
-    /* Move library here? */
 
     /* Derived fields, placed here to make sorting easier */
     int seq_tech;
@@ -432,6 +456,8 @@ typedef struct {
 
     tg_rec orig_rec; /* From bin record and index into bin->rng array. */
     int orig_ind;    /*    Used to update cached range_t->y field. */
+
+    tg_rec library_rec; /* Added in version 5 */
 } rangec_t;
 
 /* This is binary compatible with the GRange type */
@@ -442,8 +468,8 @@ typedef struct {
     tg_rec rec; /* or alternatively an index if range_t is free */
     tg_rec pair_rec;
     int    flags;
-    /* Move library here? */
     int    y; /* Not stored on disc, just cached */
+    tg_rec library_rec;
 } range_t;
 
 /* Decoded from GTrack_header above */

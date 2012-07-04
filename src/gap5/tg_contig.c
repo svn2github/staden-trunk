@@ -82,9 +82,6 @@ int contig_set_bin(GapIO *io, contig_t **c, tg_rec value) {
 /*
  * Sets a contig name.
  *
- * FIXME: renaming a contig means we need to update the b+tree index
- * on contig name too. TO DO
- *
  * Returns 0 on success
  *        -1 on failure
  */
@@ -110,7 +107,7 @@ int contig_set_name(GapIO *io, contig_t **c, char *name) {
     *c = n;
 
     /* Add new name */
-    n->name   = (char *)(&n->name+1);
+    n->name   = (char *)(&n->data);
     strcpy(n->name, name);
 
     if (*name) {
@@ -2703,6 +2700,7 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
 		(*results)[count].pair_start = 0;
 		(*results)[count].pair_end   = 0;
 		(*results)[count].pair_mqual = 0;
+		(*results)[count].library_rec = l->library_rec;
 		
 		(*results)[count].flags = l->flags;
 		(*results)[count].y = l->y;
@@ -5328,5 +5326,118 @@ int contig_fix_nseq(GapIO *io, contig_t *c) {
 	c->nrefpos = 0;
     }
     
+    return 0;
+}
+
+/*
+ * Adds a bi-directional contig link.
+ * The data to link from/to is in the passed in abs_link. Coordinates here
+ * are all contig absolute coords.
+ *
+ * Internally this link gets created at both ends (rec1, rec2) and the
+ * positions are converted into relative coordinates. (The end1 and end2
+ * fields in abs_link are ignored and computed as required.)
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int contig_add_link(GapIO *io, contig_link_t *abs_link) {
+    tg_rec *m;
+    contig_t *c1, *c2;
+    contig_link_t *l1, *l2;
+    int i, idx1, idx2;
+    int pos1 = abs_link->pos1;
+    int pos2 = abs_link->pos2;
+
+    /* Create contig link structs */
+    if (!(c1 = cache_search(io, GT_Contig, abs_link->rec1)))
+	return -1;
+    if (!(c1 = cache_rw(io, c1)))
+	return -1;
+
+    if (!c1->link)
+	c1->link = ArrayCreate(sizeof(contig_link_t), 0);
+
+    ArrayRef(c1->link, idx1 = ArrayMax(c1->link));
+
+    if (!(c2 = cache_search(io, GT_Contig, abs_link->rec2)))
+	return -1;
+    if (!(c2 = cache_rw(io, c2)))
+	return -1;
+
+    if (!c2->link)
+	c2->link = ArrayCreate(sizeof(contig_link_t), 0);
+
+    ArrayRef(c2->link, idx2 = ArrayMax(c2->link));
+
+
+    /* Fill out the links */
+    l1 = arrp(contig_link_t, c1->link, idx1);
+    l2 = arrp(contig_link_t, c2->link, idx2);
+    *l1 = *abs_link;
+    *l2 = *abs_link;
+    l1->rec2 = abs_link->rec2;
+    l2->rec2 = abs_link->rec1;
+
+    printf("Linking %"PRIrec" to %"PRIrec"\n", c1->rec, c2->rec);
+    printf("&c1->link = %p, &c2->link = %p\n", &c1->link, &c2->link);
+    printf("c1->link = %p, c2->link = %p\n", c1->link, c2->link);
+
+    if (pos1 - c1->start < c1->end - pos1) {
+	l1->end1 = 0;
+	l1->pos1 = pos1 - c1->start;
+	l2->end2 = 0;
+	l2->pos2 = pos1 - c1->start;
+    } else {
+	l1->end1 = 1;
+	l1->pos1 = c1->end - pos1;
+	l2->end2 = 1;
+	l2->pos2 = c1->end - pos1;
+    }
+
+    if (pos2 - c2->start < c2->end - pos2) {
+	l2->end1 = 0;
+	l2->pos1 = pos2 - c2->start;
+	l1->end2 = 0;
+	l1->pos2 = pos2 - c2->start;
+    } else {
+	l2->end1 = 1;
+	l2->pos1 = c2->end - pos2;
+	l1->end2 = 1;
+	l1->pos2 = c2->end - pos2;
+    }
+
+    return 0;
+}
+
+/*
+ * Converts a specific link number from relative coordinates to absolute
+ * contig coordinates.
+ *
+ * Input is rel_link, output is abs_link.
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int contig_get_link_positions(GapIO *io,
+			      contig_link_t *rel_link,
+			      contig_link_t *abs_link) {
+    contig_t *c1, *c2;
+
+    c1 = cache_search(io, GT_Contig, rel_link->rec1);
+    c2 = cache_search(io, GT_Contig, rel_link->rec2);
+    
+    if (!c1 || !c2)
+	return -1;
+
+    *abs_link = *rel_link;
+
+    abs_link->pos1 = abs_link->end1 == 0
+	? c1->start + abs_link->pos1
+	: c1->end   - abs_link->pos1;
+
+    abs_link->pos2 = abs_link->end2 == 0
+	? c2->start + abs_link->pos2
+	: c2->end   - abs_link->pos2;
+
     return 0;
 }

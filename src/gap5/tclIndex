@@ -242,6 +242,8 @@ set auto_index(left_gel) [list source [file join $dir gap_utils.tcl]]
 set auto_index(InitContigGlobals) [list source [file join $dir gap_utils.tcl]]
 set auto_index(SetContigGlobals) [list source [file join $dir gap_utils.tcl]]
 set auto_index(complement_tag_list) [list source [file join $dir gap_utils.tcl]]
+set auto_index(contig_rename) [list source [file join $dir gap_utils.tcl]]
+set auto_index(contig_add_to_scaffold) [list source [file join $dir gap_utils.tcl]]
 
 set auto_index(ListResults) [list source [file join $dir result_manager.tcl]]
 set auto_index(result_list_update) [list source [file join $dir result_manager.tcl]]

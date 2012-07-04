@@ -45,6 +45,7 @@ typedef struct GapIO {
 
     /* Contig order array, also maps contig number to rec.num */
     ArrayStruct *contig_order;
+    ArrayStruct *scaffold;
     ArrayStruct *library;
 
     /* View information - FIXME: move elsewhere*/
@@ -121,6 +122,7 @@ int cache_exists(GapIO *io, int type, int rec);
 /* ------------------------------------------------------------------------- */
 /* And now the object specific defintions */
 #include "tg_register.h"
+#include "tg_scaffold.h"
 #include "tg_contig.h"
 #include "tg_sequence.h"
 #include "tg_bin.h"

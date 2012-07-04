@@ -20,15 +20,18 @@ proc InitListContigs {io parent {csh_win {}}} {
 
     # Create our tablelist
     tablelist $t.list \
-	-columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations"} \
+	-columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations" 20 "Scaffold"} \
 	-labelcommand tablelist::sortByColumn \
 	-exportselection 0 \
 	-stretch 0 \
 	-selectmode extended \
 	-yscrollcommand [list $t.yscroll set]
+    $t.list columnconfigure 0 -sortmode dictionary
     $t.list columnconfigure 1 -sortmode integer
     $t.list columnconfigure 2 -sortmode integer
     $t.list columnconfigure 3 -sortmode integer
+    $t.list columnconfigure 4 -sortmode dictionary \
+	-formatcommand ListContigsScaffoldFormat
     
     frame $t.buttons -bd 0
     button $t.buttons.cancel \
@@ -50,8 +53,16 @@ proc InitListContigs {io parent {csh_win {}}} {
 	-text "Help" \
 	-command "show_help gap5 Contig-Selector-Contigs"
 
+    button $t.buttons.up \
+	-text "\u2191" \
+	-command "ListContigsUp $io $t.list"
+
+    button $t.buttons.down \
+	-text "\u2193"  \
+	-command "ListContigsDown $io $t.list"
+
     pack $t.buttons.cancel $t.buttons.save $t.buttons.copy $t.buttons.help \
-	-side left -expand 1
+	$t.buttons.up $t.buttons.down -side left -expand 1
 
     # Add a scrollbar    
     scrollbar $t.yscroll -command "$t.list yview"
@@ -96,6 +107,13 @@ proc InitListContigs {io parent {csh_win {}}} {
 }
 
 ##############################################################################
+# Formatting of scaffold name & index into just scaffold name
+; proc ListContigsScaffoldFormat {name} {
+    return $name
+    #return [lindex [regexp -inline {(.*)/(-?[0-9]+)} $name] 1]
+}
+
+##############################################################################
 # Creates a menu for the list contigs window. This is a duplicate of the
 # contig selector menu, but the contig selector menu code requires knowledge
 # of canvas ids and canvas tag values right down to the final menu callbacks,
@@ -114,12 +132,66 @@ proc InitListContigs {io parent {csh_win {}}} {
     if {!$read_only} {
 	$w.m add command -label "Complement contig" \
 	    -command "complement_contig -io $io -contigs =$crec"
+	$w.m add separator
+	$w.m add command -label "Rename contig" \
+	    -command "ListContigsRename $w $io $crec"
+	$w.m add command -label "Change scaffold" \
+	    -command "ListContigsChangeScaffold $w $io $crec"
     }
 #    $w.m add command -label "List notes" \
 #	-command "NoteSelector $io contig $crec"
     tk_popup $w.m [expr $X-20] [expr $Y-10]
 }
 
+##############################################################################
+# Rename Contig callback
+; proc ListContigsRename {t io crec} {
+    set w [toplevel $t.rename]
+    set c [$io get_contig $crec]
+
+    wm title $w "Rename Contig: [$c get_name]"
+    
+    xentry $w.name \
+	-label "New contig name" \
+	-default [$c get_name]
+    $c delete
+    
+    okcancelhelp $w.ok \
+	-ok_command "contig_rename $io $crec \[$w.name get\] $w; ListContigsRepopulate $io $t" \
+	-cancel_command "destroy $w" \
+	-help_command "show_help gap5 Rename-Contig"
+
+    pack $w.name $w.ok -side top -fill both
+}
+
+##############################################################################
+# Change Scaffold callback
+; proc ListContigsChangeScaffold {t io crec} {
+    set w [xtoplevel $t.scaffold]
+
+    set c [$io get_contig $crec]
+    wm title $w "Change Scaffold: [$c get_name]"
+    
+    if {[$c get_scaffold] > 0} {
+	set f [$io get_scaffold [$c get_scaffold]]
+	set fname [$f get_name]
+	$f delete
+    } else {
+	set fname ""
+    }
+    $c delete
+
+    xentry $w.name \
+	-label "New scaffold name (blank for none)" \
+	-default $fname
+    
+    okcancelhelp $w.ok \
+	-ok_command "contig_add_to_scaffold $io $crec \[$w.name get\] $w; ListContigsRepopulate $io $t" \
+	-cancel_command "destroy $w" \
+	-help_command "show_help gap5 Scaffolds"
+
+    pack $w.name $w.ok -side top -fill both
+}
 
 ##############################################################################
 # Button-1 callback from the listcontig tablelist widget
@@ -239,8 +311,17 @@ proc InitListContigs {io parent {csh_win {}}} {
 	set clen [$cstruct get_length]
 	set nreads [$cstruct nseqs]
 	set nanno [$cstruct nanno]
+	set scaffold [$cstruct get_scaffold]
+	if {$scaffold != 0} {
+	    set fstruct [$io get_scaffold $scaffold]
+	    set ctgs [$fstruct get_contigs]
+	    set fname "[$fstruct get_name]/[lsearch $ctgs $num]"
+	    $fstruct delete
+	} else {
+	    set fname "(none)/0"
+	}
 	$cstruct delete
-	$w insert end [list "$name (=$num)" $clen $nreads $nanno]
+	$w insert end [list "$name (=$num)" $clen $nreads $nanno $fname]
     }
     if {[$w sortcolumn] != -1} {
 	$w sortbycolumn [$w sortcolumn] -[$w sortorder]
@@ -276,6 +357,7 @@ proc ListContigsSave {io t} {
     }
 
     save_contig_order -io $io -contigs $order
+    update_scaffold_order -io $io
 }
 
 ##############################################################################
@@ -308,4 +390,66 @@ proc ListContigsCopy {t} {
 proc ListContigsSelection {offset maxbytes} {
     global .Selection
     return [string range ${.Selection} $offset [expr {$offset+$maxbytes-1}]]
+}
+
+##############################################################################
+# Moving contig Up or Down
+proc ListContigsUp {io w} {
+    # If we have 8 entries, then valid indices are 0 1 2 3 4 5 6 7
+    # We could have selected 2, 3 and 5.
+    # "Up" then should move 2, 3 and 5 one higher, effectively reordering:
+    #
+    # 0 1 2 3 4 5 6 7 start
+    # 0 2 1 3 4 5 6 7 <- 2
+    # 0 2 3 1 4 5 6 7 <- 3
+    # 0 2 3 1 5 4 6 7 <- 5
+
+    set end [$w index end]
+    set l [$w get 0 end]
+
+    set n 0
+    foreach i [$w curselection] {
+	if {$i == $n} {incr n; continue}
+	set l [lreplace $l [expr {$i-1}] $i [lindex $l $i] [lindex $l [expr {$i-1}]]]
+    }
+
+    $w selection clear 0 end
+    $w delete 0 end
+    eval [list $w] insert end $l
+
+#    if {[$w sortcolumn] != -1} {
+#	$w sortbycolumn [$w sortcolumn] -[$w sortorder]
+#    }
+
+    # Redraw the selection
+    ListContigsUpdate $io $w
+}
+
+proc ListContigsDown {io w} {
+    # Move 2, 3, 5 down =>
+    #
+    # 0 1 2 3 4 5 6 7 start
+    # 0 1 2 3 4 6 5 7 -> 5
+    # 0 1 2 4 3 6 5 7 -> 3
+    # 0 1 4 2 3 6 5 7 -> 2
+    
+    set end [$w index end]
+    set l [$w get 0 end]
+
+    set n [expr {[llength $l]-1}]
+    foreach i [lreverse [$w curselection]] {
+	if {$i == $n} {incr n -1; continue}
+	set l [lreplace $l $i [expr {$i+1}] [lindex $l [expr {$i+1}]] [lindex $l $i]]
+    }
+
+    $w selection clear 0 end
+    $w delete 0 end
+    eval [list $w] insert end $l
+
+#    if {[$w sortcolumn] != -1} {
+#	$w sortbycolumn [$w sortcolumn] -[$w sortorder]
+#    }
+
+    # Redraw the selection
+    ListContigsUpdate $io $w
 }

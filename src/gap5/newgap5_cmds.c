@@ -478,6 +478,30 @@ tcl_save_contig_order(ClientData clientData,
 
 
 int
+tcl_update_scaffold_order(ClientData clientData,
+			  Tcl_Interp *interp,
+			  int objc,
+			  Tcl_Obj *CONST objv[])
+{
+    int i;
+    GapIO *io;
+    io_arg args;
+
+    /* Parse arguments */
+    cli_args a[] = {
+	{"-io",	         ARG_IO,  1, NULL, offsetof(io_arg, io)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    /* Fetch the list of ordered contigs */
+    return (0 == update_scaffold_order(args.io)) ? TCL_OK : TCL_ERROR;
+}
+
+
+int
 tcl_flush_contig_order(ClientData clientData,
 		      Tcl_Interp *interp,
 		      int objc,
@@ -2396,6 +2420,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 NULL);
     Tcl_CreateObjCommand(interp, "update_contig_order", UpdateContigOrder,
 			 (ClientData) NULL,
+			 NULL);
+    Tcl_CreateObjCommand(interp, "update_scaffold_order",
+			 tcl_update_scaffold_order, (ClientData) NULL,
 			 NULL);
     Tcl_CreateObjCommand(interp, "zoom_canvas", ZoomCanvas,
 			 (ClientData)NULL, NULL);

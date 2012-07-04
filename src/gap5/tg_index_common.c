@@ -686,6 +686,7 @@ tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     r.mqual = mapping_qual;
     r.pair_rec = 0;
     r.flags = flags;
+    r.library_rec = lib ? lib->rec : 0;
 
     /* Add the range to a bin, and see which bin it was */
     bin = bin_add_range(io, &c, &r, &r_out, &comp, 1);

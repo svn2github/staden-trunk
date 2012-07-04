@@ -48,6 +48,8 @@ typedef struct {
 
 static int tcl_database_read(GapIO *io, Tcl_Interp *interp,
 			     int objc, Tcl_Obj *CONST objv[]);
+static int tcl_scaffold_read(GapIO *io, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[]);
 static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 			   int objc, Tcl_Obj *CONST objv[]);
 static int tcl_contig_order(GapIO *io, Tcl_Interp *interp,
@@ -141,7 +143,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_library", "db_version",   "name",         "read_only",
 	"new_contig",  "new_sequence", "new_anno_ele", "rec_exists",
 	"seq_name_iter","seq_name_next","seq_name_end","check",
-	"contig_name2rec", "base",
+	"contig_name2rec", "base",     "get_scaffold",
 	(char *)NULL,
     };
 
@@ -152,7 +154,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
 	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,   IO_REC_EXISTS,
 	SEQ_NAME_ITER,SEQ_NAME_NEXT,  SEQ_NAME_END,   CHECK,
-	CONTIG_NAME2REC, IO_BASE
+	CONTIG_NAME2REC, IO_BASE,     IO_SCAFFOLD
     };
 
     if (objc < 2) {
@@ -181,6 +183,10 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case IO_FLUSH:
 	cache_flush(io);
+	break;
+
+    case IO_SCAFFOLD:
+	return tcl_scaffold_read(io, interp, objc-1, objv+1);
 	break;
 
     case IO_CONTIG:
@@ -642,7 +648,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"check",        "move_seq",
 	"get_visible_start", "get_visible_end", "get_visible_length",
 	"set_visible_start", "invalidate_consensus",    "set_name",
-	"dump_graph",
+	"dump_graph",   "add_link",	"get_links",
+	"get_scaffold", "add_to_scaffold", "remove_from_scaffold",
 	(char *)NULL,
     };
 
@@ -656,7 +663,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	CHECK,          MOVE_SEQ,
 	GET_VISIBLE_START, GET_VISIBLE_END, GET_VISIBLE_LENGTH,
 	SET_VISIBLE_START, INVALIDATE_CONSENSUS,        SET_NAME,
-	DUMP_GRAPH
+	DUMP_GRAPH,	ADD_LINK,	GET_LINKS,
+	GET_SCAFFOLD,   ADD_TO_SCAFFOLD,REMOVE_FROM_SCAFFOLD,
     };
 
     if (objc < 2) {
@@ -725,6 +733,57 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     case GET_REC:
 	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), tc->contig->rec);
 	break;
+
+    case GET_SCAFFOLD:
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), tc->contig->scaffold);
+	break;
+
+    case ADD_TO_SCAFFOLD: {
+	char *scaf_name;
+	int gap_size, gap_type, evidence;
+
+	if (objc != 6) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s add_to_scaffold scaffold_name gap_size "
+			   " gap_type evidence\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	scaf_name = Tcl_GetStringFromObj(objv[2], NULL);
+	Tcl_GetIntFromObj(interp, objv[3], &gap_size);
+	Tcl_GetIntFromObj(interp, objv[4], &gap_type);
+	Tcl_GetIntFromObj(interp, objv[5], &evidence);
+	if (scaffold_add_by_name(tc->io, scaf_name, tc->contig->name,
+				 gap_size, gap_type, evidence) != 0) {
+	    vTcl_SetResult(interp, "Error running scaffold_add_by_name\n");
+	    return TCL_ERROR;
+	}
+	Tcl_ResetResult(interp);
+
+	break;
+    }
+
+    case REMOVE_FROM_SCAFFOLD: {
+	tg_rec crec = tc->contig->rec;
+	int ret;
+
+	cache_decr(tc->io, tc->contig);
+	ret = scaffold_remove(tc->io, tc->contig->scaffold, crec);
+	tc->contig = cache_search(tc->io, GT_Contig, crec);
+	cache_incr(tc->io, tc->contig);
+
+	if (ret != 0) {
+	    vTcl_SetResult(interp, "Error running scaffold_remove\n");
+
+
+	    return TCL_ERROR;
+	}
+
+	Tcl_ResetResult(interp);
+
+	break;
+    }
 
     case GET_START:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), tc->contig->start);
@@ -1242,6 +1301,74 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	ret = bin_invalidate_consensus(tc->io, tc->contig->rec, start, end);
 	vTcl_SetResult(interp, "%d", ret);
     }
+
+    case ADD_LINK: {
+	contig_link_t l;
+	int ret;
+
+	if (objc < 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s add_link to_contig ?pos1 pos2 end1 end2 "
+			   "orientation size type score?\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	/* Fill out the link struct */
+	l.rec1 = tc->contig->rec;
+	Tcl_GetWideIntFromObj(interp, objv[2], &l.rec2);
+	l.pos1 = 0; l.pos2 = 0; l.end1 = 0; l.end2 = 0;
+	l.orientation = 0;
+	l.size = 0;
+	l.type = 0;
+	l.score = 0;
+	if (objc >  3) Tcl_GetIntFromObj(interp, objv[3], &l.pos1);
+	if (objc >  4) Tcl_GetIntFromObj(interp, objv[4], &l.pos2);
+	if (objc >  5) Tcl_GetIntFromObj(interp, objv[5], &l.end1);
+	if (objc >  6) Tcl_GetIntFromObj(interp, objv[6], &l.end2);
+	if (objc >  7) Tcl_GetIntFromObj(interp, objv[7], &l.orientation);
+	if (objc >  8) Tcl_GetIntFromObj(interp, objv[8], &l.size);
+	if (objc >  9) Tcl_GetIntFromObj(interp, objv[9], &l.type);
+	if (objc > 10) Tcl_GetIntFromObj(interp, objv[3], &l.score);
+
+	/* contig_add_link calls cache_rw, but doesn't return a new ptr */
+	cache_decr(tc->io, tc->contig);
+	ret = contig_add_link(tc->io, &l);
+	tc->contig = cache_search(tc->io, GT_Contig, l.rec1);
+	cache_incr(tc->io, tc->contig);
+
+	if (0 != ret) {
+	    return TCL_ERROR;
+	}
+
+	break;
+    }
+
+    case GET_LINKS: {
+	Tcl_Obj *items = Tcl_NewListObj(0, NULL);
+	int i;
+	for (i = 0; tc->contig->link && i < ArrayMax(tc->contig->link); i++) {
+	    contig_link_t *rl = arrp(contig_link_t, tc->contig->link, i);
+	    contig_link_t al;
+	    Tcl_Obj *objv[9];
+
+	    contig_get_link_positions(tc->io, rl, &al);
+	    objv[0] = Tcl_NewWideIntObj(al.rec2);
+	    objv[1] = Tcl_NewIntObj(al.pos1);
+	    objv[2] = Tcl_NewIntObj(al.pos2);
+	    objv[3] = Tcl_NewIntObj(al.end1);
+	    objv[4] = Tcl_NewIntObj(al.end2);
+	    objv[5] = Tcl_NewIntObj(al.orientation);
+	    objv[6] = Tcl_NewIntObj(al.size);
+	    objv[7] = Tcl_NewIntObj(al.type);
+	    objv[8] = Tcl_NewIntObj(al.score);
+	    Tcl_ListObjAppendElement(interp, items,
+				     Tcl_NewListObj(9, objv));
+	}
+	Tcl_SetObjResult(interp, items);
+
+	break;
+    }
     }
 
     return TCL_OK;
@@ -1322,6 +1449,169 @@ static int tcl_contig_order(GapIO *io, Tcl_Interp *interp,
     crec = arr(tg_rec, io->contig_order, cind);
 
     vTcl_SetResult(interp, "%"PRIrec, crec);
+    return TCL_OK;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Tcl_Obj "scaffold" type implementation */
+
+static void scaffold_update_string(Tcl_Obj *obj);
+static int scaffold_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
+
+typedef struct {
+    GapIO *io;
+    scaffold_t *scaffold;
+    btree_iter_t *iter;
+} tcl_scaffold;
+
+static Tcl_ObjType scaffold_obj_type = {
+    "scaffold",
+    (Tcl_FreeInternalRepProc*)NULL,
+    (Tcl_DupInternalRepProc*)NULL,
+    scaffold_update_string,
+    scaffold_from_any
+};
+
+static void scaffold_update_string(Tcl_Obj *obj) {
+    tcl_scaffold *c = obj->internalRep.otherValuePtr;
+    obj->bytes = ckalloc(30);
+    obj->length = sprintf(obj->bytes, "scaffold=%p", c);
+}
+
+static int scaffold_from_any(Tcl_Interp *interp, Tcl_Obj *obj) {
+    char *bytes;
+    int length;
+    tcl_scaffold *c;
+
+    if (NULL == (bytes = Tcl_GetStringFromObj(obj, &length)))
+	return TCL_ERROR;
+
+    if (0 != strncmp(bytes, "scaffold=", 3))
+	return TCL_ERROR;
+
+    /* Free the old internalRep before setting the new one. */
+    if (obj->typePtr && obj->typePtr->freeIntRepProc)
+	(*obj->typePtr->freeIntRepProc)(obj);
+
+    /* Convert the hex value to a pointer once more */
+    if (1 != sscanf(bytes+3, "%p", &c))
+	return TCL_ERROR;
+
+    obj->internalRep.otherValuePtr = c;
+    obj->typePtr = &scaffold_obj_type;
+    return TCL_OK;
+}
+
+static int scaffold_cmd(ClientData clientData, Tcl_Interp *interp,
+		      int objc, Tcl_Obj *CONST objv[]) {
+    int index;
+    tcl_scaffold *tc = (tcl_scaffold *)clientData;
+
+    static char *options[] = {
+	"delete",       "io",           "get_rec",      "get_name",
+	"get_contigs",
+	(char *)NULL,
+    };
+
+    enum options {
+	DELETE,         IO,     	GET_REC,	GET_NAME,
+	GET_CONTIGS,
+    };
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs(interp, 1, objv, "option arg ?arg ...?");
+	return TCL_ERROR;
+    }
+
+    if (Tcl_GetIndexFromObj(interp, objv[1], options, "option", 0,
+            &index) != TCL_OK) {
+        return TCL_ERROR;
+    }
+
+    switch ((enum options)index) {
+    case DELETE:
+	Tcl_DeleteCommandFromToken(interp,
+				   Tcl_GetCommandFromObj(interp, objv[0]));
+
+	break;
+
+    case IO:
+	Tcl_SetResult(interp, io_obj_as_string(tc->io) , TCL_VOLATILE);
+	break;
+
+    case GET_REC:
+	Tcl_SetWideIntObj(Tcl_GetObjResult(interp), tc->scaffold->rec);
+	break;
+
+    case GET_NAME:
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), tc->scaffold->name, -1);
+	break;
+
+    case GET_CONTIGS: {
+	Tcl_Obj *items = Tcl_NewListObj(0, NULL);
+	int i;
+	for (i = 0; i < ArrayMax(tc->scaffold->contig); i++) {
+	    scaffold_member_t *m = arrp(scaffold_member_t,
+					tc->scaffold->contig, i);
+	    Tcl_Obj *rec = Tcl_NewWideIntObj(m->rec);
+	    Tcl_ListObjAppendElement(interp, items, rec);
+	}
+	Tcl_SetObjResult(interp, items);
+
+	break;
+    }
+    }
+
+    return TCL_OK;
+}
+
+static int tcl_scaffold_read(GapIO *io, Tcl_Interp *interp,
+			   int objc, Tcl_Obj *CONST objv[]) {
+    scaffold_t *c;
+    Tcl_WideInt cnum;
+    tcl_scaffold *tc;
+    Tcl_Obj *res;
+
+    if (objc != 2) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s scaffold_id\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    Tcl_GetWideIntFromObj(interp, objv[1], &cnum);
+    //if (cnum > 0)
+	c = (scaffold_t *)cache_search(io, GT_Scaffold, cnum);
+    //else
+	//gio_read_scaffold(io, -(int)cnum, &c); /* scaffold order lookup */
+
+    if (!c) {
+	vTcl_SetResult(interp, "Unable to read scaffold =%"PRIrec, cnum);
+	return TCL_ERROR;
+    }
+
+    if (NULL == (tc = (tcl_scaffold *)ckalloc(sizeof(*tc))))
+	return TCL_ERROR;
+    tc->io = io;
+    tc->scaffold = c;
+    tc->iter = NULL;
+
+    if (NULL == (res = Tcl_NewObj()))
+	return TCL_ERROR;
+
+    res->internalRep.otherValuePtr = tc;
+    res->typePtr = &scaffold_obj_type;
+    scaffold_update_string(res);
+
+    /* Register the string form as a new command */
+    cache_incr(io, c);
+    if (NULL == Tcl_CreateObjCommand(interp, res->bytes, scaffold_cmd,
+				     (ClientData)tc,
+				     (Tcl_CmdDeleteProc *)_cmd_delete))
+	return TCL_ERROR;
+
+    Tcl_SetObjResult(interp, res);
+
     return TCL_OK;
 }
 
