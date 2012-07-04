@@ -305,3 +305,14 @@ proc lprepend {var args} {
 	incr p
     }
 }
+
+# Lreverse - native to tcl 8.5 and above
+# See http://www2.tcl.tk/17188
+if {[info command lreverse] == ""} {
+    proc lreverse l {
+	set r {}
+	set i [llength $l]
+	while {[incr i -1]} {lappend r [lindex $l $i]}
+	lappend r [lindex $l 0]
+    }
+}
