@@ -2362,7 +2362,7 @@ static cached_item *io_vector_read(void *dbh, tg_rec rec) {
 static char *pack_rng_array(int comp_mode, int fmt,
 			    GRange *rng, int nr, int *sz) {
     int i;
-    size_t part_sz[7];
+    size_t part_sz[8];
     GRange last, last_tag, last_refpos;
     unsigned char *cp[7], *cp_orig[7], *out;
     char *out_orig;
@@ -5317,8 +5317,6 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 	free(out_start[i]);
     }
     assert(cp - cp_start == total_size);
-
-    printf("Writing contig block with nparts=%d\n", nparts);
 
     /* Gzip it too */
     if (1) {
