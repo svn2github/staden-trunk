@@ -1416,18 +1416,12 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     /* Duplicate overlapping ISREFPOS markers between right_start & left_end */
     right_start = copy_isrefpos_markers(io, cl, cr, right_start, left_end);
 
-    /* Fix up seq / refpos / anno counts */
-    binl = get_bin(io, cl->bin);
-    cl->nseqs   = binl->nseqs;
-    cl->nrefpos = binl->nrefpos;
-    cl->nanno   = binl->nanno;
-
     /* Ensure start/end positions of contigs work out */
     bin = cache_rw(io, get_bin(io, cr->bin));
 
-    cr->nseqs = bin->nseqs;
-    cr->nrefpos = bin->nrefpos;
-    cr->nanno = bin->nanno;
+    /* Fix contig nseqs,nanno,nrefpos */
+    contig_fix_nseq(io, cl);
+    contig_fix_nseq(io, cr);
 
     //#define KEEP_POSITIONS 1
 #ifndef KEEP_POSITIONS
@@ -1446,8 +1440,6 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
     cr->start = right_start;
     cr->end = cl->end;
 #endif
-
-    
 
     consensus_unclipped_range(io, cl->rec, &cl->start, NULL);
 
