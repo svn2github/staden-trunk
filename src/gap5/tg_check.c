@@ -195,6 +195,16 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	    vmessage("Seq %"PRIrec": seq has unexpected char '%c' (%d)\n",
 		     s->rec, isprint(s->seq[i]) ? s->seq[i] : '?', s->seq[i]);
 	    err++;
+
+	    if (fix) {
+		s = cache_rw(io, s);
+		for (; i < len; i++) {
+		    if (!isbase[(unsigned char)s->seq[i]] &&
+			!(s->seq[i] == ' ' && is_cons))
+			s->seq[i] = 'N';
+		}
+		if (fixed) (*fixed)++;
+	    }
 	    break;
 	}
     }
