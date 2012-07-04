@@ -862,7 +862,7 @@ int sequence_get_template_info(GapIO *io, seq_t *s1,
     s2 = cache_search(io, GT_Seq, paired);
     if (!s2) {
 	verror(ERR_WARN, "sequence_get_template_info",
-	       "Sequence %s/#%"PRIrec" has a link to pair #"PRIrec
+	       "Sequence %s/#%"PRIrec" has a link to pair #%"PRIrec
 	       " which appears to no longer exist.",
 	       s1->name, s1->rec, paired);
 	return TEMPLATE_SINGLE;

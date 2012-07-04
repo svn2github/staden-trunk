@@ -685,7 +685,7 @@ display_cs_tags(Tcl_Interp *interp,                                   /* in */
 	int t = str2type(tag_types[i]);
 	HashData hd;
 	hd.i = 1;
-	HashTableAdd(ttype, &t, sizeof(t), hd, 0);
+	HashTableAdd(ttype, (char *)&t, sizeof(t), hd, 0);
     }
     if (tag_types)
 	Tcl_Free((char *)tag_types);
@@ -717,7 +717,7 @@ display_cs_tags(Tcl_Interp *interp,                                   /* in */
 
 	    /* Check it is a type we've requested to display */
 	    t = r->mqual;
-	    if (!HashTableSearch(ttype, &t, sizeof(t)))
+	    if (!HashTableSearch(ttype, (char *)&t, sizeof(t)))
 		continue;
 
 	    if (r->flags & GRANGE_FLAG_TAG_SEQ) {
