@@ -15,7 +15,7 @@
 #include "dna_utils.h"
 
 /* Add 'num' pads into the consensus for editor 'xx' at position 'pos'. */
-static void add_pads(edview *xx, contig_t *ctg, int pos, int num)
+static void add_pads(edview *xx, contig_t **ctg, int pos, int num)
 {
     int i;
 
@@ -23,7 +23,7 @@ static void add_pads(edview *xx, contig_t *ctg, int pos, int num)
 	return;
 
     for (i = 0; i < num; i++)
-	contig_insert_base(xx->io, &ctg, pos, '*', -1);
+	contig_insert_base(xx->io, ctg, pos, '*', -1);
 }
 
 /*
@@ -356,11 +356,11 @@ static int align(edview *xx0, int pos0, int len0,
 	    extra_pads = (curr_pad1 - last_pad1) - (curr_pad0 - last_pad0);
 
 	    if (extra_pads < 0) { /* Add to seq 0 */
-		add_pads(xx1, ctg1,
+		add_pads(xx1, &ctg1,
 			 pos1 + curr_pad1 + inserted_bases1, -extra_pads);
 		inserted_bases1 -= extra_pads;
 	    } else if (extra_pads > 0) { /* Add to seq 1 */
-		add_pads(xx0, ctg0,
+		add_pads(xx0, &ctg0,
 			 pos0 + curr_pad0 + inserted_bases0,  extra_pads);
 		inserted_bases0 += extra_pads;
 	    }
