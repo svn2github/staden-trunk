@@ -391,9 +391,15 @@ static int scaf_ctg_sort(const void *p1, const void *p2) {
  */
 int update_scaffold_order(GapIO *io) {
     int i, j, ret = -1;
-    int nc = ArrayMax(io->contig_order);
-    int ns = ArrayMax(io->scaffold);
+    int nc;
+    int ns;
     tg_rec *crecs;
+
+    if (!io->scaffold)
+	return 0; /* Not supported, but considered success */
+
+    nc = ArrayMax(io->contig_order);
+    ns = ArrayMax(io->scaffold);
 
     scaf_ctg_t *a = (scaf_ctg_t *)malloc(nc * sizeof(*a));
     if (!a)

@@ -19,19 +19,33 @@ proc InitListContigs {io parent {csh_win {}}} {
     wm title $t "Contig List"
 
     # Create our tablelist
-    tablelist $t.list \
-	-columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations" 20 "Scaffold"} \
-	-labelcommand tablelist::sortByColumn \
-	-exportselection 0 \
-	-stretch 0 \
-	-selectmode extended \
-	-yscrollcommand [list $t.yscroll set]
-    $t.list columnconfigure 0 -sortmode dictionary
-    $t.list columnconfigure 1 -sortmode integer
-    $t.list columnconfigure 2 -sortmode integer
-    $t.list columnconfigure 3 -sortmode integer
-    $t.list columnconfigure 4 -sortmode dictionary \
-	-formatcommand ListContigsScaffoldFormat
+    if {[$io db_version] >= 5} {
+	tablelist $t.list \
+	    -columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations" 20 "Scaffold"} \
+	    -labelcommand tablelist::sortByColumn \
+	    -exportselection 0 \
+	    -stretch 0 \
+	    -selectmode extended \
+	    -yscrollcommand [list $t.yscroll set]
+	$t.list columnconfigure 0 -sortmode dictionary
+	$t.list columnconfigure 1 -sortmode integer
+	$t.list columnconfigure 2 -sortmode integer
+	$t.list columnconfigure 3 -sortmode integer
+	$t.list columnconfigure 4 -sortmode dictionary \
+	    -formatcommand ListContigsScaffoldFormat
+    } else {
+	tablelist $t.list \
+	    -columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations"} \
+	    -labelcommand tablelist::sortByColumn \
+	    -exportselection 0 \
+	    -stretch 0 \
+	    -selectmode extended \
+	    -yscrollcommand [list $t.yscroll set]
+	$t.list columnconfigure 0 -sortmode dictionary
+	$t.list columnconfigure 1 -sortmode integer
+	$t.list columnconfigure 2 -sortmode integer
+	$t.list columnconfigure 3 -sortmode integer
+    }
     
     frame $t.buttons -bd 0
     button $t.buttons.cancel \
@@ -135,8 +149,10 @@ proc InitListContigs {io parent {csh_win {}}} {
 	$w.m add separator
 	$w.m add command -label "Rename contig" \
 	    -command "ListContigsRename $w $io $crec"
-	$w.m add command -label "Change scaffold" \
-	    -command "ListContigsChangeScaffold $w $io $crec"
+	if {[$io db_version] >= 5} {
+	    $w.m add command -label "Change scaffold" \
+		-command "ListContigsChangeScaffold $w $io $crec"
+	}
     }
 #    $w.m add command -label "List notes" \
 #	-command "NoteSelector $io contig $crec"
