@@ -15,6 +15,7 @@
 #define _IOLIB 2
 #include "depad_seq_tree.h"
 #include "sam_pileup.h"
+#include "consensus.h"
 
 /*
  * Uncomment this if you want sam auxillary tags to be added as tag in
