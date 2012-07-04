@@ -953,6 +953,110 @@ int edview_search_tag_indel(edview *xx, int dir, int strand, char *value) {
 }
 
 /*
+ * Attempt to find edits. It's not 100% reliable, but works for most cases.
+ * We look for lowercase bases and confidence 100 and 0 (if not N).
+ * We cannot find deleted bases though.
+ */
+int edview_search_edit(edview *xx, int dir, int strand, char *value) {
+    int start, end;
+    contig_iterator *iter;
+    rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
+    rangec_t *r;
+    int best_pos, found = 0;
+    int fpos;
+    tg_rec fseq;
+
+    if (dir) {
+	start = xx->cursor_apos + 1;
+	end = CITER_CEND;
+	iter = contig_iter_new(xx->io, xx->cnum, 1,
+			       CITER_FIRST | CITER_ISTART,
+			       start, end);
+	ifunc = contig_iter_next;
+	best_pos = INT_MAX;
+    } else {
+	start = CITER_CSTART;
+	end = xx->cursor_apos -1;
+	iter = contig_iter_new(xx->io, xx->cnum, 1,
+			       CITER_LAST | CITER_IEND,
+			       start, end);
+	ifunc = contig_iter_prev;
+	best_pos = INT_MIN;
+    }
+
+    if (!iter)
+	return -1;
+
+
+    while ((r = ifunc(xx->io, iter))) {
+	seq_t *s, *sorig;
+	char *seq, *qual;
+	int seq_len, comp, off = 0, i;
+
+	if (found && dir  && r->start > best_pos)
+	    break;
+	if (found && !dir && r->end < best_pos)
+	    break;
+
+	if (NULL == (s = sorig = cache_search(xx->io, GT_Seq, r->rec)))
+	    break;
+
+	if (r->comp ^ (s->len < 0)) {
+	    s = dup_seq(s);
+	    complement_seq_t(s);
+	}
+
+	seq  = s->seq;
+	qual = s->conf;
+	seq_len = ABS(s->len);
+
+	if (r->start < start) {
+	    off      = start - r->start;
+	    seq     += off;
+	    qual    += off;
+	    seq_len -= off;
+	}
+
+	for (i = 0; i < seq_len; i++) {
+	    if (islower(seq[i]) ||
+		qual[i] == 100 ||
+		(qual[i] == 0 && seq[i] != 'N' && seq[i] != '-'
+		 && seq[i] != '*')) {
+		int pos = r->start + i + off;
+		if (dir) {
+		    if (best_pos > pos && pos > xx->cursor_apos) {
+			found = 1;
+			best_pos = pos;
+			fpos = i + off;
+			fseq = r->rec;
+		    }
+		    break;
+		} else {
+		    if (best_pos < pos && pos < xx->cursor_apos) {
+			found = 1;
+			best_pos = pos;
+			fpos = i + off;
+			fseq = r->rec;
+		    }
+		}
+	    }
+	}
+
+	if (s != sorig)
+	    free(s);
+    }
+
+    if (found) {
+	edSetCursorPos(xx, fseq == xx->cnum ? GT_Contig : GT_Seq,
+		       fseq, fpos, 1);
+    }
+
+    contig_iter_del(iter);
+
+    return found ? 0 : -1;
+}
+
+/*
  * Performs a search within the editor.
  * type   is a string indicating the search type - name, tag, sequence, ...
  * dir    is 1 for forward, 0 for reverse.
@@ -980,6 +1084,7 @@ int edview_search(edview *xx, int dir, int strand,
 	{"indel",        edview_search_tag_indel},
 	{"conshet",      edview_search_cons_het},
 	{"consdiscrep",  edview_search_cons_discrep},
+	{"edit",         edview_search_edit}
     };
     int i;
 
