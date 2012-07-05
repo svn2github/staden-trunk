@@ -42,7 +42,6 @@ typedef struct {
     int ntl;                 // line size
     int nr;                  // number of entries in range
     GapIO *io;               // gap db
-    contig_t *contig;        // contig
     double wx0;              // left most part of range (world coordinates)  
     double wx1;              // right most part of range (world coordinates)
     int width;	    	     // window width

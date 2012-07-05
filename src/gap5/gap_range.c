@@ -89,14 +89,7 @@ static int tcl_range(ClientData clientData, Tcl_Interp *interp,
     }
     
     gr->io = args.io;
-    gr->contig = (contig_t *)cache_search(gr->io, GT_Contig, args.cnum);
-    gr->crec = gr->contig->rec;
-    
-    if (NULL == gr->contig) {
-    	return TCL_ERROR;
-    }
-    
-    cache_incr(gr->io, gr->contig);
+    gr->crec = args.cnum;
     
     gr->r             = NULL;
     gr->tl            = NULL;
@@ -148,9 +141,6 @@ void gap_range_destroy(gap_range_t *gr) {
     if (gr->depth) {
     	free(gr->depth);
     }
-
-    if (gr->contig)
-	cache_decr(gr->io, gr->contig);
 }
 
 int gap_range_test(gap_range_t *gr) {
@@ -205,6 +195,7 @@ static void update_filter(gap_range_t *gr) {
 */
 int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double new_wx1, int new_mode, int force) {
     int changed = 0;
+    contig_t *c;
 
     /* only change if needed or if force is true */
     if (force || gr->r == NULL || new_wx0 != gr->wx0 || new_wx1 != gr->wx1 || new_mode != gr->template_mode ||
@@ -213,8 +204,11 @@ int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double new
     	if (gr->r) {
 	    free(gr->r);
 	}
-	
-	gr->r = contig_seqs_in_range(gr->io, &gr->contig, new_wx0, new_wx1, new_mode, &gr->nr);
+
+	c = cache_search(gr->io, GT_Contig, gr->crec);
+	cache_incr(gr->io, c);
+	gr->r = contig_seqs_in_range(gr->io, &c, new_wx0, new_wx1, new_mode, &gr->nr);
+	cache_decr(gr->io, c);
 	
 	if (gr->r) {
 	    tline *tmp_line = NULL;
