@@ -74,4 +74,14 @@ int update_library_stats(GapIO *io, tg_rec rec, int min_count,
 int get_library_stats(GapIO *io, tg_rec rec,
 		      double *mean, double *sd, int *type, int *count);
 
+/*
+ * Finds the predicted largest library insert size and returns it.
+ * We use this for better optimisation of the template display to avoid
+ * seeing orange unmatched read-pairs on the window edge if we have large
+ * insert libraries in use.
+ *
+ * It's only calculated once and returned from then on.
+ */
+int template_max_size(GapIO *io);
+
 #endif /* _TG_LIBRARY_ */

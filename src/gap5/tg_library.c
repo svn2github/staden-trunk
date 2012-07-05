@@ -350,3 +350,33 @@ int get_library_stats(GapIO *io, tg_rec rec,
 
     return 0;
 }
+
+/*
+ * Finds the predicted largest library insert size and returns it.
+ * We use this for better optimisation of the template display to avoid
+ * seeing orange unmatched read-pairs on the window edge if we have large
+ * insert libraries in use.
+ *
+ * It's only calculated once and returned from then on.
+ */
+int template_max_size(GapIO *io) {
+    int i;
+    static int max_size = 0;
+
+    if (max_size)
+	return max_size;
+    
+    for (i = 0; i < io->db->Nlibraries; i++) {
+	tg_rec rec = ARR(tg_rec, io->library, i);
+	double mean, sd;
+
+	update_library_stats(io, rec, 1000, &mean, &sd, NULL);
+	if (max_size < (int)(mean + 3*sd))
+	    max_size = (int)(mean + 3*sd);
+    }
+
+    if (max_size == 0)
+	max_size = 1000; /* Random guess - old size used by T.Disp */
+
+    return max_size;
+}

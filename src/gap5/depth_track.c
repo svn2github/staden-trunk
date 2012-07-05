@@ -566,12 +566,14 @@ static void redraw_depth_image(DepthTrackItem *dti, Display *display) {
     int ymin = INT_MAX;
     int ymax = INT_MIN;
     double ax, bx;
+    int tsize = MIN(template_max_size(dti->gr->io), GR_WINDOW_RANGE);
 
     /* clear the pixmap */
     XFillRectangle(display, dti->pm, dti->copy, 0, 0, dti->width, dti->height);
     
-    working_wx0 = dti->wx0 - GR_WINDOW_RANGE; // use some values beyond the window size.
-    working_wx1 = dti->wx1 + GR_WINDOW_RANGE;
+    // use some values beyond the window size.
+    working_wx0 = dti->wx0 - tsize;
+    working_wx1 = dti->wx1 + tsize;
     
     if (gap_range_recalculate(dti->gr, dti->width, working_wx0, working_wx1, dti->gr->template_mode, force_change)) {
 

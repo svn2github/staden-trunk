@@ -717,8 +717,6 @@ static int sort_tline_by_x(const void *p1, const void *p2) {
     return r1->x[0] - r2->x[1];
 }
 
-
-
 /* do the actual work of drawing the template track, uses the gap_range
    functions for most of the data handling */
    	    
@@ -733,12 +731,14 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     int ymin = INT_MAX;
     int ymax = INT_MIN;
     static int last_zoom = 0;
+    int tsize = MIN(template_max_size(tdi->gr->io), GR_WINDOW_RANGE);
     
     image_remove(tdi->image);
     if(!create_image_buffer(tdi->image, tdi->width, tdi->height, tdi->background)) return;
 
-    working_wx0 = tdi->wx0 - GR_WINDOW_RANGE; // use some values beyond the window size.
-    working_wx1 = tdi->wx1 + GR_WINDOW_RANGE;
+    // use some values beyond the window size.
+    working_wx0 = tdi->wx0 - tsize;
+    working_wx1 = tdi->wx1 + tsize;
  
     mode = tdi->reads_only ? 0 : CSIR_PAIR;
     

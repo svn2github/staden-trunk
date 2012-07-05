@@ -62,8 +62,8 @@ typedef struct {
 #define FILTER_SPANNING      (1<<4)
 #define FILTER_NONSPANNING   (1<<5)
 
-/* define range beyond window size used in track calc */
-#define GR_WINDOW_RANGE 1000
+/* Add i.size + 3sd to window size for read pairing. This is the max size */
+#define GR_WINDOW_RANGE 40000
 
 /* Global gap range_option */
 extern Tk_CustomOption range_option;
