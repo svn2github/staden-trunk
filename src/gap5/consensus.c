@@ -396,6 +396,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		    r2.mqual    = 0;
 		    r2.flags    = GRANGE_FLAG_TYPE_SINGLE;
 		    r2.flags   |= GRANGE_FLAG_ISCONS;
+		    r2.library_rec = 0;
 			
 		    cache_decr(io, bin);
 		    bin = bin_add_to_range(io, &c, bin->rec, &r2, &r_out,
