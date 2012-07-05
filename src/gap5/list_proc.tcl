@@ -1469,3 +1469,68 @@ proc UnattachedReadings2 {io t outfile} {
         ListEdit $out
     }
 }
+
+#-----------------------------------------------------------------------------
+# Convert a list of #num to name
+proc NumToName {io} {
+    global gap5_defs
+    set l [keylget gap5_defs NUMLIST_TO_NAME]
+
+    set t [keylget l WIN]
+    if {[xtoplevel $t -resizable 0] == ""} return
+    wm title $t "Reading numbers to names"
+
+    getLname $t.from [keylget gap5_defs NUMLIST_TO_NAME.FROMLIST] read
+    getLname $t.to   [keylget gap5_defs NUMLIST_TO_NAME.TOLIST]   create
+
+    okcancelhelp $t.ok \
+	-ok_command "NumToName2 $io $t $t.from $t.to" \
+	-cancel_command "destroy $t" \
+	-help_command "show_help gap5 {List-NumToName}" \
+	-bd 2 -relief groove
+
+    pack $t.from $t.to $t.ok -side top -fill both
+}
+
+
+proc NumToName2 {io t from to} {
+    set from [entrybox_get $from.entry]
+    set to   [entrybox_get $to.entry]
+
+    if {$from == "" || $to == ""} {
+	bell
+	return
+    }
+    set parent [winfo parent $t]
+    destroy $t
+
+    set l {}
+    set nerrs 0
+    foreach n [ListGet $from] {
+	set num [lindex [regexp -inline {^\#?([0-9]+)$} $n] 1]
+	if {$num} {
+	    if {[catch {set s [$io get_seq $num]}]} {
+		set s ""
+	    }
+
+	    if {$s != ""} {
+		set name [$s get_name]
+		$s delete
+	    } else {
+		set num ""
+	    }
+	}
+
+	if {$num == ""} {
+	    tk_messageBox -icon error -type ok -title "List conversion" \
+		-message "Failure to convert seq number '$n' to a name" \
+		-parent $parent
+	    return
+	} 
+
+	lappend l $name
+    }
+
+    ListCreate2 $to $l SEQID
+    ListEdit $to
+}

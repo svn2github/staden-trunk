@@ -388,6 +388,7 @@ set_def EDIT_LIST.WIN		.edit_list
 set_def CREATE_LIST.WIN		.create_list
 set_def PRINT_LIST.WIN		.print_list
 set_def COPY_LIST.WIN		.copy_list
+set_def NUMLIST_TO_NAME.WIN	.num_to_name
 set_def CONTIGS_TO_LIST.WIN	.contigs_to_readings
 set_def SUGGEST_PRIMERS.WIN	.suggest_primers
 set_def CALC_QUALITY.WIN	.calc_quality
@@ -849,6 +850,8 @@ set_def CREATE_LIST.LISTNAME		"list name"
 set_def PRINT_LIST.LISTNAME		"list name"
 set_def COPY_LIST.FROMLIST		"from list name"
 set_def COPY_LIST.TOLIST		"to list name"
+set_def NUMLIST_TO_NAME.FROMLIST	"from list name"
+set_def NUMLIST_TO_NAME.TOLIST		"to list name"
 set_def CONTIGS_TO_LIST.INFILE		       $defs_c_in
 set_def CONTIGS_TO_LIST.OUTFILE		       $defs_f_or_l_out
 set_def CONTIGS_TO_LIST.OUTFILE.WHICH.NAME     "Save reading names in"

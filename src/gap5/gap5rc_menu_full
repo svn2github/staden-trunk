@@ -171,6 +171,7 @@ add_command	{Lists.Contigs to readings}	 8 10 {ContigsToReadings \$io}
 add_command {Lists.Search sequence names} 12 6 {SearchSeqDialog \$io} 
 #add_command {Lists.Search template names} 12 6 {SearchTemplateDialog \$io} 
 #add_command {Lists.Search annotation contents} 12 6 {SearchAnnoDialog \$io} 
+add_command	{Lists.Read #Numbers to Names}	 8 10 {NumToName \$io}
 
 add_command	{Assembly.Import Fasta/Fastq as single-read contigs} \
 						12 22 {AssemblySingle \$io}
