@@ -68,7 +68,8 @@ typedef struct TemplateDisplayItem {
     int background;
     
     int ntl;
-             
+
+    int force_redraw;
 } TemplateDisplayItem;
 
 
@@ -137,6 +138,7 @@ static Tk_ConfigSpec config_specs[] = {
     {TK_CONFIG_DOUBLE, "-y_end", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, y_end), TK_CONFIG_DONT_SET_DEFAULT}, 
     {TK_CONFIG_DOUBLE, "-px", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, px), TK_CONFIG_DONT_SET_DEFAULT}, 
     {TK_CONFIG_DOUBLE, "-py", NULL, NULL, "0", Tk_Offset(TemplateDisplayItem, py), TK_CONFIG_DONT_SET_DEFAULT}, 
+    {TK_CONFIG_INT, "-force_redraw", "forceRedraw", "ForceRedraw", "0", Tk_Offset(TemplateDisplayItem, force_redraw), 0, 0},
     {TK_CONFIG_END, (char *) NULL, (char *) NULL, (char *) NULL, (char *) NULL, 0, 0}
 };
     
@@ -722,7 +724,7 @@ static int sort_tline_by_x(const void *p1, const void *p2) {
    	    
 static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     double working_wx0, working_wx1;
-    int force_change = 0;
+    int force_change = tdi->force_redraw;
     int mode;
     double ax, bx, ay, by;
     int fwd_col, rev_col;
@@ -733,6 +735,7 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     static int last_zoom = 0;
     int tsize = MIN(template_max_size(tdi->gr->io), GR_WINDOW_RANGE);
     
+    tdi->force_redraw = 0;
     image_remove(tdi->image);
     if(!create_image_buffer(tdi->image, tdi->width, tdi->height, tdi->background)) return;
 
