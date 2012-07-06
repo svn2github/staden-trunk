@@ -29,26 +29,32 @@ proc 1.5Dplot {w io wid hei {cnum {}} {pos {}}} {
 	set cnum [$io contig_order 0]
     }
 
+    set c [$io get_contig $cnum]
+
     set ${w}(io) $io
     set ${w}(cnum) $cnum
-    set ${w}(contig) [$io get_contig $cnum]
-    set ${w}(start) [[set ${w}(contig)] get_start]
-    set ${w}(length) [[set ${w}(contig)] get_length]
+    set ${w}(start) [$c get_start]
+    set ${w}(length) [$c get_length]
     set ${w}(tracks) {}
     set ${w}(move_status) 0
     set ${w}(yzoom) 1
     set ${w}(xorigin) 0
     set ${w}(width) $wid
     set ${w}(pwidth) $wid; # 1st guess
-    set ${w}(height) 1;    # force resize in plot_redraw
+    set ${w}(height) 1;    # force resize in redraw_plot
     set ${w}(border) 500
     set ${w}(x1)    0
     set ${w}(x2)    100
     set ${w}(last_x1) -9999999
     set ${w}(last_x2) -9999999
     set ${w}(ntracks) 0
+
     # something to store the common x range information
     set ${w}(grange) [g5::range -io $io -cnum $cnum]
+
+    # Set to one prior to redraw_plot to force the next redraw to occur
+    # even if apparently nothing knowingly changed. (Ie external edits)
+    set ${w}(ForceRedraw) 0
 
     if {$pos == {}} {
 	set ${w}(x1) [set ${w}(start)]
@@ -62,7 +68,7 @@ proc 1.5Dplot {w io wid hei {cnum {}} {pos {}}} {
     set ${w}(template) 1
     set ${w}(depth) 1
 
-    wm title $w "Contig [[set ${w}(contig)] get_name]"
+    wm title $w "Contig [$c get_name]"
     
     # now to do the menu
     global new_template_menu
@@ -115,13 +121,14 @@ proc 1.5Dplot {w io wid hei {cnum {}} {pos {}}} {
     
     track_settings $w 
 
+    $c delete
 
     # Contig registration
     set ${w}(reg) [contig_register \
 		       -io $io \
 		       -contig $cnum \
 		       -command "1.5plot_contig_event $w" \
-		       -flags [list QUERY_NAME CURSOR_NOTIFY]]
+		       -flags [list QUERY_NAME CURSOR_NOTIFY DELETE COMPLEMENT LENGTH JOIN_TO]]
     wm protocol $w WM_DELETE_WINDOW "1.5plot_exit $w"
 
     redraw_plot $w
@@ -188,6 +195,83 @@ proc 1.5plot_contig_event {w type id cdata args} {
 	    }
 	}
 
+	LENGTH {
+	    set c [[set ${w}(io)] get_contig [set ${w}(cnum)]]
+	    set ${w}(start)  [$c get_start]
+	    set ${w}(length) [$c get_length]
+	    $c delete
+	    set ${w}(ForceRedraw) 1
+	    redraw_plot $w
+	}
+
+	COMPLEMENT {
+	    # Swapping x1/x2 around
+	    # Old contig left/right bounds
+	    set oleft  [set ${w}(start)]
+	    set oright [expr {$oleft+[set ${w}(length)]-1}]
+
+	    set c [[set ${w}(io)] get_contig [set ${w}(cnum)]]
+	    set ${w}(start)  [$c get_start]
+	    set ${w}(length) [$c get_length]
+	    $c delete
+
+	    # New contig left/right bounds
+	    set nleft  [set ${w}(start)]
+	    set nright [expr {$nleft+[set ${w}(length)]-1}]
+
+	    # => compute new x1/x2 based on location of old x1/x2 in contig
+	    set n1 [expr {$oright - ([set ${w}(x2)]-$oleft) + $nleft}]
+	    set n2 [expr {$oright - ([set ${w}(x1)]-$oleft) + $nleft}]
+
+	    set ${w}(x1) $n1
+	    set ${w}(x2) $n2
+
+	    # And the scrollbar too
+	    foreach {s1 s2} [$w.xscroll get] break
+	    set n1 [expr {1-$s2}]
+	    set n2 [expr {1-$s1}]
+	    $w.xscroll set $n1 $n2
+
+	    set ${w}(ForceRedraw) 1
+	    redraw_plot $w
+	}
+
+	DELETE {
+	    1.5plot_exit $w
+	}
+
+	JOIN_TO {
+	    # $w JOIN_TO 4 {contig_num 6145} {contig 6146} {offset 599}
+	    foreach a $args {
+		foreach {k v} $a break;
+		set arg($k) $v
+	    }
+
+	    # Join to $arg(contig) at $arg(offset)
+	    set ${w}(cnum) $arg(contig)
+	    rename [set ${w}(grange)] {}
+	    set io [set ${w}(io)]
+	    set ${w}(grange) [g5::range -io $io -cnum $arg(contig)]
+
+	    foreach id [set ${w}(tracks)] {
+		set t $w.track$id
+		global $t
+
+		set d [set ${t}(canvas)]
+		if {[info exists ${t}(track)]} {
+		    $d itemconfigure [set ${t}(track)] \
+			-range [set ${w}(grange)]
+		}
+	    }
+
+	    # Fix offsets too
+	    incr ${w}(x1) $arg(offset)
+	    incr ${w}(x2) $arg(offset)
+
+	    set ${w}(ForceRedraw) 1
+	    redraw_plot $w
+	}
+
 	default {
 	    puts "depth.tcl: Event '$type $args' not handled"
 	}
@@ -245,7 +329,7 @@ proc resize1.5 {w} {
 
     # We get rogue events when highlighting. Skip these
     if {[winfo width  $w] == [set ${w}(width)] && \
-	[winfo height $w] == [set ${w}(height)]} return
+	    [winfo height $w] == [set ${w}(height)]} return
 
     set ${w}(width) [winfo width $w]
     set ${w}(height) [winfo height $w]
@@ -1236,7 +1320,10 @@ proc template_item {w t x1 x2 y1 y2} {
     	-wx0   	     $x1 \
 	-wx1         $x2 \
 	-wy0	     $y1 \
-	-wy1	     $y2
+	-wy1	     $y2 \
+	-force_redraw [set ${w}(ForceRedraw)]
+
+    set ${w}(ForceRedraw) 0
 
     # reset coords just in case they have moved
     $d coords $td 0 0
@@ -1300,7 +1387,7 @@ proc depth_item_init {w t} {
 
 proc depth_item {w t x1 x2 y1 y2} {
     global $w $t
-    
+
     if {![info exists ${t}(Init)]} {
     	depth_item_init $w $t
      }
@@ -1462,7 +1549,7 @@ proc drag_x {w t x y} {
 
 proc end_drag_x {w t x y} {
     global $w $t
-    
+
     set start [set ${t}(m_start)]
     set end   [set ${t}(m_stop)]
     
