@@ -495,7 +495,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 
     cache_decr(io, c);
 
-    if (end > left) {
+    if (end >= left) {
 	//printf("Filling missing region %d..%d\n", left, end);
 	calculate_consensus_simple2(io, contig, left, end,
 				    con  ? &con[left-start]  : NULL,
