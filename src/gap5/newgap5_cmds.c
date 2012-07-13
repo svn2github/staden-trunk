@@ -1121,7 +1121,7 @@ int tcl_calc_quality(ClientData clientData, Tcl_Interp *interp,
 	    buf[i] = q;
 	}
 
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, len));
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj(buf, len));
 
 	xfree(flt);
 	xfree(buf);
@@ -1595,7 +1595,7 @@ tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    in = Tcl_GetStringFromObj(args.str, &len);
+    in = Tcl_GetByteArrayFromObj(args.str, &len);
 
     out = (char *)malloc(len + 1 + (args.fold ? len / args.fold + 1 : 0));
     if (!out)
