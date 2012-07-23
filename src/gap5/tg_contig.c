@@ -4258,262 +4258,314 @@ int contig_destroy(GapIO *io, tg_rec rec) {
 static int bin_dump_ps_recurse(FILE *gv, GapIO *io, tg_rec rec,
 			       int (*levels)[2], int nlevels,
 			       int depth_first, int to_draw) {
-  int empty;
-  int i;
-  int complement;
-  int offset;
-  int end;
-  int level;
-  bin_list *head = NULL;
-  bin_list *tail = NULL;
-  bin_list *item;
-  bin_index_t *bin = NULL;
-
-  for (i = 0; i < nlevels; i++) {
-    levels[i][0] =  INT_MAX;
-    levels[i][1] = -INT_MAX;
-  }
-
-  head = malloc(sizeof(bin_list));
-  if (!head) return -1;
-
-  head->rec = rec;
-  head->parent_comp   = 0;
-  head->parent_offset = 0;
-  head->parent_size   = 0;
-  head->parent_level  = -1;
-  head->child_index   = 0;
-  head->next = NULL;
-  if (!depth_first) tail = head;
-
-  while (head) {
-    complement = head->parent_comp;
-
-    bin = get_bin(io, head->rec);
-    if (bin) {
-      if (bin->flags & BIN_COMPLEMENTED) {
-	complement ^= 1;
-      }
-      offset = (head->parent_comp
-		? head->parent_offset + head->parent_size - bin->pos - bin->size
-		: head->parent_offset + bin->pos);
-      end = offset + bin->size;
-
-      for (level = head->parent_level + 1; level < nlevels; level++) {
-	if (offset >= levels[level][1] || end <= levels[level][0]) break;
-      }
-      assert(level < nlevels);
-
-      if (levels[level][0] > offset) levels[level][0] = offset;
-      if (levels[level][1] < end)    levels[level][1] = end;
-  
-      empty = bin_empty(bin);
-
-      if ((to_draw & DRAW_LINKS) && head->parent_level >= 0) {
-	/* Linking lines */
-	fprintf(gv, "%d %d %d %d %d l\n",
-		head->parent_offset + head->parent_size / 2,
-		head->parent_level,
-		offset + bin->size / 2, level, head->child_index);
-      }
-      
-      /* The bin itself */
-      if (to_draw & DRAW_BINS) {
-	fprintf(gv, "%d %d (%"PRIrec") %d %s %d %d %s %d %d sb ",
-		bin->nrefpos, bin->nseqs, bin->rec, bin->size,
-		complement ? "t" : "f",
-		empty ? 0 : bin->start_used,
-		empty ? 0 : bin->end_used,
-		empty ? "f" : "t",
-		level, offset);
-	
-	if ((to_draw & DRAW_SEQS) && bin->rng && ArrayMax(bin->rng)) {
-	  /* Bin contents */
-	  int n = ArrayMax(bin->rng);
-	  int last_type  = -1;
-	  int draw_count = 0;
-	  int dup_count = 0;
-	  int last_start =  0;
-	  int last_end   = -1;
-	  int skipped = 0;
-	  /* fprintf(gv, "%d %d sqb\n", level, offset); */
-	  fprintf(gv, "%d sqb\n", n);
-	  for (i = 0; i < n; i++) {
-	    range_t *r = arrp(range_t, bin->rng, i);
-
-	    if (dup_count && ((r->flags & GRANGE_FLAG_UNUSED)
-			      || (r->flags & GRANGE_FLAG_ISMASK) != last_type
-			      || r->start != last_start
-			      || r->end != last_end
-			      || draw_count > 200)) {
-	      if (dup_count > 1) { fprintf(gv, "%d { ", dup_count); }
-	      fprintf(gv, "%d %d sq%s", last_start, last_end,
-		      dup_count > 1 ? " } repeat\n" : "\n");
-	      dup_count = 0;
-	      if (draw_count > 200) {
-		fprintf(gv, "stroke\n");
-		draw_count = 0;
-	      }
-	    }
-
-	    if (r->flags & GRANGE_FLAG_UNUSED) {
-	      skipped++;
-	      continue;
-	    }
-	    if (skipped) {
-	      fprintf(gv, "%d add\n", skipped);
-	      skipped = 0;
-	    }
-	    if ((r->flags & GRANGE_FLAG_ISMASK) != last_type) {
-	      last_type = r->flags & GRANGE_FLAG_ISMASK;
-	      fprintf(gv, "%d sqg ", last_type == GRANGE_FLAG_ISSEQ ? 1 : 0);
-	      draw_count = 0;
-	    }
-	    last_start = r->start;
-	    last_end   = r->end;
-	    dup_count++;
-	    draw_count++;
-	  }
-	  if (dup_count) {
-	    if (dup_count > 1) { fprintf(gv, "%d { ", dup_count); }
-	    fprintf(gv, "%d %d sq%s", last_start, last_end,
-		    dup_count > 1 ? " } repeat\n" : "\n");
-	  }
-	  fprintf(gv, "sqe\n");
-	}
-
-	fprintf(gv, "eb\n");
-      }
-
-      for (i = 0; i < 2; i++) {
-	if (bin->child[i]) {
-	  item = malloc(sizeof(bin_list));
-	  if (!item) goto unwind;
-	  item->rec = bin->child[i];
-	  item->parent_comp   = complement;
-	  item->parent_offset = offset;
-	  item->parent_size   = bin->size;
-	  item->parent_level  = level;
-	  item->child_index   = i;
-	  if (depth_first) {
-	    /* Put item one down in the list, as head will be removed later */
-	    item->next = head->next;
-	    head->next = item;	    
-	  } else {
-	    item->next = NULL;
-	    tail->next = item;
-	    tail = item;
-	  }
-	}
-      }
-    } else {
-      fprintf(stderr, "Couldn't get bin %"PRIrec"\n", head->rec);
+    int empty;
+    int i;
+    int complement;
+    int offset;
+    int end;
+    int level;
+    bin_list *head = NULL;
+    bin_list *tail = NULL;
+    bin_list *item;
+    bin_list *kids[2];
+    int       nkids;
+    int       kid_offsets[2];
+    bin_index_t *bin = NULL;
+    bin_index_t *kid = NULL;
+    
+    for (i = 0; i < nlevels; i++) {
+	levels[i][0] =  INT_MAX;
+	levels[i][1] = -INT_MAX;
     }
-    item = head;
-    head = head->next;
-    free(item);
-  }
-
-  return 0;
+    
+    head = malloc(sizeof(bin_list));
+    if (!head) return -1;
+    
+    head->rec = rec;
+    head->parent_comp   = 0;
+    head->parent_offset = 0;
+    head->parent_size   = 0;
+    head->parent_level  = -1;
+    head->child_index   = 0;
+    head->next = NULL;
+    if (!depth_first) tail = head;
+    
+    while (head) {
+	complement = head->parent_comp;
+	
+	bin = get_bin(io, head->rec);
+	if (bin) {
+	    if (bin->flags & BIN_COMPLEMENTED) {
+		complement ^= 1;
+	    }
+	    offset = (head->parent_comp
+		      ? (head->parent_offset + head->parent_size
+			 - bin->pos - bin->size)
+		      : head->parent_offset + bin->pos);
+	    end = offset + bin->size;
+	    
+	    for (level = head->parent_level + 1; level < nlevels; level++) {
+		if (offset >= levels[level][1] || end <= levels[level][0]) {
+		    break;
+		}
+	    }
+	    assert(level < nlevels);
+	    
+	    if (levels[level][0] > offset) levels[level][0] = offset;
+	    if (levels[level][1] < end)    levels[level][1] = end;
+	    
+	    empty = bin_empty(bin);
+	    
+	    if ((to_draw & DRAW_LINKS) && head->parent_level >= 0) {
+		/* Linking lines */
+		fprintf(gv, "%d %d %d %d %d l\n",
+			head->parent_offset + head->parent_size / 2,
+			head->parent_level,
+			offset + bin->size / 2, level, head->child_index);
+	    }
+	    
+	    /* The bin itself */
+	    if (to_draw & DRAW_BINS) {
+		fprintf(gv, "%d %d (%"PRIrec") %d %s %d %d %s %d %d sb ",
+			bin->nrefpos, bin->nseqs, bin->rec, bin->size,
+			complement ? "t" : "f",
+			empty ? 0 : bin->start_used,
+			empty ? 0 : bin->end_used,
+			empty ? "f" : "t",
+			level, offset);
+		
+		if ((to_draw & DRAW_SEQS) && bin->rng && ArrayMax(bin->rng)) {
+		    /* Bin contents */
+		    int n = ArrayMax(bin->rng);
+		    int last_type  = -1;
+		    int draw_count = 0;
+		    int dup_count = 0;
+		    int last_start =  0;
+		    int last_end   = -1;
+		    int skipped = 0;
+		    /* fprintf(gv, "%d %d sqb\n", level, offset); */
+		    fprintf(gv, "%d sqb\n", n);
+		    for (i = 0; i < n; i++) {
+			range_t *r = arrp(range_t, bin->rng, i);
+			
+			if (dup_count && ((r->flags & GRANGE_FLAG_UNUSED)
+					  || (r->flags & GRANGE_FLAG_ISMASK) != last_type
+					  || r->start != last_start
+					  || r->end != last_end
+					  || draw_count > 200)) {
+			    if (dup_count > 1) {
+				fprintf(gv, "%d { ", dup_count);
+			    }
+			    fprintf(gv, "%d %d sq%s", last_start, last_end,
+				    dup_count > 1 ? " } repeat\n" : "\n");
+			    dup_count = 0;
+			    if (draw_count > 200) {
+				fprintf(gv, "stroke\n");
+				draw_count = 0;
+			    }
+			}
+			
+			if (r->flags & GRANGE_FLAG_UNUSED) {
+			    skipped++;
+			    continue;
+			}
+			if (skipped) {
+			    fprintf(gv, "%d add\n", skipped);
+			    skipped = 0;
+			}
+			if ((r->flags & GRANGE_FLAG_ISMASK) != last_type) {
+			    last_type = r->flags & GRANGE_FLAG_ISMASK;
+			    fprintf(gv, "%d sqg ",
+				    last_type == GRANGE_FLAG_ISSEQ ? 1 : 0);
+			    draw_count = 0;
+			}
+			last_start = r->start;
+			last_end   = r->end;
+			dup_count++;
+			draw_count++;
+		    }
+		    if (dup_count) {
+			if (dup_count > 1) { fprintf(gv, "%d { ", dup_count); }
+			fprintf(gv, "%d %d sq%s", last_start, last_end,
+				dup_count > 1 ? " } repeat\n" : "\n");
+		    }
+		    fprintf(gv, "sqe\n");
+		}
+		
+		fprintf(gv, "eb\n");
+	    }
+	    
+	    for (i = 0, nkids = 0; i < 2; i++) {
+		if (!bin->child[i]) continue;
+		kid = get_bin(io, bin->child[i]);
+		if (!kid) {
+		    fprintf(stderr,
+			    "Couldn't get bin %"PRIrec"\n", bin->child[i]);
+		    continue;
+		}
+		item = malloc(sizeof(bin_list));
+		if (!item) goto unwind;
+		item->rec = bin->child[i];
+		item->parent_comp   = complement;
+		item->parent_offset = offset;
+		item->parent_size   = bin->size;
+		item->parent_level  = level;
+		item->child_index   = i;
+		kid_offsets[nkids] = (complement
+				      ? (offset+bin->size-kid->pos-kid->size)
+				      : offset + kid->pos);
+		kids[nkids++] = item;
+	    }
+	    if (nkids == 2
+		&& (depth_first
+		    ? kid_offsets[0] > kid_offsets[1]
+		    : kid_offsets[0] < kid_offsets[1])) {
+		/* Do rightmost child first */
+		item = kids[0]; kids[0] = kids[1]; kids[1] = item;
+	    } 
+	    for (i = 0; i < nkids; i++) {
+		if (depth_first) {
+		    /* Put item one down in the list,
+		       as head will be removed later */
+		    kids[i]->next = head->next;
+		    head->next = kids[i];	    
+		} else {
+		    kids[i]->next = NULL;
+		    tail->next = kids[i];
+		    tail = kids[i];
+		}
+	    }
+	} else {
+	    fprintf(stderr, "Couldn't get bin %"PRIrec"\n", head->rec);
+	}
+	item = head;
+	head = head->next;
+	free(item);
+    }
+    
+    return 0;
  unwind:
-  while (head) {
-    item = head;
-    head = head->next;
-    free(item);
-  }
-  return -1;
+    while (head) {
+	item = head;
+	head = head->next;
+	free(item);
+    }
+    return -1;
 }
 
 static int count_levels_recurse(GapIO *io, tg_rec rec,
 				int (**levels)[2], int *nlevels,
 				int depth_first) {
-  int maxlevel = 0;
-  int i;
-  int complement;
-  int offset;
-  int end;
-  int level;
-  bin_list *head = NULL;
-  bin_list *tail = NULL;
-  bin_list *item;
-  bin_index_t *bin = NULL;
+    int maxlevel = 0;
+    int i;
+    int complement;
+    int offset;
+    int end;
+    int level;
+    bin_list *head = NULL;
+    bin_list *tail = NULL;
+    bin_list *item;
+    bin_list *kids[2];
+    int       nkids;
+    int       kid_offsets[2];
+    bin_index_t *bin = NULL;
+    bin_index_t *kid = NULL;
 
-  head = malloc(sizeof(bin_list));
-  if (!head) return -1;
+    head = malloc(sizeof(bin_list));
+    if (!head) return -1;
 
-  head->rec = rec;
-  head->parent_comp   = 0;
-  head->parent_offset = 0;
-  head->parent_size   = 0;
-  head->parent_level  = -1;
-  head->child_index   = 0;
-  head->next = NULL;
-  if (!depth_first) tail = head;
+    head->rec = rec;
+    head->parent_comp   = 0;
+    head->parent_offset = 0;
+    head->parent_size   = 0;
+    head->parent_level  = -1;
+    head->child_index   = 0;
+    head->next = NULL;
+    if (!depth_first) tail = head;
 
-  while (head) {
-    complement = head->parent_comp;
+    while (head) {
+	complement = head->parent_comp;
 
-    bin = get_bin(io, head->rec);
-    if (bin) {
-      if (bin->flags & BIN_COMPLEMENTED) {
-	complement ^= 1;
-      }
-      offset = (head->parent_comp
-		? head->parent_offset + head->parent_size - bin->pos - bin->size
-		: head->parent_offset + bin->pos);
-      end = offset + bin->size;
+	bin = get_bin(io, head->rec);
+	if (bin) {
+	    if (bin->flags & BIN_COMPLEMENTED) {
+		complement ^= 1;
+	    }
+	    offset = (head->parent_comp
+		      ? head->parent_offset + head->parent_size - bin->pos - bin->size
+		      : head->parent_offset + bin->pos);
+	    end = offset + bin->size;
 
-      for (level = head->parent_level + 1; ; level++) {
-	if (level == *nlevels) {
-	  int new_n = *nlevels * 2;
-	  int (*new_l)[2] = realloc(*levels, sizeof(**levels) * new_n);
+	    for (level = head->parent_level + 1; ; level++) {
+		if (level == *nlevels) {
+		    int new_n = *nlevels * 2;
+		    int (*new_l)[2] = realloc(*levels, sizeof(**levels) * new_n);
 	  
-	  if (!new_l) {
-	    perror("count_levels_recurse");
-	    goto unwind;
-	  }
-	  for (i = *nlevels; i < new_n; i++) {
-	    new_l[i][0] =  INT_MAX;
-	    new_l[i][1] = -INT_MAX;
-	  }
-	  *levels = new_l;
-	  *nlevels = new_n;
-	}
-	if (offset >= (*levels)[level][1] || end <= (*levels)[level][0]) break;
-      }
+		    if (!new_l) {
+			perror("count_levels_recurse");
+			goto unwind;
+		    }
+		    for (i = *nlevels; i < new_n; i++) {
+			new_l[i][0] =  INT_MAX;
+			new_l[i][1] = -INT_MAX;
+		    }
+		    *levels = new_l;
+		    *nlevels = new_n;
+		}
+		if (offset >= (*levels)[level][1] || end <= (*levels)[level][0]) break;
+	    }
 
-      if ((*levels)[level][0] > offset) (*levels)[level][0] = offset;
-      if ((*levels)[level][1] < end)    (*levels)[level][1] = end;
-      if (level > maxlevel) maxlevel = level;
+	    if ((*levels)[level][0] > offset) (*levels)[level][0] = offset;
+	    if ((*levels)[level][1] < end)    (*levels)[level][1] = end;
+	    if (level > maxlevel) maxlevel = level;
       
-      for (i = 0; i < 2; i++) {
-	if (bin->child[i]) {
-	  item = malloc(sizeof(bin_list));
-	  if (!item) goto unwind;
-	  item->rec = bin->child[i];
-	  item->parent_comp   = complement;
-	  item->parent_offset = offset;
-	  item->parent_size   = bin->size;
-	  item->parent_level  = level;
-	  item->child_index   = i;
-	  if (depth_first) {
-	    /* Put item one down in the list, as head will be removed later */
-	    item->next = head->next;
-	    head->next = item;
-	  } else {
-	    item->next = NULL;
-	    tail->next = item;
-	    tail = item;
-	  }
+	    for (i = 0, nkids = 0; i < 2; i++) {
+		if (!bin->child[i]) continue;
+		kid = get_bin(io, bin->child[i]);
+		if (!kid) {
+		    fprintf(stderr,
+			    "Couldn't get bin %"PRIrec"\n", bin->child[i]);
+		    continue;
+		}
+		item = malloc(sizeof(bin_list));
+		if (!item) goto unwind;
+		item->rec = bin->child[i];
+		item->parent_comp   = complement;
+		item->parent_offset = offset;
+		item->parent_size   = bin->size;
+		item->parent_level  = level;
+		item->child_index   = i;
+		kid_offsets[nkids] = (complement
+				      ? (offset+bin->size-kid->pos-kid->size)
+				      : offset + kid->pos);
+		kids[nkids++] = item;
+	    }
+	    if (nkids == 2
+		&& (depth_first
+		    ? kid_offsets[0] > kid_offsets[1]
+		    : kid_offsets[0] < kid_offsets[1])) {
+		/* Do rightmost child first */
+		item = kids[0]; kids[0] = kids[1]; kids[1] = item;
+	    }
+	    for (i = 0; i < nkids; i++) {
+		if (depth_first) {
+		    /* Put item one down in the list,
+		       as head will be removed later */
+		    kids[i]->next = head->next;
+		    head->next = kids[i];
+		} else {
+		    kids[i]->next = NULL;
+		    tail->next = kids[i];
+		    tail = kids[i];
+		}
+	    }
+	} else {
+	    fprintf(stderr, "Couldn't get bin %"PRIrec"\n", head->rec);
 	}
-      }
-    } else {
-      fprintf(stderr, "Couldn't get bin %"PRIrec"\n", head->rec);
+	item = head;
+	head = head->next;
+	free(item);
     }
-    item = head;
-    head = head->next;
-    free(item);
-  }
 
   return maxlevel;
 
