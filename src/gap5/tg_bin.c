@@ -236,6 +236,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
     static int last_offset, last_complement;
 #endif
 
+    if (NULL == bin) return NULL;
     if (bin->flags & BIN_COMPLEMENTED) {
 	complement ^= 1;
     }
@@ -258,8 +259,9 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
      */
     while (end >= bin->pos + bin->size) {
 	//cache_decr(io, bin);
-	if (extend)
-	    bin = contig_extend_bins_right(io, c);
+	if (extend) {
+	    if (NULL == (bin = contig_extend_bins_right(io, c))) return NULL;
+	}
 	else
 	    return NULL;
 	//cache_incr(io, bin);
@@ -274,8 +276,9 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
     while (start < bin->pos) {
 	//cache_decr(io, bin);
-	if (extend)
-	    bin = contig_extend_bins_left(io, c);
+	if (extend) {
+	    if (NULL == (bin = contig_extend_bins_left(io, c))) return NULL;
+	}
 	else
 	    return NULL;
 	//cache_incr(io, bin);
@@ -345,7 +348,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 		continue;
 	    }
 
-	    ch = get_bin(io, bin->child[i]);
+	    if (NULL == (ch = get_bin(io, bin->child[i]))) goto error;
 
 	    //	    if (start >= offset + ch->pos &&
 	    //		end   <= offset + ch->pos + ch->size-1) {
@@ -389,90 +392,48 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	 */
 	if (bin->size > io->min_bin_size &&
 	    (!bin->child[0] || !bin->child[1])) {
-	    /* Construct left child if needed */
-	    if (!bin->child[0]) {
-		int pos;
-		int sz;
+	    int free_slt = (!bin->child[0] ? 1 : 0) | (!bin->child[1] ? 2 : 0);
+	    int pos  = 0, sz = 0, slot = -1;
+	    switch (free_slt) {
+	    case 1:
+	    case 2:
+		if (NULL == (ch = get_bin(io, bin->child[2 - free_slt])))
+		    goto error;
 
-		if (complement) {
-		    pos = bin->size/2;
-		    
-		    if (bin->child[1]) {
-			ch = get_bin(io, bin->child[1]);
-			pos = ch->size;
-		    }
-		    sz = bin->size - pos;
-		} else {
+		pos = ch->pos == 0 ? ch->size : 0;
+		sz  = ch->pos == 0 ? bin->size - pos : ch->pos;
+		slot = free_slt - 1;
+		break;
+	    case 3:
+		sz = bin->size / 2;
+		if (start >= NMIN(0, sz - 1) && end <= NMAX(0, sz - 1)) {
 		    pos = 0;
-		    sz = bin->size/2;
-		    if (bin->child[1]) {
-			ch = get_bin(io, bin->child[1]);
-			sz = ch->pos;
-		    }
+		    slot = complement ? 1 : 0;
+		} else {
+		    pos = sz;
+		    sz = bin->size - pos;
+		    slot = complement ? 0 : 1;
 		}
-
-		//		if (start >= offset + pos &&
-		//		    end   <= offset + pos + sz-1) {
-		if (start >= NMIN(pos, pos+sz-1) &&
-		    end   <= NMAX(pos, pos+sz-1)) {
-		    /* It would fit - create it and continue recursing */
-
-		    if (!(bin = cache_rw(io, bin)))
-			return NULL;
-
-		    bin->child[0] = bin_new(io, pos, sz, bin->rec, GT_Bin);
-		    bin->flags |= BIN_BIN_UPDATED;
-		    cache_decr(io, bin);
-
-		    bin = get_bin(io, bin->child[0]);
-		    cache_incr(io, bin);
-		    offset = NMIN(pos, pos+sz-1);
-		    continue;
-		}
+		break;
 	    }
-
-	    /* Construct right child if needed */
-	    if (!bin->child[1]) {
-		int pos;
-		int sz;
-
-		if (complement) {
-		    pos = 0;
-		    sz = bin->size/2;
-		    if (bin->child[0]) {
-			ch = get_bin(io, bin->child[0]);
-			sz = ch->pos;
-		    }
-		} else {
-		    pos = bin->size/2;
-		    if (bin->child[0]) {
-			ch = get_bin(io, bin->child[0]);
-			pos = ch->size;
-		    }
-		    sz = bin->size - pos;
-		}
-
-		//		if (start >= offset + pos &&
-		//		    end   <= offset + pos + sz-1) {
-		if (start >= NMIN(pos, pos+sz-1) &&
-		    end   <= NMAX(pos, pos+sz-1)) {
-		    /* It would fit - create it and continue recursing */
-
-		    if (!(bin = cache_rw(io, bin)))
-			return NULL;
-
-		    bin->child[1] = bin_new(io, pos, sz, bin->rec, GT_Bin);
-		    bin->flags |= BIN_BIN_UPDATED;
-		    cache_decr(io, bin);
-
-		    bin = get_bin(io, bin->child[1]);
-		    cache_incr(io, bin);
-		    offset = NMIN(pos, pos+sz-1);
-		    continue;
-		}
+	    if (slot >= 0 &&
+		start >= NMIN(pos, pos+sz-1) &&
+		end   <= NMAX(pos, pos+sz-1)) {
+		/* It would fit - create it and continue recursing */
+		bin_index_t *binw = cache_rw(io, bin);
+		if (NULL == binw) goto error;
+		
+		binw->child[slot] = bin_new(io, pos, sz, binw->rec, GT_Bin);
+		if (0 == binw->child[slot]) goto error;
+		binw->flags |= BIN_BIN_UPDATED;
+		cache_decr(io, binw);		
+		if (NULL == (bin = get_bin(io, binw->child[slot]))) goto error;
+		cache_incr(io, bin);
+		offset = NMIN(pos, pos+sz-1);
+		continue;
 	    }
 	}
-	
+
 	/* At the smallest bin already */
 	break;
     }
@@ -494,6 +455,10 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
     cache_decr(io, bin);
     return bin;
+
+ error:
+    cache_decr(io, bin);
+    return NULL;
 }
 
 /*
