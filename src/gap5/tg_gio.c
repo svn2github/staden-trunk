@@ -197,6 +197,8 @@ GapIO *gio_child(GapIO *io_p) {
     io->dbh = io->base->dbh;
     io->read_only = io->base->read_only;
     io->min_bin_size = io->base->min_bin_size;
+    io->debug_level = io->base->debug_level;
+    io->debug_fp = io->base->debug_fp;
     return io;
 }
 
