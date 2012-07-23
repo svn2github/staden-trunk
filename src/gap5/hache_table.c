@@ -618,7 +618,9 @@ int HacheTableResize(HacheTable *h, int newsize) {
     HacheTable *h2;
     int i;
 
+#ifdef DEBUG
     fprintf(stdout, "Resizing HacheTable %s to %d\n", hname(h), newsize);
+#endif
 
     /* Create a new hash table and rehash everything into it */
     h2 = HacheTableCreate(newsize, h->options);
