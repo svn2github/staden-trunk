@@ -507,6 +507,11 @@ proc add_plot {w func height has_scroll has_scale visible args} {
 			  [list -yscrollcommand [list yscroll_plot_set $w $t]]]
     grid $t -row $tnum -column 1 -sticky nsew
     if {$visible} {
+    	# clumsy, very clumsy
+    	if {!$has_scroll && !$has_scale && $height == 0} {
+	    set weight 1
+	} 
+    
 	grid rowconfigure $w $tnum -weight $weight
     }
 }
@@ -960,8 +965,12 @@ proc show_plot {w track_type} {
 	set comp [string compare $track_type [set ${t}(func)]]
 	
 	if {$comp == 0} {
-	    grid $w.yscale$id
+	    if {[winfo exists $w.yscale$id]} {
+	    	grid $w.yscale$id
+	    }
+	    
 	    grid $t
+	    
 	    if {[winfo exists $w.yscroll$id]} {
 		grid $w.yscroll$id
 	    }
@@ -986,8 +995,12 @@ proc remove_plot {w track_type} {
     	set ${t}(width)  1
 
 	if {$comp == 0} {
-	    grid remove $w.yscale$id
+	    if {[winfo exists $w.yscale$id]} {
+	    	grid remove $w.yscale$id
+	    }
+	    
 	    grid remove $t
+	    
 	    if {[winfo exists $w.yscroll$id]} {
 		grid remove $w.yscroll$id
 	    }
@@ -1627,7 +1640,18 @@ proc cross_hair {w tl x y} {
     	    	$d create line 0 $y $width $y -tags xhair -fill green -dash -..
 		set x1 [$d itemcget $tr -px]
 		set y1 [$d itemcget $tr -py]
+		
 		set ${w}(info) "X: $x1    Y: $y1"
+		
+		set comp [string compare [set ${t}(func)] "tag_item"]
+		
+		if {$comp == 0} {
+		    set tag_type [$d itemcget $tr -tag]
+		    
+		    if {$tag_type != ""} {
+		    	set ${w}(info) "X: $x1    Y: $y1    Tag: $tag_type"
+		    }
+		}
 	    }
 	}
     }
@@ -2272,6 +2296,84 @@ proc quality_item {w t x1 x2 y1 y2} {
     yscale_depth $w $t [winfo height $d] 5
 }
 
+#-----------------------------------------------------------------------------
+# Tags track
+proc tag_item_init {w t} {
+    global $w $t
+    global gap5_defs
+
+    set ${t}(m_start) -1
+    set ${t}(m_stop)  -1
+
+    set d [set ${t}(canvas)]
+    set ${t}(track) [$d create tag_plot 0 0 \
+			 -anchor nw \
+			 -range  [set ${w}(grange)]]
+    set ${t}(Init) 1
+
+    set m $w.menubar.tracks
+    $m add separator
+    $m add checkbutton \
+	-label "Tags" \
+        -variable ${w}(tags) \
+	-command "tag_item_config $w $t"
+
+    set ${w}(tags) 0
+
+    bind $d <2> "set lastx %x; set lasty %y"
+    bind $d <B2-Motion> "addLine $d %x %y"
+    bind $d <3> "$d delete withttag tline"
+
+    bind $d <B1-Motion> "drag_x $w $t %x %y"
+    bind $d <B1-ButtonRelease> "end_drag_x $w $t %x %y"
+
+    bind $d <Any-Motion> "cross_hair $w $t %x %y"
+    bind $d <Any-Leave>  "cross_hair_leave $w"
+
+    bind $d <<use>> "invoke_editor $w $t %x"
+}
+
+proc tag_item_config {w t} {
+    global $w $t
+
+    # Do we need it to be visible
+    set visible 0
+    if {[set ${w}(tags)]} {set visible 1}
+
+    set d [set ${t}(canvas)]
+    set td [set ${t}(track)]
+    
+    if {$visible} {
+	show_plot $w tag_item
+    } else {
+	remove_plot $w tag_item
+    }
+}
+
+
+proc tag_item {w t x1 x2 y1 y2} {
+    global $w $t
+
+    if {![info exists ${t}(Init)]} {
+    	tag_item_init $w $t
+    }
+
+    # Make sure editor cursors are positioned
+    1.5redraw_cursor $w $t
+
+    set d [set ${t}(canvas)]
+    set td [set ${t}(track)]
+
+    $d itemconfigure $td \
+	-wx0 $x1 \
+	-wy0 $y1 \
+	-wx1 $x2 \
+	-wy1 $y2
+
+    # reset coords just in case they have moved
+    $d coords $td 0 0
+}
+
 ##############################################################################
 #user interface dialog box for reading coverage histogram
 proc ReadingCoverage { io } {
@@ -2360,6 +2462,7 @@ proc CreateTemplateDisplay {io cnum {pos {}}} {
     add_plot $pwin template_item 200 1 1 1 -bd 0 -relief raised -bg black
     add_plot $pwin depth_item      0 0 1 1 -bd 0 -relief raised -bg black
     add_plot $pwin quality_item    0 0 1 0 -bd 0 -relief raised -bg black
+    add_plot $pwin tag_item        0 0 0 0 -bd 0 -relief raised -bg black
     add_plot $pwin seq_ruler      50 0 0 1 -bd 1 -relief sunken
 }
 
@@ -2392,6 +2495,7 @@ if {[string match "*depth.tcl" $argv0]} {
     add_plot $pwin template_item  150 1 1 1 -bd 2 -relief raised
     add_plot $pwin depth_item       0 0 1 1 -bd 2 -relief raised
     add_plot $pwin quality_item     0 0 1 0 -bd 2 -relief raised
+    add_plot $pwin tag_item         0 0 1 0 -bd 2 -relief raised
     add_plot $pwin seq_ruler       50 0 0 1 -bd 2 -relief raised
     #add_plot $pwin bg_grid
 

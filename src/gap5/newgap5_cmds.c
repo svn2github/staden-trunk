@@ -43,6 +43,7 @@
 #include "gap_range.h"
 #include "depth_track.h"
 #include "quality_plot.h"
+#include "tag_plot.h"
 #include "maq.h"
 #include "ace.h"
 #include "baf.h"
@@ -2542,7 +2543,8 @@ NewGap_Init(Tcl_Interp *interp) {
     
     Tk_CreateItemType(&tkDepthItem);
     Tk_CreateItemType(&consQualityItem);
-
+    Tk_CreateItemType(&tkTagItem);
+ 
 #ifdef VALGRIND
     Tcl_CreateObjCommand(interp, "leak_check",
 			 tcl_leak_check,
