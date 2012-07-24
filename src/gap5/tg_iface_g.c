@@ -4975,7 +4975,7 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 
     /* Decode the fixed size components of our sequence structs */
     /* Bin, 0 => unused entry */
-    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+    for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
 	cp += u72intw(cp, &i64);
 	in[i].bin = i64;
     }
@@ -5059,7 +5059,7 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 		return NULL;
 
 	    b->contig[i]  = (contig_t *)&si->data;
-	    in[i].rec = ((tg_rec)rec << ANNO_ELE_BLOCK_BITS) + i;
+	    in[i].rec = ((tg_rec)rec << CONTIG_BLOCK_BITS) + i;
 	    *b->contig[i] = in[i];
 	    b->contig[i]->block = b;
 	    b->contig[i]->idx = i;
