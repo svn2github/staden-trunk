@@ -457,6 +457,15 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     tg_pair_t *pair = NULL;
     seq_t seq;
     char tname[1024];
+    library_t *lib = NULL;
+    tg_rec lrec;
+
+    /* The library should come from lib: field in WR{} records, but mostly
+     * these are absent.
+     */
+    lrec = library_new(io, ace_fn);
+    lib = get_lib(io, lrec);
+    lib = cache_rw(io, lib);
     
     set_dna_lookup(); /* initialise complement table */
 
@@ -479,7 +488,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 		save_range_sequence(io, &seq, ACE_MQUAL, pair,
 				    (pair && *tname), tname, c, a,
 				    GRANGE_FLAG_TYPE_SINGLE,
-				    NULL, NULL);
+				    lib, NULL);
 		nseqs++;
 
 		if ((nseqs & 0x3fff) == 0) {
@@ -520,7 +529,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 		save_range_sequence(io, &seq, ACE_MQUAL, pair,
 				    (pair && *tname), tname, c, a,
 				    GRANGE_FLAG_TYPE_SINGLE,
-				    NULL, NULL);
+				    lib, NULL);
 		nseqs++;
 
 		if ((nseqs & 0x3fff) == 0) {
@@ -593,7 +602,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	save_range_sequence(io, &seq, ACE_MQUAL, pair,
 			    (pair && *tname), tname, c, a,
 			    GRANGE_FLAG_TYPE_SINGLE,
-			    NULL, NULL);
+			    lib, NULL);
 	nseqs++;
 
 	if ((nseqs & 0x3fff) == 0) {
