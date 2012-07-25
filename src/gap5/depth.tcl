@@ -445,6 +445,8 @@ proc zoom1.5 {w x y z} {
 	set ${w}(xorigin) [expr $x1]
 	set ${w}(xzoom)   [expr {($x2-$x1+1)/double([set ${w}(pwidth)])}]
 	
+	set val [set ${w}(xzoom)]
+	$w.bcontrol.xzoom set [expr {(pow($val, 0.25) * 10) - 4}]
     }
 
     redraw_plot $w
@@ -489,7 +491,10 @@ proc add_plot {w func height has_scroll has_scale visible args} {
 	
  	set ${t}(ys) $w.yscroll$tnum
 	scrollbar $w.yscroll$tnum -orient vert -command "yscroll_plot $w $t"
-	grid $w.yscroll$tnum -row $tnum -column 2 -sticky nsew
+
+    	if {$visible} {
+	    grid $w.yscroll$tnum -row $tnum -column 2 -sticky nsew
+	}
     }
     
     # add a Y scale to the left hand side
@@ -497,7 +502,10 @@ proc add_plot {w func height has_scroll has_scale visible args} {
     	set weight 1
 	
 	yscale_init $w $t $tnum $height
-	grid $w.yscale$tnum -row $tnum -column 0 -sticky nsew
+	
+	if {$visible} {
+	    grid $w.yscale$tnum -row $tnum -column 0 -sticky nsew
+	}
     }	    
 
     set ${t}(y1) 0
@@ -506,12 +514,8 @@ proc add_plot {w func height has_scroll has_scale visible args} {
     set ${t}(canvas) [eval canvas $t -height $height $args \
 			  [list -yscrollcommand [list yscroll_plot_set $w $t]]]
     grid $t -row $tnum -column 1 -sticky nsew
-    if {$visible} {
-    	# clumsy, very clumsy
-    	if {!$has_scroll && !$has_scale && $height == 0} {
-	    set weight 1
-	} 
     
+    if {$visible} {
 	grid rowconfigure $w $tnum -weight $weight
     }
 }
@@ -966,14 +970,15 @@ proc show_plot {w track_type} {
 	
 	if {$comp == 0} {
 	    if {[winfo exists $w.yscale$id]} {
-	    	grid $w.yscale$id
+	    	grid $w.yscale$id -row $id -column 0 -sticky nsew
 	    }
 	    
-	    grid $t
+	    grid $t -row $id -column 1 -sticky nsew
 	    
 	    if {[winfo exists $w.yscroll$id]} {
-		grid $w.yscroll$id
+		grid $w.yscroll$id -row $id -column 2 -sticky nsew
 	    }
+	    
 	    grid rowconfigure $w $id -weight 1
 	}
     }
@@ -1004,6 +1009,7 @@ proc remove_plot {w track_type} {
 	    if {[winfo exists $w.yscroll$id]} {
 		grid remove $w.yscroll$id
 	    }
+	    
 	    grid rowconfigure $w $id -weight 0
 	}
     }
