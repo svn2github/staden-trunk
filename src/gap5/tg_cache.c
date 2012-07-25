@@ -232,7 +232,7 @@ static void bin_unload(GapIO *io, cached_item *ci, int unlock) {
     				bin->rng->max * bin->rng->size);
 #endif
 
-    if (ci->forgetme)
+    if (ci->forgetme && !io->base)
 	io->iface->bin.destroy(io->dbh, ci->rec, ci->view);
 
     if (unlock)
@@ -263,7 +263,7 @@ static int bin_write(GapIO *io, cached_item *ci) {
 static void contig_unload(GapIO *io, cached_item *ci, int unlock) {
     contig_t *c = (contig_t *)&ci->data;
 
-    if (ci->forgetme)
+    if (ci->forgetme && !io->base)
 	io->iface->contig.destroy(io->dbh, ci->rec, ci->view);
 
     if (c->link)
@@ -505,8 +505,6 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
     cache_key_t *k = (cache_key_t *)key;
     static HacheData hd;
 
-    gio_debug(io, 2, "Cache load %"PRIrec" type %d\n", k->rec, k->type);
-
     load_counts[k->type]++;
 
     switch (k->type) {
@@ -566,6 +564,9 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 	return NULL;
     }
 
+    gio_debug(io, 2, "Cache load %"PRIrec" type %d ci %p data %p %s io %p\n",
+	      k->rec, k->type, ci, &ci->data, io->base ? "child" : "base", io);
+
     if (!ci)
 	return NULL;
 
@@ -616,7 +617,8 @@ static void cache_unload(void *clientdata, HacheData hd) {
     cached_item *ci = hd.p;
     int unlock = 1;
 
-    gio_debug(io, 2, "Cache unload %"PRIrec"\n", ci->rec);
+    gio_debug(io, 2, "Cache unload %"PRIrec" ci %p data %p %s io %p\n",
+	      ci->rec, ci, &ci->data, io->base ? "child" : "base", io);
 
     assert(io->base || ci->updated == 0);
 
@@ -920,6 +922,7 @@ int cache_flush(GapIO *io) {
     if (io->base) {
 	for (i = 0; i < h->nbuckets; i++) {
 	    HacheItem *next, *parent_hi;
+	    cached_item *parent_ci;
 	    int ref_count;
 
 	    for (hi = h->bucket[i]; hi; hi = next) {
@@ -928,11 +931,15 @@ int cache_flush(GapIO *io) {
 
 		next = hi->next;
 
-		if (!ci->updated)
+		if (!ci->updated) {
+		    cache_unload(io, hi->data);
 		    continue;
+		}
 
 		/*
 		 * For blocked data structures, merge with base copy first.
+		 * Also free up the items that are to be replaced with
+		 * new versions.
 		 */
 		switch (ci->type) {
 		case GT_SeqBlock: {
@@ -950,6 +957,10 @@ int cache_flush(GapIO *io) {
 			    bn->seq[j] = bo->seq[j];
 			    if (bn->seq[j])
 				bn->seq[j]->block = bn;
+			} else if (bo->seq[j]) {
+			    if (bo->seq[j]->anno)
+				ArrayDestroy(bo->seq[j]->anno);
+			    free(ci_ptr(bo->seq[j]));
 			}
 		    }
 
@@ -971,6 +982,10 @@ int cache_flush(GapIO *io) {
 			    bn->contig[j] = bo->contig[j];
 			    if (bn->contig[j])
 				bn->contig[j]->block = bn;
+			} else if (bo->contig[j]) {
+			    if (bo->contig[j]->link)
+				ArrayDestroy(bo->contig[j]->link);
+			    free(ci_ptr(bo->contig[j]));
 			}
 		    }
 
@@ -992,6 +1007,10 @@ int cache_flush(GapIO *io) {
 			    bn->scaffold[j] = bo->scaffold[j];
 			    if (bn->scaffold[j])
 				bn->scaffold[j]->block = bn;
+			} else if (bo->scaffold[j]) {
+			    if (bo->scaffold[j]->contig)
+				free(bo->scaffold[j]->contig);
+			    free(ci_ptr(bo->scaffold[j]));
 			}
 		    }
 
@@ -1013,6 +1032,8 @@ int cache_flush(GapIO *io) {
 			    bn->ae[j] = bo->ae[j];
 			    if (bn->ae[j])
 				bn->ae[j]->block = bn;
+			} else if (bo->ae[j]) {
+			    free(ci_ptr(bo->ae[j]));
 			}
 		    }
 
@@ -1043,8 +1064,40 @@ int cache_flush(GapIO *io) {
 					    ci->hi->key,
 					    ci->hi->key_len);
 		ref_count = parent_hi->ref_count;
-
+		parent_ci = (cached_item*) parent_hi->data.p;
 		/* Purge from parent */
+		switch (ci->type) {
+		    /* Clean up parts that won't be removed
+		       by HacheTableRemove */
+		case GT_Bin: 
+		    bin_unload(io->base, parent_ci, 0);
+		    break;
+		
+		case GT_Seq:
+		    seq_unload(io->base, parent_ci, 0);
+		    break;
+
+		case GT_Track:
+		    track_unload(io->base, parent_ci, 0);
+		    break;
+		
+		case GT_Contig:
+		    contig_unload(io->base, parent_ci, 0);
+		    break;
+
+		case GT_RecArray:
+		    array_unload(io->base, parent_ci, 0);
+		    break;
+
+		case GT_Library:
+		    library_unload(io->base, parent_ci, 0);
+		    break;
+
+		default:
+		    cache_free(parent_ci);
+		    break;
+		}
+
 		HacheTableRemove(io->base->cache,
 				 ci->hi->key, ci->hi->key_len, 0);
 
@@ -1072,6 +1125,10 @@ int cache_flush(GapIO *io) {
 		while (--ref_count) {
 		    HacheTableIncRef(ci->hi->h, ci->hi);
 		}
+
+		gio_debug(io, 2, "Cache flush %"PRIrec" type %d ci %p "
+			  "from io %p to io %p\n",
+			  ci->rec, ci->type, ci, io, io->base);
 	    }
 	}
 
@@ -1469,9 +1526,9 @@ void cache_dump(GapIO *io) {
 	    if (interested_rec != -1 && ci->rec != interested_rec)
 		continue;
 
-	    printf("  rec=%"PRIrec"\tv=%d\tlock=%d\ttype=%d\tci=%p\trc=%d\n",
-		   ci->rec, ci->view, ci->lock_mode, ci->type, ci,
-		   hi->ref_count);
+	    printf("  rec=%"PRIrec"\tv=%d\tlock=%d\tupd=%d\tfgt=%d\ttype=%d\tci=%p\trc=%d\n",
+		   ci->rec, ci->view, ci->lock_mode, ci->updated, ci->forgetme,
+		   ci->type, ci, hi->ref_count);
 
 	    nused++;
 	    if (ci->lock_mode >= G_LOCK_RW)
@@ -2318,6 +2375,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
     HacheItem *hi_old = ci->hi;
     HacheItem *hi_new;
     cached_item *ci_new = NULL;
+    tg_rec sub_rec = 0;
 
     /* Ensure base io copy cannot go out of scope */
     HacheTableIncRef(ci->hi->h, ci->hi);
@@ -2527,6 +2585,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    seq_block_t *b = (seq_block_t *)&ci_new->data;
 	    seq_t *os  = (seq_t *)&sub_ci->data, *s;
 	    //int sub_rec = os->rec & (SEQ_BLOCK_SZ-1);
+	    sub_rec = os->rec;
 
 	    /* Already duplicated? */
 	    if (b->seq[os->idx]) {
@@ -2563,7 +2622,8 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	case GT_Scaffold: {
 	    scaffold_block_t *b = (scaffold_block_t *)&ci_new->data;
 	    scaffold_t *of  = (scaffold_t *)&sub_ci->data, *f;
-
+	    sub_rec = of->rec;
+	    
 	    /* Already duplicated? */
 	    if (b->scaffold[of->idx]) {
 		sub_new = sub_ci;
@@ -2597,6 +2657,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	case GT_Contig: {
 	    contig_block_t *b = (contig_block_t *)&ci_new->data;
 	    contig_t *oc  = (contig_t *)&sub_ci->data, *c;
+	    sub_rec = oc->rec;
 
 	    /* Already duplicated? */
 	    if (b->contig[oc->idx]) {
@@ -2632,6 +2693,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    anno_ele_block_t *b = (anno_ele_block_t *)&ci_new->data;
 	    anno_ele_t *oe  = (anno_ele_t *)&sub_ci->data, *e;
 	    //int sub_rec = oe->rec & (ANNO_ELE_BLOCK_SZ-1);
+	    sub_rec = oe->rec;
 
 	    /* Already duplicated? */
 	    if (b->ae[oe->idx]) {
@@ -2661,6 +2723,20 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	}
 
 	ci_new = sub_new;
+    }
+
+    if (io->debug_level >= 2) {
+	if (sub_rec) {
+	    gio_debug(io, 2,
+		      "Cache dup %"PRIrec" (in %"PRIrec") type %d "
+		      "orig ci %p new ci %p io %p\n",
+		      sub_rec, ci->rec, ci_new->type, sub_ci, ci_new, io);
+	} else {
+	    gio_debug(io, 2,
+		      "Cache dup %"PRIrec" type %d "
+		      "orig ci %p new ci %p io %p\n",
+		      ci_new->rec, ci_new->type, sub_ci, ci_new, io);
+	}
     }
 
     return ci_new;

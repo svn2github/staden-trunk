@@ -4203,6 +4203,7 @@ int contig_destroy(GapIO *io, tg_rec rec) {
     /* Delete from the btree index */
     if (!(c = cache_search(io, GT_Contig, rec)))
 	return -1;
+    if (NULL == (c = cache_rw(io, c))) return -1;
 
     if (c->name) {
 	tg_rec r = io->iface->contig.index_del(io->dbh, c->name, rec);
@@ -4237,7 +4238,7 @@ int contig_destroy(GapIO *io, tg_rec rec) {
     contig_register_delete(io, rec);
 
     /* And finally, deallocate on disk to allow record to be reused */
-    cache_rec_deallocate(io, GT_Contig, rec);
+    cache_deallocate(io, c);
 
     return 0;
 }
