@@ -78,7 +78,8 @@ if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
 }
 add_command     {File.Export sequences}          8 10 {ExportSequences \$io} 
 add_command     {File.Export tags}               8 10 {ExportTags \$io} 
-add_command     {File.Import GFF}		 8 26 {ImportGFF \$io}
+add_command     {File.Import Tags from GFF}	 8 26 {ImportGFF \$io}
+add_command     {File.Import Scaffolds from AGP} 8 26 {ImportAGP \$io}
 add_command	{File.Save consensus}		 8 10 {NormalDialog \$io}
 add_separator	{File.S2}
 #add_command	{File.Extract readings}		 8 10 {ExtractReadings \$io} e
@@ -86,7 +87,7 @@ add_command	{File.Exit}			 1 2 {Gap_Exit \$io}
 
 add_command	{Edit.Edit Contig}		 8 10 {EditContig \$io}
 add_command	{Edit.Join Contig}		 8 10 {JoinContig \$io}
-add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
+add_command	{Edit.Complement a contig or scaffold} 8 26 {ComplementContig \$io}
 #add_command	{Edit.Order contigs}		 8 10 {OrderContigs \$io}
 #add_command	{Edit.Quality Clip}		 8 26 {QualityClip \$io} e
 #add_command	{Edit.Difference Clip}		 8 26 {DifferenceClip \$io} e

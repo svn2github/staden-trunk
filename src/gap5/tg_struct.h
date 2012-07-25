@@ -203,14 +203,15 @@ typedef struct {
     tg_rec contig_order;	/* rec. of array of contig rec. nos */
 
     int    Nscaffolds;
-    tg_rec scaffold;	     /* rec. of array of scaffold rec. nos */
+    tg_rec scaffold;	        /* rec. of array of scaffold rec. nos */
 
-    int    Nlibraries;       /* N.elements in array */
-    tg_rec library;          /* rec. of array of library rec. nos */
+    int    Nlibraries;          /* N.elements in array */
+    tg_rec library;             /* rec. of array of library rec. nos */
 
     /* Indices */
     tg_rec seq_name_index;	/* rec of type GT_Index */
-    tg_rec contig_name_index;/* rec of type GT_Index */
+    tg_rec contig_name_index;   /* rec of type GT_Index */
+    tg_rec scaffold_name_index; /* rec of type GT_Index */
 } database_t;
 
 

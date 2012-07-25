@@ -25,6 +25,8 @@ proc contig_id_configure {path args} {
 #-io io handle - must be supplied
 #-range boolean - whether to draw the start and end scalebars (default 1)
 #-trace boolean - whether to update with the contig selector (defalult 1)
+#-scaffold boolean - whether to accept a scaffold ID too (default 0)
+#                    only used when range = 0
 #-default value
 proc contig_id {path args} {
     global LREG
@@ -39,6 +41,7 @@ proc contig_id {path args} {
     set command ""
     set checked_ok 0
     set range 1
+    set scaffold 0
     set end_value $RREG
     set start_value $LREG
     set trace 1
@@ -55,6 +58,8 @@ proc contig_id {path args} {
 		set in_arg 0
 	    } elseif {$option == "-range"} {
 		set range $i
+	    } elseif {$option == "-scaffold"} {
+		set scaffold $i
 	    } elseif {$option == "-end_value"} {
 		set end_value $i
 	    } elseif {$option == "-start_value"} {
@@ -114,12 +119,21 @@ proc contig_id {path args} {
 		-type CheckInt \
 		-command "CheckEndLimits $path.lreg $path.rreg 0"
     } else {
-	entrybox $path.ent \
+	if {$scaffold} {
+	    entrybox $path.ent \
+		-title "Contig or scaffold identifier" \
+		-type "CheckContigOrScaffoldName5 $io"\
+		-default $default \
+		-width $db_namelen \
+		-command "contig_id_callback2 [list $command]"
+	} else {
+	    entrybox $path.ent \
 		-title "Contig identifier" \
 		-type "CheckContigName5 $io"\
 		-default $default \
 		-width $db_namelen \
 		-command "contig_id_callback2 [list $command]"
+	}
     }
     eval contig_id_configure $path $arglist
     entrybox_configure $path.ent -exportselection 0
@@ -308,10 +322,20 @@ proc CheckContigName5 {io path } {
     set name [$path.entry get]
     if {[db_info get_contig_num $io $name] > 0} {
 	return 1
-    } else {
-	if {[db_info get_read_num $io $name] > 0} {
-	    return 1
-	}
+    } elseif {[db_info get_read_num $io $name] > 0} {
+	return 1
+    }
+    return 0
+}
+
+proc CheckContigOrScaffoldName5 {io path } {
+    set name [$path.entry get]
+    if {[db_info get_scaffold_num $io $name] > 0} {
+	return 1
+    } elseif {[db_info get_contig_num $io $name] > 0} {
+	return 1
+    } elseif {[db_info get_read_num $io $name] > 0} {
+	return 1
     }
     return 0
 }

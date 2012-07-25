@@ -46,4 +46,16 @@ int scaffold_remove(GapIO *io, tg_rec scaffold, tg_rec contig);
  */
 int update_scaffold_order(GapIO *io);
 
+/*
+ * Loads a new scaffold from an AGP file.
+ * Contigs that are not listed in this will keep their old scaffold data.
+ * Contigs which are listed and have an existing scaffold will be amended.
+ *
+ * AGP format is http://www.ncbi.nlm.nih.gov/projects/genome/assembly/agp/AGP_Specification.shtml
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int scaffold_from_agp(GapIO *io, char *fn);
+
 #endif /* _TG_SCAFFOLD_H_ */

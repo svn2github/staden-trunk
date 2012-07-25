@@ -101,6 +101,7 @@ int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
  * db_info chain_left io identifer (returns reading number)
  * db_info longest_contig io
  * db_info db_name io
+ * db_info get_scaffold_num io identifier
  */
 int db_info(ClientData clientData,
 	    Tcl_Interp *interp,
@@ -202,6 +203,15 @@ int db_info(ClientData clientData,
 
 	Tcl_SetObjResult(interp, lobj);
 	Tcl_DecrRefCount(lobj);
+	return TCL_OK;
+    }
+
+    if (strcmp(cmd, "get_scaffold_num") == 0) {
+	if (objc != 4) {
+	    goto db_error;
+	}
+	a3 = Tcl_GetStringFromObj(objv[3], NULL);
+	vTcl_SetResult(interp, "%"PRIrec, scaffold_name_to_number(io, a3));
 	return TCL_OK;
     }
 
@@ -363,11 +373,11 @@ tcl_load_alignment_matrix(ClientData clientData,
 int tcl_load_genetic_code(ClientData clientData, Tcl_Interp *interp,
 			  int objc, Tcl_Obj *CONST objv[])
 {
-    read_enz_arg args;
+    file_arg args;
     FILE *fp;
 
     cli_args a[] = {
-	{"-filename",	ARG_STR, 1, NULL, offsetof(read_enz_arg, filename)},
+	{"-filename",	ARG_STR, 1, NULL, offsetof(file_arg, filename)},
 	{NULL,		0,	 0, NULL, 0}
     };
 
@@ -460,7 +470,7 @@ tcl_save_contig_order(ClientData clientData,
     /* Notify of the start of the flurry of updates */
     rs.job = REG_BUFFER_START;
     for (i = 1; i <= NumContigs(io); i++)
-	contig_notify(io, i, (reg_data *)&rs);
+	contig_notify(io, order[i-1], (reg_data *)&rs);
 
     ro.job = REG_ORDER;
 
@@ -472,7 +482,7 @@ tcl_save_contig_order(ClientData clientData,
     /* Notify the end of our updates */
     re.job = REG_BUFFER_END;
     for (i = 1; i <= NumContigs(io); i++)
-	contig_notify(io, i, (reg_data *)&re);
+	contig_notify(io, order[i-1], (reg_data *)&re);
 
     return TCL_OK;
 }
@@ -519,6 +529,31 @@ tcl_flush_contig_order(ClientData clientData,
 
     args.io->contig_order = cache_rw(args.io, args.io->contig_order);
     cache_flush(args.io);
+
+    return TCL_OK;
+}
+
+
+int tcl_scaffold_from_agp(ClientData clientData, Tcl_Interp *interp,
+			  int objc, Tcl_Obj *CONST objv[])
+{
+    io_file_arg args;
+    FILE *fp;
+
+    cli_args a[] = {
+	{"-io",	    	ARG_IO,  1, NULL, offsetof(io_file_arg, io)},
+	{"-filename",	ARG_STR, 1, NULL, offsetof(io_file_arg, filename)},
+	{NULL,		0,	 0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    if (0 != scaffold_from_agp(args.io, args.filename)) {
+	vTcl_SetResult(interp, "%d", -1);
+    } else {
+	vTcl_SetResult(interp, "%d", 0);
+    }
 
     return TCL_OK;
 }
@@ -1384,6 +1419,38 @@ int tcl_complement_contig(ClientData clientData, Tcl_Interp *interp,
 
     for (i = 0; i < rargc; i++) {
 	complement_contig(args.io, rargv[i].contig);
+    }
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
+int tcl_complement_scaffold(ClientData clientData, Tcl_Interp *interp,
+			    int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc, i;
+    rec_list_t *rargv;
+    list2_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-scaffolds",	ARG_STR, 1, NULL,  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    vfuncheader("complement scaffold");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    /* create contig name array */
+    active_list_scaffold(args.io, args.inlist, &rargc, &rargv);
+    if (rargc == 0) {
+        xfree(rargv);
+        return TCL_OK;
+    }
+
+    for (i = 0; i < rargc; i++) {
+	complement_scaffold(args.io, rargv[i].rec);
     }
 
     xfree(rargv);
@@ -2377,6 +2444,10 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "complement_contig", tcl_complement_contig,
 			 (ClientData) NULL,
 			 NULL);
+    Tcl_CreateObjCommand(interp, "complement_scaffold",
+			 tcl_complement_scaffold,
+			 (ClientData) NULL,
+			 NULL);
 #if 0
     Tcl_CreateObjCommand(interp, "cursor_ref", tk_cursor_ref,
 			 (ClientData) NULL,
@@ -2425,6 +2496,10 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "update_scaffold_order",
 			 tcl_update_scaffold_order, (ClientData) NULL,
 			 NULL);
+    Tcl_CreateObjCommand(interp, "scaffold_from_agp",
+			 tcl_scaffold_from_agp, (ClientData) NULL,
+			 NULL);
+
     Tcl_CreateObjCommand(interp, "zoom_canvas", ZoomCanvas,
 			 (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "delete_window", DeleteWindow,

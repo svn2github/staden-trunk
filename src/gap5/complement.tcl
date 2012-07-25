@@ -12,12 +12,13 @@ proc ComplementContig {io} {
     set l [keylget gap5_defs COMPLEMENT_CONTIG]
     set t [keylget l WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
-    wm title $t "Complement contig"
+    wm title $t "Complement contig / scaffold"
 
     contig_id $t.id \
-	    -command "ComplementContig2 $io $t $t.id" \
-	    -io $io \
-	    -range 0
+	-command "ComplementContig2 $io $t $t.id" \
+	-io $io \
+	-range 0 \
+	-scaffold 1
 
     okcancelhelp $t.ok \
 	-ok_command "ComplementContig2 $io $t $t.id" \
@@ -34,7 +35,11 @@ proc ComplementContig2 {io t id} {
     destroy $t
     update idletasks
 
-    set cnum [db_info get_contig_num $io $c]
-    complement_contig -io $io -contigs "$c"
-    SetContigGlobals $io [left_gel $io $cnum]
+    if {[db_info get_scaffold_num $io $c] > 0} {
+	complement_scaffold -io $io -scaffolds "$c"
+    } else {
+	set cnum [db_info get_contig_num $io $c]
+	complement_contig -io $io -contigs "$c"
+	SetContigGlobals $io [left_gel $io $cnum]
+    }
 }

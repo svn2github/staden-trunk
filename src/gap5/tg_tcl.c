@@ -54,6 +54,8 @@ static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 			   int objc, Tcl_Obj *CONST objv[]);
 static int tcl_contig_order(GapIO *io, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *CONST objv[]);
+static int tcl_scaffold_order(GapIO *io, Tcl_Interp *interp,
+			      int objc, Tcl_Obj *CONST objv[]);
 static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
 			     int objc, Tcl_Obj *CONST objv[]);
 static int tcl_anno_ele_read(GapIO *io, Tcl_Interp *interp,
@@ -143,8 +145,8 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_library", "db_version",   "name",         "read_only",
 	"new_contig",  "new_sequence", "new_anno_ele", "rec_exists",
 	"seq_name_iter","seq_name_next","seq_name_end","check",
-	"contig_name2rec", "base",     "get_scaffold",
-	(char *)NULL,
+	"contig_name2rec", "base",     "get_scaffold", "num_scaffolds",
+	"scaffold_order", (char *)NULL,
     };
 
     enum options {
@@ -154,7 +156,8 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
 	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,   IO_REC_EXISTS,
 	SEQ_NAME_ITER,SEQ_NAME_NEXT,  SEQ_NAME_END,   CHECK,
-	CONTIG_NAME2REC, IO_BASE,     IO_SCAFFOLD
+	CONTIG_NAME2REC, IO_BASE,     IO_SCAFFOLD,    NUM_SCAFFOLDS,
+	IO_SORDER,
     };
 
     if (objc < 2) {
@@ -212,8 +215,16 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	return tcl_contig_order(io, interp, objc-1, objv+1);
 	break;
 
+    case IO_SORDER:
+	return tcl_scaffold_order(io, interp, objc-1, objv+1);
+	break;
+
     case NUM_CONTIGS:
 	vTcl_SetResult(interp, "%d", io->db->Ncontigs);
+	break;
+
+    case NUM_SCAFFOLDS:
+	vTcl_SetResult(interp, "%d", io->db->Nscaffolds);
 	break;
 
     case IO_DB_VERSION:
@@ -1567,7 +1578,7 @@ static int scaffold_cmd(ClientData clientData, Tcl_Interp *interp,
 
 static int tcl_scaffold_read(GapIO *io, Tcl_Interp *interp,
 			   int objc, Tcl_Obj *CONST objv[]) {
-    scaffold_t *c;
+    scaffold_t *c = NULL;
     Tcl_WideInt cnum;
     tcl_scaffold *tc;
     Tcl_Obj *res;
@@ -1580,10 +1591,7 @@ static int tcl_scaffold_read(GapIO *io, Tcl_Interp *interp,
     }
 
     Tcl_GetWideIntFromObj(interp, objv[1], &cnum);
-    //if (cnum > 0)
-	c = (scaffold_t *)cache_search(io, GT_Scaffold, cnum);
-    //else
-	//gio_read_scaffold(io, -(int)cnum, &c); /* scaffold order lookup */
+    c = (scaffold_t *)cache_search(io, GT_Scaffold, cnum);
 
     if (!c) {
 	vTcl_SetResult(interp, "Unable to read scaffold =%"PRIrec, cnum);
@@ -1612,6 +1620,25 @@ static int tcl_scaffold_read(GapIO *io, Tcl_Interp *interp,
 
     Tcl_SetObjResult(interp, res);
 
+    return TCL_OK;
+}
+
+static int tcl_scaffold_order(GapIO *io, Tcl_Interp *interp,
+			      int objc, Tcl_Obj *CONST objv[]) {
+    int cind;
+    tg_rec crec;
+
+    if (objc != 2) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s scaffold_index\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    Tcl_GetIntFromObj(interp, objv[1], &cind);
+    crec = arr(tg_rec, io->scaffold, cind);
+
+    vTcl_SetResult(interp, "%"PRIrec, crec);
     return TCL_OK;
 }
 

@@ -184,6 +184,15 @@ int active_list_contigs_extended(GapIO *io, char *list,
 			    argc, argv);
 }
 
+int active_list_scaffold(GapIO *io, char *list,
+			 int *argc, rec_list_t **argv) {
+    if (-1 == set_active_list(list))
+	return -1;
+
+    return lget_scaffold_num(io, active_list_argc, active_list_argv,
+			     argc, argv);
+}
+
 /*
  *----------------------------------------------------------------------------
  * Our interfaces into handy Tcl functions.

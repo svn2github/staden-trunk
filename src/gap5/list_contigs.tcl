@@ -31,8 +31,9 @@ proc InitListContigs {io parent {csh_win {}}} {
 	$t.list columnconfigure 1 -sortmode integer
 	$t.list columnconfigure 2 -sortmode integer
 	$t.list columnconfigure 3 -sortmode integer
-	$t.list columnconfigure 4 -sortmode dictionary \
-	    -formatcommand ListContigsScaffoldFormat
+	$t.list columnconfigure 4 -sortmode command \
+	    -formatcommand ListContigsScaffoldFormat \
+	    -sortcommand [list ListContigsScaffoldSort $t.list]
     } else {
 	tablelist $t.list \
 	    -columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations"} \
@@ -67,13 +68,11 @@ proc InitListContigs {io parent {csh_win {}}} {
 	-text "Help" \
 	-command "show_help gap5 Contig-Selector-Contigs"
 
-    button $t.buttons.up \
+    repeater $t.buttons.up "ListContigsUp $io $t.list" \
 	-text "\u2191" \
-	-command "ListContigsUp $io $t.list"
 
-    button $t.buttons.down \
-	-text "\u2193"  \
-	-command "ListContigsDown $io $t.list"
+    repeater $t.buttons.down "ListContigsDown $io $t.list" \
+	-text "\u2193" 
 
     pack $t.buttons.cancel $t.buttons.save $t.buttons.copy $t.buttons.help \
 	$t.buttons.up $t.buttons.down -side left -expand 1
@@ -114,7 +113,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 		    -io $io \
 		    -contig 0 \
 		    -command "ListContigsCallback $io $t.list" \
-		    -flags {REQUIRED LENGTH JOIN_TO DELETE COMPLEMENT RENAME}]
+		    -flags {REQUIRED LENGTH JOIN_TO DELETE COMPLEMENT RENAME ORDER}]
     
     # Populate the list
     ListContigsRepopulate $io $t.list
@@ -128,6 +127,33 @@ proc InitListContigs {io parent {csh_win {}}} {
 }
 
 ##############################################################################
+# Sort function for scaffolds. If we reverse scaffolds we want to keep the
+# members numerically sorted even though the scaffolds themselves are
+# reverse sorted.
+; proc ListContigsScaffoldSort {w n1 n2} {
+    regexp {(.*)/(-?[0-9]+)} $n1 _ s1 c1
+    regexp {(.*)/(-?[0-9]+)} $n2 _ s2 c2
+    if {$s1 != $s2} {
+	if {[lsort -dictionary [list $s1 $s2]] == "$s1 $s2"} {
+	    return -1
+	} else {
+	    return 1
+	}
+    }
+
+    # Identical scaffolds, so sort by index into scaffold. We have to
+    # reverse this if we're doing a reverse search though. To get the
+    # sort order we sneakily peek into the internal structures for the
+    # tablelist widget via  {::tablelist::ns${w}::data}(4-sortOrder)
+    set order [set ::tablelist::ns${w}::data(4-sortOrder)]
+    if {$order == "decreasing"} {
+	return [expr {$c2 < $c1 ? -1 : ($c2 > $c1 ? 1 : 0)}]
+    } else {
+	return [expr {$c1 < $c2 ? -1 : ($c1 > $c2 ? 1 : 0)}]
+    }
+}
+
+##############################################################################
 # Creates a menu for the list contigs window. This is a duplicate of the
 # contig selector menu, but the contig selector menu code requires knowledge
 # of canvas ids and canvas tag values right down to the final menu callbacks,
@@ -135,7 +161,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 # csh_win canvas.
 #
 # FIXME: rewrite the csh_win canvas stuff to call this menu code instead.
-; proc ListContigsPopupMenu {io crec w X Y} {
+; proc ListContigsPopupMenu {io crec w x y X Y} {
     global read_only gap5_defs
 
     create_popup $w.m "Contig Commands (\#$crec)"
@@ -146,6 +172,12 @@ proc InitListContigs {io parent {csh_win {}}} {
     if {!$read_only} {
 	$w.m add command -label "Complement contig" \
 	    -command "complement_contig -io $io -contigs =$crec"
+	set scaf [lindex [$w get @$x,$y] 4]
+	set scaf [lindex [regexp -inline {(.*)/.*} $scaf] 1]
+	if {$scaf != "(none)"} {
+	    $w.m add command -label "Complement scaffold" \
+		-command "complement_scaffold -io $io -scaffolds [list $scaf]"
+	}
 	$w.m add separator
 	$w.m add command -label "Rename contig" \
 	    -command "ListContigsRename $w $io $crec"
@@ -222,7 +254,7 @@ proc InitListContigs {io parent {csh_win {}}} {
     set ident [lindex [lindex [$w get $row] 0] 1]
     set ident [string range $ident 2 end-1]
 
-    ListContigsPopupMenu $io $ident $w $X $Y
+    ListContigsPopupMenu $io $ident $w $x $y $X $Y
 }		
 
 ; proc ListContigsSelectPressBinding {io w x y} {
@@ -305,8 +337,16 @@ proc InitListContigs {io parent {csh_win {}}} {
 	"LENGTH" -
 	"COMPLEMENT" -
 	"JOIN_TO" -
+	"ORDER" -
 	"RENAME" {
-	    ListContigsRepopulate $io $w
+	    global $w.redraw_pending
+	    if {![info exist $w.redraw_pending]} {
+		set $w.redraw_pending 1
+		after idle "
+		    ListContigsRepopulate $io $w
+		    unset $w.redraw_pending
+		"
+	    }
 	}
     }
 
@@ -421,6 +461,7 @@ proc ListContigsUp {io w} {
     # 0 2 3 1 5 4 6 7 <- 5
 
     set end [$w index end]
+    set y [$w index @0,0]
     set l [$w get 0 end]
 
     set n 0
@@ -439,6 +480,9 @@ proc ListContigsUp {io w} {
 
     # Redraw the selection
     ListContigsUpdate $io $w
+
+    if {$y > 0} {incr y -1}
+    $w yview $y
 }
 
 proc ListContigsDown {io w} {
@@ -450,6 +494,7 @@ proc ListContigsDown {io w} {
     # 0 1 4 2 3 6 5 7 -> 2
     
     set end [$w index end]
+    set y [$w index @0,0]
     set l [$w get 0 end]
 
     set n [expr {[llength $l]-1}]
@@ -468,4 +513,8 @@ proc ListContigsDown {io w} {
 
     # Redraw the selection
     ListContigsUpdate $io $w
+
+    # Force the current selection to be visible
+    incr y
+    $w yview $y
 }

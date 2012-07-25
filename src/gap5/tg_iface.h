@@ -74,8 +74,9 @@ typedef struct {
 
 
 /* index_create type fields */
-#define DB_INDEX_NAME   0
-#define DB_INDEX_CONTIG 1
+#define DB_INDEX_NAME     0
+#define DB_INDEX_CONTIG   1
+#define DB_INDEX_SCAFFOLD 2
 
 typedef struct {
     /* Allocate and deallocate. Init is allocate() + lock + initialise */
@@ -114,6 +115,14 @@ typedef struct {
     tg_rec (*index_add)(void *dbh, char *name, tg_rec rec);
     tg_rec (*index_del)(void *dbh, char *name, tg_rec rec);
 } io_seq;
+
+typedef struct {
+    /* No STANDARD_IFACE as we only support scaffold blocks */
+    tg_rec (*index_query)(void *dbh, char *name, int prefix);
+    btree_iter_t *(*index_query_iter)(void *dbh, char *name);
+    tg_rec (*index_add)(void *dbh, char *name, tg_rec rec);
+    tg_rec (*index_del)(void *dbh, char *name, tg_rec rec);
+} io_scaffold;
 
 typedef struct {
     STANDARD_IFACE
@@ -184,6 +193,7 @@ typedef struct {
     io_contig_block   contig_block;
     io_scaffold_block scaffold_block;
     io_anno_ele_block anno_ele_block;
+    io_scaffold       scaffold;
 } iface;
 
 int set_tg_compression_level(int level);

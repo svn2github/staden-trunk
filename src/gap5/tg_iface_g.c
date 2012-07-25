@@ -98,6 +98,8 @@ typedef struct {
     btree_t *seq_name_tree;
     HacheTable *contig_name_hash;
     btree_t *contig_name_tree;
+    HacheTable *scaffold_name_hash;
+    btree_t *scaffold_name_tree;
     int comp_mode;
     int db_vers;
     FILE *debug_fp;
@@ -1184,12 +1186,17 @@ tg_rec btree_node_create(g_io *io, HacheTable *h) {
     ci->data = n;
     n->cache = ci;
 
+    /* Force creation on disk, incase if we don't populate it later */
+    if (-1 == g_upgrade_(io->gdb, io->client, ci->view, G_LOCK_RW))
+	return -1;
+    ci->updated = 1;
+
     hd.p = ci;
 
     hi = HacheTableAdd(h, (char *)&rec, sizeof(rec), hd, NULL);
     ci->hi = hi;
 
-    HacheTableDecRef(h, hi);
+    //HacheTableDecRef(h, hi);
 
     return rec;
 }
@@ -1414,8 +1421,21 @@ static void *io_database_connect(char *dbname, int ro) {
     io->contig_name_hash->load = btree_load_cache;
     io->contig_name_hash->del  = btree_del_cache;
 
+    io->scaffold_name_hash = HacheTableCreate(1024,
+					    HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
+    io->scaffold_name_hash->name = "io->scaffold_name_hash";
+
+    if (NULL == (bt = (btree_query_t *)malloc(sizeof(*bt))))
+	return NULL;
+    bt->io = io;
+    bt->h = io->scaffold_name_hash;
+    io->scaffold_name_hash->clientdata = bt;
+    io->scaffold_name_hash->load = btree_load_cache;
+    io->scaffold_name_hash->del  = btree_del_cache;
+
     io->seq_name_tree = NULL; /* Initialised when reading GDatabase */
     io->contig_name_tree = NULL;
+    io->scaffold_name_tree = NULL;
     io->comp_mode = COMP_MODE_ZLIB;
 
     io->db_vers = 0;
@@ -1461,6 +1481,8 @@ static int io_database_commit(void *dbh) {
 
     btree_flush(io, io->seq_name_hash);
     btree_flush(io, io->contig_name_hash);
+    if (io->scaffold_name_hash)
+	btree_flush(io, io->scaffold_name_hash);
     
     //g_unlock_file_N_(io->gdb, io->client, 0);
     //g_lock_file_N_(io->gdb, io->client, 0);
@@ -1486,6 +1508,13 @@ static int io_database_disconnect(void *dbh) {
 	btree_destroy(io, io->contig_name_hash);
 	if (io->contig_name_tree) {
 	    free(io->contig_name_tree);
+	}
+    }
+
+    if (io->scaffold_name_hash) {
+	btree_destroy(io, io->scaffold_name_hash);
+	if (io->scaffold_name_tree) {
+	    free(io->scaffold_name_tree);
 	}
     }
 
@@ -1585,9 +1614,13 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
     cp += u72intw(cp, &i64); db->library = i64;
     cp += u72intw(cp, &i64); db->seq_name_index = i64;
     cp += u72intw(cp, &i64); db->contig_name_index = i64;
+    db->scaffold_name_index = 0;
     if (fmt >= 2) {
 	cp += u72int(cp, (uint32_t *)&db->Nscaffolds);
 	cp += u72intw(cp, &i64); db->scaffold = i64;
+	if (cp-buf < buf_len) {
+	    cp += u72intw(cp, &i64); db->scaffold_name_index = i64;
+	}
     } else {
 	db->Nscaffolds = 0;
 	db->scaffold = 0;
@@ -1627,6 +1660,17 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 	}
     }
 
+    if (db->scaffold_name_index) {
+	btree_query_t *bt = (btree_query_t*)io->scaffold_name_hash->clientdata;
+	bt->io = io;
+	bt->h = io->scaffold_name_hash;
+	io->scaffold_name_tree = btree_new(bt, db->scaffold_name_index);
+	if (!io->scaffold_name_tree || !io->scaffold_name_tree->root) {
+	    //return NULL;
+	    db->scaffold_name_index = 0;
+	}
+    }
+
     io->db_vers = db->version;
     if (io->debug_fp)
 	fprintf(io->debug_fp, "Database version=%d\n", io->db_vers);
@@ -1653,6 +1697,7 @@ static int io_database_write_view(g_io *io, database_t *db, GView v) {
     if (db->scaffold && io->db_vers >= 5) {
 	cp += int2u7(db->Nscaffolds, cp);
 	cp += intw2u7(db->scaffold, cp);
+	cp += intw2u7(db->scaffold_name_index, cp);
     }
     
     /* Write it out */
@@ -1726,6 +1771,10 @@ static tg_rec io_database_create(void *dbh, void *from, int version) {
 #endif
     db.contig_name_index = btree_node_create(io, io->contig_name_hash);
 
+    if (io->db_vers >= 5) {
+	db.scaffold_name_index = btree_node_create(io, io->scaffold_name_hash);
+    }
+
     /* Database struct itself */
     v = lock(io, db_rec, G_LOCK_EX);
     if (-1 == io_database_write_view(io, &db, v))
@@ -1782,6 +1831,19 @@ int io_database_create_index(void *dbh, cached_item *ci, int type) {
 
 	assert(io->contig_name_tree);
 	assert(io->contig_name_tree->root);
+	break;
+
+    case DB_INDEX_SCAFFOLD:
+	if (db->scaffold_name_index)
+	    return -1; /* already exists */
+
+	io->scaffold_name_hash = h;
+	h->name = "io->scaffold_name_hash";
+	db->scaffold_name_index = btree_node_create(io, h);
+	io->scaffold_name_tree = btree_new(bt, db->scaffold_name_index);
+
+	assert(io->scaffold_name_tree);
+	assert(io->scaffold_name_tree->root);
 	break;
 
     default:
@@ -5014,7 +5076,7 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 	    ? in[i].end - s32 : 0;
     }
 
-    /* Scaffold */
+    /* Scaffold*/
     for (last = i = 0; i < CONTIG_BLOCK_SZ; i++) {
 	int64_t tmp;
 	if (!in[i].bin) continue;
@@ -5668,6 +5730,52 @@ static tg_rec io_scaffold_block_create(void *dbh, void *vfrom) {
 }
 
 
+/* Indexing functions */
+static tg_rec io_scaffold_index_query(void *dbh, char *name, int prefix) {
+    g_io *io = (g_io *)dbh;
+    
+    if (!io->scaffold_name_tree)
+	return -1;
+
+    return btree_search(io->scaffold_name_tree, name, prefix);
+}
+
+static btree_iter_t *io_scaffold_index_query_iter(void *dbh, char *name) {
+    g_io *io = (g_io *)dbh;
+
+    if (!io->scaffold_name_tree)
+	return NULL;
+
+    return btree_iter_new(io->scaffold_name_tree, name);
+}
+
+static tg_rec io_scaffold_index_add(void *dbh, char *name, tg_rec rec) {
+    g_io *io = (g_io *)dbh;
+    
+    if (!io->scaffold_name_tree)
+	return -1;
+
+    return btree_insert(io->scaffold_name_tree, name, rec) == 0
+	? io->scaffold_name_tree->root->rec
+	: -1;
+}
+
+static tg_rec io_scaffold_index_del(void *dbh, char *name, tg_rec rec) {
+    g_io *io = (g_io *)dbh;
+    
+    if (!io->scaffold_name_tree)
+	return -1;
+
+    if (rec)
+	return btree_delete_rec(io->scaffold_name_tree, name, rec) == 0
+	    ? io->scaffold_name_tree->root->rec
+	    : -1;
+    else
+	return btree_delete(io->scaffold_name_tree, name) == 0
+	    ? io->scaffold_name_tree->root->rec
+	    : -1;
+}
+
 /* ------------------------------------------------------------------------
  * anno_ele_block access methods
  */
@@ -6181,6 +6289,14 @@ static iface iface_g = {
 	io_anno_ele_block_read,
 	io_anno_ele_block_write,
 	io_generic_info,
+    },
+
+    {
+	/* Scaffold */
+	io_scaffold_index_query,
+	io_scaffold_index_query_iter,
+	io_scaffold_index_add,
+	io_scaffold_index_del,
     },
 };
 

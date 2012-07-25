@@ -36,14 +36,7 @@ present. (db->contig_order is the master.)
 Like sequences and more recently contigs, scaffolds are internally
 stored in blocks of up to 1024 scaffolds to a GT_ScaffoldBlock.
 
-Scaffold names must be unique and distinct from contig names. This
-will permit specifying scaffold names to dialogues that can take lists
-of contigs, as an indication to mean "all the contigs in this
-scaffold". For simplicity we hold these names in the same B+Tree we
-use for contigs, but prefix them with "/scaffold/" to force the
-scaffolds to end up in their own branch of the tree and to explicitly
-avoid clashing just incase we're forced down this road at some stage.
-
+Scaffold names must be unique. They are stored in their own index.
  */
 
 #include <staden_config.h>
@@ -56,6 +49,7 @@ avoid clashing just incase we're forced down this road at some stage.
 
 #include "tg_gio.h"
 #include "list_proc.h"
+#include "io_lib/hash_table.h"
 
 /*
  * Sets a scaffold name.
@@ -66,19 +60,16 @@ avoid clashing just incase we're forced down this road at some stage.
 int scaffold_set_name(GapIO *io, scaffold_t **f, char *name) {
     scaffold_t *n;
     GapIO *iob = io->base ? io->base : io;
-    char cname[8192];
-
-    sprintf(cname, "/scaffold/%s", name);
 
     if (!(n = cache_rw(io, *f)))
 	return -1;
 
     /* Delete old name */
     if (n->name) {
-	tg_rec r = iob->iface->contig.index_del(iob->dbh, n->name, n->rec);
-	if (r != -1 && r != io->db->contig_name_index) {
+	tg_rec r = iob->iface->scaffold.index_del(iob->dbh, n->name, n->rec);
+	if (r != -1 && r != io->db->scaffold_name_index) {
 	    io->db = cache_rw(io, io->db);
-	    io->db->contig_name_index = r;
+	    io->db->scaffold_name_index = r;
 	}
     }
 
@@ -92,10 +83,10 @@ int scaffold_set_name(GapIO *io, scaffold_t **f, char *name) {
     strcpy(n->name, name);
 
     if (*name) {
-	tg_rec r = iob->iface->contig.index_add(iob->dbh, name, n->rec);
-	if (r != -1 && r != io->db->contig_name_index) {
+	tg_rec r = iob->iface->scaffold.index_add(iob->dbh, name, n->rec);
+	if (r != -1 && r != io->db->scaffold_name_index) {
 	    io->db = cache_rw(io, io->db);
-	    io->db->contig_name_index = r;
+	    io->db->scaffold_name_index = r;
 	}
     }
 
@@ -161,13 +152,18 @@ int scaffold_add(GapIO *io, tg_rec scaffold, tg_rec contig,
     contig_t *c;
     scaffold_member_t *m;
     int i;
-    
+
+    /* Check if this contig is in a scaffold, if so remove now */
+    c = cache_search(io, GT_Contig, contig);
+    if (c->scaffold)
+	scaffold_remove(io, c->scaffold, contig);
+
     if (!(f = cache_search(io, GT_Scaffold, scaffold)))
 	return -1;
 
     /* Check if it already exists */
     for (i = 0; i < ArrayMax(f->contig); i++) {
-	m = arrp(scaffold_member_t, f->contig, ArrayMax(f->contig)-1);
+	m = arrp(scaffold_member_t, f->contig, i);
 	if (m->rec == contig)
 	    return 0;
     }
@@ -209,10 +205,7 @@ int scaffold_add(GapIO *io, tg_rec scaffold, tg_rec contig,
 }
 
 tg_rec scaffold_index_query(GapIO *io, char *name) {
-    char cname[8192];
-
-    sprintf(cname, "/scaffold/%s", name); 
-    return io->iface->contig.index_query(io->dbh, name, 0);
+    return io->iface->scaffold.index_query(io->dbh, name, 0);
 }
 
 /*
@@ -468,4 +461,105 @@ int update_scaffold_order(GapIO *io) {
  err:
     free(a);
     return ret;
+}
+
+/*
+ * Complements a scaffold; both complementing each contig within it and
+ * reversing the order of contigs in the scaffold.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int complement_scaffold(GapIO *io, tg_rec srec) {
+    scaffold_t *f;
+    int i, j, nc = ArrayMax(io->contig_order);
+    scaffold_member_t *contigs;
+    tg_rec *crecs;
+    HashTable *h;
+    reg_order ro;
+    reg_buffer_start rs;
+    reg_buffer_end re;
+
+    if (!(f = cache_search(io, GT_Scaffold, srec)))
+	return -1;
+    if (!(f = cache_rw(io, f)))
+	return -1;
+    cache_incr(io, f);
+
+    /* Complement contigs */
+    contigs = ArrayBase(scaffold_member_t, f->contig);
+    for (i = 0; i < ArrayMax(f->contig); i++) {
+	complement_contig(io, contigs[i].rec);
+    }
+
+    /* Reverse the order of the contigs in the scaffold array */
+    for (i = 0, j = ArrayMax(f->contig)-1; i < j; i++, j--) {
+	scaffold_member_t cr1 = contigs[i];
+	contigs[i] = contigs[j];
+	contigs[j] = cr1;
+    }
+
+    /*
+     * Reverse the order of contigs in the contig_order array too.
+     * This is the part that really matters. It's also hard as the contigs
+     * in the contig order array could be in any order and not adjacent.
+     * For our purposes we'll just ensure the contigs in this scaffold in 
+     * the contig order array match our freshly complemented scaffold
+     * ordering.
+     *
+     * We initially build a hash table of contigs in this scaffold, and
+     * then iterate through contig_order copying out the new contigs whenever
+     * one matches.
+     */
+    h = HashTableCreate(nc, 0);
+    for (i = 0; i < ArrayMax(f->contig); i++) {
+	HashData hd;
+	hd.i = 0;
+	HashTableAdd(h, (char *)&contigs[i].rec, sizeof(tg_rec), hd, NULL);
+    }
+
+    /* Replace any contig matching the scaffold with the new order */
+    crecs = ArrayBase(tg_rec, io->contig_order);
+    for (i = j = 0; i < nc; i++) {
+	HashItem *hi;
+	if (!(hi = HashTableSearch(h, (char *)&crecs[i], sizeof(tg_rec))))
+	    continue;
+
+	crecs[i] = contigs[j++].rec;
+    }
+
+    /* Send event messages around */
+    rs.job = REG_BUFFER_START;
+    for (i = 0; i < nc; i++) {
+	HashItem *hi;
+	if (!(hi = HashTableSearch(h, (char *)&crecs[i], sizeof(tg_rec))))
+	    continue;
+
+	contig_notify(io, crecs[i], (reg_data *)&rs);
+    }
+
+    ro.job = REG_ORDER;
+    for (i = 0; i < nc; i++) {
+	HashItem *hi;
+	if (!(hi = HashTableSearch(h, (char *)&crecs[i], sizeof(tg_rec))))
+	    continue;
+
+	ro.pos = i+1;
+	contig_notify(io, crecs[i], (reg_data *)&ro);
+    }
+
+    /* Notify the end of our updates */
+    re.job = REG_BUFFER_END;
+    for (i = 0; i < nc; i++) {
+	HashItem *hi;
+	if (!(hi = HashTableSearch(h, (char *)&crecs[i], sizeof(tg_rec))))
+	    continue;
+
+	contig_notify(io, crecs[i], (reg_data *)&re);
+    }
+
+    HashTableDestroy(h, 0);
+    cache_decr(io, f);
+
+    return 0;
 }

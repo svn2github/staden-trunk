@@ -11,6 +11,15 @@ typedef struct {
 } handle_arg;
 
 typedef struct {
+    char *filename;
+} file_arg;
+
+typedef struct {
+    GapIO *io;
+    char *filename;
+} io_file_arg;
+
+typedef struct {
     GapIO *io;
     tg_rec contig;
 } contig_arg;
@@ -289,10 +298,6 @@ typedef struct {
     GapIO *io;
     int id;
 } cs_tags_arg;
-
-typedef struct {
-    char *filename;
-} read_enz_arg;
 
 typedef struct {
     GapIO *io;

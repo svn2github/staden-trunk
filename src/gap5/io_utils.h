@@ -11,6 +11,10 @@ typedef struct contig_list {
     int end;
 } contig_list_t;
 
+typedef struct rec_list {
+    tg_rec rec;
+} rec_list_t;
+
 /*
  * ---------------------------------------------------------------------------
  * Useful macros
@@ -122,6 +126,9 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv,
 int lget_contig_num2(GapIO *io, int listArgc, char **listArgv,
 		     int *rargc, contig_list_t **rargv);
 int *to_contigs_only(int num_contigs, contig_list_t *cl);
+int lget_scaffold_num(GapIO *io, int listArgc, char **listArgv,
+		      int *rargc, rec_list_t **rargv);
+tg_rec scaffold_name_to_number(GapIO *io, char *scaf_name);
 
 char *get_read_name(GapIO *io, tg_rec number);
 char *get_contig_name(GapIO *io, tg_rec number);

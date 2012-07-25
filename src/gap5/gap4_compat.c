@@ -216,6 +216,36 @@ tg_rec read_name_to_number(GapIO *io, char *gel_name) {
 }
 
 /*
+ * Converts a scaffold name to a reading number.
+ *
+ * Arguments:
+ *     io	- GapIO *
+ *     rname    - the string described above
+ *
+ * Returns:
+ *    0 for failure, otherwise the scaffold record number
+ */
+tg_rec scaffold_name_to_number(GapIO *io, char *name) {
+    tg_rec n = 0;
+
+    /* Check numeric values first */
+    if (*name == '=' || *name == '#') {
+	n = atorec(name+1);
+
+	if (cache_exists(io, GT_Scaffold, n)) {
+	    return n;
+	} else if (cache_exists(io, GT_Contig, n)) {
+	    contig_t *c = cache_search(io, GT_Contig, n);
+	    return c->scaffold;
+	}
+    }
+
+    /* Also check the name index */
+    n = scaffold_index_query(io, name);
+    return n > 0 ? n : 0;
+}
+
+/*
  * Converts a contig name to a contig number.
  * Name can be =contig_rec, #contig_rec, #reading_rec, contig_name
  * or (slower) reading_name.
@@ -591,6 +621,105 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
 	    (*rargv)[i].end = st;
     }
 
+    return 0;
+}
+
+/*
+ * As per lget_contig_num_base, but with scaffold IDs instead.
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int lget_scaffold_num(GapIO *io, int listArgc, char **listArgv, /* IN  list  */
+		      int *rargc, rec_list_t **rargv) {         /* OUT list */
+    int i, j, count=0;
+    char *p;
+    HashTable *h;
+
+    /* allocate: +1 ensures that we never alloc zero bytes */
+    if (NULL == (*rargv = (rec_list_t *)xmalloc(1 + listArgc *
+						sizeof(rec_list_t))))
+	return -1;
+
+    /* Scan through list finding the scaffold indentifiers */
+    for (j = 0; j < listArgc; j++) {
+	/* Find end of identifier */
+	for (p = listArgv[j]; *p && !isspace(*p); p++)
+	    ;
+
+	*p = 0;
+
+	/* If identifier is #num, then translation is trivial */
+    }
+
+    /* Translate #cnum and #rnum into numbers */
+    for (j=0; j<listArgc; j++) {
+	if (listArgv[j][0] == '#' || listArgv[j][0] == '=') {
+	    tg_rec num = atorec(&listArgv[j][1]);
+	    if (num > 0) {
+		(*rargv)[j].rec = num;
+		count++;
+	    } else {
+		(*rargv)[j].rec = 0;
+	    }
+	} else {
+	    (*rargv)[j].rec = 0;
+	}
+    }
+
+    /* Convert names to numbers */
+    for (j = 0; j < listArgc; j++) {
+	if (0 == (*rargv)[j].rec) {
+	    tg_rec srec = scaffold_index_query(io, listArgv[j]);
+	    if (srec) {
+		(*rargv)[j].rec = srec;
+		count++;
+	    } else {
+		verror(ERR_WARN, "scaffold_index_query()",
+		       "Unknown scaffold name %s", listArgv[j]);
+	    }
+	}
+    }
+
+
+    /* Remove duplicates */
+    h = HashTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_POOL_ITEMS);
+    for (i = j = 0; j < listArgc; j++) {
+	HashData hd;
+	int new;
+
+	if ((*rargv)[j].rec == 0)
+	    continue;
+
+	hd.i = 1;
+	HashTableAdd(h, (char *)&(*rargv)[j].rec, sizeof(tg_rec),
+		     hd, &new);
+
+	if (new) {
+	    (*rargv)[i++] = (*rargv)[j];
+	}
+    }
+    HashTableDestroy(h, 0);
+    listArgc = i;
+
+    /*
+     * Handle case when we've failed to find some; we just shuffle down to
+     * fill any holes in the rargv structure.
+     */
+    for (i=j=0; j<listArgc; j++) {
+	if ((*rargv)[j].rec != 0) {
+	    (*rargv)[i++] = (*rargv)[j];
+	}
+    }
+
+
+    /* Check for failures */
+    for (i=j=0; j<listArgc; j++) {
+	if ((*rargv)[j].rec > 0) {
+	    (*rargv)[i++] = (*rargv)[j];
+	}
+    }
+
+    *rargc = i;
     return 0;
 }
 
