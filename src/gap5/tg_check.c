@@ -1015,13 +1015,15 @@ static int bin_walk(GapIO *io, int fix, tg_rec rec, int offset, int complement,
  *         0 on success (*removed is true if the contig was destroyed);
  */
 int check_contig(GapIO *io, tg_rec crec, int fix, int level,
-		 HacheTable *lib_hash, int *fixed, int *removed) {
+		 HacheTable *lib_hash, HacheTable *scaf_hash,
+		 int *fixed, int *removed) {
     contig_t *c;
     bin_stats bs;
     int err = 0;
     bin_index_t *bin;
     HacheTable *rec_hash = NULL;
     int valid_ctg_start, valid_ctg_end;
+    HacheItem *hi;
 
     if (removed)
 	*removed = 0;
@@ -1157,6 +1159,40 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
     if (fix)
 	bin_invalidate_consensus(io, c->rec, c->start, c->end);
 
+    /* Check scaffold pointers are bidirectional */
+    hi = scaf_hash
+	? HacheTableQuery(scaf_hash, (char *)&c->rec, sizeof(c->rec))
+	: NULL;
+    if (hi) {
+	if (hi->data.i != c->scaffold) {
+	    vmessage("Contig %"PRIrec" claims to be in scaffold %"PRIrec
+		     " but is (also?) in another scaffold %"PRIrec
+		     " instead.\n",
+		     c->rec, c->scaffold, hi->data.i);
+	    err++;
+	    if (fix) {
+		c = cache_rw(io, c);
+		c->scaffold = hi->data.i;
+		if (fixed)
+		    (*fixed)++;
+	    }
+	}
+    } else if (scaf_hash) {
+	if (c->scaffold != 0) {
+	    vmessage("Contig %"PRIrec" claims to be in scaffold %"PRIrec
+		     " but the scaffold claims otherwise.\n",
+		     c->rec, c->scaffold);
+
+	    err++;
+	    if (fix) {
+		c = cache_rw(io, c);
+		c->scaffold = 0;
+		if (fixed)
+		    (*fixed)++;
+	    }
+	}
+    }
+
     cache_decr(io, c);
     if (rec_hash)
 	HacheTableDestroy(rec_hash, 0);
@@ -1269,9 +1305,12 @@ int check_cache(GapIO *io) {
 		    d1->Ncontigs != d2->Ncontigs ||
 		    d1->contig_order != d2->contig_order ||
 		    d1->Nlibraries != d2->Nlibraries ||
+		    d1->scaffold != d2->scaffold ||
+		    d1->Nscaffolds != d2->Nscaffolds ||
 		    d1->library != d2->library ||
 		    d1->seq_name_index != d2->seq_name_index ||
-		    d1->contig_name_index != d2->contig_name_index)
+		    d1->contig_name_index != d2->contig_name_index ||
+		    d1->scaffold_name_index != d2->scaffold_name_index)
 		    mis++;
 		break;
 	    }
@@ -1429,6 +1468,58 @@ int check_cache(GapIO *io) {
 		break;
 	    }
 
+	    case GT_ScaffoldBlock: {
+		scaffold_block_t *b1 = (scaffold_block_t *)&ci->data;
+		scaffold_block_t *b2 = (scaffold_block_t *)&ci2->data;
+		scaffold_t *f1, *f2;
+
+		for (j = 0; j < SCAFFOLD_BLOCK_SZ; j++) {
+		    if ((b1->scaffold[j]==NULL) != (b2->scaffold[j]==NULL)) {
+			mis++;
+			continue;
+		    }
+
+		    if (!b1->scaffold[j])
+			continue;
+
+		    f1 = b1->scaffold[j];
+		    f2 = b2->scaffold[j];
+
+		    if (f1->rec            != f2->rec ||
+			f1->size           != f2->size ||
+			f1->idx            != f2->idx) {
+			mis++;
+		    } else {
+			if (f1->name && f2->name &&
+			    strcmp(f1->name, f2->name))
+			    mis++;
+			if ((f1->contig && !f2->contig) ||
+			    (f2->contig && !f1->contig))
+			    mis++;
+			if (f1->contig && f2->contig &&
+			    (ArrayMax(f1->contig) != ArrayMax(f2->contig))) {
+			    mis++;
+			}
+			if (f1->contig && f2->contig) {
+			    int n;
+			    for (n = 0; n < ArrayMax(f1->contig); n++) {
+				scaffold_member_t *m1 =
+				    arrp(scaffold_member_t, f1->contig, n);
+				scaffold_member_t *m2 =
+				    arrp(scaffold_member_t, f2->contig, n);
+				if (m1->rec      != m2->rec ||
+				    m1->gap_type != m2->gap_type ||
+				    m1->gap_size != m2->gap_size ||
+				    m1->evidence != m2->evidence) {
+				    mis++;
+				}
+			    }
+			}
+		    }
+		}
+		break;
+	    }
+
 	    default: {
 		vmessage("Rec %"PRIrec" of type %d mismatches\n",
 			 ci->rec, ci->type);
@@ -1462,6 +1553,7 @@ int check_database(GapIO *io, int fix, int level) {
     int i;
     int err = 0, fixed = 0;
     HacheTable *hash = NULL;
+    HacheTable *scaf_hash = NULL;
 
     vfuncheader("Check Database");
     vmessage("--DB version: %d\n", io->db->version);
@@ -1561,6 +1653,50 @@ int check_database(GapIO *io, int fix, int level) {
 	fixed++;
     }
 
+    /* Check scaffolds */
+    scaf_hash = HacheTableCreate(256, HASH_POOL_ITEMS | HASH_DYNAMIC_SIZE);
+    for (i = 0; io->scaffold && i < ArrayMax(io->scaffold); i++) {
+	tg_rec rec = arr(tg_rec, io->scaffold, i);
+	scaffold_t *f = cache_search(io, GT_Scaffold, rec);
+	int j;
+
+	if (!f) {
+	    vmessage("Scaffold %d/#%"PRIrec": failed to load\n",
+		     i, rec);
+	    err++;
+	    if (fix) {
+		tg_rec *base = ArrayBase(tg_rec, io->scaffold);
+
+		io->scaffold = cache_rw(io, io->scaffold);
+		memmove(&base[i], &base[i+1],
+			(ArrayMax(io->scaffold) - i) * sizeof(*base));
+		ArrayMax(io->scaffold)--;
+		i--;
+		fixed++;
+	    }
+	    
+	    continue;
+	}
+
+	for (j = 0; f->contig && j < ArrayMax(f->contig); j++) {
+	    int new;
+	    HacheData hd;
+	    HacheItem *hi;
+	    scaffold_member_t *m = arrp(scaffold_member_t, f->contig, j);
+	    tg_rec crec = m->rec;
+
+	    hd.i = f->rec;
+	    hi = HacheTableAdd(scaf_hash, (char *)&crec, sizeof(crec),
+			       hd, &new);
+	    if (!new) {
+		vmessage("Contig #%"PRIrec" occurs in both scaffold #%"
+			 PRIrec" and #%"PRIrec"\n",
+			 crec, f->rec, hi->data.i);
+		err++;
+	    }
+	}
+    }
+
     /* Check each contig in turn */
     for (i = 0; i < ArrayMax(contig_order); i++) {
 	int del;
@@ -1568,7 +1704,8 @@ int check_database(GapIO *io, int fix, int level) {
 	vmessage("--Checking contig #%"PRIrec" (%d of %d)\n",
 		 crec, i+1, (int)ArrayMax(contig_order));
 	UpdateTextOutput();
-	err += check_contig(io, crec, fix, level, hash, &fixed, &del);
+	err += check_contig(io, crec, fix, level, hash,
+			    scaf_hash, &fixed, &del);
 	if (del)
 	    i--;
     }
@@ -1577,6 +1714,7 @@ int check_database(GapIO *io, int fix, int level) {
 	io->db->version = 2;
 
     HacheTableDestroy(hash, 0);
+    HacheTableDestroy(scaf_hash, 0);
 
     vmessage("\n*** Total number of errors: %d ***\n", err);
     if (fix)
