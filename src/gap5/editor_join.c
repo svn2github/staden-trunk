@@ -14,6 +14,8 @@
 #include "align.h"
 #include "dna_utils.h"
 
+#include "dis_readings.h"
+
 /* Add 'num' pads into the consensus for editor 'xx' at position 'pos'. */
 static void add_pads(edview *xx, contig_t **ctg, int pos, int num)
 {
@@ -712,9 +714,12 @@ tg_rec find_join_bin(GapIO *io, tg_rec lbin, tg_rec rbin, int offset,
 /*
  * Invalidates cached tracks and consensus in the region covered by the
  * contig overlap.
+ * 
+ * Return 0 on success
+ *       -1 on failure
  */
-int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
-		    int junction) {
+static int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
+			   int junction) {
     rangec_t *r;
     int i, j, nr, start, end;
     contig_t *c;
@@ -726,11 +731,14 @@ int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
     for (j = 0; j < 2; j++) {
 	r = contig_bins_in_range(io, &c, start, end,
 				 CSIR_LEAVES_ONLY, CONS_BIN_SIZE, &nr);
+	if (NULL == r) return -1;
+
 	for (i = 0; i < nr; i++) {
 	    bin_index_t *bin = cache_search(io, GT_Bin, r[i].rec);
+	    if (NULL == bin) return -1;
 
 	    if (bin->flags & BIN_CONS_VALID) {
-		bin = cache_rw(io, bin);
+		if (NULL == (bin = cache_rw(io, bin))) return -1;
 		bin->flags |= BIN_BIN_UPDATED;
 		bin->flags &= ~BIN_CONS_VALID;
 	    }
@@ -747,7 +755,6 @@ int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
 	end = leftc->end - junction;
 	c = rightc;
     }
-
 
     return 0;
 }
@@ -787,24 +794,28 @@ int last_refpos (GapIO *io, contig_t *c) {
  * contig from being indicated as having multiple references.
  * While technically that is true after a join, it adds excessive complexity
  * and grants abilities that few people want.
+ * 
+ * Return 0 on success
+ *       -1 on failure
  */
-static void contig_remove_refpos_markers(GapIO *io, contig_t *c,
-					 int from, int to) {
+static int contig_remove_refpos_markers(GapIO *io, contig_t *c,
+					int from, int to) {
     contig_iterator *ci;
     rangec_t *rc;
 
     ci = contig_iter_new_by_type(io, c->rec, 0, CITER_FIRST, from, to,
 				 GRANGE_FLAG_ISREFPOS);
     if (!ci)
-	return;
+	return 0;
 
     while ((rc = contig_iter_next(io, ci))) {
 	bin_index_t *bin = cache_search(io, GT_Bin, rc->orig_rec);
-	range_t *r = arrp(range_t, bin->rng, rc->orig_ind);
+	range_t *r;
 
+	if (NULL == bin) return -1;
+	if (NULL == (bin = cache_rw(io, bin))) return -1;
+	r = arrp(range_t, bin->rng, rc->orig_ind);
 	assert((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS);
-
-	bin = cache_rw(io, bin);
 
 	r->flags |= GRANGE_FLAG_UNUSED;
 	r->rec = bin->rng_free;
@@ -813,172 +824,941 @@ static void contig_remove_refpos_markers(GapIO *io, contig_t *c,
 	bin->flags |= BIN_BIN_UPDATED | BIN_RANGE_UPDATED;
 	bin_incr_nrefpos(io, bin, -1);
 
-	/* Otherwie adjust start/end used if we may have invalidated it */
+	/* Otherwise adjust start/end used if we may have invalidated it */
 	/* Cache till later to avoid O(N^2) complexity in worst case? */
 	if (bin->start_used == r->start || bin->end_used == r->end)
 	    bin_set_used_range(io, bin);
     }
 
     contig_iter_del(ci);
+    return 0;
 }
 
+/*
+ * Insert one or more new bins between bin and parent.  The location of the
+ * new bin in parent is given by pos and size.  If new_bin is still
+ * more than four times the size of bin, the function is called recursively
+ * to add another intermediate that is approximately half the size.  This
+ * should then create a resonably optimal tree structure.
+ *
+ * Returns a pointer to bin's new parent on success
+ *         NULL on failure
+ */
+
+static bin_index_t *add_intermediate_bin(GapIO *io, bin_index_t *bin,
+					 bin_index_t *parent,
+					 int pos, int size) {
+    tg_rec new_id;
+    bin_index_t *new_bin;
+    int i;
+
+    if (NULL == (bin = cache_rw(io, bin))) return NULL;
+    if (NULL == (parent = cache_rw(io, parent))) return NULL;
+
+    new_id = bin_new(io, pos, size, bin->parent, bin->parent_type);
+    if (new_id < 0) return NULL;
+
+    gio_debug(io, 1,
+	    "Adding new bin %"PRIrec" between %"PRIrec" and %"PRIrec"\n",
+	    new_id, parent->rec, bin->rec);
+
+    new_bin = (bin_index_t *) cache_search(io, GT_Bin, new_id);
+    if (NULL == new_bin) return NULL;
+    if (NULL == (new_bin = cache_rw(io, new_bin))) return NULL;
+
+    new_bin->nseqs    = bin->nseqs;
+    new_bin->nrefpos  = bin->nrefpos;
+    new_bin->nanno    = bin->nanno;
+    new_bin->child[0] = bin->rec;
+    new_bin->flags   |= BIN_BIN_UPDATED;
+
+    bin->parent      = new_id;
+    bin->parent_type = GT_Bin;
+    bin->pos        -= pos;
+    bin->flags      |= BIN_BIN_UPDATED;
+
+    for (i = 0; i < 2; i++) {
+	if (parent->child[i] == bin->rec) parent->child[i] = new_bin->rec;
+    }
+    parent->flags |= BIN_BIN_UPDATED;
+
+    if (bin->size * 4 < size) {
+	/* Add more intermediates to try to keep the tree in shape */
+	int sz_by_2 = size / 2;
+	if (bin->pos + bin->size - sz_by_2 < sz_by_2 - bin->pos) {
+	    new_bin = add_intermediate_bin(io, bin, new_bin, 0,
+					   MAX(sz_by_2, bin->pos + bin->size));
+	    if (NULL == new_bin) return NULL;
+	} else {
+	    int st = MIN(bin->pos, sz_by_2);
+	    new_bin = add_intermediate_bin(io, bin, new_bin, st, size - st);
+	    if (NULL == new_bin) return NULL;
+	}
+    }
+    
+    return new_bin;
+}
+
+/*
+ * Ensure that bin and all of its children are big enough to reach from the
+ * edge of parent to the start/end of sibling (if present).  This is necessary
+ * to ensure that there are no regions in a contig where the bin tree can't
+ * grow as there are no available child slots.
+ *
+ * If bin needs to grow by more than 50%, this is done by inserting a new bin
+ * above it, thus adding a new empty child slot.  For smaller expansions,
+ * bin itself is grown so that it covers the entire region.  As doing this
+ * may cause the child bins to become too small, they are recursively
+ * expanded as well.
+ *
+ * Return 0 on success
+ *       -1 on failure
+ */
+
+static int recursive_grow_bins(GapIO *io, bin_index_t *bin,
+			       bin_index_t *parent, bin_index_t *sibling) {
+    int i, nkids;
+    int shift;
+    int shifted = 0;
+    int new_size;
+    bin_index_t *cbin[2] = { NULL, NULL };
+    int comp = bin->flags & BIN_COMPLEMENTED;
+    int free_start = 0;
+    int free_end   = parent->size;
+    int ret = -1;
+
+    if (sibling) {
+	if (sibling->pos < bin->pos) {
+	    free_start = sibling->pos + sibling->size;
+	} else {
+	    free_end = sibling->pos;
+	}
+    } else {
+	if (bin->pos < parent->size - (bin->pos + bin->size)) {
+	    free_end = bin->pos + bin->size;
+	} else {
+	    free_start = bin->pos;
+	}
+    }
+    new_size = free_end - free_start;
+    shift = comp ? free_end - bin->pos - bin->size : bin->pos - free_start;
+
+    gio_debug(io, 1, "Growing bins for %"PRIrec" %d..%d to %d..%d "
+	    "parent %"PRIrec" 0..%d\n",
+	    bin->rec, bin->pos, bin->pos + bin->size,
+	    free_start, free_end, parent->rec, parent->size);
+
+    if (shift == 0 && new_size == bin->size) return 0;
+
+    if (NULL == (bin = cache_rw(io, bin))) return -1;
+
+    if (bin->size * 3 / 2 < new_size) {
+	bin_index_t *new_bin = add_intermediate_bin(io, bin, parent,
+						    free_start, new_size);
+	if (NULL == new_bin) return -1;
+
+	/* Call again in case we needed to expand both ends */
+	return recursive_grow_bins(io, bin, new_bin, NULL);
+    }
+
+    /* Adjust positions in the bin's range array */
+    if (bin->rng && shift != 0) {
+	int n = ArrayMax(bin->rng);
+	for (i = 0; i < n; i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
+	    if (r->flags & GRANGE_FLAG_UNUSED) continue;
+	    r->start += shift;
+	    r->end   += shift;
+	    shifted++;
+	}
+	if (shifted) bin->flags |= BIN_RANGE_UPDATED;
+    }
+
+    /* Collect children and update positions */
+    for (i = 0, nkids = 0; i < 2; i++) {
+	if (!bin->child[i]) continue;
+	cbin[nkids] = get_bin(io, bin->child[i]);
+	if (NULL == cbin[nkids]) goto clean;
+	cache_incr(io, cbin[nkids]);
+	if (shift != 0) {
+	    cbin[nkids] = cache_rw(io, cbin[nkids]);
+	    cbin[nkids]->pos += shift;
+	    cbin[nkids]->flags |= BIN_BIN_UPDATED;
+	}
+	nkids++;
+    }
+    bin->pos  = free_start;
+    bin->size = new_size;
+    if (shifted) {
+	bin->start_used += shift;
+	bin->end_used   += shift;
+    }
+    bin->flags |= BIN_BIN_UPDATED;
+
+    /* Expand children as well */
+    for (i = 0; i < nkids; i++) {
+	if (0 != recursive_grow_bins(io, cbin[i], bin, cbin[1 - i])) goto clean;
+	cache_decr(io, cbin[i]);
+	cbin[i] = NULL;
+    }
+    nkids = 0;
+    ret = 0;
+ clean:
+    for (i = 0; i < nkids; i++) {
+	if (NULL != cbin[i]) cache_decr(io, cbin[i]);
+    }
+    return ret;
+}
+
+/*
+ * Transplant binr so that it becomes a new child of binl.  If binr does not
+ * occupy all of the space that it should under binl, it is expanded using
+ * recursive_grow_bins.
+ * 
+ * Returns 0 on success
+ *        -1 on failure
+ */
+
+static int do_transplant(GapIO *io, bin_index_t *binl, bin_index_t *binr,
+			 int comp, int pos, int child_idx,
+			 bin_index_t *sibling) {
+    bin_index_t *old_parent;
+
+    gio_debug(io, 1, "Transplanting %"PRIrec" to %"PRIrec" index %d\n",
+	    binr->rec, binl->rec, child_idx);
+    if (NULL == (binl = cache_rw(io, binl))) return -1;
+    if (NULL == (binr = cache_rw(io, binr))) return -1;
+
+    old_parent = get_bin(io, binr->parent);
+    if (NULL == old_parent) return -1;
+    if (NULL == (old_parent = cache_rw(io, old_parent))) return -1;
+
+    binl->child[child_idx] = binr->rec;
+    binl->flags |= BIN_BIN_UPDATED;
+    binr->pos    = pos;
+    binr->parent = binl->rec;
+    binr->parent_type = GT_Bin;
+    binr->flags |= BIN_BIN_UPDATED;
+    if (comp) binr->flags ^= BIN_COMPLEMENTED;
+    if (old_parent->child[0] == binr->rec) old_parent->child[0] = 0;
+    if (old_parent->child[1] == binr->rec) old_parent->child[1] = 0;
+    old_parent->flags |= BIN_BIN_UPDATED;
+
+    if (0 != bin_incr_nseq(io, binl,    binr->nseqs)) return -1;
+    if (0 != bin_incr_nrefpos(io, binl, binr->nrefpos)) return -1;
+    if (0 != bin_incr_nanno(io, binl,   binr->nanno)) return -1;
+    if (0 != bin_incr_nseq(io, old_parent,    -binr->nseqs)) return -1;
+    if (0 != bin_incr_nrefpos(io, old_parent, -binr->nrefpos)) return -1;
+    if (0 != bin_incr_nanno(io, old_parent,   -binr->nanno)) return -1;
+    if (0 != recursive_grow_bins(io, binr, binl, sibling)) return -1;
+    return 0;
+}
+
+/*
+ * Attempt to transplant binr + all of its children to underneath binl.
+ * comp indicates if the bin needs to be complemented.  pos is the
+ * position in the destination bin.
+ *
+ * Returns 0 if binr was successfully transplanted
+ *         1 if there was no room for binr so nothing happened
+ *        -1 if an error occurred
+ */
+
+static int transplant_bin(GapIO *io, bin_index_t *binl, bin_index_t *binr,
+			  int comp, int pos) {
+    /* See if binr will fit underneath binl.  If it does we can
+       transplant it and all of its children directly. */
+    int end = pos + binr->size;
+    int free, used, ret;
+    bin_index_t *ch;
+
+    if (binr->parent_type != GT_Bin) return 1; /* Don't attempt to move root */
+    if (binl->child[0] && binl->child[1]) { return 1; }
+    if (!binl->child[0] && !binl->child[1]) {
+	/* Both child slots free, work out best one to choose */
+	int rfree = binl->size - pos - binr->size;
+	return do_transplant(io, binl, binr, comp, pos,
+			     pos < rfree ? 0 : 1, NULL);
+    }
+    free = binl->child[0] ? 1 : 0;
+    used = 1 - free;
+    ch = get_bin(io, binl->child[used]);
+    if (NULL == ch) return -1;
+
+    gio_debug(io, 1, "-- child #%d %"PRIrec" %d..%d\n",
+	    used, ch->rec, ch->pos, ch->pos + ch->size);
+    if ((end < ch->pos) || (ch->pos + ch->size <= pos)) { 
+	/* Transplant to child[0] */
+	cache_incr(io, ch);
+	ret = do_transplant(io, binl, binr, comp, pos, free, ch);
+	cache_decr(io, ch);
+	return ret;
+    }
+
+    /* If we got here, there isn't enough room so give up */
+    return 1;
+}
+
+static int round_up(int val) {
+    int bits = 0;
+    while (val) {
+	val /= 2;
+	bits++;
+    }
+
+    return 1<<bits;
+}
+
+/*
+ * Extend the root bin of contig c so that it covers the range start..end
+ * We do this by creating zero, one or two extra bins above the existing root
+ * depending on if we need to extend one or both ends.  If the bin is already
+ * big enough, this will do nothing.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+
+static int extend_root_bin(GapIO *io, contig_t *c, int start, int end) {
+    bin_index_t *old_root, *new_root;
+    tg_rec       new_id;
+    int          bin_start, bin_end;
+
+    old_root = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&c));
+    if (NULL == old_root) return -1;
+    bin_start = old_root->pos;
+    bin_end   = old_root->pos + old_root->size;
+
+    if (bin_start <= start && end <= bin_end) return 0; /* Nowt to do */
+
+    if (start < bin_start && end > bin_end) {
+	/* Need to do both ends, so need two new bins */
+	int ret = extend_root_bin(io, c, bin_start, end);
+	if (ret) return ret;
+	old_root = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&c));
+	if (NULL == old_root) return -1;
+	bin_start = old_root->pos;
+	bin_end   = old_root->pos + old_root->size;
+    }
+
+    /* Round the new bin up to a power of 2 in length.  With luck this will
+       help stop the bin structure from becoming lop-sided through long 
+       sequences of joins. */
+    if (start < bin_start) start = bin_end   - round_up(bin_end - start);
+    if (end   > bin_end)   end   = bin_start + round_up(end - bin_start);
+
+    if (NULL == (old_root = cache_rw(io, old_root))) return -1;
+    
+    if ((new_id = bin_new(io, 0, 0, c->rec, GT_Contig)) < 0) return -1;
+    new_root = (bin_index_t *)cache_search(io, GT_Bin, new_id);
+    if (NULL == new_root) return -1;
+    if (NULL == (new_root = cache_rw(io, new_root))) return -1;
+
+    if (0 != contig_set_bin(io, &c, new_id)) return -1;
+    gio_debug(io, 1, "Made new root bin %"PRIrec" for contig %"PRIrec"\n",
+	    new_id, c->rec);
+
+    new_root->nseqs    = old_root->nseqs;
+    new_root->nrefpos  = old_root->nrefpos;
+    new_root->nanno    = old_root->nanno;
+    new_root->child[0] = old_root->rec;
+    new_root->pos      = MIN(start, bin_start);
+    new_root->size     = MAX(end, bin_end) - new_root->pos;
+    new_root->flags   |= BIN_BIN_UPDATED;
+
+    old_root->parent      = new_root->rec;
+    old_root->parent_type = GT_Bin;
+    old_root->pos        -= new_root->pos;
+    old_root->flags      |= BIN_BIN_UPDATED;
+
+    return 0;
+}
+
+/*
+ * Attempt to join contigs by transplanting bins from one contig to the other.
+ * 
+ */
+
+static int join_move_bins(GapIO *io, contig_t *cl, contig_t *cr,
+			   int offset) {
+    typedef struct bin_list {
+        tg_rec rec;
+	int parent_comp;
+	int parent_offset;
+	int parent_size;
+        struct bin_list *next;
+    } bin_list;
+    bin_index_t *binl = NULL, *binr = NULL;
+    bin_list *head = NULL;
+    bin_list *tail = NULL;
+    bin_list *item;
+    bin_index_t *cbin[2] = { NULL, NULL };
+    int nkids;
+    int i;
+    int ret = -1;
+
+    binl = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cl));
+    if (NULL == binl) return -1;
+    cache_incr(io, binl);
+    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
+    if (NULL == binr) goto clean;
+    cache_incr(io, binr);
+
+    /* Make cl's root bin big enough to cover the joined contig, so
+       bin_for_range will always return something.  */
+
+    if (0 != extend_root_bin(io, cl,
+			     MIN(binl->pos, binr->pos + offset),
+			     MAX(binl->pos + binl->size,
+				 binr->pos + binr->size + offset))) goto clean;
+    cache_decr(io, binl); binl = NULL;
+    cache_decr(io, binr); binr = NULL;
+
+    gio_debug(io, 1, "cl %d..%d cr %d..%d offset %d\n",
+	    contig_get_start(&cl), contig_get_end(&cl),
+	    contig_get_start(&cr), contig_get_end(&cr), offset);
+    if (0 != contig_set_start(io, &cl, MIN(contig_get_start(&cl),
+					   contig_get_start(&cr) + offset))) {
+	goto clean;
+    }
+    if (0 != contig_set_end(io, &cl, MAX(contig_get_end(&cl),
+					 contig_get_end(&cr) + offset))) {
+	goto clean;
+    }
+
+    /* Initialize bin_list */
+    head = malloc(sizeof(bin_list));
+    if (!head) goto clean;
+    head->rec = contig_get_bin(&cr);
+    head->parent_comp = 0;
+    head->parent_offset = 0;
+    head->parent_size = 0;
+    head->next = NULL;
+    tail = head;
+
+    /* Breadth-first recursive bin mangling */
+    while (head) {
+	int rcomp = head->parent_comp;
+	int rstart, rend, lstart = 0, lcomp = 0, new_pos;
+	
+	binr = get_bin(io, head->rec);
+	if (NULL == binr) goto clean;
+	cache_incr(io, binr);
+
+	if (binr->flags & BIN_COMPLEMENTED) {
+	    rcomp ^= 1;
+	}
+	rstart = (head->parent_comp
+		  ? head->parent_offset+head->parent_size - binr->pos-binr->size
+		  : head->parent_offset + binr->pos);
+	rend = rstart + binr->size;
+	binl = bin_for_range(io, &cl, rstart + offset, rend + offset - 1, 0,
+			     &lstart, &lcomp);
+	if (binl) {
+	    cache_incr(io, binl);
+	    new_pos = (lcomp
+		       ? lstart + binl->size - rstart - offset - binr->size
+		       : rstart + offset - lstart);
+
+	    gio_debug(io, 1, "Trying %"PRIrec" %d..%d target %"PRIrec" %d..%d pos %d end %d %s\n",
+		    binr->rec, rstart + offset, rend + offset, binl->rec,
+		    lstart, lstart + binl->size,
+		    new_pos, new_pos + binr->size,
+		    lcomp ^ rcomp ? "comp" : "uncomp");
+
+	    if (transplant_bin(io, binl, binr,
+			       lcomp ^ head->parent_comp, new_pos)) {
+		/* Didn't work; try children */
+		nkids = 0;
+		for (i = 0; i < 2; i++) {
+		    if (!binr->child[i]) continue;
+		    cbin[nkids] = get_bin(io, binr->child[i]);
+		    if (NULL == cbin[nkids]) goto clean;
+		    cache_incr(io, cbin[nkids]);
+		    nkids++;
+		}
+		if (nkids == 2 && cbin[0]->pos > cbin[1]->pos) {
+		    bin_index_t *tmp = cbin[0];
+		    cbin[0] = cbin[1];
+		    cbin[1] = tmp;
+		}
+		for (i = 0; i < nkids; i++) {
+		    item = malloc(sizeof(bin_list));
+		    if (NULL == item) goto clean;
+		    item->rec = cbin[i]->rec;
+		    item->parent_comp = rcomp;
+		    item->parent_offset = rstart;
+		    item->parent_size = binr->size;
+		    item->next = NULL;
+		    tail->next = item;
+		    tail = item;
+		    cache_decr(io, cbin[i]); cbin[i] = NULL;
+		}
+	    }
+	    cache_decr(io, binl); binl = NULL;
+	}
+	
+	cache_decr(io, binr); binr = NULL;
+	item = head;
+	head = head->next;
+	free(item);
+    }
+
+    ret = 0;
+ clean:
+    if (NULL != binl) cache_decr(io, binl);
+    if (NULL != binr) cache_decr(io, binr);
+    for (i = 0; i < 2; i++) {
+	if (NULL != cbin[i]) cache_decr(io, cbin[i]);
+    }
+    while (NULL != head) {
+	item = head;
+	head = head->next;
+	free(item);
+    }
+    return 0;
+}
+
+/*
+ * Move all sequences and reference position markers from bin to the
+ * appropriate place in destination contig c, which should not be the one
+ * that bin is in.  Any cached consensus records will be freed.
+ *
+ * The record numbers of the new bin for each sequence is put into seq_bins
+ * for use by bin_move_annos later on.  If any annotations are seen while
+ * iterating through the bin contents then *anno_seen_out is set.  This
+ * allows the caller to avoid the bin_move_annos step if it is not needed.
+ * 
+ * The last destination bin is returned in *new_bin_out.  This is mainly so
+ * that the caller knows to call bin_add_range(io, ..., -1) at the
+ * end of the porcess if it needs to.
+ *
+ * The number of sequences moved is returned in *seqs_moved_out, and the
+ * number of reference positions on *refp_moved_out.  If the range has been
+ * updated, *range_changed_out is set to 1.
+ *
+ * Returns 0 on sucess
+ *        -1 on failure
+ */
+static int bin_move_seqs(GapIO *io, HacheTable *seq_bins, bin_index_t *bin,
+			 contig_t *c, bin_index_t **new_bin_out,
+			 int f_a, int f_b, int offset,
+			 int *anno_seen_out, int *seqs_moved_out,
+			 int *refp_moved_out, int *range_changed_out) {
+    int n = ArrayMax(bin->rng);
+    int src_comp = f_a < 0 ? 1 : 0;
+    bin_index_t *new_bin = NULL;
+    int j;
+
+    for (j = 0; j < n; j++) {
+	HacheData hd;
+	range_t *r = arrp(range_t, bin->rng, j);
+	range_t *r_new = NULL;
+	int      dest_comp = 0;
+	int      start = r->start, end = r->end;
+	seq_t   *seq;
+    
+	if (r->flags & GRANGE_FLAG_UNUSED) continue;
+	switch (r->flags & GRANGE_FLAG_ISMASK) {
+	case GRANGE_FLAG_ISSEQ:
+	    r->start = (f_a > 0 ? start : end) * f_a + f_b + offset;
+	    r->end   = (f_a > 0 ? end : start) * f_a + f_b + offset;
+	    new_bin = bin_add_range(io, &c, r, &r_new, &dest_comp, 1);
+	    if (NULL == new_bin) return -1;
+	    hd.i = new_bin->rec;
+	    if (NULL == HacheTableAdd(seq_bins, (char *) &r->rec,
+				      sizeof(r->rec), hd, NULL)) return -1;
+	    seq = cache_search(io, GT_Seq, r_new->rec);
+	    if (NULL == seq) return -1;
+	    if (NULL == (seq = cache_rw(io, seq))) return -1;
+	    seq->bin = new_bin->rec;
+	    seq->bin_index = r_new - ArrayBase(range_t, new_bin->rng);
+	    if (src_comp ^ dest_comp) {
+		seq->len = -seq->len;
+		seq->flags ^= SEQ_COMPLEMENTED;
+	    }
+	    (*seqs_moved_out)++;
+	    break;
+	case GRANGE_FLAG_ISREFPOS:
+	    r->start = (f_a > 0 ? start : end) * f_a + f_b + offset;
+	    r->end   = (f_a > 0 ? end : start) * f_a + f_b + offset;
+	    new_bin = bin_add_range(io, &c, r, NULL, NULL, 1);
+	    if (NULL == new_bin) return -1;
+	    (*refp_moved_out)++;
+	    break;
+	case GRANGE_FLAG_ISCONS:
+	    if (0 != cache_item_remove(io, GT_Seq, r->rec)) return -1;
+	    break;
+	case GRANGE_FLAG_ISANNO:
+	    *anno_seen_out = 1;
+	    continue;
+	default:
+	    continue;
+	}
+	r->flags |= GRANGE_FLAG_UNUSED;
+	r->rec = (tg_rec) bin->rng_free;
+	bin->rng_free = j;
+	*range_changed_out = 1;
+    }
+
+    if (NULL != new_bin) *new_bin_out = new_bin;
+    return 0;
+}
+
+/*
+ * Move annotations from bin to destination contig c, which should not be the
+ * one bin is in.  seq_bins should contain the record numbers of the bins
+ * that any sequences were moved to by bin_move_seqs so that we can put
+ * sequence annotations into the correct places.
+ * The last destination bin is returned in *new_bin_out mainly so that the
+ * caller knows to call bin_add_range(io, ..., -1) to fix up the bin counts
+ * if necessary.  It also returns the number of annotations moved 
+ * in *annos_moved_out.  If the range has been updated, *range_changed_out is
+ * set to 1.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int bin_move_annos(GapIO *io, HacheTable *seq_bins, bin_index_t *bin,
+			  contig_t *c, bin_index_t **new_bin_out,
+			  int f_a, int f_b, int offset,
+			  int *annos_moved_out, int *range_changed_out) {
+    bin_index_t *new_bin = NULL;
+    int n = ArrayMax(bin->rng);
+    int j;
+    
+    for (j = 0; j < n; j++) {
+	range_t    *r = arrp(range_t, bin->rng, j);
+	range_t    *r_new = NULL;
+	anno_ele_t *anno;
+	tg_rec      target = 0;
+	int         start = r->start, end = r->end;
+	
+	if (r->flags & GRANGE_FLAG_UNUSED) continue;
+	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) continue;
+	
+	anno = cache_search(io, GT_AnnoEle, r->rec);
+	if (NULL == anno) return -1;
+	if (anno->obj_type == GT_Seq) {
+	    HacheItem *hi = HacheTableSearch(seq_bins, (char *)&r->pair_rec,
+					     sizeof(r->pair_rec));
+	    if (hi) {
+		target = hi->data.i;
+	    } else {
+		/* FIXME: Tag somehow detached from its sequence */
+		continue;
+	    }
+	}
+	
+	if (NULL == (anno = cache_rw(io, anno))) return -1;
+
+	r->start = (f_a > 0 ? start : end) * f_a + f_b + offset;
+	r->end   = (f_a > 0 ? end : start) * f_a + f_b + offset;
+	new_bin = bin_add_to_range(io, &c, target, r, &r_new, NULL, 1);
+	if (NULL == new_bin) return -1;
+	anno->bin = new_bin->rec;
+
+	r->flags |= GRANGE_FLAG_UNUSED;
+	r->rec = (tg_rec) bin->rng_free;
+	bin->rng_free = j;
+
+	*range_changed_out = 1;
+	(*annos_moved_out)++;
+    }
+
+    if (NULL != new_bin) *new_bin_out = new_bin;
+    return 0;
+}
+
+/*
+ * Move objects (sequences, reference positions and annotations) from
+ * cr to cl.  This will also remove any cached consensus, as this may
+ * not be correct in the joined contig anyway.  Sequence annotations
+ * should end up in the same bin as the corresponding sequence at the
+ * end of the process (assuming that they were in the same one to start
+ * with.)  Anything else will be left behind, but for a consistent database
+ * this should be nothing.
+ *
+ * Returns 0 on success
+ *        -1 on failure 
+ */
+static int join_move_objects(GapIO *io, contig_t *cl, contig_t *cr,
+			     int offset) {
+    HacheTable  *seq_bins = HacheTableCreate(1024,
+					    HASH_DYNAMIC_SIZE|HASH_POOL_ITEMS);
+    int          overlap  = contig_get_end(&cl) - offset;
+    rangec_t    *bin_list  = NULL;
+    bin_index_t *new_bin = NULL;
+    int          nbins;
+    int          i;
+    int          ret = -1;
+
+    if (NULL == seq_bins) return -1;
+    
+    if (overlap > contig_get_end(&cr)) overlap = contig_get_end(&cr);
+    bin_list = contig_bins_in_range(io, &cr, contig_get_start(&cr),
+				    overlap, 0, 0, &nbins);
+    if (NULL == bin_list) goto clean;
+
+    for (i = 0; i < nbins; i++) {
+	int f_a = bin_list[i].pair_start;
+	int f_b = bin_list[i].pair_end;
+	int seqs_moved = 0, annos_moved = 0, refp_moved = 0, range_changed = 0;
+	int anno_seen = 0;
+	bin_index_t *bin;
+
+	if (NULL == (bin = get_bin(io, bin_list[i].rec))) goto clean;
+
+	if (!bin->rng) { continue; }
+	if (NULL == (bin = cache_rw(io, bin))) goto clean;
+
+	/* Move sequences and remove cached consensus */
+	if (0 != bin_move_seqs(io, seq_bins, bin, cl, &new_bin, f_a, f_b,
+			       offset, &anno_seen, &seqs_moved,
+			       &refp_moved, &range_changed)) goto clean;
+
+	/* Move annotations.  Try to get them into the same bin as the
+	   corresponding sequence */
+	if (anno_seen) {
+	    if (0 != bin_move_annos(io, seq_bins, bin, cl, &new_bin,
+				    f_a, f_b, offset,
+				    &annos_moved, &range_changed)) goto clean;
+	}
+
+	gio_debug(io, 1,
+		"Removed %d seqs, %d tags, %d repos from bin %"PRIrec"\n",
+		seqs_moved, annos_moved, refp_moved, bin_list[i].rec);
+	if (0 != (bin_incr_nseq(   io, bin, -seqs_moved)))  goto clean;
+	if (0 != (bin_incr_nanno(  io, bin, -annos_moved))) goto clean;
+	if (0 != (bin_incr_nrefpos(io, bin, -refp_moved)))  goto clean;
+	
+	if (range_changed) {
+	    bin->flags |= BIN_RANGE_UPDATED|BIN_BIN_UPDATED;
+	    bin->flags &= ~(BIN_CONS_CACHED|BIN_CONS_VALID);
+	    if (0 != bin_set_used_range(io, bin)) goto clean;
+	}
+	HacheTableEmpty(seq_bins, 0);
+    }
+
+    if (NULL != new_bin) {
+	bin_add_range(io, NULL, NULL, NULL, NULL, -1);
+    }
+
+    ret = 0;
+ clean:
+    if (NULL != bin_list) free(bin_list);
+    HacheTableDestroy(seq_bins, 0);
+    return ret;
+}
+
+/*
+ * Depth-first recurse into the bin structure, removing empty children
+ * on the way back out.
+ *
+ * Returns 0 if bin is empty and has no children
+ *         1 if bin has children or is not empty
+ *        -1 on failure
+ */
+static int drop_empty_bins_recurse(GapIO *io, bin_index_t *bin) {
+    int c;
+    int child_in_use = 0;
+    int ret;
+
+    for (c = 0; c < 2; c++) {
+	if (bin->child[c]) {
+	    bin_index_t *cbin = cache_search(io, GT_Bin, bin->child[c]);
+	    if (NULL == cbin) return -1;
+
+	    cache_incr(io, cbin);
+	    ret = drop_empty_bins_recurse(io, cbin);
+	    cache_decr(io, cbin);
+
+	    if (ret < 0) return ret;
+	    if (0 == ret) {
+		cache_incr(io, cbin);
+		if (NULL == (bin = cache_rw(io, bin)) ||
+		    NULL == (cbin = cache_rw(io, cbin))) {
+		    cache_decr(io, cbin);
+		    return -1;
+		}
+		cache_decr(io, cbin);
+		if (0 != cache_deallocate(io, cbin)) return -1;
+		bin->child[c] = 0;
+	    } else {
+		child_in_use = 1;
+	    }
+	}
+    }
+
+    if (!child_in_use && bin_empty(bin)) return 0;
+
+    return 1;
+}
+
+/* 
+ * Remove empty bins from contig c.  The root bin will be left even if empty
+ * as having a contig without one can cause difficulties.
+ * 
+ * Returns 0 if all bins in contig c were empty
+ *         1 if some bins were full and so remain
+ *        -1 on failure
+ */
+static int drop_empty_bins(GapIO *io, contig_t *c) {
+    bin_index_t *bin = NULL;
+    int          ret = -1;
+
+    cache_incr(io, c);
+    bin = cache_search(io, GT_Bin, c->bin);
+    if (NULL == bin) goto clean;
+    cache_incr(io, bin);
+    ret = drop_empty_bins_recurse(io, bin);
+
+ clean:
+    if (NULL != bin) cache_decr(io, bin);
+    cache_decr(io, c);
+    return ret;
+}
+
+/* 
+ * Join contigs by overlapping bins.  This is quick but can lead to
+ * a very unbalanced bin structure.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+
+int join_overlap(GapIO *io, contig_t **cl, contig_t **cr, int offset) {
+    tg_rec       binp_id;
+    bin_index_t *binp, *binl, *binr;
+    contig_t    *cl_rw;
+
+    if ((binp_id = bin_new(io, 0, 0, (*cl)->rec, GT_Contig)) < 0) return -1;
+    binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
+    if (NULL == binp) return -1;
+    if (NULL == (binp  = cache_rw(io, binp))) return -1;
+
+    binl = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(cl));
+    if (NULL == binl) return -1;
+    if (NULL == (binl  = cache_rw(io, binl))) return -1;
+
+    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(cr));
+    if (NULL == binr) return -1;
+    if (NULL == (binr  = cache_rw(io, binr))) return -1;
+
+    if (NULL == (cl_rw = cache_rw(io, *cl))) return -1;
+
+    /* Update the contig links */
+    if (0 != contig_set_bin(io, cl, binp_id)) return -1;
+    if (0 != contig_set_start(io, cl, MIN(contig_get_start(cl),
+					  contig_get_start(cr) + offset)))
+	return -1;
+    if (0 != contig_set_end(io, cl, MAX(contig_get_end(cl),
+					contig_get_end(cr) + offset)))
+	return -1;
+
+    /* Link the new bins together */
+    binp->nseqs   = binl->nseqs   + binr->nseqs;
+    binp->nrefpos = binl->nrefpos + binr->nrefpos;
+    binp->nanno   = binl->nanno   + binr->nanno;
+    binp->child[0] = binl->rec;
+    binp->child[1] = binr->rec;
+    binp->pos  = MIN(binl->pos, binr->pos + offset);
+    binp->size = MAX(binl->pos + binl->size, binr->pos + binr->size + offset)
+	- binp->pos + 1;
+    binp->flags |= BIN_BIN_UPDATED;
+
+    binl->parent      = binp->rec;
+    binl->parent_type = GT_Bin;
+    binl->pos         = binl->pos - binp->pos;
+    binl->flags      |= BIN_BIN_UPDATED;
+
+    binr->parent      = binp->rec;
+    binr->parent_type = GT_Bin;
+    binr->pos         = binr->pos - binp->pos + offset;
+    binr->flags      |= BIN_BIN_UPDATED;
+
+    *cl = cl_rw;
+
+    return 0;
+}
 
 /*
  * Perform the actual join process
  * Returns 0 for success
  *        -1 for failure
  */
-int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
+static int do_join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset,
+			   int *cr_contains_stuff) {
     contig_t *cl, *cr;
-    bin_index_t *binp, *binl, *binr;
-    tg_rec above, binp_id;
+    bin_index_t *binl = NULL, *binr = NULL;
+    int overlap_len;
+    /* Limits before we fall back to overlapping bins */
+    const int MAX_OVERLAP = 1000 * MIN_BIN_SIZE;
+    const int MAX_TO_MOVE = 1000000;
+
+    *cr_contains_stuff = 1;
+    if (!(cl = cache_search(io, GT_Contig, clrec))) return -1;
+    if (NULL == (cl = cache_rw(io, cl))) return -1;
+
+    if (!(cr = cache_search(io, GT_Contig, crrec))) return -1;
+    if (NULL == (cr = cache_rw(io, cr))) return -1;
+
+    /* Invalidate any cached data in the overlapping bins */
+    if (0 != join_invalidate(io, cl, cr, offset)) return -1;
+
+    if (0 != contig_remove_refpos_markers(io, cr, contig_get_start(&cr),
+					  contig_get_start(&cr) +
+					  last_refpos(io, cl)-offset-1))
+	return -1;
+
+    overlap_len = MIN(contig_get_end(&cl), contig_get_end(&cr) + offset)
+	- MAX(contig_get_start(&cl), contig_get_start(&cr) + offset) + 1;
+
+    if (overlap_len > 0 && overlap_len < MAX_OVERLAP) {
+	if (0 != join_move_bins(io, cl, cr, offset)) return -1;
+	binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
+	if (NULL == binr) return -1;
+	if (binr->nseqs + binr->nanno + binr->nrefpos < MAX_TO_MOVE) {
+	    if (0 != join_move_objects(io, cl, cr, offset)) return -1;
+	    if ((*cr_contains_stuff = drop_empty_bins(io, cr)) < 0) return -1;
+	}
+    }
+
+    // assert(check_contig_bin(io, clrec) == 0);
+
+    if (*cr_contains_stuff) {
+	// assert(check_contig_bin(io, crrec) == 0);
+	if (0 != join_overlap(io, &cl, &cr, offset)) return -1;
+    }
+    
+    binl = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cl));
+    if (NULL == binl) return -1;
+    cl->nseqs   = binl->nseqs;
+    cl->nanno   = binl->nanno;
+    cl->nrefpos = binl->nrefpos;
+    return 0;
+}
+
+int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     reg_length rl;
     reg_join rj;
-
-    if (!(cl = cache_search(io, GT_Contig, clrec)))
-	return -1;
-    cache_incr(io, cl);
-
-    if (!(cr = cache_search(io, GT_Contig, crrec))) {
-	cache_decr(io, cl);
-	return -1;
-    }
-    cache_incr(io, cr);
-
+    contig_t *cl, *cr;
+    GapIO *child_io;
+    int cr_contains_stuff = 1;
+    
     /* Force joins at the top-level IO */
     while (io->base)
 	io = io->base;
-
-    /* Invalidate any cached data in the overlapping bins */
-    join_invalidate(io, cl, cr, offset);
-
-#if 0
-    /* Find appropriate bin to insert our new contig above */
-    above = find_join_bin(io, contig_get_bin(&cl), contig_get_bin(&cr),
-			  contig_offset(io, &cl), contig_offset(io, &cr),
-			  offset);
-
-    if (above == -1)
-	above = contig_get_bin(&cl);
-
-    /* Ignore this for now */
-
-    /* Optimisation, hang binr off binl if it fits */
-    binp_id = bin_new(io, 0, 0, cl->rec, GT_Contig);
-    binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
-    cache_incr(io, binp);
-
-    binl = (bin_index_t *)cache_search(io, GT_Bin, above);
-    cache_incr(io, binl);
-
-    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
-    cache_incr(io, binr);
-
-    binp = cache_rw(io, binp);
-    binl = cache_rw(io, binl);
-    binr = cache_rw(io, binr);
-    cl   = cache_rw(io, cl);
-
-    /* Update the contig links */
-    if (above == contig_get_bin(&cl)) {
-	contig_set_bin  (io, &cl, binp_id);
-	contig_set_start(io, &cl, MIN(contig_get_start(&cl),
-				      contig_get_start(&cr)+offset));
-	contig_set_end  (io, &cl, MAX(contig_get_end(&cl),
-				      contig_get_end(&cr)+offset));
-    } else {
-	/* Or instead an internal bin */
-	bin_index_t *b2 = get_bin(io, binl->parent);
-	b2 = cache_rw(io, b2);
-	binp->parent = b2->rec;
-	binp->parent_type = GT_Bin;
-	if (b2->child[0] == binl->rec) {
-	    b2->child[0] = binp->rec;
-	} else if (b2->child[1] == binl->rec) {
-	    b2->child[1] = binp->rec;
-	} else {
-	    fprintf(stderr, "invalid bin relationship");
-	    abort();
-	}
-
-	/* Fix offset? */
+    if (!(child_io = gio_child(io))) return -1;
+    
+    if (do_join_contigs(child_io, clrec, crrec, offset, &cr_contains_stuff)) {
+	gio_close(child_io); /* None of this ever happened... */
+	return -1;
     }
 
-    /* Link the new bins together */
-    binp->child[0] = binl->rec;
-    binp->child[1] = binr->rec;
-    binp->pos = MIN(binl->pos, binr->pos + offset);
-    binp->size = MAX(binl->pos+binl->size, binr->pos+binr->size + offset)
-	- binp->pos + 1;
-    binp->flags |= BIN_BIN_UPDATED;
-
-    binl->parent = binp->rec;
-    binl->parent_type = GT_Bin;
-    binl->pos = binl->pos - binp->pos;
-    binl->flags |= BIN_BIN_UPDATED;
-
-    binr->parent = binp->rec;
-    binr->parent_type = GT_Bin;
-    binr->pos = binr->pos - binp->pos + offset;
-    binr->flags |= BIN_BIN_UPDATED;
-
-#else
-    /* Object writeable copies of our objects */
-    binp_id = bin_new(io, 0, 0, cl->rec, GT_Contig);
-    binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
-    cache_incr(io, binp);
-
-    binl = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cl));
-    cache_incr(io, binl);
-
-    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
-    cache_incr(io, binr);
-
-    binp = cache_rw(io, binp);
-    binl = cache_rw(io, binl);
-    binr = cache_rw(io, binr);
-    cl   = cache_rw(io, cl);
-
-    contig_remove_refpos_markers(io, cr, contig_get_start(&cr),
-				 contig_get_start(&cr) +
-				 last_refpos(io, cl)-offset-1);
-
-    /* Update the contig links */
-    contig_set_bin  (io, &cl, binp_id);
-    contig_set_start(io, &cl, MIN(contig_get_start(&cl),
-				  contig_get_start(&cr)+offset));
-    contig_set_end  (io, &cl, MAX(contig_get_end(&cl),
-				  contig_get_end(&cr)+offset));
-
-    /* Link the new bins together */
-    binp->nseqs = binl->nseqs + binr->nseqs;
-    binp->nrefpos = binl->nrefpos + binr->nrefpos;
-    binp->nanno = binl->nanno + binr->nanno;
-    binp->child[0] = binl->rec;
-    binp->child[1] = binr->rec;
-    binp->pos = MIN(binl->pos, binr->pos + offset);
-    binp->size = MAX(binl->pos+binl->size, binr->pos+binr->size + offset)
-	- binp->pos + 1;
-    binp->flags |= BIN_BIN_UPDATED;
-
-    binl->parent = binp->rec;
-    binl->parent_type = GT_Bin;
-    binl->pos = binl->pos - binp->pos;
-    binl->flags |= BIN_BIN_UPDATED;
-
-    binr->parent = binp->rec;
-    binr->parent_type = GT_Bin;
-    binr->pos = binr->pos - binp->pos + offset;
-    binr->flags |= BIN_BIN_UPDATED;
-#endif
-
-    cl->nseqs += cr->nseqs;
-    cl->nanno += cr->nanno;
-    cl->nrefpos += cr->nrefpos;
-
-    cache_decr(io, binp);
-    cache_decr(io, binl);
-    cache_decr(io, binr);
+    /* Push out all the changes so far and revert to the base io */
+    if (0 != cache_flush(child_io)) return -1;
+    gio_close(child_io);
 
     /*
      * The order of notifications here is crucial.
@@ -995,27 +1775,29 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     
     /* Notify right of join */
     rj.job = REG_JOIN_TO;
-    rj.contig = cl->rec;
+    rj.contig = clrec;
     rj.offset = offset;
-    contig_notify(io, cr->rec, (reg_data *)&rj);
+    contig_notify(io, crrec, (reg_data *)&rj);
 
     /* Merge lists */
-    contig_register_join(io, cr->rec, cl->rec);
+    if (0 != contig_register_join(io, crrec, clrec)) return -1;
 
     /* Destroy the old right contig */
-    contig_destroy(io, cr->rec);
+    if (!cr_contains_stuff) {
+	/* Need to get rid of the empty root bin as well */
+	if (!(cr = cache_search(io, GT_Contig, crrec))) return -1;
+	if (0 != cache_rec_deallocate(io, GT_Bin, contig_get_bin(&cr)))
+	    return -1;
+    }
+    if (0 != contig_destroy(io, crrec)) return -1;
 
     /* Notify left of join */
+    if (!(cl = cache_search(io, GT_Contig, clrec))) return -1;
     rl.job = REG_LENGTH;
     rl.length = cl->end - cl->start + 1;
-    contig_notify(io, cl->rec, (reg_data *)&rl);
+    contig_notify(io, clrec, (reg_data *)&rl);
 
-    cache_decr(io, cl);
-    cache_decr(io, cr);
-
-    cache_flush(io);
-
-    return 0;
+    return cache_flush(io);
 }
 
 int edJoin(edview *xx) {
