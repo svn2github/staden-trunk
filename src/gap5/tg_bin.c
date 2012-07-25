@@ -841,7 +841,8 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 
     /* Find the position of this anno within the bin */
     bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
-    if (idx != -1) {
+    if (NULL == bin) goto fail;
+    if (idx != -1 && bin->rng && idx < ArrayMax(bin->rng)) {
 	/* Check it's valid */
 	range_t *r = arrp(range_t, bin->rng, idx);
 	if (r->rec == rec) {
@@ -873,11 +874,7 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 	}
     }
 
-    if (!found) {
-	if (i_out)
-	    *i_out = NULL;
-	return -1;
-    }
+    if (!found) goto fail;
 
     /* Find the position of this bin relative to the contig itself */
     for (;;) {
@@ -894,6 +891,7 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 
 	bnum = bin->parent;
 	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
+	if (NULL == bin) goto fail;
     }
 
     assert(bin->parent_type == GT_Contig);
@@ -908,6 +906,12 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 	*orient = comp;
 
     return 0;
+ fail:
+    if (i_out) {
+	cache_decr(io, *i_out);
+	*i_out = NULL;
+    }
+    return -1;
 }
 
 /*
