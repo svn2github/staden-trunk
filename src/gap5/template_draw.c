@@ -283,7 +283,7 @@ void create_image_from_buffer(image_t *image) {
 
     image->img->bytes_per_line =
 	image->img->width * image->img->bits_per_pixel / 8;
-
+	
     return;
 
 }
@@ -297,6 +297,9 @@ void image_remove(image_t *image) {
 	if (image->img) {
     	    XDestroyImage(image->img); // should de-allocate buffer too
 	    image->img = 0;
+	} else if (image->buf) { // to prevent startup memory leaks
+	    free(image->buf);
+	    image->buf = 0;
 	}
     }
 }
