@@ -134,6 +134,45 @@ proc test_deletions {io {cycle 0}} {
     $c delete
 }
 
+proc test_move_seq {io} {
+    set crec [random_contig $io]
+    puts "/// Moving seqs in contig $crec ///"
+
+    set c [$io get_contig $crec]
+    set cstart [$c get_visible_start]
+    set cend   [$c get_visible_end]
+    set crec   [$c get_rec]
+    
+    # Get sequence list
+    set seqs ""
+
+    foreach l [$c seqs_in_range $cstart $cend] {
+	lappend seqs [lindex $l 2]
+    }
+
+    if {$seqs == ""} return
+
+    # Do random moves
+    for {set i 0} {$i < 10} {incr i} {
+	set srec [lindex $seqs [expr {int(rand()*[llength $seqs])}]]
+	set dist [expr {int(rand()*5)-2}]
+	puts "Moving seq #$srec by $dist"
+	
+	set seq  [$io get_sequence $srec]
+	set pos  [$seq get_position]
+	$seq delete
+	
+	foreach {pair_rec flags} [$c remove_sequence $srec] break;
+	$c add_sequence $srec [expr {$pos + $dist}] $pair_rec $flags
+
+	set seq [$io get_sequence $srec]
+	$seq move_annos $dist
+	$seq delete
+    }
+
+    $c delete
+}
+
 proc test_tag_creation {io} {
     set crec [random_contig $io]
     puts "/// creating tags in contig $crec ///"
@@ -373,7 +412,7 @@ if {[llength $argv] > 2} {
 
 # Perform N edits and keep checking.
 for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
-    set r [expr int(rand()*10)]
+    set r [expr int(rand()*11)]
     #if {$r != 3} continue
 
     puts "///$cycle r=$r"
@@ -384,18 +423,19 @@ for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
 	0 { test_complement $io }
 	1 { test_break $io }
 	2 { test_join $io }
-	3 { test_insertions $io $cycle }
-	4 { test_deletions $io $cycle }
+	#3 { test_insertions $io $cycle }
+	#4 { test_deletions $io $cycle }
 	5 { test_tag_creation $io }
 	6 { test_tag_deletion $io }
-	7 { test_clipping $io }
+	#7 { test_clipping $io }
 	8 { test_consensus $io }
 	9 { test_disassembly $io }
+	#10 { test_move_seq $io }
     }
 
     $io flush
 
-    set err [$io check 0 1]
+    set err [$io check 0 2]
     if {$err != 0} {
 	$io close
 	puts stderr "ERROR: corrupted database\n"
