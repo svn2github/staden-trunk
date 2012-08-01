@@ -58,4 +58,12 @@ int update_scaffold_order(GapIO *io);
  */
 int scaffold_from_agp(GapIO *io, char *fn);
 
+/*
+ * Exports Scaffold information to an AGP file
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int scaffold_to_agp(GapIO *io, char *fn);
+
 #endif /* _TG_SCAFFOLD_H_ */

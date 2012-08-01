@@ -308,8 +308,7 @@ int scaffold_from_agp(GapIO *io, char *fn) {
     int linkage = 0, gap_size = 0, gap_type = 0, evidence = 0, orientation = 0;
 
     if (NULL == (fp = fopen(fn, "r"))) {
-	verror(ERR_WARN, "scaffold_from_agp", "%s: %s",
-	       fn, strerror(errno));
+	verror(ERR_WARN, "scaffold_from_agp", "%s: %s", fn, strerror(errno));
 	return -1;
     }
 
@@ -344,6 +343,69 @@ int scaffold_from_agp(GapIO *io, char *fn) {
     }
 
     fclose(fp);
+    return 0;
+}
+
+/*
+ * Exports Scaffold information to an AGP file
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int scaffold_to_agp(GapIO *io, char *fn) {
+    FILE *fp;
+    int i, j;
+
+    if (NULL == (fp = fopen(fn, "w+"))) {
+	verror(ERR_WARN, "scaffold_from_agp", "%s: %s", fn, strerror(errno));
+	return -1;
+    }
+
+    for (i = 0; io->scaffold && i < ArrayMax(io->scaffold); i++) {
+	scaffold_t *f = cache_search(io, GT_Scaffold,
+				     arr(tg_rec, io->scaffold, i));
+	int start = 1, end = 1;
+	int k = 1;
+
+	if (!f) {
+	    verror(ERR_WARN, "scaffold_from_agp", "Failed to load scaffold\n");
+	    fclose(fp);
+	    return -1;
+	}
+
+	cache_incr(io, f);
+
+	for (j = 0; f->contig && j < ArrayMax(f->contig); j++) {
+	    scaffold_member_t *m = arrp(scaffold_member_t, f->contig, j);
+	    contig_t *c = cache_search(io, GT_Contig, m->rec);
+	    int ustart, uend;
+	    int len;
+
+	    /* Get the unpadded clipped contig length */
+	    consensus_valid_range(io, m->rec, &ustart, &uend);
+	    consensus_unpadded_pos(io, m->rec, uend, &uend);
+	    len = uend - ustart + 1;
+
+	    if (j) {
+		int gap = m->gap_size;
+		fprintf(fp, "%s\t%d\t%d\t%d\tN\t%d\tfragment\tyes\n",
+			f->name, start, start+gap-1, k++, gap);
+		start += gap;
+	    }
+	    fprintf(fp, "%s\t%d\t%d\t%d\tW\t%s\t%d\t%d\t+\n",
+		    f->name, start, start + len-1,
+		    k++, c->name, ustart, uend);
+	    start += len;
+	}
+
+	cache_decr(io, f);
+    }
+
+    if (0 != fclose(fp)) {
+	verror(ERR_WARN, "scaffold_from_agp", "%s: %s", fn, strerror(errno));
+	return -1;
+    }
+
     return 0;
 }
 

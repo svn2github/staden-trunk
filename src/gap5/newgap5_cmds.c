@@ -559,6 +559,31 @@ int tcl_scaffold_from_agp(ClientData clientData, Tcl_Interp *interp,
 }
 
 
+int tcl_scaffold_to_agp(ClientData clientData, Tcl_Interp *interp,
+			int objc, Tcl_Obj *CONST objv[])
+{
+    io_file_arg args;
+    FILE *fp;
+
+    cli_args a[] = {
+	{"-io",	    	ARG_IO,  1, NULL, offsetof(io_file_arg, io)},
+	{"-filename",	ARG_STR, 1, NULL, offsetof(io_file_arg, filename)},
+	{NULL,		0,	 0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    if (0 != scaffold_to_agp(args.io, args.filename)) {
+	vTcl_SetResult(interp, "%d", -1);
+    } else {
+	vTcl_SetResult(interp, "%d", 0);
+    }
+
+    return TCL_OK;
+}
+
+
 /*
  * contig selector commands
  */
@@ -2498,6 +2523,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 NULL);
     Tcl_CreateObjCommand(interp, "scaffold_from_agp",
 			 tcl_scaffold_from_agp, (ClientData) NULL,
+			 NULL);
+    Tcl_CreateObjCommand(interp, "scaffold_to_agp",
+			 tcl_scaffold_to_agp, (ClientData) NULL,
 			 NULL);
 
     Tcl_CreateObjCommand(interp, "zoom_canvas", ZoomCanvas,
