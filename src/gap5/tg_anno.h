@@ -1,6 +1,8 @@
 #ifndef _TG_ANNO_H_
 #define _TG_ANNO_H_
 
+#include "io_utils.h"
+
 /*
  * Allocates a new annotation element.
  * Returns 0 for success
@@ -81,6 +83,16 @@ int anno_get_position2(GapIO *io, tg_rec anum, tg_rec *contig,
 int anno_get_position(GapIO *io, tg_rec anum, tg_rec *contig,
 		      int *start, int *end, int *orient);
 
+
+/*
+ * Removes some or all tags from some or all contigs.
+ * If the contig list or tag list is blank it implies all contigs or all tags.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int delete_tags(GapIO *io, int ncontigs, contig_list_t *contigs,
+		char *tag_list, int verbose);
 
 #define str2type(s) ((s)[3] + ((s)[2]<<8) + ((s)[1]<<16) + ((s)[0]<<24))
 #define type2str(t,s) \

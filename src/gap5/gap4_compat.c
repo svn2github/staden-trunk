@@ -630,14 +630,14 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
  *        -1 on failure
  */
 int lget_scaffold_num(GapIO *io, int listArgc, char **listArgv, /* IN  list  */
-		      int *rargc, rec_list_t **rargv) {         /* OUT list */
+		      int *rargc, tg_rec **rargv) {             /* OUT list */
     int i, j, count=0;
     char *p;
     HashTable *h;
 
     /* allocate: +1 ensures that we never alloc zero bytes */
-    if (NULL == (*rargv = (rec_list_t *)xmalloc(1 + listArgc *
-						sizeof(rec_list_t))))
+    if (NULL == (*rargv = (tg_rec *)xmalloc(1 + listArgc *
+					    sizeof(tg_rec))))
 	return -1;
 
     /* Scan through list finding the scaffold indentifiers */
@@ -656,22 +656,22 @@ int lget_scaffold_num(GapIO *io, int listArgc, char **listArgv, /* IN  list  */
 	if (listArgv[j][0] == '#' || listArgv[j][0] == '=') {
 	    tg_rec num = atorec(&listArgv[j][1]);
 	    if (num > 0) {
-		(*rargv)[j].rec = num;
+		(*rargv)[j] = num;
 		count++;
 	    } else {
-		(*rargv)[j].rec = 0;
+		(*rargv)[j] = 0;
 	    }
 	} else {
-	    (*rargv)[j].rec = 0;
+	    (*rargv)[j] = 0;
 	}
     }
 
     /* Convert names to numbers */
     for (j = 0; j < listArgc; j++) {
-	if (0 == (*rargv)[j].rec) {
+	if (0 == (*rargv)[j]) {
 	    tg_rec srec = scaffold_index_query(io, listArgv[j]);
 	    if (srec) {
-		(*rargv)[j].rec = srec;
+		(*rargv)[j] = srec;
 		count++;
 	    } else {
 		verror(ERR_WARN, "scaffold_index_query()",
@@ -687,11 +687,11 @@ int lget_scaffold_num(GapIO *io, int listArgc, char **listArgv, /* IN  list  */
 	HashData hd;
 	int new;
 
-	if ((*rargv)[j].rec == 0)
+	if ((*rargv)[j] == 0)
 	    continue;
 
 	hd.i = 1;
-	HashTableAdd(h, (char *)&(*rargv)[j].rec, sizeof(tg_rec),
+	HashTableAdd(h, (char *)&(*rargv)[j], sizeof(tg_rec),
 		     hd, &new);
 
 	if (new) {
@@ -706,7 +706,7 @@ int lget_scaffold_num(GapIO *io, int listArgc, char **listArgv, /* IN  list  */
      * fill any holes in the rargv structure.
      */
     for (i=j=0; j<listArgc; j++) {
-	if ((*rargv)[j].rec != 0) {
+	if ((*rargv)[j] != 0) {
 	    (*rargv)[i++] = (*rargv)[j];
 	}
     }
@@ -714,7 +714,7 @@ int lget_scaffold_num(GapIO *io, int listArgc, char **listArgv, /* IN  list  */
 
     /* Check for failures */
     for (i=j=0; j<listArgc; j++) {
-	if ((*rargv)[j].rec > 0) {
+	if ((*rargv)[j] > 0) {
 	    (*rargv)[i++] = (*rargv)[j];
 	}
     }

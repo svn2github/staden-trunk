@@ -5,16 +5,6 @@
 #include <string.h>
 #include "tg_gio.h"
 
-typedef struct contig_list {
-    tg_rec contig;
-    int start;
-    int end;
-} contig_list_t;
-
-typedef struct rec_list {
-    tg_rec rec;
-} rec_list_t;
-
 /*
  * ---------------------------------------------------------------------------
  * Useful macros
@@ -54,6 +44,7 @@ typedef struct rec_list {
 	        &g, sizeof(g), GT_Readings)
 #endif
 
+#if 0 /* gap4 bits */
 
 #define tag_read(io, tn, t) \
     GT_Read(io, arr(GCardinal, io->annotations, tn - 1), \
@@ -103,6 +94,8 @@ typedef struct rec_list {
 #define vector_write(io, n, c)   x_vector_write(io, n, &c)
 #define clone_write(io, n, c)    x_clone_write(io, n, &c)
 
+#endif /* Gap4 bits */
+
 
 /*
  * ---------------------------------------------------------------------------
@@ -127,7 +120,7 @@ int lget_contig_num2(GapIO *io, int listArgc, char **listArgv,
 		     int *rargc, contig_list_t **rargv);
 int *to_contigs_only(int num_contigs, contig_list_t *cl);
 int lget_scaffold_num(GapIO *io, int listArgc, char **listArgv,
-		      int *rargc, rec_list_t **rargv);
+		      int *rargc, tg_rec **rargv);
 tg_rec scaffold_name_to_number(GapIO *io, char *scaf_name);
 
 char *get_read_name(GapIO *io, tg_rec number);

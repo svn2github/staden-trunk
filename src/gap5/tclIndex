@@ -217,6 +217,7 @@ set auto_index(tag_macro_callback) [list source [file join $dir tag_editor.tcl]]
 set auto_index(tag_macro_invoke) [list source [file join $dir tag_editor.tcl]]
 set auto_index(tag_macro_load) [list source [file join $dir tag_editor.tcl]]
 set auto_index(tag_macro_save) [list source [file join $dir tag_editor.tcl]]
+set auto_index(on_screen) [list source [file join $dir tag_editor.tcl]]
 
 set auto_index(tag_checklist) [list source [file join $dir tag_checklist.tcl]]
 set auto_index(TagDialog) [list source [file join $dir tag_checklist.tcl]]

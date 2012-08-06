@@ -185,7 +185,7 @@ int active_list_contigs_extended(GapIO *io, char *list,
 }
 
 int active_list_scaffold(GapIO *io, char *list,
-			 int *argc, rec_list_t **argv) {
+			 int *argc, tg_rec **argv) {
     if (-1 == set_active_list(list))
 	return -1;
 

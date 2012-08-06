@@ -30,7 +30,7 @@ int active_list_contigs(GapIO *io, char *list,
 			int *argc, contig_list_t **argv);
 
 int active_list_scaffold(GapIO *io, char *list,
-			 int *argc, rec_list_t **argv);
+			 int *argc, tg_rec **argv);
 
 /* As above, but include cutoff data at ends of contig */
 int active_list_contigs_extended(GapIO *io, char *list,

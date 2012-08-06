@@ -3,6 +3,10 @@
 #include <assert.h>
 
 #include "tg_gio.h"
+#include "active_tags.h"
+#include "io_utils.h"
+#include "io_lib/hash_table.h"
+#include "gap4_compat.h" /* NumContigs() */
 
 /*
  * Allocates a new annotation element.
@@ -365,3 +369,108 @@ int anno_get_orient(GapIO *io, tg_rec anum) {
     return comp;
 }
 #endif
+
+
+/*
+ * Removes all tags of specific types (hashed in h, or all if h == NULL)
+ * from a specified contig.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int delete_tag_single_contig(GapIO *io, tg_rec crec,
+				    HashTable *h, int verbose) {
+    contig_iterator *ci;
+    rangec_t *r;
+    contig_t *c;
+    int ret = -1;
+
+    ci = contig_iter_new_by_type(io, crec, 1, CITER_FIRST,
+				 CITER_CSTART, CITER_CEND,
+				 GRANGE_FLAG_ISANNO);
+    if (!ci)
+	return -1;
+    
+    if (!(c = cache_search(io, GT_Contig, crec))) {
+	contig_iter_del(ci);
+	return -1;
+    }
+    cache_incr(io, c);
+
+    while (r = contig_iter_next(io, ci)) {
+	char t[5];
+	type2str(r->mqual, t);
+	if (!h || HashTableSearch(h, t, 4)) {
+	    anno_ele_t *e;
+
+	    if (verbose)
+		vmessage("Removing anno %s #%"PRIrec"\tContig %s\t%d..%d\n",
+			 t, r->rec, c->name, r->start, r->end);
+	    ret |= bin_remove_item(io, &c, GT_AnnoEle, r->rec);
+	    if ((e = cache_search(io, GT_AnnoEle, r->rec)))
+		ret |= anno_ele_destroy(io, e);
+	    else
+		ret |= -1;
+	}
+    }
+
+    ret = 0;
+ fail:
+    contig_iter_del(ci);
+    cache_decr(io, c);
+
+    return ret;
+}
+
+/*
+ * Removes some or all tags from some or all contigs.
+ * If the contig list or tag list is blank it implies all contigs or all tags.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int delete_tags(GapIO *io, int ncontigs, contig_list_t *contigs,
+		char *tag_list, int verbose) {
+    HashTable *h = NULL;
+    int ret = 0;
+
+    /* Hash tag types */
+    if (tag_list && *tag_list) {
+	int i;
+	if (SetActiveTags(tag_list) == -1) {
+	    return -1;
+	}
+	h = HashTableCreate(32, 0);
+	for (i = 0; i < number_of_active_tags; i++) {
+	    HashData hd;
+	    hd.i = 0;
+	    HashTableAdd(h, active_tag_types[i], 4, hd, NULL);
+	}
+    }
+
+    /* Iterate over contig list or all contigs */
+    if (verbose)
+	vfuncheader("Delete Tags");
+
+    if (ncontigs) {
+	int i;
+
+	for (i = 0; i < ncontigs; i++) {
+	    ret |= delete_tag_single_contig(io, contigs[i].contig, h, verbose);
+	}
+
+    } else {
+	int i;
+	tg_rec *order = ArrayBase(tg_rec, io->contig_order);
+
+	for (i = 0; i < NumContigs(io); i++) {
+	    ret |= delete_tag_single_contig(io, order[i], h, verbose);
+	}
+    }
+
+    SetActiveTags("");
+    if (h)
+	HashTableDestroy(h, 0);
+
+    return ret;
+}

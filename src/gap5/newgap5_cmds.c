@@ -1454,7 +1454,7 @@ int tcl_complement_scaffold(ClientData clientData, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *CONST objv[])
 {
     int rargc, i;
-    rec_list_t *rargv;
+    tg_rec *rargv;
     list2_arg args;
     cli_args a[] = {
 	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
@@ -1475,7 +1475,7 @@ int tcl_complement_scaffold(ClientData clientData, Tcl_Interp *interp,
     }
 
     for (i = 0; i < rargc; i++) {
-	complement_scaffold(args.io, rargv[i].rec);
+	complement_scaffold(args.io, rargv[i]);
     }
 
     xfree(rargv);
@@ -1669,7 +1669,7 @@ typedef struct {
 
 int
 tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
-		 int objc, Tcl_Obj *CONST objv[])
+		      int objc, Tcl_Obj *CONST objv[])
 {
     int i, j, k, len;
     char *in, *out;
@@ -1709,6 +1709,41 @@ tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
 
     Tcl_SetObjResult(interp, Tcl_NewStringObj(out, j));
     free(out);
+
+    return TCL_OK;
+}
+
+
+typedef struct {
+    GapIO *io;
+    char *inlist;
+    char *tag_list;
+    int verbose;
+} delete_tag_arg;
+
+int
+tcl_delete_tags(ClientData clientData, Tcl_Interp *interp,
+		int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc, i;
+    contig_list_t *rargv;
+
+    delete_tag_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,	  1, NULL, offsetof(delete_tag_arg, io)},
+	{"-contigs",	ARG_STR,  1, "",   offsetof(delete_tag_arg, inlist)},
+	{"-tag_types",	ARG_STR,  1, "",   offsetof(delete_tag_arg, tag_list)},
+	{"-verbose",    ARG_INT,  1, "0",  offsetof(delete_tag_arg, verbose)},
+	{NULL,	 0,	  0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    delete_tags(args.io, rargc, rargv, args.tag_list, args.verbose);
+
+    cache_flush(args.io);
 
     return TCL_OK;
 }
@@ -2595,6 +2630,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "export_tags",
 			 tcl_export_tags,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "delete_tags",
+			 tcl_delete_tags,
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "import_gff",
 			 tcl_import_gff,

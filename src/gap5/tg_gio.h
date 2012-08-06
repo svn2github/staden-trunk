@@ -120,6 +120,15 @@ int cache_rec_deallocate(GapIO *io, int type, tg_rec rec);
 int cache_exists(GapIO *io, int type, int rec);
 
 /* ------------------------------------------------------------------------- */
+/* Data types used elsewhere, but useful here to remove circular dependencies
+ */
+typedef struct contig_list {
+    tg_rec contig;
+    int start;
+    int end;
+} contig_list_t;
+
+/* ------------------------------------------------------------------------- */
 /* And now the object specific defintions */
 #include "tg_register.h"
 #include "tg_scaffold.h"
