@@ -313,7 +313,7 @@ static char *add_line(char *read, char *line, long line_size, long *read_size, l
 	}
     } 
 
-    if ((line_size + *read_size) >= *alloc_size) {
+    while ((line_size + *read_size) >= *alloc_size) {
     	char *tmp = NULL;
 	*alloc_size += *alloc_size;
 	tmp = realloc(read, *alloc_size * sizeof(char));
