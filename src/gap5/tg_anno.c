@@ -456,7 +456,12 @@ int delete_tags(GapIO *io, int ncontigs, contig_list_t *contigs,
 	int i;
 
 	for (i = 0; i < ncontigs; i++) {
+	    contig_t *c = cache_search(io, GT_Contig, contigs[i].contig);
+	    vmessage("Scanning contig %d of %d (%s)\n",
+		     i+1, ncontigs, c->name);
 	    ret |= delete_tag_single_contig(io, contigs[i].contig, h, verbose);
+	    UpdateTextOutput();
+	    cache_flush(io);
 	}
 
     } else {
@@ -464,7 +469,12 @@ int delete_tags(GapIO *io, int ncontigs, contig_list_t *contigs,
 	tg_rec *order = ArrayBase(tg_rec, io->contig_order);
 
 	for (i = 0; i < NumContigs(io); i++) {
+	    contig_t *c = cache_search(io, GT_Contig, order[i]);
+	    vmessage("Scanning contig %d of %d (%s)\n",
+		     i+1, NumContigs(io), c->name);
 	    ret |= delete_tag_single_contig(io, order[i], h, verbose);
+	    UpdateTextOutput();
+	    cache_flush(io);
 	}
     }
 
