@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include <tg_gio.h>
+#include "zfio.h"
 #include "gap_cli_arg.h"
 #include "import_gff.h"
 #include "consensus.h"
@@ -436,17 +437,17 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
  *        -1 on failure
  */
 int import_gff(GapIO *io, char *fn, int padded, int plus_as_space) {
-    FILE *fp;
+    zfp *fp;
     char line[MAX_GFF_LINE];
     gff_entry gff;
     int nentry = 0;
 
-    if (NULL == (fp = fopen(fn, "r"))) {
+    if (NULL == (fp = zfopen(fn, "r"))) {
 	perror(fn);
 	return -1;
     }
 
-    while (fgets(line, MAX_GFF_LINE, fp)) {
+    while (zfgets(line, MAX_GFF_LINE, fp)) {
 	if (line[0] == '#')
 	    continue;
 
@@ -474,7 +475,7 @@ int import_gff(GapIO *io, char *fn, int padded, int plus_as_space) {
 	nentry++;
     }
 
-    fclose(fp);
+    zfclose(fp);
 
     gio_debug(io, 1, "Processed %d GFF entries\n", nentry);
 
