@@ -2839,7 +2839,7 @@ proc editor_set_name2 {ed w} {
     set old_name [$c get_name]
     $c delete
 
-    if {![rename_contig $io [$ed contig_rec] $nm $w]} {
+    if {![contig_rename $io [$ed contig_rec] $nm $w]} {
 	return
     }
 
