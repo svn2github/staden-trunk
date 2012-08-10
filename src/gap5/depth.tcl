@@ -110,8 +110,8 @@ proc 1.5Dplot {w io wid hei {cnum {}} {pos {}}} {
     label $w.label.l -textvariable ${w}(info)
     pack $w.label.l
 
-    bind $w <5> "zoom1.5 $w 1 0 1.3"
-    bind $w <4> "zoom1.5 $w 1 0 [expr {1/1.3}]"
+    bind $w <5> "zoom1.5 $w %x 1 0 1.3"
+    bind $w <4> "zoom1.5 $w %x 1 0 [expr {1/1.3}]"
 
     bind $w <Any-Configure> "after idle {resize1.5 $w}"
 
@@ -176,7 +176,7 @@ proc 1.5plot_contig_event {w type id cdata args} {
 
 		if {![winfo exists $t.cursor$cid]} {
 		    set col [lindex $c_col [expr {$cid % [llength $c_col]}]]
-		    frame $t.cursor$cid -width 5 -height 10000 -bg $col
+		    frame $t.cursor$cid -width 2 -height 10000 -bg $col
 		    raise $t.cursor$cid
 		    bind $t.cursor$cid <ButtonPress-1> \
 			"1.5cursor_press $t $cid"
@@ -419,7 +419,8 @@ proc set_xzoom {w val} {
 
 # Zoom the plot. z>1 => magnify/zoom in, z<1 => zoom out
 # x and y are booleans to govern whether we want to zoom in x, y or both.
-proc zoom1.5 {w x y z} {
+# c is the centre to zoom around (x distance into window)
+proc zoom1.5 {w c x y z} {
     global $w
 
     if {$y} {
@@ -427,16 +428,35 @@ proc zoom1.5 {w x y z} {
     }
 
     if {$x} {
+	set p  [c2x $w $c]
 	set x1 [set ${w}(x1)]
 	set x2 [set ${w}(x2)]
-	set mid [expr {($x1+$x2)/2.0}]
-	set wid [expr {$x2-$x1+1}]
-	set wid [expr {$wid * $z}];
-    
-	set x1 [expr {int($mid-$wid/2)}]
-	set x2 [expr {int($mid+$wid/2)}]
-	set ${w}(x1) $x1
-	set ${w}(x2) $x2
+
+	#
+	# Our screen is x1 .. p .. x2 where p is the position of the curdor
+	# in base coords.
+	#
+	# We zoom to x1' .. p .. x2' such that p stays the same position
+	# on screen. Hence similar ratios (eqn A).
+	# Also (x2-x1) / (x2'-x1') is the zoom factor (eqn B).
+	# ie:
+	#
+	# A:  (p-x1) / (x2-x1) == (p-x1')/(x2'-x1')
+	# B:  x2'-x1' = z(x2-x1)
+	#
+	# C:  (p-x1) / (x2-x1) == (p-x1')/(z(x2-x1)) [subst B in A]
+	#
+	# =>  z(x2-x1)(p-x1)/(x2-x1) == (p-x1')
+	# =>  z(p-x1) == (p-x1')
+	#
+	# =>  x1' = p - z(p-x1)
+	#     x2' = z(x2-x1) + x1'                   [rearrange B]
+	#
+
+	set ${w}(x1) [expr {$p - $z*($p - $x1)}]
+	set ${w}(x2) [expr {$z*($x2 - $x1) + [set ${w}(x1)]}]
+	set x1 [set ${w}(x1)]
+	set x2 [set ${w}(x2)]
 
 	$w.xscroll set \
 	    [expr {($x1-[set ${w}(start)])/double([set ${w}(length)])}] \
