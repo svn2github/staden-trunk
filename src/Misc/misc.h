@@ -161,4 +161,47 @@ int32_t atoi64(const char *nptr);
 #define SVN_VERS2(x) SVN_VERS3(x)
 #define SVN_VERS SVN_VERS2(SVN_VERSION)
 
+/*
+ * Reversal of the escape_hex_string above.
+ *
+ * Returns a copy of the escaped string on success
+ *         NULL on failure.
+ *
+ * The pointer returned is owned by this function and is valid until the
+ * next call (so it is not reentrant). DO NOT FREE the result.
+ */
+char *unescape_hex_string(char *str);
+
+/*
+ * Allocates and returns an escaped version of str. This relaces quotes,
+ * newlines, and other non-printable characters with %02X hex encoded
+ * versions as required by html, gff, etc.
+ *
+ * 'escape' is a string of additional characters that must be escaped
+ * for this string, in addition to obvious unprintables and percent.
+ * It may be specified as NULL.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+char *escape_hex_string(char *str, char *escape);
+
+/*
+ * Allocates and returns an escaped version of str. This relaces quotes,
+ * newlines, and other non-printable characters with backslashed versions of
+ * them in a C string style formatting.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+char *escape_C_string(char *str);
+
+/*
+ * As per escape_C_string but \n and \\ only.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+char *escape_C_nl(char *str);
+
 #endif /*_misc_h*/

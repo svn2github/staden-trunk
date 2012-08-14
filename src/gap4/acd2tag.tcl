@@ -484,6 +484,7 @@ proc default_string {dname prefix} {
 
 proc default_label {dname prefix} {
     upvar $dname data
+    set data($prefix.side)	  "top"
     set data($prefix.information) $prefix
     set data($prefix.default)     ""
     set data($prefix.width)       30
@@ -512,6 +513,7 @@ proc default_boolean {dname prefix} {
 
 proc default_radio {dname prefix} {
     upvar $dname data
+    set data($prefix.side)	  "top"
     set data($prefix.default)     {}
     set data($prefix.information) {boolean}
     set data($prefix.store)	  radio
@@ -709,6 +711,12 @@ proc generate_end {dname} {
 #    append cstr "        }\n"
     append cstr "    }\n"
     append cstr "\}\n"
+    append cstr "\n"
+    append cstr "proc vars {} {\n"
+    append cstr "    variable arguments\n"
+    append cstr "    return \$arguments\n"
+    append cstr "}\n"
+
     return 1
 }
 
@@ -753,7 +761,7 @@ proc generate_float {dname name args} {
     upvar $dname data
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    if {!\[info exists vars($name)\]} {
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
         set vars(\${namespace}::$name) [expand data $name default]
     }\n"
     append cstr "    xentry \$w.$name \\
@@ -818,7 +826,7 @@ proc generate_label {dname name args} {
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name.left -side left\n"
     append cstr "    pack \$w.$name.right -side right -fill both\n"
-    append cstr "    pack \$w.$name -side top -fill both\n"
+    append cstr "    pack \$w.$name -side $data($name.side) -fill both\n"
     append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
     generate_name_trace data $name .information
     generate_value_trace data $name .default
@@ -836,9 +844,6 @@ proc generate_text {dname name args} {
     if {![regexp {^([0-9]+)x([0-9]+)} $data($name.geometry) _ W H]} {
 	set W 80
 	set H 24
-    } else {
-	puts W=$W
-	puts H=$H
     }
     append cstr "    xscrolledtext \$w.$name \\
 \t-label [expand data $name information] \\
@@ -1133,7 +1138,7 @@ proc generate_radio {dname name args} {
 \t-value $val\\
 \t-text [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
-    append cstr "    pack \$w.$name -side top -anchor w\n"
+    append cstr "    pack \$w.$name -side $data($name.side) -anchor w\n"
     append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
     append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
@@ -1437,7 +1442,7 @@ proc reset_text {varsp vname args} {
 # A text window has been modified
 proc text_changed {varsp vname args} {
     upvar $varsp vars
-    set vars($vname) [$vars($vname.path) get 1.0 end]
+    set vars($vname) [$vars($vname.path) get 1.0 end-1char]
 }
 
 # A 'list' selection has been modified
@@ -1564,10 +1569,11 @@ proc get_values {nspace varsp} {
 	    set vals($arg) $vars(${n}::$arg)
 	    set done($arg) 1
 	}
-
 	append val [array2str [array get vals]]
     }
-    return $val
+
+    # Strip off any trailing nl
+    return [regsub {\n*$} $val {}]
 }
 
 #-----------------------------------------------------------------------------

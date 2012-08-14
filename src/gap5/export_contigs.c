@@ -5,6 +5,7 @@
 #include <ctype.h>
 
 #include <tg_gio.h>
+#include "misc.h"
 #include "export_contigs.h"
 #include "gap_cli_arg.h"
 #include "newgap_structs.h"
@@ -14,6 +15,7 @@
 #include "consensus.h"
 #include "sam_index.h"
 #include "dstring.h"
+#include "tagdb.h"
 
 /* Sequence formats */
 #define FORMAT_FASTA 0
@@ -134,237 +136,6 @@ int tcl_export_tags(ClientData clientData, Tcl_Interp *interp,
 /* ------------------------------------------------------------------------
  * export_contigs implementation
  */
-
-/*
- * Allocates and returns an escaped version of str. This relaces quotes,
- * newlines, and other non-printable characters with backslashed versions of
- * them in a C string style formatting.
- *
- * Returns malloced string on success
- *         NULL on failure.
- */
-static char *escape_C_string(char *str) {
-    size_t l = strlen(str);
-    size_t new_l = l*1.1+10;
-    char *new = malloc(new_l);
-    size_t oi, ni;
-    static char type[256];
-    static int type_init = 0;
-
-    /* A once-only lookup table to speed up the loop below */
-    if (!type_init) {
-	int i;
-	
-	for (i = 0; i < 256; i++) {
-	    if (isprint(i) && i != '"' && i != '\\') {
-		/* directly printable */
-		type[i] = 0;
-	    } else {
-		switch(i) {
-		    /* backslash single-char */
-		case '"':
-		case '\\':
-		    type[i] = i;
-		    break;
-		case '\n':
-		    type[i] = 'n';
-		    break;
-		case '\r':
-		    type[i] = 'r';
-		    break;
-		case '\t':
-		    type[i] = 't';
-		    break;
-		case '\a':
-		    type[i] = 'a';
-		    break;
-
-		default:
-		    type[i] = 1; /* octal escape */
-		}
-	    }
-	}
-	type_init = 1;
-    }
-
-
-    if (!new)
-	return NULL;
-
-    for (oi = ni = 0; oi < l; oi++) {
-	char c = str[oi];
-
-	/* Make enough room */
-	if (ni + 5 >= new_l) {
-	    new_l = new_l * 1.2 + 10;
-	    if (NULL == (new = realloc(new, new_l)))
-		return NULL;
-	}
-
-	switch(type[(unsigned char)c]) {
-	case 0:
-	    new[ni++] = c;
-	    break;
-	    
-	case 1:
-	    sprintf(&new[ni], "\\%03o", c);
-	    ni+=4;
-	    break;
-
-	default:
-	    new[ni++] = '\\';
-	    new[ni++] = type[(unsigned char)c];
-	}
-    }
-    new[ni++] = 0;
-
-    return new;
-}
-
-/*
- * Allocates and returns an escaped version of str. This relaces quotes,
- * newlines, and other non-printable characters with %02X hex encoded
- * versions as required by html, gff, etc.
- *
- * 'escape' is a string of additional characters that must be escaped
- * for this string, in addition to obvious unprintables and percent.
- * It may be specified as NULL.
- *
- * Returns malloced string on success
- *         NULL on failure.
- */
-static char *escape_hex_string(char *str, char *escape) {
-    size_t l = strlen(str);
-    size_t new_l = l*1.1+10;
-    char *new = malloc(new_l);
-    size_t oi, ni;
-    static int type[256];
-    static int type_init = 0;
-    int i;
-
-    /* A once-only lookup table to speed up the loop below */
-    if (!type_init) {
-	for (i = 0; i < 256; i++) {
-	    if (isprint(i) && i != '%') {
-		/* directly printable */
-		type[i] = 0;
-	    } else {
-		/* hex escape */
-		type[i] = 1;
-	    }
-	}
-	type_init = 1;
-    }
-
-
-    /* Per call modifications to the basic escape rules */
-    for (i = 0; i < 256; i++) {
-	type[i] &= 1;
-    }
-
-    if (escape) {
-	while (*escape) {
-	    type[(unsigned char)*escape] |= 2;
-	    escape++;
-	}
-    }
-
-
-    if (!new)
-	return NULL;
-
-    for (oi = ni = 0; oi < l; oi++) {
-	char c = str[oi];
-
-	/* Make enough room */
-	if (ni + 4 >= new_l) {
-	    new_l = new_l * 1.2 + 10;
-	    if (NULL == (new = realloc(new, new_l)))
-		return NULL;
-	}
-
-	if (type[(unsigned char)c]) {
-	    sprintf(&new[ni], "%%%02X", c);
-	    ni+=3;
-	} else {
-	    new[ni++] = c;
-	}
-    }
-    new[ni++] = 0;
-
-    return new;
-}
-
-#if 0
-/*
- * Reversal of the escape_hex_string above.
- *
- * Returns a copy of the escaped string on success
- *         NULL on failure.
- *
- * The pointer returned is owned by this function and is valid until the
- * next call (so it is not reentrant). DO NOT FREE the result.
- */
-static char *unescape_hex_string(char *str) {
-    static char *ret = NULL;
-    static size_t ret_sz = 0;
-    static int hex[256];
-    static int hex_init = 0;
-    size_t l;
-    char *out;
-
-
-    if (!str)
-	return NULL;
-    
-
-    /* Initialise lookup tables */
-    if (!hex_init) {
-	int i;
-	memset(hex, 0, 256*sizeof(*hex));
-	for (i = 0; i <= 9; i++) {
-	    hex['0'+i] = i;
-	}
-	for (i = 0; i <= 5; i++) {
-	    hex['a'+i] = 10+i;
-	    hex['A'+i] = 10+i;
-	}
-
-	hex_init = 1;
-    }
-
-
-    /* Alloc memory */
-    l = strlen(str);
-    if (l >= ret_sz) {
-	ret_sz = l+1;
-	ret = realloc(ret, ret_sz);
-	if (!ret) {
-	    return NULL;
-	    ret_sz = 0;
-	}
-    }
-
-
-    /* Decode */
-    out = ret;
-    while (*str) {
-	if (*str == '%') {
-	    if (!str[1]) {
-		fprintf(stderr,"Truncated %% code in unescape_hex_string()\n");
-		return NULL;
-	    }
-	    *out++ = (hex[str[1]]<<4) | hex[str[2]];
-	    str += 3;
-	} else {
-	    *out++ = *str++;
-	}
-    }
-    *out++ = 0;
-
-    return ret;
-}
-#endif
 
 
 /*
@@ -831,8 +602,8 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
     /* Basic SAM record */
     dstring_appendf(ds, "*\t768\t%s\t%d\t255\t%dM\t*\t0\t0\t*\t*\t",
 		    c->name, start + offset, end - start + 1);
-
-    /* Annotation itself */
+    
+    /* Annotation itself. */
     dstring_appendf(ds, "CT:Z:%c;", a->direction);
     dstring_append_hex_encoded(ds, type2str(fi->r.mqual, type), ";|");
     if (a->comment && *a->comment) {
@@ -2219,6 +1990,50 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
  * export_tags implementation
  */
 
+/*
+ * Breaks an ACD format tag down into key=value constituents.
+ *
+ * Fills out the key and value strings (with lengths) and returns the
+ * next str value to pass into this function, or NULL when no more
+ * key=value pairs have been found.
+ *
+ * On input key_len and val_len are the size of the supplied key and val
+ * buffers. On return they hold the filled lengths.
+ */
+static char *parse_acd_tag(char *str,
+			   char *key, size_t *key_len,
+			   char *val, size_t *val_len) {
+    char *cp;
+    size_t len;
+
+    /* Key */
+    for (len = 0, cp = str; len < *key_len && *cp && *cp != '='; len++)
+	*key++ = *cp++;
+    if (!*cp)
+	return NULL;
+    *key_len = len;
+    str = ++cp;
+	
+    /* Value */
+    for (len = 0, cp = str; len < *val_len && *cp && *cp != '\n'; len++) {
+	if (*cp == '\\') {
+	    if (*++cp == 'n') {
+		*val++ = '\n';
+		cp++;
+	    } else {
+		*val++ = *cp++;
+	    }
+	} else {
+	    *val++ = *cp++;
+	}
+    }
+
+    *val_len = len;
+    str = ++cp;
+
+    return str;
+}
+
 static int export_header_tags_gff(GapIO *io, FILE *fp,
 				  int cc, contig_list_t *cv) {
     fprintf(fp, "##gff-version 3\n");
@@ -2244,6 +2059,8 @@ static int export_tags_gff(GapIO *io, FILE *fp,
     contig_t *c;
     char *con = NULL;
     int *map = NULL;
+    int db;
+    char type[5];
 
     c = cache_search(io, GT_Contig, crec);
     cache_incr(io, c);
@@ -2278,9 +2095,17 @@ static int export_tags_gff(GapIO *io, FILE *fp,
     /* Export */
     while (r = contig_iter_next(io, ci)) {
 	anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
-	char type2[5];
 	char *name, *ename, *etype;
 	int st, en;
+	char score[100];
+	char phase;
+	char gff_type[1024];
+	static dstring_t *ds = NULL;
+
+	if (ds)
+	    dstring_empty(ds);
+	else
+	    ds = dstring_create(NULL);
 
 	cache_incr(io, a);
 
@@ -2359,20 +2184,105 @@ static int export_tags_gff(GapIO *io, FILE *fp,
 
 	assert(st <= en);
 	
-	ename = escape_hex_string(name, "!#&'(),/\\=<>{}[]`~");
-	etype = escape_hex_string(type2str(r->mqual, type2), ",=;");
-	if (a->comment && *a->comment) {
-	    char *escaped = escape_hex_string(a->comment, ",=;");
+	score[0] = '.'; score[1] = 0;
+	phase = '.';
+	strcpy(gff_type, "remark");
 
-	    fprintf(fp, "%s\tgap5\tremark\t%d\t%d\t.\t.\t.\ttype=%s;Note=%s\n",
-		    ename,
-		    st, en,
-		    etype, escaped);
-	    free(escaped);
+	/*
+	 * ACDtags can be broken down properly into key=value pairs.
+	 * Everything else is a free-for-all and is simply shoved into
+	 * the Note= field.
+	 */
+	ename = escape_hex_string(name, "!#&'(),/\\=<>{}[]`~");
+	etype = escape_hex_string(type2str(r->mqual, type), ",=;");
+	
+	dstring_appendf(ds, "type=%s", etype);
+
+	db = idToIndex(type);
+	if (tag_db[db].default_text &&
+	    strncmp(tag_db[db].default_text, "#!acdtag:", 9) == 0) {
+	    char *cp = a->comment ? a->comment : "";
+	    char key[1024], val[8192];
+	    size_t key_len, val_len;
+
+	    printf("ACD TAG with comm %s\n", a->comment ? a->comment : "(null)");
+	    while (cp = parse_acd_tag(cp,
+				      key, (key_len=1024, &key_len),
+				      val, (val_len=8192, &val_len))) {
+		printf("Key='%.*s' val='%.*s'\n",
+		       key_len, key, val_len, val);
+		if (key_len == 5 && strncmp(key, "score", 5) == 0) {
+		    if ((val_len > 0) &&
+			(*val == '+' || *val == '-' || isdigit(*val))) {
+			sprintf(score, "%.10g", atof(val));
+		    }
+		} else if (key_len == 5 && strncmp(key, "phase", 5) == 0) {
+		    if (val_len > 0 && *val >= '0' && *val <= '2')
+			phase = *val;
+		} else if (key_len == 8 && strncmp(key, "gff_type", 8) == 0) {
+		    size_t l = MIN(1023, val_len);
+		    strncpy(gff_type, val, l);
+		    gff_type[l] = 0;
+		} else if (key_len == 11 &&
+			   strncmp(key, "gff_attribs", 11) == 0) {
+		    char *k0, *k1, *v0, *v1;
+		    /* GFF attribute key=value pairs packed into a single
+		     * ACDtag text item.
+		     */
+		    for (v1 = val;;) {
+			char tmp_k, tmp_v, *esc_k, *esc_v;
+
+			for (k0 = k1 =v1; val_len && *k1 != '=' && *k1 != '\n'; k1++, val_len--)
+			    ;
+			if (k1 == k0)
+			    break;
+
+			if (*k1 != '=') {
+			    v0 = k0;
+			    v1 = k1;
+			    k0 = "note";
+			} else {
+			    val_len--;
+			    for (v0 = v1 =k1+1; val_len && *v1 != '\n'; v1++, val_len--)
+				;
+			}
+
+			tmp_k = *k1; tmp_v = *v1;
+			*k1 = 0; *v1 = 0;
+			esc_k = escape_hex_string(k0, ",=;");
+			esc_v = escape_hex_string(v0, ",=;");
+			*k1 = tmp_k; *v1 = tmp_v;
+			dstring_appendf(ds, ";%s=%s", esc_k, esc_v);
+			 
+			if (!val_len || *v1++ != '\n')
+			    break;
+			val_len--;
+		    }
+		} else {
+		    /* Everything else is just additional key=value attribs */
+		    char tmp = val[val_len], *escaped;
+		    val[val_len] = 0;
+
+		    dstring_append_char(ds, ';');
+		    escaped = escape_hex_string(val, ",=;");
+		    dstring_appendf(ds, "%.*s=%s", key_len, key, escaped);
+		    free(escaped);
+
+		    val[val_len] = tmp;
+		}
+	    }
 	} else {
-	    fprintf(fp, "%s\tgap5\tremark\t%d\t%d\t.\t.\t.\ttype=%s\n",
-		    ename, st, en, etype);
+	    if (a->comment && *a->comment) {
+		char *escaped = escape_hex_string(a->comment, ",=;");
+		dstring_appendf(ds, ";Gap5=1;Note=%s", escaped);
+		free(escaped);
+	    }
 	}
+
+	fprintf(fp, "%s\tgap5\t%s\t%d\t%d\t%s\t%c\t%c\t%s\n",
+		ename, gff_type, st, en, score, a->direction,
+		phase, dstring_str(ds));
+
 	free(ename);
 	free(etype);
 

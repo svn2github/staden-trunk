@@ -212,6 +212,7 @@ install:
 	$(INSTALL) gap5 $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/gap5
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap5
+	cp $(S)/../gap4/acd2tag.tcl $(INSTALLTCL)/gap5
 	cp $(S)/gap5rc $(S)/gap5rc_menu_full $(INSTALLETC)
 	cp $(PROGLIBS) $(INSTALLLIB)
 	cp tg_view.bin $(INSTALLBIN)

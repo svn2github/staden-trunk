@@ -244,14 +244,34 @@ proc tag_editor_set_type {button w textwin data typeid} {
 	set tid $NGTag($typeid,tagid)
 	if {[info commands ::tag_gui::${tid}::create_dialogue] == {}} {
 	    set code [acd2tag::parse $NGTag($typeid,comment) ::tag_gui::$tid]
-	    catch {set fd [open /tmp/debug.out w]; puts $fd $code; close $fd}
+	    #catch {set fd [open /tmp/debug.out w]; puts $fd $code; close $fd}
 	    eval $code
 	}
 	set d(namespace) ::$w.GUI
+	catch {unset $d(namespace)}
 	catch {array set $d(namespace) [::acd2tag::str2array $d(anno)]} err
 	#set d(namespace) ::tag_gui::${type}::$w
 	set $w.GUI $d(namespace)
+	set keys [array names $d(namespace)]
+
 	::tag_gui::${tid}::create_dialogue $w.gui.f $d(namespace)
+
+	if {[info exists $d(namespace)(::gff_attribs)]} {
+	    # Add GFF any unhandled key=value pairs to the gff_attribs value
+	    foreach var [::tag_gui::${tid}::vars] {
+		set v($var) 1
+	    }
+	    set v(namespaces) 1
+
+	    foreach k $keys {
+		set key [regsub {.*::} $k {}]
+		if {[info exists v($key)]} continue
+
+		set val [set $d(namespace)($k)]
+		append $d(namespace)(::gff_attribs) $key=$val\n
+	    }
+	}
+
 	pack $w.gui -side bottom -fill both -expand 1
     } else {
 	catch {destroy $w.gui.f}

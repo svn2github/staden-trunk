@@ -77,8 +77,8 @@ if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
     add_command     {File.Export to BioLIMS}	 8 10 {ExportBiolims \$io}
 }
 add_command     {File.Export sequences}          8 10 {ExportSequences \$io} 
-add_command     {File.Export Tags to GFF}        8 10 {ExportTags \$io} 
 add_command     {File.Import Tags from GFF}	 8 26 {ImportGFF \$io}
+add_command     {File.Export Tags to GFF}        8 10 {ExportTags \$io} 
 add_command     {File.Export Scaffolds to AGP}   8 26 {ExportAGP \$io}
 add_command     {File.Import Scaffolds from AGP} 8 26 {ImportAGP \$io}
 add_command	{File.Save consensus}		 8 10 {NormalDialog \$io}

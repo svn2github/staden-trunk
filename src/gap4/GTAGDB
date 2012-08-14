@@ -254,22 +254,496 @@ borrowed: \
         id="BORO": \
         bg=SkyBlue: \
 
+#-----------------------------------------------------------------------------
+# GFF tags.
+# TODO: implement some form of #include or variable substitution. (Or
+# just use a master .m4 file and generate this via the m4
+#preprocessor.)
+
 # GFF colours taken from Artemis
-"GFF Generic feature, colour 0":        id=GF00: bg="#ffffff"
-"GFF Generic feature, colour 1":        id=GF01: bg="#646464"
-"GFF Generic feature, colour 2":        id=GF02: bg="#ff0000"
-"GFF Generic feature, colour 3":        id=GF03: bg="#00ff00"
-"GFF Generic feature, colour 4":        id=GF04: bg="#0000ff"
-"GFF Generic feature, colour 5":        id=GF05: bg="#00ffff"
-"GFF Generic feature, colour 6":        id=GF06: bg="#ff00ff"
-"GFF Generic feature, colour 7":        id=GF07: bg="#ffff00"
-"GFF Generic feature, colour 8":        id=GF08: bg="#98fb98"
-"GFF Generic feature, colour 9":        id=GF09: bg="#87cefa"
-"GFF Generic feature, colour 10":       id=GF10: bg="#ffa500"
-"GFF Generic feature, colour 11":       id=GF11: bg="#c89664"
-"GFF Generic feature, colour 12":       id=GF12: bg="#ffc8c8"
-"GFF Generic feature, colour 13":       id=GF13: bg="#aaaaaa"
-"GFF Generic feature, colour 14":       id=GF14: bg="#000000"
-"GFF Generic feature, colour 15":       id=GF15: bg="#ff3f3f"
-"GFF Generic feature, colour 16":       id=GF16: bg="#ff7f7f"
-"GFF Generic feature, colour 17":       id=GF17: bg="#ffbfbf"
+# "GFF Generic feature, colour 0":        id=GF00: bg="#ffffff"
+# "GFF Generic feature, colour 1":        id=GF01: bg="#646464"
+# "GFF Generic feature, colour 2":        id=GF02: bg="#ff0000"
+# "GFF Generic feature, colour 3":        id=GF03: bg="#00ff00"
+# "GFF Generic feature, colour 4":        id=GF04: bg="#0000ff"
+# "GFF Generic feature, colour 5":        id=GF05: bg="#00ffff"
+# "GFF Generic feature, colour 6":        id=GF06: bg="#ff00ff"
+# "GFF Generic feature, colour 7":        id=GF07: bg="#ffff00"
+# "GFF Generic feature, colour 8":        id=GF08: bg="#98fb98"
+# "GFF Generic feature, colour 9":        id=GF09: bg="#87cefa"
+# "GFF Generic feature, colour 10":       id=GF10: bg="#ffa500"
+# "GFF Generic feature, colour 11":       id=GF11: bg="#c89664"
+# "GFF Generic feature, colour 12":       id=GF12: bg="#ffc8c8"
+# "GFF Generic feature, colour 13":       id=GF13: bg="#aaaaaa"
+# "GFF Generic feature, colour 14":       id=GF14: bg="#000000"
+# "GFF Generic feature, colour 15":       id=GF15: bg="#ff3f3f"
+# "GFF Generic feature, colour 16":       id=GF16: bg="#ff7f7f"
+# "GFF Generic feature, colour 17":       id=GF17: bg="#ffbfbf"
+
+"GFF Generic feature, colour 0":        id=GF00: bg="#ffff40": \
+dt="#!acdtag:GF00 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 1":        id=GF01: bg="#646464": \
+dt="#!acdtag:GF01 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 2":        id=GF02: bg="#ff0000": \
+dt="#!acdtag:GF02 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 3":        id=GF03: bg="#00ff00": \
+dt="#!acdtag:GF03 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 4":        id=GF04: bg="#0000ff": \
+dt="#!acdtag:GF04 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 5":        id=GF05: bg="#00ffff": \
+dt="#!acdtag:GF05 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 6":        id=GF06: bg="#ff00ff": \
+dt="#!acdtag:GF06 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 7":        id=GF07: bg="#ffff00": \
+dt="#!acdtag:GF07 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 8":        id=GF08: bg="#98fb98": \
+dt="#!acdtag:GF08 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 9":        id=GF09: bg="#87cefa": \
+dt="#!acdtag:GF09 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 10":       id=GF10: bg="#ffa500": \
+dt="#!acdtag:GF10 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 11":       id=GF11: bg="#c89664": \
+dt="#!acdtag:GF11 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 12":       id=GF12: bg="#ffc8c8": \
+dt="#!acdtag:GF12 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 13":       id=GF13: bg="#aaaaaa": \
+dt="#!acdtag:GF13 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 14":       id=GF14: bg="#400000": \
+dt="#!acdtag:GF14 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 15":       id=GF15: bg="#ff3f3f": \
+dt="#!acdtag:GF15 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 16":       id=GF16: bg="#ff7f7f": \
+dt="#!acdtag:GF16 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"
+
+"GFF Generic feature, colour 17":       id=GF17: \
+bg="#ffbfbf":dt="#!acdtag:GF17 [info: \"GFF tag\"]
+float: score   [
+    information: \"Score (blank if not applicable):\"
+    default: \"\"
+]
+string: gff_type   [
+    information: \"GFF Type:\"
+    default: Remark
+]
+
+section: phase_sec [information: \"\" type: frame side: top border: 0]
+    variable: phase .
+    label: phase_l [information: \"Phase:\" labelpos: w width: 50 side: left]
+    radio: phase_2 [information: 2 store: phase content: 2 side: right]
+    radio: phase_1 [information: 1 store: phase content: 1 side: right]
+    radio: phase_0 [information: 0 store: phase content: 0 side: right]
+    radio: phase_d [information: \"Unknown or n/a\" store: phase content: . side: right]
+endsection: phase_sec
+
+text: gff_attribs [
+    information: \"Attributes:\"
+    labelpos: nw
+    geometry: 20x8
+]"

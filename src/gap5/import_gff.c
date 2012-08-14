@@ -5,12 +5,16 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <float.h>
+#include <ctype.h>
 
 #include <tg_gio.h>
+#include "export_contigs.h"
 #include "zfio.h"
 #include "gap_cli_arg.h"
 #include "import_gff.h"
 #include "consensus.h"
+#include "dstring.h"
 
 /* Maximum GFF line length */
 #define MAX_GFF_LINE 8192
@@ -31,7 +35,7 @@ typedef struct {
     int     end;
     double  score;
     int     strand; /* '+', '-', '.' or '?' */
-    int     phase;
+    int     phase;  /* -1, 0, 1, 2 */
     int     n_attrib;
     key_val attrib[MAX_GFF_ATTRIB];
 } gff_entry;
@@ -164,7 +168,10 @@ static gff_entry *parse_gff_entry(char *line, gff_entry *gff) {
     if (*cp != '\t')
 	return NULL;
     *cp++ = 0;
-    gff->score = atof(tmp);
+    if (strcmp(tmp, "."))
+	gff->score = atof(tmp);
+    else
+	gff->score = DBL_MIN;
 
     /* Strand */    
     tmp = cp;
@@ -187,7 +194,7 @@ static gff_entry *parse_gff_entry(char *line, gff_entry *gff) {
     if (*cp != '\t')
 	return NULL;
     *cp++ = 0;
-    gff->phase = atoi(tmp);
+    gff->phase = isdigit(*tmp) ? atoi(tmp) : -1;
     
     /* Attribs */
     gff->n_attrib = 0;
@@ -253,7 +260,7 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 		       int plus_as_space) {
     tg_rec rec;
     int rec_type;
-    char *type, *txt;
+    char *type, *txt, *escaped;
     range_t r;
     bin_index_t *bin;
     anno_ele_t *e;
@@ -261,6 +268,13 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
     int cstart, cend;
     char type_a[5];
     tg_rec seq_bin;
+    static dstring_t *ds = NULL, *ds2;
+    int i, note_only = 0;
+
+    if (ds)
+	dstring_empty(ds);
+    else
+	ds = dstring_create(NULL);
 
     r.flags = GRANGE_FLAG_ISANNO;
     r.start = gff->start;
@@ -281,18 +295,13 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
     }
     r.mqual = str2type(type);
 
-    /* Get annotation */
-    txt = gff_find_attrib(gff, "Note");
-    if (!txt)
-	txt = gff_find_attrib(gff, "note"); /* but be pragmatic */
+    /* Check if it's a simple Gap5 tag, with Note=%s only to parse */
+    txt = gff_find_attrib(gff, "Gap5");
+    if (txt && *txt == '1')
+	note_only = 1;
 
-    if (txt && plus_as_space) {
-	char *cp;
-	for (cp = txt; *cp; cp++) {
-	    if (*cp == '+')
-		*cp = ' ';
-	}
-    }
+
+    
 
     /* Find seqid rec */
     if ((rec = contig_index_query(io, gff->seqid)) >= 0) {
@@ -407,9 +416,58 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 	return -1;
     }
 
+    if (note_only) {
+	/* Get annotation from Note=%s */
+	txt = gff_find_attrib(gff, "Note");
+	if (!txt)
+	    txt = gff_find_attrib(gff, "note"); /* but be pragmatic */
+
+	if (txt && plus_as_space) {
+	    char *cp;
+	    for (cp = txt; *cp; cp++) {
+		if (*cp == '+')
+		    *cp = ' ';
+	    }
+	}
+	dstring_append(ds, txt);
+
+    } else {
+	/* Process attributes */
+	if (gff->score != DBL_MIN)
+	    dstring_appendf(ds, "gff_type=%s\nscore=%f\nphase=%c",
+			    gff->type, gff->score, ".012"[gff->phase+1]);
+	else
+	    dstring_appendf(ds, "gff_type=%s\nphase=%c",
+			    gff->type, ".012"[gff->phase+1]);
+
+	//ds2 = dstring_create(NULL);
+
+	for (i = 0; i < gff->n_attrib; i++) {
+	    char *esc_k, *esc_v;
+	    if (strcmp(gff->attrib[i].key, "type") == 0 ||
+		strcmp(gff->attrib[i].key, "Type") == 0)
+		continue;
+
+	    /* Otherwise just add attributes as we see them, to be exported
+	     * back verbatim.
+	     */
+
+	    esc_k = escape_C_nl(gff->attrib[i].key);
+	    esc_v = escape_C_nl(gff->attrib[i].val);
+	    //dstring_appendf(ds2, "%s=%s\n", esc_k, esc_v);
+	    dstring_appendf(ds, "\n%s=%s", esc_k, esc_v);
+	    free(esc_k);
+	    free(esc_v);
+	}
+
+	//escaped = escape_C_nl(dstring_str(ds2));
+	//dstring_appendf(ds, "\ngff_attribs=%s", escaped);
+	//dstring_destroy(ds2);
+    }
+
     r.pair_rec = rec;
     r.rec = anno_ele_new(io, 0, rec_type, rec, 0, str2type(type),
-			 gff->strand, txt);
+			 gff->strand, dstring_str(ds));
 
     e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
     e = cache_rw(io, e);

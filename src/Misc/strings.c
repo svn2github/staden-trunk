@@ -170,3 +170,295 @@ size_t strnlen(const char *buf, size_t n) {
         i++; 
     return i; 
 } 
+
+/*
+ * Allocates and returns an escaped version of str. This relaces quotes,
+ * newlines, and other non-printable characters with backslashed versions of
+ * them in a C string style formatting.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+char *escape_C_string(char *str) {
+    size_t l = strlen(str);
+    size_t new_l = l*1.1+10;
+    char *new = malloc(new_l);
+    size_t oi, ni;
+    static char type[256];
+    static int type_init = 0;
+
+    /* A once-only lookup table to speed up the loop below */
+    if (!type_init) {
+	int i;
+	
+	for (i = 0; i < 256; i++) {
+	    if (isprint(i) && i != '"' && i != '\\') {
+		/* directly printable */
+		type[i] = 0;
+	    } else {
+		switch(i) {
+		    /* backslash single-char */
+		case '"':
+		case '\\':
+		    type[i] = i;
+		    break;
+		case '\n':
+		    type[i] = 'n';
+		    break;
+		case '\r':
+		    type[i] = 'r';
+		    break;
+		case '\t':
+		    type[i] = 't';
+		    break;
+		case '\a':
+		    type[i] = 'a';
+		    break;
+
+		default:
+		    type[i] = 1; /* octal escape */
+		}
+	    }
+	}
+	type_init = 1;
+    }
+
+
+    if (!new)
+	return NULL;
+
+    for (oi = ni = 0; oi < l; oi++) {
+	char c = str[oi];
+
+	/* Make enough room */
+	if (ni + 5 >= new_l) {
+	    new_l = new_l * 1.2 + 10;
+	    if (NULL == (new = realloc(new, new_l)))
+		return NULL;
+	}
+
+	switch(type[(unsigned char)c]) {
+	case 0:
+	    new[ni++] = c;
+	    break;
+	    
+	case 1:
+	    sprintf(&new[ni], "\\%03o", c);
+	    ni+=4;
+	    break;
+
+	default:
+	    new[ni++] = '\\';
+	    new[ni++] = type[(unsigned char)c];
+	}
+    }
+    new[ni++] = 0;
+
+    return new;
+}
+
+/*
+ * As per escape_C_string but \n and \\ only.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+char *escape_C_nl(char *str) {
+    size_t l = strlen(str);
+    size_t new_l = l*1.1+10;
+    char *new = malloc(new_l);
+    size_t oi, ni;
+    static char type[256];
+    static int type_init = 0;
+
+    /* A once-only lookup table to speed up the loop below */
+    if (!type_init) {
+	int i;
+	
+	for (i = 0; i < 256; i++) {
+	    switch(i) {
+		/* backslash single-char */
+	    case '\\':
+		type[i] = '\\';
+		break;
+	    case '\n':
+		type[i] = 'n';
+		break;
+	    default:
+		type[i] = 0;
+	    }
+	}
+	type_init = 1;
+    }
+
+
+    if (!new)
+	return NULL;
+
+    for (oi = ni = 0; oi < l; oi++) {
+	char c = str[oi];
+
+	/* Make enough room */
+	if (ni + 5 >= new_l) {
+	    new_l = new_l * 1.2 + 10;
+	    if (NULL == (new = realloc(new, new_l)))
+		return NULL;
+	}
+
+	switch(type[(unsigned char)c]) {
+	case 0:
+	    new[ni++] = c;
+	    break;
+	    
+	default:
+	    new[ni++] = '\\';
+	    new[ni++] = type[(unsigned char)c];
+	}
+    }
+    new[ni++] = 0;
+
+    return new;
+}
+
+/*
+ * Allocates and returns an escaped version of str. This relaces quotes,
+ * newlines, and other non-printable characters with %02X hex encoded
+ * versions as required by html, gff, etc.
+ *
+ * 'escape' is a string of additional characters that must be escaped
+ * for this string, in addition to obvious unprintables and percent.
+ * It may be specified as NULL.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+char *escape_hex_string(char *str, char *escape) {
+    size_t l = strlen(str);
+    size_t new_l = l*1.1+10;
+    char *new = malloc(new_l);
+    size_t oi, ni;
+    static int type[256];
+    static int type_init = 0;
+    int i;
+
+    /* A once-only lookup table to speed up the loop below */
+    if (!type_init) {
+	for (i = 0; i < 256; i++) {
+	    if (isprint(i) && i != '%') {
+		/* directly printable */
+		type[i] = 0;
+	    } else {
+		/* hex escape */
+		type[i] = 1;
+	    }
+	}
+	type_init = 1;
+    }
+
+
+    /* Per call modifications to the basic escape rules */
+    for (i = 0; i < 256; i++) {
+	type[i] &= 1;
+    }
+
+    if (escape) {
+	while (*escape) {
+	    type[(unsigned char)*escape] |= 2;
+	    escape++;
+	}
+    }
+
+
+    if (!new)
+	return NULL;
+
+    for (oi = ni = 0; oi < l; oi++) {
+	char c = str[oi];
+
+	/* Make enough room */
+	if (ni + 4 >= new_l) {
+	    new_l = new_l * 1.2 + 10;
+	    if (NULL == (new = realloc(new, new_l)))
+		return NULL;
+	}
+
+	if (type[(unsigned char)c]) {
+	    sprintf(&new[ni], "%%%02X", c);
+	    ni+=3;
+	} else {
+	    new[ni++] = c;
+	}
+    }
+    new[ni++] = 0;
+
+    return new;
+}
+
+/*
+ * Reversal of the escape_hex_string above.
+ *
+ * Returns a copy of the escaped string on success
+ *         NULL on failure.
+ *
+ * The pointer returned is owned by this function and is valid until the
+ * next call (so it is not reentrant). DO NOT FREE the result.
+ */
+char *unescape_hex_string(char *str) {
+    static char *ret = NULL;
+    static size_t ret_sz = 0;
+    static int hex[256];
+    static int hex_init = 0;
+    size_t l;
+    char *out;
+
+
+    if (!str)
+	return NULL;
+    
+
+    /* Initialise lookup tables */
+    if (!hex_init) {
+	int i;
+	memset(hex, 0, 256*sizeof(*hex));
+	for (i = 0; i <= 9; i++) {
+	    hex['0'+i] = i;
+	}
+	for (i = 0; i <= 5; i++) {
+	    hex['a'+i] = 10+i;
+	    hex['A'+i] = 10+i;
+	}
+
+	hex_init = 1;
+    }
+
+
+    /* Alloc memory */
+    l = strlen(str);
+    if (l >= ret_sz) {
+	ret_sz = l+1;
+	ret = realloc(ret, ret_sz);
+	if (!ret) {
+	    return NULL;
+	    ret_sz = 0;
+	}
+    }
+
+
+    /* Decode */
+    out = ret;
+    while (*str) {
+	if (*str == '%') {
+	    if (!str[1]) {
+		fprintf(stderr,"Truncated %% code in unescape_hex_string()\n");
+		return NULL;
+	    }
+	    *out++ = (hex[str[1]]<<4) | hex[str[2]];
+	    str += 3;
+	} else {
+	    *out++ = *str++;
+	}
+    }
+    *out++ = 0;
+
+    return ret;
+}
