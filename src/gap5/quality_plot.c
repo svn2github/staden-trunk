@@ -291,15 +291,15 @@ static void qplot_redraw(QualityPlot *qp, Display *display) {
     if (!qp->pm)
 	return;
 
-    /* clear the pixmap */
-    XFillRectangle(display, qp->pm, qp->copyGC, 0, 0, qp->width, qp->height);
-
     if (qp->hetero)
 	mode |= CONS_SCORES;
     if (qp->discrep)
 	mode |= CONS_DISCREP;
     if (!mode && !qp->quality)
 	return;
+
+    /* clear the pixmap */
+    XFillRectangle(display, qp->pm, qp->copyGC, 0, 0, qp->width, qp->height);
 
     /* Fetch consensus */
     len = (int)qp->wx1 - (int)qp->wx0 + 1;
