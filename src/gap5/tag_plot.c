@@ -55,6 +55,7 @@ typedef struct TagPlot {
     double yz;
     int min_sz;
     double ymax;
+    int showtag;
  } TagPlot;
 
 /* mandatory prototypes */
@@ -101,6 +102,7 @@ static Tk_ConfigSpec tag_config_specs[] = {
     {TK_CONFIG_DOUBLE, "-py", NULL, NULL, "0", Tk_Offset(TagPlot, py), TK_CONFIG_DONT_SET_DEFAULT}, 
     {TK_CONFIG_COLOR, "-background", NULL, NULL, "black", Tk_Offset(TagPlot, bg), TK_CONFIG_NULL_OK},
     {TK_CONFIG_STRING, "-tag", NULL, NULL, NULL, Tk_Offset(TagPlot, tag), TK_CONFIG_DONT_SET_DEFAULT},
+    {TK_CONFIG_INT, "-showtag", NULL, NULL, "0", Tk_Offset(TagPlot, showtag), 0},
     {TK_CONFIG_END, (char *) NULL, (char *) NULL, (char *) NULL, (char *) NULL, 0, 0}
 };			    
 
@@ -230,6 +232,7 @@ static int tagplot_create(Tcl_Interp *interp,
     tp->image = NULL;
     tp->ymax = 0;
     tp->tag = NULL;
+    tp->nr = 0;
     
     if (initialise_tagplot_image(interp, Tk_CanvasTkwin(canvas), tp)) {
     	if ((tagplot_coords(interp, canvas, itemPtr, i, argv) == TCL_OK)) {
@@ -448,6 +451,8 @@ static void tagplot_redraw(TagPlot *tp, Display *display) {
     int ymin = INT_MAX;
     int ymax = INT_MIN;
     contig_t *c;
+    
+    if (!tp->showtag) return; // not visible so do no work
      
     image_remove(tp->image);
     if(!create_image_buffer(tp->image, tp->width, tp->height, tp->background)) return;

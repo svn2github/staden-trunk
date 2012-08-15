@@ -2369,6 +2369,8 @@ proc tag_item_config {w t} {
     set d [set ${t}(canvas)]
     set td [set ${t}(track)]
     
+    $d itemconfigure $td -showtag [set visible]
+    
     if {$visible} {
 	show_plot $w tag_item
     } else {
