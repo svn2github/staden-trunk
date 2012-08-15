@@ -10,6 +10,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "hache_table.h"
 #include "gap_range.h"
 #include "gap_cli_arg.h"
 
@@ -244,8 +245,8 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		int force, int reads_only) {
     int i, j;
     double max_height = 0;
-    library_t *lib = NULL;
     int lib_type;
+    HacheTable *h;
 
     if (!is_filter_change(gr) && !force)
 	return gr->ntl;
@@ -253,6 +254,8 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
     update_filter(gr);
     gr->ntl = 0;
     memset(gr->depth, 0, gr->width * sizeof(gap_depth_t));
+
+    h = HacheTableCreate(256, HASH_POOL_ITEMS | HASH_DYNAMIC_SIZE);
 	
     for (i = 0; i < gr->nr; i++) {
 	int sta, end;
@@ -360,14 +363,22 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	if (span) 	col = span_col;
 
 	if (r->library_rec) {
-	    if (!lib || lib->rec != r->library_rec) {
-		if (lib)
-		    cache_decr(gr->io, lib);
+	    HacheItem *hi;
+
+	    if ((hi = HacheTableSearch(h, (char *)&r->library_rec,
+				       sizeof(tg_rec)))) {
+		lib_type = hi->data.i;
+	    } else {
+		HacheData hd;
+		library_t *lib;
+
 		lib = cache_search(gr->io, GT_Library, r->library_rec);
 		update_library_stats(gr->io, lib->rec, 100, NULL, NULL, NULL);
-		cache_incr(gr->io, lib);
+		lib_type = hd.i = lib->lib_type;
+
+		HacheTableAdd(h, (char *)&r->library_rec, sizeof(tg_rec),
+			      hd, NULL);
 	    }
-	    lib_type = lib->lib_type;
 	} else {
 	    lib_type = LIB_T_INWARD;
 	}
@@ -492,8 +503,8 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	gr->ntl++;
     }
 
-    if (lib)
-	cache_decr(gr->io, lib);
+    if (h)
+	HacheTableDestroy(h, 0);
 
     gr->max_height = ceil(max_height);
     gr->max_height++;
