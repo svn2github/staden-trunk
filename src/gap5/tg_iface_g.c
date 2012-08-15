@@ -5490,7 +5490,7 @@ static cached_item *io_scaffold_block_read(void *dbh, tg_rec rec) {
 
     /* Decode the fixed size components of our sequence structs */
     /* ncontigs, 0 => unused entry */
-    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+    for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
 	cp += u72int(cp, &ncontigs[i]);
     }
 
@@ -5612,7 +5612,7 @@ static int io_scaffold_block_write(void *dbh, cached_item *ci) {
 	scaffold_t *c = b->scaffold[i];
 	int ncontigs;
 
-	if (!c) {
+	if (!c || ArrayMax(c->contig) == 0) {
 	    out_size[0]++;
 	    continue;
 	}
@@ -5638,7 +5638,7 @@ static int io_scaffold_block_write(void *dbh, cached_item *ci) {
 	int32_t s32;
 	scaffold_t *c = b->scaffold[i];
 
-	if (!c) {
+	if (!c || ArrayMax(c->contig) == 0) {
 	    *out[0]++=0; /* signifies scaffold not present */
 	    continue;
 	}
