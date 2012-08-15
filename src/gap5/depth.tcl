@@ -265,8 +265,8 @@ proc 1.5plot_contig_event {w type id cdata args} {
 	    }
 
 	    # Fix offsets too
-	    incr ${w}(x1) $arg(offset)
-	    incr ${w}(x2) $arg(offset)
+	    set ${w}(x1) [expr {[set ${w}(x1)] + $arg(offset)}]
+	    set ${w}(x2) [expr {[set ${w}(x2)] + $arg(offset)}]
 
 	    set ${w}(ForceRedraw) 1
 	    redraw_plot $w
