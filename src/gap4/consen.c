@@ -1613,7 +1613,7 @@ int fastq_fmt_output ( FILE *fp, char *seq, float *qual,
     for (i = 0; i < seq_len; ) {
 	for (j = 0; j < LINELENGTH;) {
 	    if (nopads == 0 || seq[i] != '*') {
-		char q = qual ? qual[i] + 33 : 33;
+		unsigned char q = qual ? qual[i] + 33 : 33;
 		if (q <  33) q = 33;
 		if (q > 126) q = 126;
 		if (fprintf ( fp, "%c", q) < 0) return 1;
