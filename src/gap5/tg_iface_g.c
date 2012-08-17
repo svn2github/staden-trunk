@@ -698,14 +698,16 @@ static void *g_read_alloc(g_io *io, GView v, size_t *len) {
     void *buf;
 
     g_view_info_(io->gdb, io->client, v, &vi);
-    if (len)
-	*len = vi.used;
 
-    if (!vi.used)
+    *len = 0;
+    if (!vi.used || vi.image == G_NO_IMAGE)
 	return NULL;
 
     if (NULL == (buf = malloc(vi.used)))
 	return NULL;
+
+    if (len)
+	*len = vi.used;
 
     if (g_read_(io->gdb, io->client, v, buf, vi.used) == 0)
 	return buf;
@@ -5350,10 +5352,19 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 
 	if (have_links) {
 	    int nl = c->link ? ArrayMax(c->link) : 0, j;
-	    out[12] += int2u7(nl, out[12]);
+	    int nl2 = nl;
 
 	    for (j = 0; j < nl; j++) {
 		contig_link_t *l = arrp(contig_link_t, c->link, j);
+
+		/* Check validity */
+		if ((l->end1 != 0 && l->end1 != 1) ||
+		    (l->end2 != 0 && l->end2 != 1) ||
+		    (l->orientation != 0 && l->orientation != 1)) {
+		    fprintf(stderr, "Skipping corrupted contig link %d\n", j);
+		    nl2--;
+		    continue;
+		}
 		out[13] += intw2u7(l->rec2, out[13]);
 		out[14] += int2s7(l->pos1, out[14]);
 		out[14] += int2s7(l->pos2, out[14]);
@@ -5364,6 +5375,8 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 		out[17] += int2u7(l->type, out[17]);
 		out[18] += int2s7(l->score, out[18]);
 	    }
+
+	    out[12] += int2u7(nl2, out[12]);
 	}
     }
 
