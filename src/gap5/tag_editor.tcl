@@ -381,10 +381,21 @@ proc tag_macro_callback {win data command} {
 # Invokes a macro - ie adds a tag to the current cursor position
 proc tag_macro_invoke {ed key} {
     set d ed_macro_$key
-    global $d gap5_defs
+    global $d gap5_defs read_only
 
     if {![info exists $d] || [set ${d}(set)] == 0} {
 	bell
+	return
+    }
+
+    if {$read_only} {
+	bell
+	tk_messageBox \
+	    -icon error \
+	    -message "Database is read-only." \
+	    -title Error \
+	    -type ok \
+	    -parent $ed
 	return
     }
 
