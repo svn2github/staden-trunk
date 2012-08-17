@@ -677,14 +677,14 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	if (!xx->ed->consensus_at_top)
 	    count = -count;
 
-	if (f1 < 0)
-	    f1 = 0;
-
 	switch (type) {
 	default:
 	    goto fail;
 
 	case TK_SCROLL_MOVETO:
+	    if (f1 < 0)
+		f1 = 0;
+
 	    if (xx->ed->consensus_at_top)
 		offset = f1 * xx->max_height + 0.5;
 	    else
