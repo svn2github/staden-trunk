@@ -1425,7 +1425,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		    if (xx->ed->display_cutoffs ||
 			(p >= left-1 && p <= right-1)) {
 			if (xx->ed->display_quality) {
-			    int qbin = qual / 10;
+			    int qbin = qual / 7;
 			    if (qbin < 0) qbin = 0;
 			    if (qbin > 9) qbin = 9;
 			    ink[p2].sh |= sh_bg;
@@ -3239,8 +3239,8 @@ void edSelectFrom(edview *xx, int pos) {
 
 	if (pos < left)
 	    pos = left;
-	if (pos > right+1)
-	    pos = right+1;
+	if (pos > right-1)
+	    pos = right-1;
 
 	cache_decr(xx->io, s);
     } else {
@@ -3367,7 +3367,7 @@ int edGetSelection(ClientData clientData, int offset, char *buffer,
     if (!xx->select_made)
 	return -1;
 
-    start = xx->select_start + offset;
+    start = xx->select_start;
     end   = xx->select_end;
 
     if (start > end) {
@@ -3375,6 +3375,8 @@ int edGetSelection(ClientData clientData, int offset, char *buffer,
 	start = end;
 	end = len;
     }
+
+    start += offset;
 
     len = end - start+1 > bufsize ? bufsize : end - start + 1;
 
