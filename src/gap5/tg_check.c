@@ -1103,7 +1103,7 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 	    }
 	}
 
-	if (bin->parent == crec && io->db->version >= 5) {
+	if (bin->parent == crec && (io->base ?io->base:io)->db->version >= 5) {
 	    if (bin->nseqs != c->nseqs) {
 		vmessage("Contig %"PRIrec" nseqs does not match root bin\n",
 			 crec);
