@@ -354,6 +354,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 }
 
 ; proc ListContigsRepopulate {io w} {
+    if {![winfo exists $w]} return
     set top [expr {int([lindex [$w yview] 0]*[$w index end])}]
 
     # Clear current setup
