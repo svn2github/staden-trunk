@@ -4762,7 +4762,6 @@ int affine_align(OVERLAP *overlap, ALIGN_PARAMS *params) {
 				 -1, -1,
 				 0, 0,       /* also ignored */
 				 1           /* because 'set_job' is 1 */);
-		params->band /= 2;
 		goto band_hack;
 	    } else {
 		return -1;
