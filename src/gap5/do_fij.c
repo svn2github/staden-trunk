@@ -394,7 +394,7 @@ int do_it_fij ( char seq[], int seq_len,
 		contig_list1[contig1_num].contig_number) {
 		continue;
 	    }
-
+#if 0
 	    if (one_by_one) {
 		fprintf(stderr,
 			"Aligning %d of %d =%"PRIrec
@@ -409,7 +409,7 @@ int do_it_fij ( char seq[], int seq_len,
 			contig2_num + 1, number_of_contigs2,
 			contig_list2[contig2_num].contig_number);
 	    }
-
+#endif
 	    //UpdateTextOutput();
 
 	    for (strand = 0; strand < 2; strand++) {
