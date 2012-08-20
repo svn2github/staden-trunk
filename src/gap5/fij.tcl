@@ -14,9 +14,37 @@ proc FIJDialog { f io } {
     wm title $f "Find internal joins"
 
     ###########################################################################
-    #input 
+    # contig_id boxes for selecting single contigs
+    # need both first as FIJ_config_contig_ids gets called by lorf_in
 
-    lorf_in $f.infile [keylget gap5_defs FIJ.INFILE] "" -bd 2 -relief groove
+    contig_id $f.id1 -io $io -range 0 -trace 2
+    contig_id $f.id2 -io $io -range 0 -trace 0
+
+    ###########################################################################
+    #input set 1
+
+    lorf_in $f.infile1 [keylget gap5_defs FIJ.INFILE1] \
+	"{FIJ_config_contig_ids $f id1 disabled} \
+	 {FIJ_config_contig_ids $f id1 disabled} \
+	 {FIJ_config_contig_ids $f id1 disabled} \
+	 {FIJ_config_contig_ids $f id1 normal}" \
+	-bd 2 -relief groove
+
+    ###########################################################################
+    #input set 2
+
+    lorf_in $f.infile2 [keylget gap5_defs FIJ.INFILE2] \
+	"{FIJ_config_contig_ids $f id2 disabled} \
+	 {FIJ_config_contig_ids $f id2 disabled} \
+	 {FIJ_config_contig_ids $f id2 disabled} \
+	 {FIJ_config_contig_ids $f id2 normal}" \
+	-bd 2 -relief groove
+
+    # selecting a contig_id box makes it the next to be updated
+    bind [entrybox_path $f.id1.ent] <<select>> "FIJ_config_contig_ids $f id1"
+    bind [entrybox_path $f.id2.ent] <<select>> "FIJ_config_contig_ids $f id2"
+    
+    FIJ_config_contig_ids $f id1
 
     ###########################################################################
     #match scales
@@ -169,32 +197,6 @@ proc FIJDialog { f io } {
     pack $f.match.f.min_match -fill x
     pack $f.match.f.use_filter -fill x
     pack $f.match.f.filter_cutoff -fill x
-
-    ###########################################################################
-    #contig identifier widget
-    set start $LREG
-    contig_id $f.sc \
-	    -io $io \
-	    -range 0
-
-    ###########################################################################
-    #select task
-
-    set st [keylget gap5_defs FIJ.SELTASK]
-    set b1 [keylget st BUTTON.1]
-    set b2 [keylget st BUTTON.2]
-
-    radiolist $f.sel_task \
-	    -title [keylget st NAME]\
-	    -bd 2 \
-	    -relief groove \
-	    -orient horizontal \
-	    -default [keylget st VALUE] \
-	    -buttons [format { \
-	    {%s -command {contig_id_configure %s -state disabled}} \
-	    {%s -command {contig_id_configure %s -state normal}}} \
-	    [list $b1] [list $f.sc] \
-	    [list $b2] [list $f.sc] ]
     
     ###########################################################################
     #hidden data
@@ -257,11 +259,12 @@ proc FIJDialog { f io } {
     ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-	    -ok_command "FIJ_OK_Pressed $f $io $f.infile $f.sel_task \
+	    -ok_command "FIJ_OK_Pressed $f $io $f.infile1 $f.id1 \
+            $f.infile2 $f.id2 \
 	    $f.match.blocks $f.match.min_overlap $f.match.word_length\
 	    $f.match.f.min_match $f.match.f.use_band $f.match.s.max_diag\
 	    $f.match.s.band_size $f.match.max_mis \
-	    $f.sc $f.hidden.yn $f.sel_mode.rl $f.ops $f.align_length \
+	    $f.hidden.yn $f.sel_mode.rl $f.ops $f.align_length \
             $f.match.f.use_filter $f.match.f.filter_cutoff" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap5 {FIJ-Dialogue}" \
@@ -269,10 +272,12 @@ proc FIJDialog { f io } {
 	    -relief groove
     ###########################################################################
 
-    pack $f.infile -fill x
-    pack $f.sel_task -fill x
-    pack $f.sc -fill x
-#    pack $f.sel_mode -fill x
+    pack $f.infile1 -fill x
+    pack $f.id1 -fill x
+    pack $f.infile2 -fill x
+    pack $f.id2 -fill x
+#    pack $f.sel_task -fill x
+#    pack $f.sc -fill x
     pack $f.align_length -fill x
     pack $f.hidden -fill x
     pack $f.match -fill x
@@ -280,11 +285,34 @@ proc FIJDialog { f io } {
 
 }
 
+proc FIJ_config_contig_ids { f id { state unchanged } } {
+    # Set which of the contig_id boxes get updated when clicking in the
+    # contig list or contig selector, and in which order.
+    if { $state != "unchanged" } {
+	contig_id_configure "$f.$id" -state $state
+    }
+    set id1_state [eval [entrybox_path $f.id1.ent] cget -state]
+    set id2_state [eval [entrybox_path $f.id2.ent] cget -state]
+
+    set boxen []
+    if { "$id" == "id1" } {
+	if { $id1_state == "normal" } { lappend boxen "$f.id1" }
+	if { $id2_state == "normal" } { lappend boxen "$f.id2" }
+    } else {
+	if { $id2_state == "normal" } { lappend boxen "$f.id2" }
+	if { $id1_state == "normal" } { lappend boxen "$f.id1" }	
+    }
+    # Need at least one item or we get errors...
+    if { [llength $boxen] == 0 } { lappend boxen "$f.id1" }
+    SetCurFrame $f $boxen
+}
+
 ###########################################################################
-proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
-			  min_match use_band max_diag band_size max_mis sc \
-			  yn sel_mode hidden_ops align_length \
-			  use_filter filter_cutoff} {
+proc FIJ_OK_Pressed { f io infile1 id1 infile2 id2 blocks min_overlap
+		      word_length \
+		      min_match use_band max_diag band_size max_mis \
+		      yn sel_mode hidden_ops align_length \
+		      use_filter filter_cutoff} {
     
     global CurContig
     global LREG
@@ -295,25 +323,22 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
     set segment ""
     set active_tags {}
 
-    if {[lorf_in_get $infile] == 3} {
-	set list [CreateAllContigList $io]
+    if {[lorf_in_get $infile1] == 3} {
+	set list1 [CreateAllContigList $io]
+    } elseif {[lorf_in_get $infile1] == 4} {
+	set gel_name [contig_id_gel $id1]
+	set list1 "{$gel_name}"
     } else {
-	set list [lorf_get_list $infile]
+	set list1 [lorf_get_list $infile1]
     }
 
-    if {[radiolist_get $sel_task] == 1} {
-	# All against all
-	set mode "all_all"
+    if {[lorf_in_get $infile2] == 3} {
+	set list2 [CreateAllContigList $io]
+    } elseif {[lorf_in_get $infile2] == 4} {
+	set gel_name [contig_id_gel $id2]
+	set list2 "{$gel_name}"
     } else {
-	# Single against all
-	set mode "segment"
-	set first [contig_id_gel $sc]
-	set pos [lsearch -exact $list $first]
-	if {$pos != -1} {
-	    set list [lreplace $list $pos $pos]
-	}
-	set list [linsert $list 0 $first]
-	SetContigGlobals $io [contig_id_gel $sc]
+	set list2 [lorf_get_list $infile2]
     }
 
     if {[yes_no_get $yn]} {
@@ -330,13 +355,6 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 	set use_conf 0
 	set use_hidden 0
     }
-#    set masking [radiolist_get $sel_mode]
-#
-#    #if masking mode is 2 or 3 (mark or mask active tags)
-#    if {($masking == 2) || ($masking == 3)} {
-#        set active_tags [GetDefaultTags FIJ.TAGS]
-#    }
-
 
     set word_length [lindex {? 12 8 4} [radiolist_get $word_length]]
     
@@ -377,7 +395,6 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 
     SetBusy
     find_internal_joins -io $io \
-	    -mode $mode \
 	    -min_overlap $min_overlap \
 	    -max_pmismatch $max_mis \
 	    -word_length $word_length \
@@ -392,10 +409,8 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 	    -max_display $max_align_length \
 	    -fast_mode $fast_mode \
 	    -filter_words $filter_words \
-	    -contigs $list
-
-#	    -mask [lindex {"" none mark mask} $masking] \
-#	    -tag_types $active_tags
+	    -contigs1 $list1 \
+	    -contigs2 $list2
 
     ClearBusy
 }

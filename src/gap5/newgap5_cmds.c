@@ -1300,18 +1300,18 @@ int
 tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
 			int objc, Tcl_Obj *CONST objv[])
 {
-    contig_list_t *contig_array = NULL;
-    int num_contigs = 0;
+    contig_list_t *contig_array1 = NULL;
+    contig_list_t *contig_array2 = NULL;
+    int num_contigs1 = 0, num_contigs2 = 0;
     fij_arg args;
     Tcl_DString input_params;
     char *name1;
     char *name2;
-    int mode = 0, mask = 0;
+    int mask = 0;
 
     cli_args a[] = {
 	{"-io",		  ARG_IO,   1, NULL,   offsetof(fij_arg, io)},
 	{"-mask",	  ARG_STR,  1, "none", offsetof(fij_arg, mask)},
-	{"-mode",	  ARG_STR,  1, "all_all", offsetof(fij_arg, mode)},
 	{"-min_overlap",  ARG_INT,  1, "20",   offsetof(fij_arg, min_overlap)},
 	{"-max_pmismatch",ARG_FLOAT,1, "30.0", offsetof(fij_arg, max_mis)},
 	{"-word_length",  ARG_INT,  1, "4",    offsetof(fij_arg, word_len)},
@@ -1322,7 +1322,8 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
 	{"-max_dashes",	  ARG_INT,  1, "0",    offsetof(fij_arg, dash)},
 	{"-min_conf",	  ARG_INT,  1, "8",    offsetof(fij_arg, min_conf)},
 	{"-tag_types",	  ARG_STR,  1, "",     offsetof(fij_arg, tag_list)},
-	{"-contigs",	  ARG_STR,  1, NULL,   offsetof(fij_arg, inlist)},
+	{"-contigs1",	  ARG_STR,  1, NULL,   offsetof(fij_arg, inlist1)},
+	{"-contigs2",	  ARG_STR,  1, NULL,   offsetof(fij_arg, inlist2)},
 	{"-use_conf",	  ARG_INT,  1, "1",    offsetof(fij_arg, use_conf)},
 	{"-use_hidden",	  ARG_INT,  1, "1",    offsetof(fij_arg, use_hidden)},
 	{"-max_display",  ARG_INT,  1, "0",    offsetof(fij_arg, max_display)},
@@ -1348,26 +1349,14 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
 	return TCL_ERROR;
     }
 
-    if (strcmp(args.mode, "all_all") == 0)
-	mode = COMPARE_ALL;
-    else if (strcmp(args.mode, "segment") == 0)
-	mode = COMPARE_SINGLE;
-    else {
-	Tcl_SetResult(interp, "invalid fij mode", TCL_STATIC);
-	return TCL_ERROR;
-    }
-
     /* create contig name array */
-    active_list_contigs(args.io, args.inlist, &num_contigs, &contig_array);
+    active_list_contigs(args.io, args.inlist1, &num_contigs1, &contig_array1);
+    active_list_contigs(args.io, args.inlist2, &num_contigs2, &contig_array2);
 
     /* create inputs parameters */
     Tcl_DStringInit(&input_params);
-    vTcl_DStringAppend(&input_params, "Contigs: %s\n", args.inlist);
-
-    name1 = get_default_string(interp, gap5_defs,
-			       vw("FIJ.SELTASK.BUTTON.%d",
-				  mode == COMPARE_ALL ? 1 : 2));
-    vTcl_DStringAppend(&input_params, "%s\n", name1);
+    vTcl_DStringAppend(&input_params, "Contigs1: %s\n", args.inlist1);
+    vTcl_DStringAppend(&input_params, "Contigs2: %s\n", args.inlist2);
 
     name1 = get_default_string(interp, gap5_defs, "FIJ.MINOVERLAP.NAME");
     name2 = get_default_string(interp, gap5_defs, "FIJ.MAXMIS.NAME");
@@ -1401,18 +1390,23 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
 	return TCL_OK;
     }
 
-    if (fij(args.io, mask, mode, args.min_overlap, (double)args.max_mis,
+    if (fij(args.io, mask, args.min_overlap, (double)args.max_mis,
 	    args.word_len, (double)args.max_prob, args.min_match, args.band,
 	    args.win_size, args.dash, args.min_conf, args.use_conf,
 	    args.use_hidden, args.max_display, args.fast_mode,
-	    args.filter_words, num_contigs, contig_array) < 0 ) {
-	verror(ERR_WARN, "Find internal joins", "Failure in Find Internal Joins");
+	    args.filter_words,
+	    num_contigs1, contig_array1, num_contigs2, contig_array2) < 0 ) {
+	verror(ERR_WARN,
+	       "Find internal joins", "Failure in Find Internal Joins");
 	SetActiveTags("");
+	xfree(contig_array1);
+	xfree(contig_array2);
 	return TCL_OK;
     }
 
     SetActiveTags("");
-    xfree(contig_array);
+    xfree(contig_array1);
+    xfree(contig_array2);
 
     return TCL_OK;
 

@@ -66,7 +66,7 @@ int init_hash8n (
     else
 	word_length = 14;
 
-    size_hash = (int)pow(4.0, (float) word_length);
+    size_hash = 1 << (2 * word_length);
     
     if ( HASH_JOB_BLKS & job ) {
 	min_match = MAX(min_match,word_length);
@@ -178,104 +178,97 @@ void free_hash8n ( Hash *h ) {
   xfree ( h );
 }
 
+static int hash_word_n(char *seq, int *start_base, int seq_len,
+		       int word_length, unsigned int *uword) {
+    /* 	given a sequence seq, return the hash value for the first word 
+     *  after start_base that does not contain an unknown char. Tell 
+     *  the caller where this is. If we reach the end of the seq set
+     *  start_base and return -1.
+     */
+    int lstart_base = *start_base;
+    int end_base    = lstart_base + word_length;
+    int i;
+    int base_index;
+    unsigned int luword = 0;
+    unsigned int mask = (1 << (word_length * 2)) - 1;
+
+    if (seq_len < end_base) return -1;
+
+    for (i = lstart_base; i < end_base; i++) {
+	base_index = dna_hash8_lookup[(unsigned char)seq[i]];
+	if (4 == base_index) {
+	    /*	We've hit an unknown char, so let's start again */
+	    lstart_base = i + 1;
+	    end_base = lstart_base + word_length;
+	    if (seq_len < end_base) {
+		*start_base = lstart_base;
+		return -1;
+	    }
+	    luword = 0;
+	    i = lstart_base - 1;
+	} else {
+	    luword = (luword << 2) | base_index;
+	}
+    }
+    *start_base = lstart_base;
+    *uword = luword & mask;
+    return 0;
+}
+
+static int hash_seq_n(char *seq, int *hash_values,
+		      int seq_len, int word_length) {
+    /* Given a sequence seq, return an array of hash values.
+     * If we cannot find at least one word to hash on we return -1
+     * otherwise we return 0.
+     */
+    int i, j, k, ret;
+    int start_base = 0, prev_start_base, base_index;
+    unsigned int uword = 0;
+    unsigned int mask = (1 << (2 * word_length)) - 1;
+
+    if ( seq_len < word_length ) return -1;
+
+    /*	Get the hash value for the first word that contains no unknowns */
+    if (hash_word_n(seq, &start_base, seq_len, word_length, &uword)) return -1;
+    for (i = 0; i < start_base; i++) hash_values[i] = -1;
+
+    /*	Now do the rest of the sequence */
+    hash_values[start_base] = uword & mask;
+    k = seq_len - word_length + 1;
+
+    for (i = start_base + 1, j = start_base + word_length; i < k; i++, j++) {
+	base_index = dna_hash8_lookup[(unsigned char)seq[j]];
+	if (4 == base_index) {
+	    /*	We've hit an unknown char, so let's start again */
+	    prev_start_base = i;
+	    start_base = j + 1;
+	    ret = hash_word_n(seq, &start_base, seq_len, word_length, &uword);
+	    for (i = prev_start_base; i < start_base; i++) hash_values[i] = -1;
+	    if (ret) return 0; /* Couldn't restart */
+	    hash_values[start_base] = uword & mask;
+	    i = start_base;
+	    j = i + word_length - 1;
+	} else {
+	    uword = (uword << 2) | base_index;
+	    hash_values[i] = uword & mask;
+	}
+    }
+
+    return 0;
+}
+
 /* ---------------------------------------------------------------------------
  * WORD SIZE = 14
  */
 
 int hash_word14n ( char *seq, int *start_base, int seq_len, int word_length,
 		unsigned int *uword) {
-    
-    /* 	given a sequence seq, return the hash value for the first word 
-     *  after start_base that does not contain an unknown char. Tell 
-     *  the caller where this is. If we reach the end of the seq set
-     *  start_base and return -1.
-     */
-    
-    
-    register int i;
-    register int end_base,base_index,lstart_base;
-    register unsigned int luword;
-    
-    lstart_base = *start_base;
-    end_base = lstart_base + word_length;
-    if ( seq_len < end_base ) return -1;
-    
-    for (i=lstart_base,luword=0,end_base=lstart_base+word_length;i<end_base;i++) {
-
-	base_index = dna_hash8_lookup[(unsigned)seq[i]];
-	if ( 4 == base_index ) {
-
-	    /*	weve hit an unknown char, so lets start again */
-
-	    lstart_base = i + 1;
-	    end_base = lstart_base + word_length;
-	    if ( seq_len < end_base ) {
-		*start_base = lstart_base;
-		return -1;
-	    }
-	    luword = 0;
-	    i = lstart_base - 1;
-	}
-	else {
-	    luword = ( luword <<2 ) | base_index;
-	}
-    }
-    *start_base = lstart_base;
-    *uword = luword & 0x7ffffff;
-    return 0;
+    return hash_word_n(seq, start_base, seq_len, word_length, uword);
 }
 
 
 int hash_seq14n ( char *seq, int *hash_values, int seq_len, int word_length) {
-
-    /* given a sequence seq, return an array of hash values
-       If we cannot find at least one word to hash on we return -1
-       otherwise we return 0.
-       */
-
-    register int i,j,k;
-    int start_base,prev_start_base,base_index;
-    unsigned int uword;
-
-    if ( seq_len < word_length ) return -1;
-
-    /*	Get the hash value for the first word that contains no unknowns */	
-    start_base = 0;
-    if (hash_word14n ( seq, &start_base, seq_len, word_length, &uword)) return -1;
-
-    for (i=0;i<start_base;i++) hash_values[i] = -1;
-
-    /*	Now do the rest of the sequence */
-
-    hash_values[start_base] = uword;
-    k = seq_len - word_length + 1;
-
-    for (i=start_base+1,j=start_base+word_length; i<k; i++,j++) {
-
-	base_index = dna_hash8_lookup[(unsigned)seq[j]];
-	if ( 4 == base_index ) {
-
-	    /*	weve hit an unknown char, so lets start again */
-
-	    prev_start_base = i;
-	    start_base = j + 1;
-	    if (hash_word14n ( seq, &start_base, seq_len, word_length, &uword)) {
-		for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
-		return 0;
-	    }
-
-	    for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
-	    hash_values[start_base] = uword;
-	    i = start_base;
-	    j = i + word_length - 1;
-
-	}
-	else {
-	    uword = ( uword <<2 ) | base_index;
-	    hash_values[i] = uword & 0x7ffffff;
-	}
-    }
-    return 0;
+    return hash_seq_n(seq, hash_values, seq_len, word_length);
 }
 
 /* ---------------------------------------------------------------------------
@@ -284,97 +277,13 @@ int hash_seq14n ( char *seq, int *hash_values, int seq_len, int word_length) {
 
 static int hash_word12n ( char *seq, int *start_base, int seq_len,
 			  int word_length, unsigned int *uword) {
-    
-    /* 	given a sequence seq, return the hash value for the first word 
-     *  after start_base that does not contain an unknown char. Tell 
-     *  the caller where this is. If we reach the end of the seq set
-     *  start_base and return -1.
-     */
-    
-    
-    register int i;
-    register int end_base,base_index,lstart_base;
-    register unsigned int luword;
-    
-    lstart_base = *start_base;
-    end_base = lstart_base + word_length;
-    if ( seq_len < end_base ) return -1;
-    
-    for (i=lstart_base,luword=0,end_base=lstart_base+word_length;i<end_base;i++) {
-
-	base_index = dna_hash8_lookup[(unsigned)seq[i]];
-	if ( 4 == base_index ) {
-
-	    /*	weve hit an unknown char, so lets start again */
-
-	    lstart_base = i + 1;
-	    end_base = lstart_base + word_length;
-	    if ( seq_len < end_base ) {
-		*start_base = lstart_base;
-		return -1;
-	    }
-	    luword = 0;
-	    i = lstart_base - 1;
-	}
-	else {
-	    luword = ( luword <<2 ) | base_index;
-	}
-    }
-    *start_base = lstart_base;
-    *uword = luword & 0xffffff;
-    return 0;
+    return hash_word_n(seq, start_base, seq_len, word_length, uword);
 }
 
 
-static int hash_seq12n ( char *seq, int *hash_values, int seq_len, int word_length) {
-
-    /* given a sequence seq, return an array of hash values
-       If we cannot find at least one word to hash on we return -1
-       otherwise we return 0.
-       */
-
-    register int i,j,k;
-    int start_base,prev_start_base,base_index;
-    unsigned int uword;
-
-    if ( seq_len < word_length ) return -1;
-
-    /*	Get the hash value for the first word that contains no unknowns */	
-    start_base = 0;
-    if (hash_word12n ( seq, &start_base, seq_len, word_length, &uword)) return -1;
-
-    for (i=0;i<start_base;i++) hash_values[i] = -1;
-
-    /*	Now do the rest of the sequence */
-
-    hash_values[start_base] = uword;
-    k = seq_len - word_length + 1;
-
-    for (i=start_base+1,j=start_base+word_length; i<k; i++,j++) {
-	base_index = dna_hash8_lookup[(unsigned)seq[j]];
-	if ( 4 == base_index ) {
-
-	    /*	weve hit an unknown char, so lets start again */
-
-	    prev_start_base = i;
-	    start_base = j + 1;
-	    if (hash_word12n ( seq, &start_base, seq_len, word_length, &uword)) {
-		for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
-		return 0;
-	    }
-
-	    for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
-	    hash_values[start_base] = uword;
-	    i = start_base;
-	    j = i + word_length - 1;
-
-	}
-	else {
-	    uword = ( uword <<2 ) | base_index;
-	    hash_values[i] = uword & 0xffffff;
-	}
-    }
-    return 0;
+static int hash_seq12n (char *seq, int *hash_values,
+			int seq_len, int word_length) {
+    return hash_seq_n(seq, hash_values, seq_len, word_length);
 }
 
 
@@ -384,98 +293,15 @@ static int hash_seq12n ( char *seq, int *hash_values, int seq_len, int word_leng
 
 int hash_word8n ( char *seq, int *start_base, int seq_len, int word_length,
 		unsigned short *uword) {
-    
-    /* 	given a sequence seq, return the hash value for the first word 
-     *  after start_base that does not contain an unknown char. Tell 
-     *  the caller where this is. If we reach the end of the seq set
-     *  start_base and return -1.
-     */
-    
-    
-    register int i;
-    register int end_base,base_index,lstart_base;
-    register int unsigned short luword;
-    
-    lstart_base = *start_base;
-    end_base = lstart_base + word_length;
-    if ( seq_len < end_base ) return -1;
-    
-    for (i=lstart_base,luword=0,end_base=lstart_base+word_length;i<end_base;i++) {
-
-	base_index = dna_hash8_lookup[(unsigned)seq[i]];
-	if ( 4 == base_index ) {
-
-	    /*	weve hit an unknown char, so lets start again */
-
-	    lstart_base = i + 1;
-	    end_base = lstart_base + word_length;
-	    if ( seq_len < end_base ) {
-		*start_base = lstart_base;
-		return -1;
-	    }
-	    luword = 0;
-	    i = lstart_base - 1;
-	}
-	else {
-	    luword = ( luword <<2 ) | base_index;
-	}
-    }
-    *start_base = lstart_base;
-    *uword = luword;
-    return 0;
+    unsigned int uiword = *uword;
+    int ret = hash_word_n(seq, start_base, seq_len, word_length, &uiword);
+    *uword = uiword & 0xffff;
+    return ret;
 }
 
 
 int hash_seq8n ( char *seq, int *hash_values, int seq_len, int word_length) {
-
-    /* given a sequence seq, return an array of hash values
-       If we cannot find at least one word to hash on we return -1
-       otherwise we return 0.
-       */
-
-    register int i,j,k;
-    int start_base,prev_start_base,base_index;
-    unsigned short uword;
-
-    if ( seq_len < word_length ) return -1;
-
-    /*	Get the hash value for the first word that contains no unknowns */	
-    start_base = 0;
-    if (hash_word8n ( seq, &start_base, seq_len, word_length, &uword)) return -1;
-
-    for (i=0;i<start_base;i++) hash_values[i] = -1;
-
-    /*	Now do the rest of the sequence */
-
-    hash_values[start_base] = uword;
-    k = seq_len - word_length + 1;
-
-    for (i=start_base+1,j=start_base+word_length; i<k; i++,j++) {
-
-	base_index = dna_hash8_lookup[(unsigned)seq[j]];
-	if ( 4 == base_index ) {
-
-	    /*	weve hit an unknown char, so lets start again */
-
-	    prev_start_base = i;
-	    start_base = j + 1;
-	    if (hash_word8n ( seq, &start_base, seq_len, word_length, &uword)) {
-		for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
-		return 0;
-	    }
-
-	    for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
-	    hash_values[start_base] = uword;
-	    i = start_base;
-	    j = i + word_length - 1;
-
-	}
-	else {
-	    uword = ( uword <<2 ) | base_index;
-	    hash_values[i] = uword;
-	}
-    }
-    return 0;
+    return hash_seq_n(seq, hash_values, seq_len, word_length);
 }
 
 /* ---------------------------------------------------------------------------
@@ -484,98 +310,15 @@ int hash_seq8n ( char *seq, int *hash_values, int seq_len, int word_length) {
 
 int hash_word4n ( char *seq, int *start_base, int seq_len, int word_length,
 		unsigned char *uword) {
-    
-    /* 	given a sequence seq, return the hash value for the first word 
-     *  after start_base that does not contain an unknown char. Tell 
-     *  the caller where this is. If we reach the end of the seq set
-     *  start_base and return -1.
-     */
-    
-    
-    register int i;
-    register int end_base,base_index,lstart_base;
-    register char unsigned luword;
-    
-    lstart_base = *start_base;
-    end_base = lstart_base + word_length;
-    if ( seq_len < end_base ) return -1;
-    
-    for (i=lstart_base,luword=0,end_base=lstart_base+word_length;i<end_base;i++) {
-
-	base_index = dna_hash8_lookup[(unsigned)seq[i]];
-	if ( 4 == base_index ) {
-
-	    /*	weve hit an unknown char, so lets start again */
-
-	    lstart_base = i + 1;
-	    end_base = lstart_base + word_length;
-	    if ( seq_len < end_base ) {
-		*start_base = lstart_base;
-		return -1;
-	    }
-	    luword = 0;
-	    i = lstart_base - 1;
-	}
-	else {
-	    luword = ( luword <<2 ) | base_index;
-	}
-    }
-    *start_base = lstart_base;
-    *uword = luword;
-    return 0;
+    unsigned int uiword = *uword;
+    int ret = hash_word_n(seq, start_base, seq_len, word_length, &uiword);
+    *uword = uiword & 0xff;
+    return ret;
 }
 
 
 int hash_seq4n ( char *seq, int *hash_values, int seq_len, int word_length) {
-
-    /* given a sequence seq, return an array of hash values
-       If we cannot find at least one word to hash on we return -1
-       otherwise we return 0.
-       */
-
-    register int i,j,k;
-    int start_base,prev_start_base,base_index;
-    unsigned char uword;
-
-    if ( seq_len < word_length ) return -1;
-
-    /*	Get the hash value for the first word that contains no unknowns */	
-    start_base = 0;
-    if (hash_word4n ( seq, &start_base, seq_len, word_length, &uword)) return -1;
-
-    for (i=0;i<start_base;i++) hash_values[i] = -1;
-
-    /*	Now do the rest of the sequence */
-
-    hash_values[start_base] = uword;
-    k = seq_len - word_length + 1;
-
-    for (i=start_base+1,j=start_base+word_length; i<k; i++,j++) {
-
-	base_index = dna_hash8_lookup[(unsigned)seq[j]];
-	if ( 4 == base_index ) {
-
-	    /*	weve hit an unknown char, so lets start again */
-
-	    prev_start_base = i;
-	    start_base = j + 1;
-	    if (hash_word4n ( seq, &start_base, seq_len, word_length, &uword)) {
-		for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
-		return 0;
-	    }
-
-	    for (i=prev_start_base;i<start_base;i++) hash_values[i] = -1;
-	    hash_values[start_base] = uword;
-	    i = start_base;
-	    j = i + word_length - 1;
-
-	}
-	else {
-	    uword = ( uword <<2 ) | base_index;
-	    hash_values[i] = uword;
-	}
-    }
-    return 0;
+    return hash_seq_n(seq, hash_values, seq_len, word_length);
 }
 
 /* ---------------------------------------------------------------------------
@@ -894,58 +637,13 @@ int best_intercept ( Hash *h, int *seq1_i, int *seq2_i ) {
 }
 
 int hash_seqn (Hash *h, int job) {
+    assert(job == 1 || job == 2);
+    assert(h->word_length >= 4 && h->word_length < 15);
     if ( job == 1 ) {
-	if (h->word_length == 14) {
-	    if ( hash_seq14n ( h->seq1, h->values1, 
-			    h->seq1_len, h->word_length ) != 0 ) {
-		return -1;
-	    }
-	} else if (h->word_length == 12) {
-	    if ( hash_seq12n ( h->seq1, h->values1, 
-			    h->seq1_len, h->word_length ) != 0 ) {
-		return -1;
-	    }
-	}  else if (h->word_length == 8 ) {
-	    if ( hash_seq8n ( h->seq1, h->values1, 
-			    h->seq1_len, h->word_length ) != 0 ) {
-		return -1;
-	    }
-	} else {
-	    if ( hash_seq4n ( h->seq1, h->values1, 
-			    h->seq1_len, h->word_length ) != 0 ) {
-		return -1;
-	    }
-	}
-
-	return 0;
+	return hash_seq_n(h->seq1, h->values1, h->seq1_len, h->word_length);
+    } else {
+	return hash_seq_n(h->seq2, h->values2, h->seq2_len, h->word_length);
     }
-    else if ( job == 2 ) {
-	if (h->word_length == 14) {
-	    if ( hash_seq14n ( h->seq2, h->values2, 
-			    h->seq2_len, h->word_length ) != 0 ) {
-		return -1;
-	    }
-	} else if (h->word_length == 12) {
-	    if ( hash_seq12n ( h->seq2, h->values2, 
-			    h->seq2_len, h->word_length ) != 0 ) {
-		return -1;
-	    }
-	} else if (h->word_length == 8 ) {
-	    if ( hash_seq8n ( h->seq2, h->values2, 
-			    h->seq2_len, h->word_length ) != 0 ) {
-		return -1;
-	    }
-	}
-	else {
-	    if ( hash_seq4n ( h->seq2, h->values2, 
-			    h->seq2_len, h->word_length ) != 0 ) {
-		return -1;
-	    }
-	}
-	return 0;
-    }
-
-    return -2;
 }
 
 
@@ -1762,7 +1460,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 
     /* when we enter seq_to_overlap from here the overlap score is not set */
     overlap_out->score = 0; /* assigned by seq_to_overlap */
-    if( i = seq_to_overlap(overlap_out,OLD_PAD_SYM,NEW_PAD_SYM)) {
+    if( 0 != seq_to_overlap(overlap_out,OLD_PAD_SYM,NEW_PAD_SYM)) {
 	return -1;
     }
     if ( params->job & RETURN_NEW_PADS ) {
@@ -1850,9 +1548,9 @@ static int sort_by_end_pos(const void *p1, const void *p2) {
     y2 = c2->pos_seq2;
     l2 = c2->length;
 
-    return (x1+y1+l1) - (x2+y2+l2);
+    return (x1+y1+l1+l1) - (x2+y2+l2+l2);
 }
-
+/* #define DEBUG_ALIGN_BLOCKS */
 /* Returns 1 on success, <= 0 on failure */
 int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     int i,j,k,gap_pen,diag_shift,best_score,best_prev,t,tt;
@@ -1866,7 +1564,7 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 
     //UpdateTextOutput();
 
-    /*
+#ifdef DEBUG_ALIGN_BLOCKS
     printf("=== STEP 0 === %d\n",h->matches);
     for (i=0;i<h->matches;i++) {
 	printf("i %d %d %d %d %d %d %d\n",i,
@@ -1877,7 +1575,8 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	       h->block_match[i].best_score,
 	       h->block_match[i].prev_block);
     }
-    */
+    fflush(stdout);
+#endif
 
     if ( h->matches < 1 ) return 0;
 
@@ -1896,11 +1595,6 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     }
 #endif
 
-    /* sort the blocks on distance from starts of sequences */
-    c1_len = h->seq1_len;
-    c2_len = h->seq2_len;
-    sort_blocks(h->block_match, h->matches);
-
     /* set each blocks score to its distance from the nearest edge
      * find the best score as this start score plus match length
      * and note the block number
@@ -1912,13 +1606,14 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
             best_score = t;
             best_prev = i;
         }
+
 	h->block_match[i].best_score = gap_pen;
 	h->block_match[i].prev_block = -1;
     }
 
     if (best_prev == -1) return 0; /* bail out if there is no good score */
 
-    /*
+#ifdef DEBUG_ALIGN_BLOCKS
     printf("=== STEP 1, best_score = %d,%d === %d\n",
 	   best_score, best_prev, h->matches);
     for (i=0;i<h->matches;i++) {
@@ -1930,20 +1625,12 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	       h->block_match[i].best_score,
 	       h->block_match[i].prev_block);
     }
-    */
+    fflush(stdout);
+#endif
 
-    gap_pen = -MIN(h->block_match[best_prev].pos_seq1,
-		   h->block_match[best_prev].pos_seq2);
     qsort(h->block_match, h->matches, sizeof(Block_Match), sort_by_end_pos);
-    best_score = INT_MIN;
-    for (i=0;i<h->matches;i++) {
-        if((t=h->block_match[i].length + gap_pen) > best_score) {
-	    best_score = t;
-	    best_prev = i;
-	}
-    }
 
-    /*
+#ifdef DEBUG_ALIGN_BLOCKS
     printf("=== STEP 1.5, best_score = %d,%d === %d\n",
 	   best_score, best_prev, h->matches);
     for (i=0;i<h->matches;i++) {
@@ -1955,15 +1642,19 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	       h->block_match[i].best_score,
 	       h->block_match[i].prev_block);
     }
-    */
+    fflush(stdout);
+#endif
 
     /* for each block look at all the previous ones to find its best
      * predecessor. This is given by: best_score + length - diag_shift
      * note the best score and block number as we proceed
      */
     for (i=1;i<h->matches;i++) {
+	/* k is a counter to short-cut long searches.  This may lead to
+	   sub-optimal routes being found, but in practice this rarely
+	   appears to happen for good matches */
 	k = 10;
-	for(j=i-1;j>-1 && k;j--) {
+	for(j=i-1; j>-1 && k; j--) {
 	    int ovr;
 
 	    /*
@@ -2028,19 +1719,12 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 		if ( t > h->block_match[i].best_score ) {
 		    h->block_match[i].best_score = t;
 		    h->block_match[i].prev_block = j;
-		    tt = t+h->block_match[i].length;
-
-		    /* printf("i %d j %d t %d tt %d\n",i,j,t,tt); */
-		    if (tt>best_score) {
-			best_score = tt;
-			best_prev = i;
-		    }
 		}
 	    }
 	}
     }
 
-    /*
+#ifdef DEBUG_ALIGN_BLOCKS
     printf("=== STEP 2 === %d, best_prev=%d\n",h->matches, best_prev);
     for (i=0;i<h->matches;i++) {
 	printf("i %d %d %d %d %d %d %d\n",i,
@@ -2051,8 +1735,24 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	       h->block_match[i].best_score,
 	       h->block_match[i].prev_block);
     }
-    */
+    fflush(stdout);
+#endif
 
+    /* Find which chain gives the best score to the edge */
+    best_score = INT_MIN;
+    for (i=0;i<h->matches;i++) {
+	Block_Match *m = &h->block_match[i];
+	gap_pen = -MIN(h->seq1_len - m->pos_seq1 - m->length,
+		       h->seq2_len - m->pos_seq2 - m->length);
+	if (h->block_match[i].best_score + gap_pen > best_score) {
+	    best_score = h->block_match[i].best_score + gap_pen;
+	    best_prev = i;
+	}
+    }
+#ifdef DEBUG_ALIGN_BLOCKS
+    printf("=== STEP 3 === %d, best_score = %d, best_prev=%d\n",
+	   h->matches, best_score, best_prev);
+#endif
     /* best_prev is now last block */
 
     /* shuffle the ordered blocks to the start of the array */
@@ -2092,7 +1792,7 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	}
     }
 
-    /*
+#ifdef DEBUG_ALIGN_BLOCKS
     printf("=== STEP 5 === %d, %d\n",h->matches, good_blocks);
     for (i=0;i<good_blocks;i++) {
 	printf("i %d %d %d %d %d %d %d\n",i,
@@ -2103,7 +1803,8 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	       h->block_match[i].best_score,
 	       h->block_match[i].prev_block);
     }
-    */
+    fflush(stdout);
+#endif
 
     /*
      * Clip back overlapping block elements, keeping the longest block intact
@@ -2156,7 +1857,7 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 
     } while (more_shuffling);
 
-    /*
+#ifdef DEBUG_ALIGN_BLOCKS
     printf("=== STEP 6 === %d, %d\n",h->matches, good_blocks);
     for (i=0;i<good_blocks;i++) {
 	printf("i %d %d %d %d %d %d %d\n",i,
@@ -2167,7 +1868,8 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	       h->block_match[i].best_score,
 	       h->block_match[i].prev_block);
     }
-    */
+    fflush(stdout);
+#endif
 
     if ( index_ptr ) xfree (index_ptr);
     h->matches = good_blocks;
@@ -2833,8 +2535,9 @@ int compare_b(Hash *h,
  * so we can then do alignments on each in turn.
  */
 int compare_b_bulk(Hash *h,
-		   ALIGN_PARAMS *params, OVERLAP *overlap, int cnum,
-		   Contig_parms *contig_list, int number_of_contigs,
+		   ALIGN_PARAMS *params, OVERLAP *overlap, int cnum2,
+		   Contig_parms *contig_list1, int number_of_contigs1,
+		   int ignore_after1,
 		   void (*add_func)(OVERLAP *overlap,
 				    int cnum1,
 				    int cnum2,
@@ -2890,9 +2593,10 @@ int compare_b_bulk(Hash *h,
 	for (j=0,pw1=h->last_word[word]; j<ncw; j++, pw1=h->values1[pw1]) {
 	    int bck;
 
-	    /* Remove matches to earlier and/or self contigs */
-	    if (pw1 <= contig_list[cnum].contig_end_offset)
-		continue;
+	    /* Remove matches to earlier and/or self contigs
+	    if (pw1 <= contig_list1[cnum2].contig_end_offset)
+	    continue; */
+	    if (pw1 > ignore_after1) continue;
 
 	    diag_pos = h->seq1_len - pw1 + pw2 - 1;
 
@@ -2963,8 +2667,8 @@ int compare_b_bulk(Hash *h,
 
     job_in = params->job;
     params->job = 3; /* force return of edit buffers */
-    pw2 = align_blocks_bulk ( h, params, overlap, cnum,
-			      contig_list, number_of_contigs,
+    pw2 = align_blocks_bulk ( h, params, overlap, cnum2,
+			      contig_list1, number_of_contigs1,
 			      add_func, add_data);
     params->job = job_in;
 

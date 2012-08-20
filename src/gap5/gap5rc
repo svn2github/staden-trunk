@@ -629,12 +629,10 @@ set_def HIDDEN.CONF.MINCONF.MAX		100
 set_def HIDDEN.CONF.MINCONF.VALUE	15
 
 #Find internal joins
-set_def FIJ.INFILE			$defs_c_in
-set_def FIJ.INFILE.WHICH.BUTTONS		{list file {{all contigs}}}
-set_def FIJ.SELTASK			$defs_seltask
-set_def FIJ.SELTASK.NAME		"Select task:"
-set_def FIJ.SELTASK.BUTTON.1		"Probe all against all"
-set_def FIJ.SELTASK.BUTTON.2		"Probe with single contig"
+set_def FIJ.INFILE1			$defs_c_in
+set_def FIJ.INFILE1.WHICH.NAME          "Compare contigs from"
+set_def FIJ.INFILE2			$defs_c_in
+set_def FIJ.INFILE2.WHICH.NAME          "With contigs from"
 
 set_def FIJ.MINOVERLAP.NAME		"Minimum overlap"
 set_def FIJ.MINOVERLAP.MIN		10

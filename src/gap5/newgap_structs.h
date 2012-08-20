@@ -160,7 +160,8 @@ typedef struct {
     int fast_mode;
     float filter_words;
     char *tag_list;
-    char *inlist;
+    char *inlist1;
+    char *inlist2;
 } fij_arg;
 
 typedef struct {

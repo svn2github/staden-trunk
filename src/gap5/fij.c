@@ -293,19 +293,105 @@ void fij_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
     }
 }
 
+static int cl_compare(const void *va, const void *vb) {
+    contig_list_t *a = (contig_list_t *) va;
+    contig_list_t *b = (contig_list_t *) vb;
+    if (a->contig < b->contig) return -1;
+    if (a->contig > b->contig) return  1;
+    return 0;
+}
+
+static Contig_parms * fij_get_contig_list(GapIO *io,
+					  int num1, contig_list_t *contigs1,
+					  int num2, contig_list_t *contigs2,
+					  int *num_contigs_out,
+					  int *list1end_out,
+					  int *list2start_out) {
+    contig_list_t *combined;
+    int i1, i2, num_shared, o1, o2, os;
+    tg_rec last_c = 0;
+    int database_size;
+    Contig_parms *contig_list;
+
+    qsort(contigs1, num1, sizeof(contig_list_t), cl_compare);
+    qsort(contigs2, num2, sizeof(contig_list_t), cl_compare);
+
+    /* Ensure contigs1 and contigs2 contain no duplicates */
+    for (i1 = o1 = 0; i1 < num1; i1++) {
+	if (contigs1[i1].contig == last_c) continue;
+	if (o1 != i1) contigs1[o1] = contigs1[i1];
+	last_c = contigs1[o1++].contig;
+    }
+    num1 = o1;
+
+    for (i2 = o2 = 0; i2 < num2; i2++) {
+	if (contigs2[i2].contig == last_c) continue;
+	if (o2 != i2) contigs2[o2] = contigs2[i2];
+	last_c = contigs2[o2++].contig;
+    }
+    num2 = o2;
+
+    /* Count number of contigs in both contigs1 and contigs2 */
+    for (i1 = i2 = num_shared = 0; i1 < num1 && i2 < num2; ) {
+	if (contigs1[i1].contig == contigs2[i2].contig) {
+	    num_shared++;
+	    i1++;
+	    i2++;
+	} else if (contigs1[i1].contig < contigs2[i2].contig) {
+	    i1++;
+	} else {
+	    i2++;
+	}
+    }
+
+    /* Sort contigs into combined array, in order:
+     * contigs only in contigs1
+     * contigs in both contigs1 and contigs2
+     * contigs only in contigs2
+     */
+    combined = xmalloc(sizeof(contig_list_t) * (num1 + num2 - num_shared));
+    if (NULL == combined) return NULL;
+
+    o1 = 0;
+    os = num1 - num_shared;
+    o2 = num1;
+    for (i1 = i2 = 0; i1 < num1 && i2 < num2; ) {
+	if (contigs1[i1].contig == contigs2[i2].contig) {
+	    combined[os++] = contigs1[i1++];
+	    i2++;
+	} else if (contigs1[i1].contig < contigs2[i2].contig) {
+	    combined[o1++] = contigs1[i1++];
+	} else {
+	    combined[o2++] = contigs2[i2++];
+	}
+    }
+    while (i1 < num1) { combined[o1++] = contigs1[i1++]; }
+    while (i2 < num2) { combined[o2++] = contigs2[i2++]; }
+    
+    *num_contigs_out = num1 + num2 - num_shared;
+    *list1end_out = num1;
+    *list2start_out = num1 - num_shared;
+
+    /* Make a contig list */
+    database_size = io_dbsize(io);
+    contig_list = get_contig_list(database_size, io, *num_contigs_out,
+				  combined);
+    xfree(combined);
+    
+    return contig_list;
+}
+
 /*
  * Main find internal joins algorithm entry.
  *
- * Mode should be one of COMPARE_ALL (0) or COMPARE_SINGLE (1)
- * When mode is COMPARE_SINGLE, the first element of contig_array should
- * be the single contig to compare (against all other elements in
- * contig_array). Otherwise, all elements of contig_array are compared
- * against all other elements.
+ * All contigs in contig_array1 are compared against all contigs in
+ * contig_array2.  Pairs of contigs that occur in both arrays will only
+ * be compared once, and a contig will never be compared to itself.
+ * 
  */
 int
 fij(GapIO *io,
     int mask,
-    int compare_mode, /* could be sorted out to save work below*/
     int min_overlap,
     double max_percent_mismatch,
     int word_len,
@@ -320,15 +406,17 @@ fij(GapIO *io,
     int max_alignment,
     int fast_mode,
     double filter_words,
-    int num_contigs,
-    contig_list_t *contig_array)
+    int num_contigs1,
+    contig_list_t *contig_array1,
+    int num_contigs2,
+    contig_list_t *contig_array2)
 {
     char *consensus;
     mobj_fij *FIJMatch;
     int i, id;
     char *val;
     Contig_parms *contig_list;
-    int database_size, number_of_contigs;
+    int number_of_contigs, list1end, list2start;
     int task_mask;
     int consensus_length, max_read_length;
     static char buf[80];
@@ -368,10 +456,12 @@ fij(GapIO *io,
 	xfree(FIJMatch);
 	return -1;
     }
-    database_size = io_dbsize(io);
-    number_of_contigs = num_contigs;
-    if ( ! (contig_list = get_contig_list ( database_size, io,
-			   number_of_contigs, contig_array ))) {
+
+    contig_list = fij_get_contig_list(io, num_contigs1, contig_array1,
+				      num_contigs2, contig_array2,
+				      &number_of_contigs,
+				      &list1end, &list2start);
+    if (NULL == contig_list) {
 	xfree(FIJMatch->match);
 	xfree(FIJMatch);
 	return -5;
@@ -399,12 +489,13 @@ fij(GapIO *io,
 	return -1;
     }
 
-    if ( do_it_fij ( consensus, consensus_length,
-		     word_len,
-		     min_overlap, max_percent_mismatch, compare_mode,
-		     band, gap_open, gap_extend, max_prob, min_match,
-		     max_alignment, fast_mode, filter_words,
-		     contig_list, number_of_contigs ) ) {
+    if (do_it_fij(consensus, consensus_length, word_len,
+		  min_overlap, max_percent_mismatch, COMPARE_ALL,
+		  band, gap_open, gap_extend, max_prob, min_match,
+		  max_alignment, fast_mode, filter_words,
+		  contig_list, list1end,
+		  contig_list + list2start, number_of_contigs - list2start,
+		  list1end - list2start)) {
 
 	xfree(FIJMatch->match);
 	xfree(FIJMatch);

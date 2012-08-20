@@ -97,6 +97,7 @@ int best_intercept ( Hash *h, int *seq1_i, int *seq2_i );
 int compare_b_bulk(Hash *h,
 		   ALIGN_PARAMS *params, OVERLAP *overlap, int cnum,
 		   Contig_parms *contig_list, int number_of_contigs,
+		   int ignore_after1,
 		   void (*add_func)(OVERLAP *overlap,
 				    int cnum1,
 				    int cnum2,
