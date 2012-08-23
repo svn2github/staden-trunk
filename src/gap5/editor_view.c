@@ -2785,14 +2785,14 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
     char nline[MAX_NAME_WIDTH];
     //    int exact = (name && xx->ed->stack_mode) || !name;
 
-    if (!xx->r)
-	return -1;
-
     assert(rec);
     assert(pos);
 
     *rec = -1;
     *pos =  0;
+
+    if (!xx->r)
+	return -1;
 
     /* Special case - the reserve row numbers */
     if (row == xx->y_cons) {
