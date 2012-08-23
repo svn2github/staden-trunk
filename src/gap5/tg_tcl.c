@@ -1311,6 +1311,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	ret = bin_invalidate_consensus(tc->io, tc->contig->rec, start, end);
 	vTcl_SetResult(interp, "%d", ret);
+	break;
     }
 
     case ADD_LINK: {

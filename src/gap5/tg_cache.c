@@ -2483,6 +2483,8 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 		memcpy(ArrayBase(contig_link_t, c->link),
 		       ArrayBase(contig_link_t, oc->link),
 		       ArrayMax(c->link) * sizeof(contig_link_t));
+	    } else {
+		c->link = NULL; /* Just incase! */
 	    }
 	    break;
 	}
