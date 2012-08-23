@@ -27,6 +27,11 @@ int io_clength(GapIO *io, tg_rec cnum) {
     contig_t *c;
 
     c = (contig_t *)cache_search(io, GT_Contig, cnum);
+    if (!c) {
+	verror(ERR_FATAL, "Failed to load contig #%"PRIrec" in io_clength()",
+	       cnum);
+	return 0;
+    }
     return contig_get_end(&c) - contig_get_start(&c) + 1;
 }
 
