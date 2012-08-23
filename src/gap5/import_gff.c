@@ -305,10 +305,12 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 
     /* Find seqid rec */
     if ((rec = contig_index_query(io, gff->seqid)) >= 0) {
-	c = cache_search(io, GT_Contig, rec);
 	rec_type = GT_Contig;
 
 	if (!padded) {
+	    c = cache_search(io, GT_Contig, rec);
+	    cache_incr(io, c);
+
 	    /*
 	     * Compute mapping table for this contig - not so efficient, so
 	     * we cache it. Ideally this should be part of the bin
@@ -328,8 +330,10 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 		if (cached_map)
 		    xfree(cached_map);
 		cached_map = xmalloc((cend - cstart + 2) * sizeof(int));
-		if (!con || !cached_map)
+		if (!con || !cached_map) {
+		    cache_decr(io, c);
 		    return -1;
+		}
 
 		calculate_consensus_simple(io, c->rec, cstart, cend,
 					   con, NULL);
@@ -362,6 +366,8 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 
 	    if (r.end < r.start)
 		r.end = r.start;
+
+	    cache_decr(io, c);
 	}
 
 	seq_bin = 0;
