@@ -270,7 +270,7 @@ int hash_word14n ( char *seq, int *start_base, int seq_len, int word_length,
 int hash_seq14n ( char *seq, int *hash_values, int seq_len, int word_length) {
     return hash_seq_n(seq, hash_values, seq_len, word_length);
 }
-
+#if 0 /* No longer used */
 /* ---------------------------------------------------------------------------
  * WORD SIZE = 12
  */
@@ -285,7 +285,7 @@ static int hash_seq12n (char *seq, int *hash_values,
 			int seq_len, int word_length) {
     return hash_seq_n(seq, hash_values, seq_len, word_length);
 }
-
+#endif
 
 /* ---------------------------------------------------------------------------
  * WORD SIZE = 8
@@ -747,6 +747,21 @@ int block_to_edit_pair ( EDIT_PAIR *edit_pair, int length ) {
     return 0;
 }
 
+static int gap_to_edit_pair(EDIT_PAIR *edit_pair, int seq1_len, int seq2_len) {
+    assert(0 == seq1_len || 0 == seq2_len);
+    if (0 == seq1_len && 0 == seq2_len) return 0;
+    if (edit_pair->next1 >= edit_pair->size
+	|| edit_pair->next2 >= edit_pair->size) return -1;
+    if (0 == seq1_len) {
+	edit_pair->S1[edit_pair->next1++] = -seq2_len;
+	edit_pair->S2[edit_pair->next2++] =  seq2_len;
+    } else {
+	edit_pair->S1[edit_pair->next1++] =  seq1_len;
+	edit_pair->S2[edit_pair->next2++] = -seq1_len;	
+    }
+    return 0;
+}
+
 int align_bit ( ALIGN_PARAMS *params, OVERLAP *overlap, EDIT_PAIR *edit_pair) {
 
     int l1, l2;
@@ -832,7 +847,7 @@ EDIT_PAIR *create_edit_pair(int size) {
  */
 int set_band_blocks(int seq1_len, int seq2_len) {
     return MIN(9990000.0/MIN(seq1_len,seq2_len),
-    	       MAX(10,(MIN(seq1_len,seq2_len)*0.1)));
+	       MAX(10,(MIN(seq1_len,seq2_len)*0.1)));
 
     return MIN(9990000.0/MIN(seq1_len,seq2_len),
     	       MAX(30,(MIN(seq1_len,seq2_len)*0.35)));
@@ -1189,6 +1204,7 @@ void overlap_mismatch(Hash *h, EDIT_PAIR *edit_pair, OVERLAP *overlap,
     assert(overlap->length == overlap->right - overlap->left + 1);
 }
 
+/* #define DEBUG_ALIGN_WRAP */
 int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     int edge_mode = params->edge_mode;
     int i, s1, s2;
@@ -1309,6 +1325,14 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	destroy_overlap(overlap);
 	return -1;
     }
+#ifdef DEBUG_ALIGN_WRAP
+    printf("Alignment to start (%d,%d to %d,%d)\n", s1, s2,
+	   overlap->seq1_len, overlap->seq2_len);
+    print_alignment(h->seq1, h->seq2, h->seq1_len, h->seq2_len, 
+		    edit_pair->S1, edit_pair->S2,
+		    edit_pair->next1, edit_pair->next2, 100, stdout);
+    fflush(stdout);
+#endif
     free_overlap(overlap);
 
     /*printf("if required, done up to block 0\n");*/
@@ -1329,17 +1353,52 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	overlap->seq1 = &(h->seq1[s1]);
 	overlap->seq2 = &(h->seq2[s2]);
 
-	if ( MAX(overlap->seq1_len,overlap->seq2_len) > 0 ) {
+#ifdef DEBUG_ALIGN_WRAP
+	overlap->S1 = edit_pair->S1 + edit_pair->next1;
+	overlap->S2 = edit_pair->S2 + edit_pair->next2;
+	overlap->s1_len = edit_pair->next1;
+	overlap->s2_len = edit_pair->next2;
+#endif
 
+	if (overlap->seq1_len == 1 && overlap->seq2_len == 1) {
+	    /* Common trivial case */
+	    if (block_to_edit_pair(edit_pair, 1)) {
+		verror(ERR_WARN, "align_wrap", "failed in block_to_edit_pair");
+		destroy_edit_pair(edit_pair);
+		destroy_overlap(overlap);
+		return -1;
+	    }
+	} else if (overlap->seq1_len == 0 || overlap->seq2_len == 0) {
+	    /* gap against something */
+	    if (gap_to_edit_pair(edit_pair,
+				 overlap->seq1_len, overlap->seq2_len)) {
+		verror(ERR_WARN, "align_wrap", "failed in gap_to_edit_pair");
+		destroy_edit_pair(edit_pair);
+		destroy_overlap(overlap);
+		return -1;
+	    }
+	} else {
+	    /* Have to do some aligning */
 	    if (band_in) {
+		/* If seq1_len != seq2_len, we need to make the band wide
+		   enough to ensure it covers all of the bases in the longer
+		   sequence.  The best position for the band is also slightly
+		   off-centre so we shift it over a bit after calling
+		   set_align_params. */
+		int e = (abs(overlap->seq1_len - overlap->seq2_len) + 1) / 2;
+		int dirn = overlap->seq1_len > overlap->seq2_len ? 1 : -1;
 		if (h->fast_mode)
 		    band = set_band_blocks_fast(overlap->seq1_len,
-						overlap->seq2_len);
+						overlap->seq2_len) + e;
 		else
 		    band = set_band_blocks(overlap->seq1_len,
-					   overlap->seq2_len);
+					   overlap->seq2_len) + e;
+		set_align_params (params, band, 0,0,0,0,0,0,0,0,1);
+		params->band_left  += e * dirn;
+		params->band_right += e * dirn;
+	    } else {
+		set_align_params (params, band, 0,0,0,0,0,0,0,0,1);
 	    }
-	    set_align_params (params, band, 0,0,0,0,0,0,0,0,1);
 
 	    if (align_bit ( params, overlap, edit_pair)) {
 		verror(ERR_WARN, "align_wrap", "failed in align_bit");
@@ -1347,6 +1406,15 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 		destroy_overlap(overlap);
 		return -1;
 	    }
+#ifdef DEBUG_ALIGN_WRAP
+	    overlap->s1_len = edit_pair->next1 - overlap->s1_len;
+	    overlap->s2_len = edit_pair->next2 - overlap->s2_len;
+	    printf("Overlap %d,%d to %d,%d\n", s1, s2,
+	    	   s1 + overlap->seq1_len, s2 + overlap->seq2_len);
+	    print_overlap(overlap, stdout);
+	    overlap->S1 = overlap->S2 = NULL;
+	    fflush(stdout);
+#endif
 	    free_overlap(overlap);
 
 	}
@@ -1365,7 +1433,14 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     overlap->seq2_len = h->seq2_len - s2;
     overlap->seq1 = &(h->seq1[s1]);
     overlap->seq2 = &(h->seq2[s2]);
-    
+
+#ifdef DEBUG_ALIGN_WRAP
+    overlap->S1 = edit_pair->S1 + edit_pair->next1;
+    overlap->S2 = edit_pair->S2 + edit_pair->next2;
+    overlap->s1_len = edit_pair->next1;
+    overlap->s2_len = edit_pair->next2;
+#endif
+
     if (band_in) {
 	if (h->fast_mode)
 	    band = set_band_blocks_fast(overlap->seq1_len,overlap->seq2_len);
@@ -1376,12 +1451,20 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     params->edge_mode = (edge_mode & ~EDGE_GAPS_ZERO) | EDGE_GAPS_COUNT;
     params->edge_mode &= ~FULL_LENGTH_TRACE;
     params->edge_mode |= BEST_EDGE_TRACE;
+
     if (align_bit ( params, overlap, edit_pair)) {
 	verror(ERR_WARN, "align_wrap", "failed in align_bit");
 	destroy_edit_pair(edit_pair);
 	destroy_overlap(overlap);
 	return -1;
     }
+#ifdef DEBUG_ALIGN_WRAP
+    overlap->s1_len = edit_pair->next1 - overlap->s1_len;
+    overlap->s2_len = edit_pair->next2 - overlap->s2_len;
+    print_overlap(overlap, stdout);
+    overlap->S1 = overlap->S2 = NULL;
+    fflush(stdout);
+#endif
     destroy_overlap(overlap);
 
     /* Compute overlap percentage mismatch without allocating huge buffers */
@@ -1482,7 +1565,7 @@ int central_diagonal ( Hash *h ) {
     return j/h->matches;
 }
 
-static int c1_len, c2_len;
+// static int c1_len, c2_len;
 
 static int sort_func(const void *p1, const void *p2) {
     int x1,y1,x2,y2;
@@ -1550,9 +1633,20 @@ static int sort_by_end_pos(const void *p1, const void *p2) {
 
     return (x1+y1+l1+l1) - (x2+y2+l2+l2);
 }
+
+static int grow_block_matches(Hash *h) {
+    int maxmat = h->max_matches * 2;
+    Block_Match *bm = (Block_Match *) xrealloc(h->block_match,
+					       sizeof(Block_Match) * maxmat);
+    if (NULL == bm) return -1;
+    h->max_matches = maxmat;
+    h->block_match = bm;
+    return 0;
+}
+
 /* #define DEBUG_ALIGN_BLOCKS */
 /* Returns 1 on success, <= 0 on failure */
-int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
+int align_blocks (Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap) {
     int i,j,k,gap_pen,diag_shift,best_score,best_prev,t,tt;
     int good_blocks;
     int *index_ptr = NULL;
@@ -1891,19 +1985,22 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     overlap->seq1_len = h->seq1_len;
     overlap->seq2_len = h->seq2_len;
 
-    /* FAST MODE; Check for diagonals too far apart */
+    /* Give up if we don't have enough block_match coverage */
+    if ((h->fast_mode && best_percent <= 30.0) || best_percent <= 10.0) {
+	return 0;
+    }
+
+    /* Extra checks for fast mode */
     if (h->fast_mode) {
+	int b_st1, b_en1, b_st2, b_en2;
+	/* Check for diagonals too far apart */
 	for (i = 0; i < h->matches-1; i++) {
 	    if (ABS(h->block_match[i].diag - h->block_match[i+1].diag) > 50)
 		return 0;
 	}
-    }
 
+    /* No more than MAX_G bp without a hash match */
 #define MAX_G 1000
-    /* FAST MODE; no more than MAX_G bp without a hash match */
-    if (h->fast_mode) {
-	int b_st1, b_en1, b_st2, b_en2;
-
 	for (i = 0; i < h->matches-1; i++) {
 	    b_st1 = h->block_match[i+1].pos_seq1;
 	    b_en1 = h->block_match[i].pos_seq1 + h->block_match[i].length;
@@ -1930,16 +2027,10 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	    return 0;
     }
 
+    /* Fill in the remaining gaps with banded alignments */ 
+    if (align_wrap(h, params, overlap) < 0) return -1;
 
-    /* FAST MODE */
-    if ((h->fast_mode && best_percent > 30.0) || best_percent > 10.0) {
-	if (align_wrap (h,params,overlap) < 0)
-	    return -1;
-
-	return 1;
-    }
-
-    return 0;
+    return 1;
 }
 
 int align_blocks_bulk(Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap,
@@ -2499,13 +2590,7 @@ int compare_b(Hash *h,
 					     &bck)) >= h->min_match) {
 		h->matches++;
 		if(h->max_matches == h->matches) {
-		    h->max_matches *= 2;
-		    h->block_match = (Block_Match *)
-			xrealloc(h->block_match,
-				 sizeof(Block_Match) *
-				 h->max_matches);
-		    if (NULL == h->block_match)
-			return -5;
+		    if (0 != grow_block_matches(h)) return -5;
 		}
 
 		h->block_match[h->matches].pos_seq1 = pw1-bck;
@@ -2637,13 +2722,7 @@ int compare_b_bulk(Hash *h,
 	    //if (match_size >= h->min_match || ncw < 3) {
 		h->matches++;
 		if(h->max_matches == h->matches) {
-		    h->max_matches *= 2;
-		    h->block_match = (Block_Match *)
-			xrealloc(h->block_match,
-				 sizeof(Block_Match) *
-				 h->max_matches);
-		    if (NULL == h->block_match)
-			return -5;
+		    if (0 != grow_block_matches(h)) return -5;
 		}
 
 		h->block_match[h->matches].pos_seq1 = pw1-bck;
