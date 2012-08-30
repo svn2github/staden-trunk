@@ -379,6 +379,7 @@ int main(int argc, char **argv) {
 
     /* Force final update of cached bin nseq */
     bin_add_range(io, NULL, NULL, NULL, NULL, -1);
+    cache_flush(io);
 
     if (err) {
 	fprintf(stderr, "\nERROR: Failed to parse input data file - exiting\n");
