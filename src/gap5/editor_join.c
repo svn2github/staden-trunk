@@ -929,9 +929,9 @@ static int recursive_grow_bins(GapIO *io, bin_index_t *bin,
 
     if (sibling) {
 	if (sibling->pos < bin->pos) {
-	    free_start = sibling->pos + sibling->size;
+	    free_start = MIN(bin->pos, sibling->pos + sibling->size);
 	} else {
-	    free_end = sibling->pos;
+	    free_end = MAX(sibling->pos, bin->pos + bin->size);
 	}
     } else {
 	if (bin->pos < parent->size - (bin->pos + bin->size)) {
@@ -1378,6 +1378,7 @@ static int bin_move_seqs(GapIO *io, HacheTable *seq_bins, bin_index_t *bin,
 	    if (src_comp ^ dest_comp) {
 		seq->len = -seq->len;
 		seq->flags ^= SEQ_COMPLEMENTED;
+		r_new->flags ^= GRANGE_FLAG_COMP1;
 	    }
 	    (*seqs_moved_out)++;
 	    break;
