@@ -941,6 +941,7 @@ static int recursive_grow_bins(GapIO *io, bin_index_t *bin,
 	}
     }
     new_size = free_end - free_start;
+    assert(new_size >= bin->size);
     shift = comp ? free_end - bin->pos - bin->size : bin->pos - free_start;
 
     gio_debug(io, 1, "Growing bins for %"PRIrec" %d..%d to %d..%d "
@@ -1164,6 +1165,7 @@ static int extend_root_bin(GapIO *io, contig_t *c, int start, int end) {
     new_root->child[0] = old_root->rec;
     new_root->pos      = MIN(start, bin_start);
     new_root->size     = MAX(end, bin_end) - new_root->pos;
+    assert(new_root->size >= old_root->size);
     new_root->flags   |= BIN_BIN_UPDATED;
 
     old_root->parent      = new_root->rec;
