@@ -123,10 +123,10 @@ proc test_deletions {io {cycle 0}} {
     set s [$c get_visible_start]
     set e [$c get_visible_end]
     set end 100
-    #if {$cycle == 40} {set end 21}
+    #if {$cycle == 21} {set end 72}
     for {set i 0} {$i < $end && $l > 10} {incr i; incr l -1} {
 	set p [expr {int(rand()*$l)+$s}]
-	puts "   ///Del $p/$s..$e"
+	#puts "   ///Del $p/$s..$e"
 	$c delete_base $p
 	#$io flush
 	#if {[$io check 0 1] != 0} {exit}
@@ -170,6 +170,27 @@ proc test_move_seq {io} {
 	$seq delete
     }
 
+    $c delete
+}
+
+proc test_contig_shift {io cycle} {
+    set crec [random_contig $io]
+    puts "/// Shifting parts of contig $crec ///"
+
+    set c [$io get_contig $crec]
+    set l [$c get_visible_length]
+    set s [$c get_visible_start]
+    set e [$c get_visible_end]
+    set end 100
+    #if {$cycle == 3} {set end 100}
+    for {set i 0} {$i < $end} {incr i; incr l $dir} {
+	set dir [expr {rand()>0.5?1:-1}]
+	set p [expr {int(rand()*$l)+$s}]
+	puts "   ///Shift $p/$s..$e $dir"
+	$c shift_base $p $dir
+	#$io flush
+	#if {[$io check 0 2] != 0} exit
+    }
     $c delete
 }
 
@@ -262,7 +283,7 @@ proc test_tag_deletion {io} {
 
 proc test_clipping {io} {
     # Skip for now
-    return;
+    #return;
 
     set crec [random_contig $io]
     puts "/// Adjusting seq clips in contig $crec ///"
@@ -412,8 +433,9 @@ if {[llength $argv] > 2} {
 
 # Perform N edits and keep checking.
 for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
-    set r [expr int(rand()*11)]
-    #if {$r != 3} continue
+    set r [expr int(rand()*12)]
+
+    if {$r != 3 && $r != 4 && $r != 2 && $r != 1 && $r != 11} {incr cycle -1; continue}
 
     puts "///$cycle r=$r"
 
@@ -423,14 +445,15 @@ for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
 	0 { test_complement $io }
 	1 { test_break $io }
 	2 { test_join $io }
-	#3 { test_insertions $io $cycle }
-	#4 { test_deletions $io $cycle }
+	3 { test_insertions $io $cycle }
+	4 { test_deletions $io $cycle }
 	5 { test_tag_creation $io }
 	6 { test_tag_deletion $io }
-	#7 { test_clipping $io }
+	7 { test_clipping $io }
 	8 { test_consensus $io }
 	9 { test_disassembly $io }
-	#10 { test_move_seq $io }
+	10 { test_move_seq $io }
+	11 { test_contig_shift $io $cycle }
     }
 
     $io flush
