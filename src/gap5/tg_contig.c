@@ -339,7 +339,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     }
 
     /* Adjust the bin dimensions */
-    if (ins || base) {
+    {
 	bin->size++;
 	ins = 1;
 	if (bin->rng && ArrayMax(bin->rng)) {
@@ -1042,7 +1042,7 @@ static int contig_delete_base2(GapIO *io, tg_rec crec, tg_rec bnum,
     }
     
     /* Adjust the bin dimensions */
-    if (ins || base) {
+    {
 	if (bin->size != max_r+1) {
 	    if (--bin->size <= 0) {
 		fprintf(stderr, "Delete bin bin-%"PRIrec"\n", bin->rec);
