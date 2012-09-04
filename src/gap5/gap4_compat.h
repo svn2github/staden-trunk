@@ -1,6 +1,6 @@
 #include "tg_gio.h"
 
-#define DB_NAMELEN 40
+#define DB_NAMELEN 1024
 #define GGN_NAME 1
 #define GGN_ID 0
 
