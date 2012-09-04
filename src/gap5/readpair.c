@@ -51,7 +51,7 @@ typedef struct {
  */
 void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 			mobj_template *template) {
-    static char buf[80];
+    static char buf[200];
     obj_cs *cs;
     int cs_id;
 
@@ -161,11 +161,11 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 	break;
 
     case OBJ_GET_BRIEF:
-	sprintf(buf,
-		"Read pair: %c#%"PRIrec"@%d (mq %d) with %c#%"PRIrec"@%d (mq %d), len %d",
-		obj->c1 > 0 ? '+' : '-', obj->read1, obj->pos1, obj->mq1,
-		obj->c2 > 0 ? '+' : '-', obj->read2, obj->pos2, obj->mq2,
-		obj->length);
+	snprintf(buf, sizeof(buf),
+		 "Read pair: %c#%"PRIrec"@%d (mq %d) with %c#%"PRIrec"@%d (mq %d), len %d",
+		 obj->c1 > 0 ? '+' : '-', obj->read1, obj->pos1, obj->mq1,
+		 obj->c2 > 0 ? '+' : '-', obj->read2, obj->pos2, obj->mq2,
+		 obj->length);
 	return buf;
     }
 
