@@ -66,4 +66,13 @@ int scaffold_from_agp(GapIO *io, char *fn);
  */
 int scaffold_to_agp(GapIO *io, char *fn);
 
+/*
+ * Complements a scaffold; both complementing each contig within it and
+ * reversing the order of contigs in the scaffold.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int complement_scaffold(GapIO *io, tg_rec srec);
+
 #endif /* _TG_SCAFFOLD_H_ */
