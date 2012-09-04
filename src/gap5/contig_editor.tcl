@@ -3527,7 +3527,7 @@ proc editor_autoscroll_cancel {e} {
 #-----------------------------------------------------------------------------
 # Selecting and deselecting reads
 
-proc editor_select_dialog {ed sel} {
+proc editor_select_dialog {ed sel pair} {
     global gap5_defs
     global $ed
     global editor_right_click
@@ -3535,7 +3535,7 @@ proc editor_select_dialog {ed sel} {
     set pos [lindex [$ed get_cursor absolute] 2]
 
     if {$editor_right_click} {
-	return [editor_select_reads $ed $sel 0 $pos $pos]
+	return [editor_select_reads $ed $sel 0 $pos $pos $pair]
     }
 
     set t $ed.select_dialog
@@ -3561,20 +3561,27 @@ proc editor_select_dialog {ed sel} {
 	-bd 0 \
 	-default 0
 
+    yes_no $t.pair \
+	-title "Include mate-pairs too" \
+	-orient horizontal \
+	-bd 0 \
+	-default $pair
+
     okcancelhelp $t.ok \
 	-bd 2 -relief groove \
 	-ok_command "editor_select_reads $ed $sel    \
                          \[yes_no_get $t.contained\] \
                          \[entrybox_get $t.start\]   \
-                         \[entrybox_get $t.end\];    \
+                         \[entrybox_get $t.end\]     \
+                         \[yes_no_get $t.pair\];     \
                          destroy $t" \
 	-cancel_command "destroy $t" \
 	-help_command "show_help gap5 {Editor-Select Seq}"
 
-    pack $t.start $t.end $t.contained $t.ok -side top -fill both
+    pack $t.start $t.end $t.contained $t.pair $t.ok -side top -fill both
 }
 
-proc editor_select_reads {ed sel contained start end} {
+proc editor_select_reads {ed sel contained start end pair} {
     SetBusy
 
     global $ed
@@ -3614,7 +3621,7 @@ proc editor_select_reads {ed sel contained start end} {
 	    InitListTrace $opt(OutputList)
 	}
 
-	UpdateReadingListItem $opt(OutputList) $rlist $sel
+	UpdateReadingListItem $opt(OutputList) $rlist $sel $pair
     }
 
     ClearBusy
@@ -4390,6 +4397,93 @@ proc editor_return {w} {
     set ${w}(Status) "Padded position $pos, unpadded $upos"
 }
 
+proc ednames_select {W x y pair} {
+    puts [info level [info level]]
+    upvar #0 [winfo toplevel $W] opt
+
+    global EdNames_select EdNames_select_last
+    global EdNames_select_x EdNames_select_ctg
+    set EdNames_select 1
+
+    set where [$W get_number @$x @$y]
+    if {$where == ""} return
+
+    if {![ListExists2 $opt(OutputList)]} {
+	ListCreate2 $opt(OutputList) {} SEQID
+	InitListTrace $opt(OutputList)
+    }
+
+    foreach {type rec pos} $where break
+#    if {$type != 18} return
+
+    set EdNames_select [UpdateReadingListItem $opt(OutputList) [list "\#$rec"] -1 $pair]
+    editor_name_select $W [$W get_number @$x @$y]
+
+    if {$type == 18} {
+	set EdNames_select_last $rec
+    } else {
+	set EdNames_select_last -1
+    }
+
+    set ed [name2ed $W]
+    set EdNames_select_ctg [$ed contig_rec]
+    set EdNames_select_x   [$ed xview]
+}
+
+proc ednames_select_to {W x y pair} {
+    upvar #0 [winfo toplevel $W] opt
+
+    global EdNames_select EdNames_select_last
+    global EdNames_select_x EdNames_select_ctg
+
+    if {![info exists EdNames_select_last]} return
+    if {$EdNames_select_last == -1} return
+
+    # Disallow scrolling or attempts to select between two editors
+    set ed [name2ed $W]
+    if {$EdNames_select_ctg != [$ed contig_rec]} {bell; return}
+    if {$EdNames_select_x   != [$ed xview]}      {bell; return}
+
+    set where [$W get_number @$x @$y]
+    if {$where == ""} return
+
+    foreach {type rec pos} $where break
+    if {$type != 18} return
+
+    set recs [$W recs_between $EdNames_select_last $rec]
+    lappend recs $rec; #include "to" reading
+
+    if {![ListExists2 $opt(OutputList)]} {
+	ListCreate2 $opt(OutputList) {} SEQID
+	InitListTrace $opt(OutputList)
+    }
+
+    set reads ""
+    foreach r $recs { lappend reads "#$r" }
+    UpdateReadingListItem $opt(OutputList) $reads $EdNames_select $pair
+}
+
+proc ednames_select_drag {W x y pair} {
+    upvar #0 [winfo toplevel $W] opt
+
+    set where [$W get_number @$x @$y]
+    if {$where == ""} return
+
+    foreach {type rec pos} $where break
+    if {$type != 18} return
+
+    if {![ListExists2 $opt(OutputList)]} {
+	ListCreate2 $opt(OutputList) {} SEQID
+	InitListTrace $opt(OutputList)
+    }
+
+    global EdNames_select
+    UpdateReadingListItem $opt(OutputList) [list "\#$rec"] $EdNames_select $pair
+    editor_name_select $W [$W get_number @$x @$y]
+}
+
+
+
 bind Editor <Key-Return> {editor_return %W}
 catch {bind Editor <Key-KP_Enter> {editor_return %W}}
 
@@ -4532,91 +4626,17 @@ bind Editor <Shift-Control-Key-Prior>   {%W xview scroll -100000 units}
 bind Editor <<select-drag>> {%W select to @%x; editor_select_scroll %W %x}
 bind Editor <<select-to>>   {%W select to @%x}
 bind Editor <<select-release>>	{editor_autoscroll_cancel %W; editor_new_select_sort %W}
+
+# Editor name selection
 bind EdNames <2> {editor_name_select %W [%W get_number @%x @%y] 1}
 
-bind EdNames <<select>> {
-    upvar #0 [winfo toplevel %W] opt
+bind EdNames <<select>>      {ednames_select      %W %x %y 0}
+bind EdNames <<select-to>>   {ednames_select_to   %W %x %y 0}
+bind EdNames <<select-drag>> {ednames_select_drag %W %x %y 0}
 
-    global EdNames_select EdNames_select_last
-    global EdNames_select_x EdNames_select_ctg
-    set EdNames_select 1
-
-    set where [%W get_number @%x @%y]
-    if {$where == ""} return
-
-    if {![ListExists2 $opt(OutputList)]} {
-	ListCreate2 $opt(OutputList) {} SEQID
-	InitListTrace $opt(OutputList)
-    }
-
-    foreach {type rec pos} $where break
-#    if {$type != 18} return
-
-    set EdNames_select [UpdateReadingListItem $opt(OutputList) [list "\#$rec"] -1]
-    editor_name_select %W [%W get_number @%x @%y]
-
-    if {$type == 18} {
-	set EdNames_select_last $rec
-    } else {
-	set EdNames_select_last -1
-    }
-
-    set ed [name2ed %W]
-    set EdNames_select_ctg [$ed contig_rec]
-    set EdNames_select_x   [$ed xview]
-}
-
-bind EdNames <<select-to>> {
-    upvar #0 [winfo toplevel %W] opt
-
-    global EdNames_select EdNames_select_last
-    global EdNames_select_x EdNames_select_ctg
-
-    if {![info exists EdNames_select_last]} return
-    if {$EdNames_select_last == -1} return
-
-    # Disallow scrolling or attempts to select between two editors
-    set ed [name2ed %W]
-    if {$EdNames_select_ctg != [$ed contig_rec]} {bell; return}
-    if {$EdNames_select_x   != [$ed xview]}      {bell; return}
-
-    set where [%W get_number @%x @%y]
-    if {$where == ""} return
-
-    foreach {type rec pos} $where break
-    if {$type != 18} return
-
-    set recs [%W recs_between $EdNames_select_last $rec]
-    lappend recs $rec; #include "to" reading
-
-    if {![ListExists2 $opt(OutputList)]} {
-	ListCreate2 $opt(OutputList) {} SEQID
-	InitListTrace $opt(OutputList)
-    }
-
-    set reads ""
-    foreach r $recs { lappend reads "#$r" }
-    UpdateReadingListItem $opt(OutputList) $reads $EdNames_select
-}
-
-bind EdNames <<select-drag>> {
-    upvar #0 [winfo toplevel %W] opt
-
-    set where [%W get_number @%x @%y]
-    if {$where == ""} return
-
-    foreach {type rec pos} $where break
-    if {$type != 18} return
-
-    if {![ListExists2 $opt(OutputList)]} {
-	ListCreate2 $opt(OutputList) {} SEQID
-	InitListTrace $opt(OutputList)
-    }
-
-    global EdNames_select
-    UpdateReadingListItem $opt(OutputList) [list "\#$rec"] $EdNames_select
-    editor_name_select %W [%W get_number @%x @%y]
-}
+bind EdNames <<ctrl-select>>      {ednames_select      %W %x %y 1}
+bind EdNames <<ctrl-select-to>>   {ednames_select_to   %W %x %y 1}
+bind EdNames <<ctrl-select-drag>> {ednames_select_drag %W %x %y 1}
 
 # Searching
 bind Editor <<search>>		{

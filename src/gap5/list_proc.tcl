@@ -1233,15 +1233,32 @@ proc GetReadingList { } {
     return $NGList(readings)
 }
 
-#given a reading name and a highlight status, add or delete from list
-#called from contig editor
+# Given a reading name and a highlight status, add or delete from list
+# called from contig editor.
+# If $pair == 1 then we also add the reading mate-pair to the list too
 #
 #Returns 1 if last item is selected, 0 if unselected
-proc UpdateReadingListItem { list r_names highlight } {
+proc UpdateReadingListItem { list r_names highlight {pair 0}} {
     global r_list NGList NGListTag NGList_read_hash_$list
     upvar #0 NGList_read_hash_$list hash
+    global io
 
-    foreach r_name $r_names {
+    set plist {}
+    if {$pair} {
+	foreach r_name $r_names {
+	    set rec [db_info get_read_num $io $r_name]
+	    if {$rec > 0} {
+		set s [$io get_seq $rec]
+		set rec [$s get_pair]
+		if {$rec > 0} {
+		    lappend plist "#$rec"
+		}
+		$s delete
+	    }
+	}
+    }
+
+    foreach r_name "$plist $r_names" {
 	if {$highlight == -1} {
 	    # Toggle
 	    if {[info exists hash($r_name)]} {

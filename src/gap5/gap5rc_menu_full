@@ -238,8 +238,10 @@ add_command	{Commands.Create Tag}		3 2 {tag_editor_create \[curr_ed $e\]}
 add_cascade	{Commands.Edit Tag}		1 0
 add_cascade	{Commands.Delete Tag}		3 2
 add_separator	{Commands.S2}
-add_command	{Commands.Select Reads}		3 2 {editor_select_dialog \[curr_ed $e\] 1}
-add_command	{Commands.Deselect Reads}	3 2 {editor_select_dialog \[curr_ed $e\] 0}
+add_command	{Commands.Select Reads}		3 2 {editor_select_dialog \[curr_ed $e\] 1 0}
+add_command	{Commands.Select Reads + Mates}	3 2 {editor_select_dialog \[curr_ed $e\] 1 1}
+add_command	{Commands.Deselect Reads}	3 2 {editor_select_dialog \[curr_ed $e\] 0 0}
+add_command	{Commands.Deselect Reads + Mates} 3 2 {editor_select_dialog \[curr_ed $e\] 0 1}
 add_command     {Commands.Find primer-walk}	3 2 {editor_oligo_dialog \[curr_ed $e\]}
 add_command	{Commands.Realign Selection}	3 2 {editor_align_cutoff \[curr_ed $e\]}
 add_separator	{Commands.S4}

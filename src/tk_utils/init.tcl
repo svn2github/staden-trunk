@@ -35,12 +35,16 @@ if {[info command button] != ""} {
 if {$tcl_platform(os) == "Darwin"} {
     # Selecting items
     event add <<select>>		<1> <Command-Key-1>
+    event add <<ctrl-select>>		<Control-1> <Control-Command-Key-1>
     event add <<select-menu>>		<1> <Command-Key-1>
     event add <<not-select>>		<2> <3> <Command-Key-2> <Command-Key-3>
     event add <<use>>			<Double-1> <Double-Command-Key-1>
     event add <<select-drag>>		<B1-Motion>
+    event add <<ctrl-select-drag>>	<Control-B1-Motion>
     event add <<select-release>>	<B1-ButtonRelease>
-    event add <<select-to>>		<Shift-1> <Shift-Command-1>
+    event add <<ctrl-select-release>>	<Control-B1-ButtonRelease>
+    event add <<select-to>>		<Shift-1> <Control-Shift-Command-1>
+    event add <<ctrl-select-to>>	<Control-Shift-1> <Control-Shift-Command-1>
     
     # Moving items
     event add <<move>>	\
@@ -81,12 +85,16 @@ if {$tcl_platform(os) == "Darwin"} {
 } else {
     # Selecting items
     event add <<select>>		<1>
+    event add <<ctrl-select>>		<Control-1>
     event add <<select-menu>>		<1>
     event add <<not-select>>		<2> <3>
     event add <<use>>			<Double-1>
     event add <<select-drag>>		<B1-Motion>
+    event add <<ctrl-select-drag>>	<Control-B1-Motion>
     event add <<select-release>>	<B1-ButtonRelease>
+    event add <<ctrl-select-release>>	<Control-B1-ButtonRelease>
     event add <<select-to>>		<Shift-1>
+    event add <<ctrl-select-to>>	<Control-Shift-1>
     
     # Moving items
     event add <<move>>			<2> <Alt-Button-1>
