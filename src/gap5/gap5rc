@@ -388,6 +388,7 @@ set_def EDIT_LIST.WIN		.edit_list
 set_def CREATE_LIST.WIN		.create_list
 set_def PRINT_LIST.WIN		.print_list
 set_def COPY_LIST.WIN		.copy_list
+set_def PAIR_READINGS.WIN	.pair_readings
 set_def NUMLIST_TO_NAME.WIN	.num_to_name
 set_def CONTIGS_TO_LIST.WIN	.contigs_to_readings
 set_def SUGGEST_PRIMERS.WIN	.suggest_primers
@@ -483,10 +484,10 @@ set_defx defs_hidden	VALUE		0
 
 set_defx defs_f_or_l_in	WHICH.NAME	"Input from"
 set_defx defs_f_or_l_in	WHICH.BUTTONS	{list file}
-set_defx defs_f_or_l_in	WHICH.VALUE	2
+set_defx defs_f_or_l_in	WHICH.VALUE	1
 set_defx defs_f_or_l_in	NAME.NAME	"List or file name"
 set_defx defs_f_or_l_in	NAME.BROWSE	"Browse"
-set_defx defs_f_or_l_in	NAME.VALUE	""
+set_defx defs_f_or_l_in	NAME.VALUE	"readings"
 
 set_defx defs_c_in	WHICH.NAME	"Input contigs from"
 set_defx defs_c_in	WHICH.BUTTONS	{list file {{all contigs}} single}
@@ -497,10 +498,10 @@ set_defx defs_c_in	NAME.VALUE	""
 
 set_defx defs_f_or_l_out	WHICH.NAME	"Output to"
 set_defx defs_f_or_l_out	WHICH.BUTTONS	{list file}
-set_defx defs_f_or_l_out	WHICH.VALUE	2
+set_defx defs_f_or_l_out	WHICH.VALUE	1
 set_defx defs_f_or_l_out	NAME.NAME	"List or file name"
 set_defx defs_f_or_l_out	NAME.BROWSE	"Browse"
-set_defx defs_f_or_l_out	NAME.VALUE	""
+set_defx defs_f_or_l_out	NAME.VALUE	"r_out"
 
 set_defx defs_format	NAME		"Select format"
 set_defx defs_format	VALUE		2
@@ -850,6 +851,8 @@ set_def COPY_LIST.FROMLIST		"from list name"
 set_def COPY_LIST.TOLIST		"to list name"
 set_def NUMLIST_TO_NAME.FROMLIST	"from list name"
 set_def NUMLIST_TO_NAME.TOLIST		"to list name"
+set_def PAIR_READINGS.INFILE		       $defs_f_or_l_in
+set_def PAIR_READINGS.OUTFILE		       $defs_f_or_l_out
 set_def CONTIGS_TO_LIST.INFILE		       $defs_c_in
 set_def CONTIGS_TO_LIST.OUTFILE		       $defs_f_or_l_out
 set_def CONTIGS_TO_LIST.OUTFILE.WHICH.NAME     "Save reading names in"

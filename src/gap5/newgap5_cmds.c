@@ -2192,6 +2192,49 @@ tcl_check_assembly(ClientData clientData, Tcl_Interp *interp,
 }
 
 typedef struct {
+    GapIO *io;
+    char *inlist;
+} pair_reads_args;
+
+int
+tcl_pair_readings(ClientData clientData, Tcl_Interp *interp,
+		  int objc, Tcl_Obj *CONST objv[]) {
+    pair_reads_args args;
+    tg_rec *r;
+    int i, nr;
+    Tcl_Obj *lobj;
+
+    /* Parse arguments */
+    cli_args a[] = {
+	{"-io",	         ARG_IO,  1, NULL, offsetof(pair_reads_args, io)},
+	{"-readings",    ARG_STR, 1, NULL, offsetof(pair_reads_args, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    if (!(r = pair_readings(args.io, args.inlist, &nr)))
+	return TCL_ERROR;
+
+    if (NULL == (lobj = Tcl_NewListObj(0, NULL))) {
+	free(r);
+	return TCL_ERROR;
+    }
+    Tcl_IncrRefCount(lobj);
+    
+    for (i = 0; i < nr; i++) {
+	Tcl_ListObjAppendElement(interp, lobj, Tcl_NewWideIntObj(r[i]));
+    }
+
+    Tcl_SetObjResult(interp, lobj);
+    Tcl_DecrRefCount(lobj);
+
+    free(r);
+    return TCL_OK;
+}
+
+typedef struct {
     char *seq1;
     char *seq2;
     int band;
@@ -2671,6 +2714,9 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "contig_extend",
 			 tcl_contig_extend,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "pair_readings",
+			 tcl_pair_readings,
 			 (ClientData) NULL, NULL);
 			 
     

@@ -73,4 +73,14 @@ char *add_to_dlist(void *dl, char *item);
 void free_dlist(void *dl);
 char *read_dlist(void *dl);
 
+/*
+ * Given a list of reading names or #nums, this returns a list of reading
+ * numbers (given names are not unique) containing the original read and its
+ * pair. Sets *nr to be the number of returned items.
+ *
+ * Returns malloced array of record numbers on success (caller frees)
+ *         NULL on failure
+ */
+tg_rec *pair_readings(GapIO *io, char *inlist, int *nr);
+
 #endif

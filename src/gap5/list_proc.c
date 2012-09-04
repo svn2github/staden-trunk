@@ -1,6 +1,8 @@
 #include <tcl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <io_lib/hash_table.h>
+#include <ctype.h>
 
 #include "io_utils.h"
 #include "FtoC.h"
@@ -206,4 +208,91 @@ int active_list_scaffold(GapIO *io, char *list,
  */
 int SplitList(char *list, int *argc, char ***argv) {
     return (Tcl_SplitList(GetInterp(), list, argc, argv) == TCL_OK) ? 0 : -1;
+}
+
+
+/* --------------------------------------------------------------------------
+ * Read pairing.
+ * Given a list of reading names or #nums, this returns a list of reading
+ * numbers (given names are not unique) containing the original read and its
+ * pair. Sets *nr to be the number of returned items.
+ *
+ * Returns malloced array of record numbers on success (caller frees)
+ *         NULL on failure
+ */
+tg_rec *pair_readings(GapIO *io, char *inlist, int *nr) {
+    int nread = 0, nalloc = 0;
+    tg_rec *r = NULL, rec;
+    char *cp;
+    HashTable *h;
+    HashItem *hi;
+    HashIter *iter;
+    
+    h = HashTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_POOL_ITEMS);
+
+    while (*inlist && isspace(*inlist))
+	inlist++;
+
+    while (*inlist) {
+	char tmp;
+
+	for (cp = inlist; *cp && !isspace(*cp); cp++)
+	    ;
+	tmp = *cp;
+	*cp = 0;
+
+	rec = 0;
+	if (*inlist == '#') {
+	    char *endp;
+	    rec = strtol(inlist+1, &endp, 10);
+	    if (*endp != 0)
+		rec = 0;
+	}
+
+	if (!rec)
+	    rec = read_name_to_number(io, inlist);
+
+	/* Insert rec and rec's pair */
+	if (rec > 0) {
+	    seq_t *s = cache_search(io, GT_Seq, rec);
+
+	    if (s) {
+		HashData hd;
+		hd.i = 0;
+		HashTableAdd(h, (char *)&rec, sizeof(rec), hd, NULL);
+
+		rec = sequence_get_pair(io, s);
+		if (rec > 0 && (s = cache_search(io, GT_Seq, rec))) {
+		    HashTableAdd(h, (char *)&rec, sizeof(rec), hd, NULL);
+		}
+	    }
+	}
+
+	*cp = tmp;
+	while (*cp && isspace(*cp))
+	    cp++;
+
+	inlist = cp;
+    }
+
+    /* We used a hash as it automatically drops duplicates.
+     * Now iterate over the hair to produce a linear list for returning.
+     */
+    iter= HashTableIterCreate();
+    while ((hi = HashTableIterNext(h, iter))) {
+	if (nread >= nalloc) {
+	    nalloc = nalloc ? nalloc * 2 : 256;
+	    r = realloc(r, nalloc * sizeof(*r));
+	    if (!r)
+		return NULL;
+	}
+	r[nread++] = *(tg_rec *)hi->key;
+    }
+
+    HashTableIterDestroy(iter);
+    HashTableDestroy(h, 0);
+
+    *nr = nread;
+
+    return r;
 }

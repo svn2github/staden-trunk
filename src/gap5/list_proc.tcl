@@ -1378,6 +1378,8 @@ proc ContigsToReadings2 {io t id infile outfile} {
     }
 }
 
+#------------------------------------------------------------------------------
+
 proc MinimalCoverage {io} {
     global gap5_defs
     set l [keylget gap5_defs MINIMAL_COVERAGE]
@@ -1433,6 +1435,8 @@ proc MinimalCoverage2 {io t id infile outfile} {
     }
 }
 
+#------------------------------------------------------------------------------
+
 proc UnattachedReadings {io} {
     global gap5_defs
     set l [keylget gap5_defs UNATTACHED_READINGS]
@@ -1463,6 +1467,53 @@ proc UnattachedReadings2 {io t outfile} {
     set r [unattached_readings -io $io]
 
     ListCreate2 $out $r
+    if {"$format" == 2} {
+	lorf_out_save $out
+    } else {
+        ListEdit $out
+    }
+}
+
+#-----------------------------------------------------------------------------
+
+proc PairReadings {io} {
+    global gap5_defs
+    set l [keylget gap5_defs PAIR_READINGS]
+
+    set t [keylget l WIN]
+    if {[xtoplevel $t -resizable 0] == ""} return
+    wm title $t "Pair readings"
+
+    lorf_in $t.infile [keylget l INFILE] {} -bd 2 -relief groove
+
+    lorf_out $t.outfile [keylget l OUTFILE] \
+	{} -bd 2 -relief groove
+
+    okcancelhelp $t.ok \
+	-ok_command "PairReadings2 $io $t $t.infile $t.outfile" \
+	-cancel_command "destroy $t" \
+	-help_command "show_help gap5 {List-Pair}" \
+	-bd 2 -relief groove
+
+    pack $t.infile $t.outfile $t.ok -side top -fill both
+}
+
+proc PairReadings2 {io t infile outfile} {
+    set list [lorf_get_list $infile]
+    if {$list == ""} {bell; return}
+
+    if {[set out    [lorf_out_name $outfile]]   == ""} {bell; return}
+    if {[set format [lorf_out_get  $outfile]] == ""} {bell; return}
+
+    destroy $t
+    update idletasks
+
+    set rlist {}
+    foreach rec [pair_readings -io $io -readings $list] {
+	lappend rlist "#$rec"
+    }
+
+    ListCreate2 $out $rlist SEQID
     if {"$format" == 2} {
 	lorf_out_save $out
     } else {

@@ -47,4 +47,16 @@ void bell(void);
  */
 int complement_contig(GapIO *io, tg_rec crec);
 
+/*
+ * Converts a reading name to a reading number.
+ *
+ * Arguments:
+ *     io	- GapIO *
+ *     rname    - the string described above
+ *
+ * Returns:
+ *    0 for failure, otherwise the gel number
+ */
+tg_rec read_name_to_number(GapIO *io, char *gel_name);
+
 void bell(void);
