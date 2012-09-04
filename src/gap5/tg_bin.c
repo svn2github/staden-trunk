@@ -197,6 +197,7 @@ static int next_range(GapIO *io, bin_index_t *bin) {
 	range_t *r = arrp(range_t, bin->rng, bin->rng_free);
 
 	assert(bin->rng_free < ArrayMax(ra));
+	assert(r->flags & GRANGE_FLAG_UNUSED);
 	
 	tmp = bin->rng_free;
 	bin->rng_free = (int)r->rec;
