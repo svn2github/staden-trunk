@@ -163,7 +163,7 @@ proc contig_rename {io crec name {w {}}} {
 	} else {
 	    verror ERR_WARN "rename_contig" "Contig name already exists"
 	}
-	return
+	return 0
     }
 
     set c [$io get_contig $crec]
@@ -181,6 +181,8 @@ proc contig_rename {io crec name {w {}}} {
     if {$w != ""} {
 	destroy $w
     }
+
+    return 1
 }
 
 # Adds a contig to a named scaffold
