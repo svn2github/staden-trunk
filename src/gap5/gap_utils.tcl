@@ -157,7 +157,7 @@ proc complement_tag_list {io tags} {
 proc contig_rename {io crec name {w {}}} {
     if {[$io contig_name2rec $name] > 0} {
 	bell
-	if {$w} {
+	if {$w != ""} {
 	    tk_messageBox -type ok -icon error -parent $w \
 		-message "Contig name already exists"
 	} else {
