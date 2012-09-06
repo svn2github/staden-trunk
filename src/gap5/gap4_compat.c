@@ -28,7 +28,8 @@ int io_clength(GapIO *io, tg_rec cnum) {
 
     c = (contig_t *)cache_search(io, GT_Contig, cnum);
     if (!c) {
-	verror(ERR_FATAL, "Failed to load contig #%"PRIrec" in io_clength()",
+	verror(ERR_FATAL, "io_clength()",
+	       "Failed to load contig #%"PRIrec" in io_clength()",
 	       cnum);
 	return 0;
     }
@@ -781,7 +782,7 @@ int64_t CalcTotalContigLen(GapIO *io) {
     for (i = 0; i < NumContigs(io); i++) {
 	tg_rec crec = arr(tg_rec, io->contig_order, i);
 	c = (contig_t *)cache_search(io, GT_Contig, crec);
-	len += c->end - c->start + 1;
+	len += c ? c->end - c->start + 1 : 0;
     }
 
     return len;
