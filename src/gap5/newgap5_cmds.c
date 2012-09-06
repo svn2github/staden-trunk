@@ -1847,6 +1847,7 @@ tcl_import_reads(ClientData clientData,
 {
     ir_arg args;
     int fmt;
+    int err = 0;
 
     /* Parse arguments */
     cli_args a[] = {
@@ -1863,6 +1864,9 @@ tcl_import_reads(ClientData clientData,
 	{"-pair_reads",    ARG_INT, 1, "1",    offsetof(ir_arg, a.pair_reads)},
 	{"-store_unmapped",ARG_INT, 1, "0",    offsetof(ir_arg, a.store_unmapped)},
 	{"-sam_aux",       ARG_INT, 1, "0",    offsetof(ir_arg, a.sam_aux)},
+	{"-store_refpos",  ARG_INT, 1, "0",    offsetof(ir_arg, a.store_refpos)},
+	{"-pair_queue",    ARG_INT, 1, "0",    offsetof(ir_arg, a.pair_queue)},
+	{"-remove_dups",   ARG_INT, 1, "1",    offsetof(ir_arg, a.remove_dups)},
 	{NULL,		   0,	    0, NULL,   0}
     };
 
@@ -1880,7 +1884,9 @@ tcl_import_reads(ClientData clientData,
     } else if (0 == strcmp(args.comp_mode, "lzma")) {
 	args.a.comp_mode = COMP_MODE_LZMA;
     } else {
-	fprintf(stderr, "Unknown compression mode '%s'\n", args.comp_mode);
+	/* fprintf(stderr, "Unknown compression mode '%s'\n", args.comp_mode); */
+	vTcl_SetResult(interp, "Unknown compression mode '%s'\n",
+		       args.comp_mode);
 	return TCL_ERROR;
     }
 
@@ -1905,36 +1911,51 @@ tcl_import_reads(ClientData clientData,
     switch(fmt) {
 	case 'm':
 	case 'M':
-	    parse_maqmap(args.io, args.file, &args.a);
+	    err = parse_maqmap(args.io, args.file, &args.a);
 	    break;
 
 	case 'A':
-	    parse_ace(args.io, args.file, &args.a);
+	    err = parse_ace(args.io, args.file, &args.a);
 	    break;
 
 	case 'B':
-	    parse_baf(args.io, args.file, &args.a);
+	    err = parse_baf(args.io, args.file, &args.a);
+	    break;
+
+        case 'C':
+	    err = parse_caf(args.io, args.file, &args.a);
 	    break;
 
 	case 'b':
-	    parse_bam(args.io, args.file, &args.a);
+	    err = parse_bam(args.io, args.file, &args.a);
 	    break;
 	case 's':	
-	    parse_sam(args.io, args.file, &args.a);
+	    err = parse_sam(args.io, args.file, &args.a);
 	    break;
 
         case 'F':
-	    parse_fasta_or_fastq(args.io, args.file, &args.a, 'a');
+	    err = parse_fasta_or_fastq(args.io, args.file, &args.a, 'a');
 	    break;
 	    
         case 'Q':
-	    parse_fasta_or_fastq(args.io, args.file, &args.a, 'q');
+	    err = parse_fasta_or_fastq(args.io, args.file, &args.a, 'q');
+	    break;
+
+        case 'V':
+	    err = parse_afg(args.io, args.file, &args.a);
 	    break;
 
 	default:
-	    fprintf(stderr, "Unknown file type for '%s' - skipping\n",
-		    args.file);
+	    /* fprintf(stderr, "Unknown file type for '%s' - skipping\n",
+	       args.file); */
+	    vTcl_SetResult(interp, "Unknown file type for '%s' - skipping",
+			   args.file);
 	    return TCL_ERROR;
+    }
+    
+    if (err) {
+	vTcl_SetResult(interp, "Failed to read '%s'", args.file);
+	return TCL_ERROR;
     }
 
     /* Force final update of cached bin nseq */
