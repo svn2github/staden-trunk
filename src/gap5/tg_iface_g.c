@@ -13,11 +13,6 @@
 #include "dna_utils.h"
 #include "tg_gio.h"
 
-static int wrstats[100];
-static int wrcounts[100];
-static int rdstats[100];
-static int rdcounts[100];
-
 #define INDEX_NAMES
 
 /* An assert that doesn't abort, instead returning rval */
@@ -103,6 +98,11 @@ typedef struct {
     int comp_mode;
     int db_vers;
     FILE *debug_fp;
+    tg_rec record;
+    int wrstats[100];
+    int wrcounts[100];
+    int rdstats[100];
+    int rdcounts[100];
 } g_io;
 
 
@@ -580,85 +580,16 @@ static char *mem_inflate(int mode,
  * for Gap4 proper.
  */
 
-/* Hacky allocation scheme - always increment the record number */
-#if 1
-static int other_record = 0;
-static int other_record_start = 0;
-void set_reserved_seqs(int rseqs) {
-    other_record = rseqs / SEQ_BLOCK_SZ;
-    other_record_start = other_record;
-}
-
 static tg_rec allocate(g_io *io, int type) {
-    static tg_rec record = -1;
     tg_rec r;
     
-    if (record == -1)
-	record = io->gdb->gfile->header.num_records;
-
-    /*
-     * Temporary hack to prevent lots of small records (bins, contigs, etc)
-     * from pushing the number of bits for the record number beyond
-     * 31-SEQ_BLOCK_BITS (ie currently record ~2 million).
-     *
-     * FIXME: the correct solution is to enable record numbers to be 64-bit.
-     */
-    if (other_record) {
-	switch (type) {
-	case GT_SeqBlock:
-	case GT_AnnoEleBlock:
-	case GT_Database:
-	    r = record++;
-	    if (r == other_record_start) {
-		fprintf(stderr, "\n*** Ran out of seq/anno record numbers.\n");
-		fprintf(stderr, "*** Please use a higher value in the -r "
-			"option of tg_index.\n");
-		exit(1);
-	    }
-	    break;
-
-	default:
-	    r = other_record++;
-	}
-    } else {
-	if ((r = g_free_rec_(io->gdb, io->client, 0)) != G_NO_REC)
-	    return r;
-
-	r = record++;
-#if 0
-	if (type == GT_SeqBlock && r >= (1<<(31-SEQ_BLOCK_BITS))) {
-	    fprintf(stderr, "\n*** Too many database records to cope with the"
-		    " sequence 'blocking factor'.");
-	    fprintf(stderr, "*** Please rerun tg_index using the -r option "
-		    "to reserve record space for\n    more sequences\n");
-	    exit(1);
-	} else if (type == GT_AnnoEleBlock &&
-		   r >= (1<<(31-ANNO_ELE_BLOCK_BITS))) {
-	    fprintf(stderr, "\n*** Too many database records to cope with the"
-		    " annotation 'blocking factor'.\n");
-	    fprintf(stderr, "*** Please rerun tg_index using the -r option "
-		    "to reserve record space for\n    more annotations\n");
-	    exit(1);
-	}
-#endif
-    }
+    if ((r = g_free_rec_(io->gdb, io->client, 0)) != G_NO_REC)
+	return r;
+    
+    r = io->record++;
 
     return r;
 }
-#else
-static int allocate(g_io *io, int type) {
-    /*
-     * FIXME, the header should point to a record free-list, to allow
-     * reclaiming of deallocated records.
-     */
-    static int record = -1;
-
-    if (record == -1)
-	record = io->gdb->gfile->header.num_records;
-
-    return record++;
-}
-#endif
 
 static int deallocate(g_io *io, tg_rec rec, GView v) {
     return g_remove_(io->gdb, io->client, v);
@@ -1043,8 +974,8 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
 	buf2 = buf+2;
     }
 
-    rdstats[GT_BTree] += len;
-    rdcounts[GT_BTree]++;
+    io->rdstats[GT_BTree] += len;
+    io->rdcounts[GT_BTree]++;
 
     /* Decode the btree element */
     switch (fmt) {
@@ -1116,8 +1047,8 @@ static int btree_write(g_io *io, btree_node_t *n) {
     vec[1].buf = data; vec[1].len = len;
 
     if (ci) {
-	wrstats[GT_BTree] += len;
-	wrcounts[GT_BTree]++;
+	io->wrstats[GT_BTree] += len;
+	io->wrcounts[GT_BTree]++;
 	//ret = g_write(io, ci->view, b2, len);
 	ret = g_writev(io, ci->view, vec, 2);
 	if (ret == 0)
@@ -1127,8 +1058,8 @@ static int btree_write(g_io *io, btree_node_t *n) {
 	    fprintf(stderr, "Failed to lock btree node %"PRIbtr"\n", n->rec);
 	    return -1;
 	}
-	wrstats[GT_BTree] += len;
-	wrcounts[GT_BTree]++;
+	io->wrstats[GT_BTree] += len;
+	io->wrcounts[GT_BTree]++;
 	//ret = g_write(io, v, b2, len);
 	ret = g_writev(io, v, vec, 2);
 	//unlock(io, v);
@@ -1172,7 +1103,7 @@ tg_rec btree_node_create(g_io *io, HacheTable *h) {
     btree_node_t *n;
     cached_item *ci;
     GView v;
-    static HacheData hd;
+    HacheData hd;
     HacheItem *hi;
 
     /* Allocate a new record */
@@ -1441,6 +1372,7 @@ static void *io_database_connect(char *dbname, int ro) {
     io->comp_mode = COMP_MODE_ZLIB;
 
     io->db_vers = 0;
+    io->record = io->gdb->gfile->header.num_records;
 
     io->debug_fp = NULL;
 
@@ -1526,44 +1458,44 @@ static int io_database_disconnect(void *dbh) {
     if (io->debug_fp) {
 	fprintf(io->debug_fp, "\n*** I/O stats (type, write count/size read count/size) ***\n");
 	fprintf(io->debug_fp, "GT_RecArray     \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_RecArray],     wrstats[GT_RecArray],
-		rdcounts[GT_RecArray],     rdstats[GT_RecArray]);
+		io->wrcounts[GT_RecArray],     io->wrstats[GT_RecArray],
+		io->rdcounts[GT_RecArray],     io->rdstats[GT_RecArray]);
 	fprintf(io->debug_fp, "GT_Bin          \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_Bin],          wrstats[GT_Bin],
-		rdcounts[GT_Bin],          rdstats[GT_Bin]);
+		io->wrcounts[GT_Bin],          io->wrstats[GT_Bin],
+		io->rdcounts[GT_Bin],          io->rdstats[GT_Bin]);
 	fprintf(io->debug_fp, "GT_Range        \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_Range],        wrstats[GT_Range],
-		rdcounts[GT_Range],        rdstats[GT_Range]);
+		io->wrcounts[GT_Range],        io->wrstats[GT_Range],
+		io->rdcounts[GT_Range],        io->rdstats[GT_Range]);
 	fprintf(io->debug_fp, "GT_BTree        \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_BTree],        wrstats[GT_BTree],
-		rdcounts[GT_BTree],        rdstats[GT_BTree]);
+		io->wrcounts[GT_BTree],        io->wrstats[GT_BTree],
+		io->rdcounts[GT_BTree],        io->rdstats[GT_BTree]);
 	fprintf(io->debug_fp, "GT_Track        \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_Track],        wrstats[GT_Track],
-		rdcounts[GT_Track],        rdstats[GT_Track]);
+		io->wrcounts[GT_Track],        io->wrstats[GT_Track],
+		io->rdcounts[GT_Track],        io->rdstats[GT_Track]);
 	fprintf(io->debug_fp, "GT_Contig       \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_Contig],       wrstats[GT_Contig],
-		rdcounts[GT_Contig],       rdstats[GT_Contig]);
+		io->wrcounts[GT_Contig],       io->wrstats[GT_Contig],
+		io->rdcounts[GT_Contig],       io->rdstats[GT_Contig]);
 	fprintf(io->debug_fp, "GT_Seq          \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_Seq],          wrstats[GT_Seq],
-		rdcounts[GT_Seq],          rdstats[GT_Seq]);
+		io->wrcounts[GT_Seq],          io->wrstats[GT_Seq],
+		io->rdcounts[GT_Seq],          io->rdstats[GT_Seq]);
 	fprintf(io->debug_fp, "GT_Anno         \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_Anno],         wrstats[GT_Anno],
-		rdcounts[GT_Anno],         rdstats[GT_Anno]);
+		io->wrcounts[GT_Anno],         io->wrstats[GT_Anno],
+		io->rdcounts[GT_Anno],         io->rdstats[GT_Anno]);
 	fprintf(io->debug_fp, "GT_AnnoEle      \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_AnnoEle],      wrstats[GT_AnnoEle],
-		rdcounts[GT_AnnoEle],      rdstats[GT_AnnoEle]);
+		io->wrcounts[GT_AnnoEle],      io->wrstats[GT_AnnoEle],
+		io->rdcounts[GT_AnnoEle],      io->rdstats[GT_AnnoEle]);
 	fprintf(io->debug_fp, "GT_SeqBlock     \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_SeqBlock],     wrstats[GT_SeqBlock],
-		rdcounts[GT_SeqBlock],     rdstats[GT_SeqBlock]);
+		io->wrcounts[GT_SeqBlock],     io->wrstats[GT_SeqBlock],
+		io->rdcounts[GT_SeqBlock],     io->rdstats[GT_SeqBlock]);
 	fprintf(io->debug_fp, "GT_AnnoEleBlock \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_AnnoEleBlock], wrstats[GT_AnnoEleBlock],
-		rdcounts[GT_AnnoEleBlock], rdstats[GT_AnnoEleBlock]);
+		io->wrcounts[GT_AnnoEleBlock], io->wrstats[GT_AnnoEleBlock],
+		io->rdcounts[GT_AnnoEleBlock], io->rdstats[GT_AnnoEleBlock]);
 	fprintf(io->debug_fp, "GT_ContigBlock         \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_ContigBlock], wrstats[GT_ContigBlock],
-		rdcounts[GT_ContigBlock], rdstats[GT_ContigBlock]);
+		io->wrcounts[GT_ContigBlock], io->wrstats[GT_ContigBlock],
+		io->rdcounts[GT_ContigBlock], io->rdstats[GT_ContigBlock]);
 	fprintf(io->debug_fp, "GT_ScaffoldBlock \t%7d\t%14d\t%7d\t%14d\n",
-		wrcounts[GT_ScaffoldBlock], wrstats[GT_ScaffoldBlock],
-		rdcounts[GT_ScaffoldBlock], rdstats[GT_ScaffoldBlock]);
+		io->wrcounts[GT_ScaffoldBlock], io->wrstats[GT_ScaffoldBlock],
+		io->rdcounts[GT_ScaffoldBlock], io->rdstats[GT_ScaffoldBlock]);
     }
 
     free(io);
@@ -1673,6 +1605,9 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 	}
     }
 
+    /* FIXME: Should really read these */
+    init_block_record_numbers(db);
+
     io->db_vers = db->version;
     if (io->debug_fp)
 	fprintf(io->debug_fp, "Database version=%d\n", io->db_vers);
@@ -1702,6 +1637,8 @@ static int io_database_write_view(g_io *io, database_t *db, GView v) {
 	cp += intw2u7(db->scaffold_name_index, cp);
     }
     
+    /* FIXME: Should write block record numbers */
+
     /* Write it out */
     if (-1 == g_write(io, v, buf, cp-buf))
 	return -1;
@@ -1776,6 +1713,8 @@ static tg_rec io_database_create(void *dbh, void *from, int version) {
     if (io->db_vers >= 5) {
 	db.scaffold_name_index = btree_node_create(io, io->scaffold_name_hash);
     }
+
+    init_block_record_numbers(&db);
 
     /* Database struct itself */
     v = lock(io, db_rec, G_LOCK_EX);
@@ -1885,8 +1824,8 @@ static cached_item *io_contig_read(void *dbh, tg_rec rec) {
     g_assert(cp[1] == 0, NULL);
     cp += 2;
 
-    rdstats[GT_Contig] += len;
-    rdcounts[GT_Contig]++;
+    io->rdstats[GT_Contig] += len;
+    io->rdcounts[GT_Contig]++;
 
     /* Decode the fixed size bits */
     cp += s72int(cp, &start);
@@ -1949,8 +1888,8 @@ static int io_contig_write_view(g_io *io, contig_t *c, GView v) {
     len = cp-buf; /* Actual length */
 
     /* Write the data */
-    wrstats[GT_Contig] += len;
-    wrcounts[GT_Contig]++;
+    io->wrstats[GT_Contig] += len;
+    io->wrcounts[GT_Contig]++;
     if (-1 == g_write(io, v, (char *)buf, len)) {
 	free(buf);
 	return -1;
@@ -2063,8 +2002,8 @@ static cached_item *io_array_read(void *dbh, tg_rec rec) {
 	return NULL;
 
     g_view_info_(io->gdb, io->client, v, &vi);
-    rdstats[GT_RecArray] += vi.used;
-    rdcounts[GT_RecArray]++;
+    io->rdstats[GT_RecArray] += vi.used;
+    io->rdcounts[GT_RecArray]++;
 
     ar = ArrayCreate(sizeof(tg_rec), 0);
     if (ar->base) free(ar->base);
@@ -2091,8 +2030,8 @@ static int io_array_write(void *dbh, cached_item *ci) {
 			       ArrayBase(tg_rec, ar),
 			       ArrayMax(ar));
 
-    wrstats[GT_RecArray] += ret;
-    wrcounts[GT_RecArray]++;
+    io->wrstats[GT_RecArray] += ret;
+    io->wrcounts[GT_RecArray]++;
 
     return ret >= 0 ? 0 : -1;
 }
@@ -2132,8 +2071,8 @@ static cached_item *io_anno_ele_read(void *dbh, tg_rec rec) {
 
     bloc = g_read_alloc(io, v, &bloc_len);
 
-    rdstats[GT_AnnoEle] += bloc_len;
-    rdcounts[GT_AnnoEle]++;
+    io->rdstats[GT_AnnoEle] += bloc_len;
+    io->rdcounts[GT_AnnoEle]++;
 
     if (!bloc)
 	return NULL;
@@ -2205,8 +2144,8 @@ static int io_anno_ele_write_view(g_io *io, anno_ele_t *e, GView v) {
     }
 
     /* Write */
-    wrstats[GT_AnnoEle] += cp-cpstart;
-    wrcounts[GT_AnnoEle]++;
+    io->wrstats[GT_AnnoEle] += cp-cpstart;
+    io->wrcounts[GT_AnnoEle]++;
     err |= g_write(io, v, (void *)cpstart, cp-cpstart);
     if (err == 0)
 	g_flush(io, v);
@@ -2927,8 +2866,8 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
     }
     cp = buf;
 
-    rdstats[GT_Bin] += buf_len;
-    rdcounts[GT_Bin]++;
+    io->rdstats[GT_Bin] += buf_len;
+    io->rdcounts[GT_Bin]++;
 
     g_assert(cp[0] == GT_Bin, NULL);
     version = cp[1];
@@ -3059,8 +2998,8 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 	    r = unpack_rng_array(comp_mode, fmt, buf+2, vi.used-2, &nranges);
 	    free(buf);
 
-	    rdstats[GT_Range] += vi.used;
-	    rdcounts[GT_Range]++;
+	    io->rdstats[GT_Range] += vi.used;
+	    io->rdcounts[GT_Range]++;
 
 	    //printf("Unpacked %d ranges from %d bytes\n", nranges, vi.used);
 
@@ -3097,8 +3036,8 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 	    return NULL;
 
 	g_view_info_(io->gdb, io->client, v, &vi);
-	rdstats[GT_Track] += vi.used;
-	rdcounts[GT_Track]++;
+	io->rdstats[GT_Track] += vi.used;
+	io->rdcounts[GT_Track]++;
 
 	bt = (GBinTrack *)io_generic_read_i4(io, v, GT_RecArray, &nitems);
 	nitems /= sizeof(GBinTrack) / sizeof(GCardinal);
@@ -3168,8 +3107,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    v = lock(io, (int)bin->rng_rec, G_LOCK_EX);
 	    //	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
 	    //	       sizeof(GRange) * ArrayMax(bin->rng));
-	    wrstats[GT_Range] += sz+2;
-	    wrcounts[GT_Range]++;
+	    io->wrstats[GT_Range] += sz+2;
+	    io->wrcounts[GT_Range]++;
 	    vec[0].buf = fmt;   vec[0].len = 2;
 	    vec[1].buf = cp;    vec[1].len = sz;
 	    err |= g_writev(io, v, vec, 2);
@@ -3219,8 +3158,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 		nb = o;
 		err |= unlock(io, v);
 
-		wrstats[GT_Track] += nb;
-		wrcounts[GT_Track]++;
+		io->wrstats[GT_Track] += nb;
+		io->wrcounts[GT_Track]++;
 	    }
 
 	    free(bt);
@@ -3309,9 +3248,9 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    cp += int2u7(g.nanno, cp);
 	}
 
-	wrstats[GT_Bin] += cp-cpstart;
-	//wrstats[GT_Bin] += sizeof(g);
-	wrcounts[GT_Bin]++;
+	io->wrstats[GT_Bin] += cp-cpstart;
+	//io->wrstats[GT_Bin] += sizeof(g);
+	io->wrcounts[GT_Bin]++;
 	err |= g_write(io, v, cpstart, cp - cpstart);
 	//err |= g_write(io, v, &g, sizeof(g));
 	if (err == 0)
@@ -3399,8 +3338,8 @@ static int io_bin_destroy(void *dbh, tg_rec r, GView v) {
     /* Decode */
     cp = buf;
 
-    rdstats[GT_Bin] += buf_len;
-    rdcounts[GT_Bin]++;
+    io->rdstats[GT_Bin] += buf_len;
+    io->rdcounts[GT_Bin]++;
 
     assert(cp[0] == GT_Bin);
     assert(cp[1] <= 2); /* format */
@@ -3459,8 +3398,8 @@ static cached_item *io_track_read(void *dbh, tg_rec rec) {
 	return NULL;
     cp = buf;
 
-    rdstats[GT_Track] += buf_len;
-    rdcounts[GT_Track]++;
+    io->rdstats[GT_Track] += buf_len;
+    io->rdcounts[GT_Track]++;
 
     g_assert(cp[0] == GT_Track, NULL);
     g_assert(cp[1] == 0, NULL);
@@ -3552,8 +3491,8 @@ static int io_track_write_view(g_io *io, track_t *track, GView v) {
 	}
     }
     
-    wrstats[GT_Track] += cp-data;
-    wrcounts[GT_Track]++;
+    io->wrstats[GT_Track] += cp-data;
+    io->wrcounts[GT_Track]++;
     err |= g_write(io, v, data, cp-data);
     if (err == 0)
 	g_flush(io, v);
@@ -3795,8 +3734,8 @@ static cached_item *io_seq_read(void *dbh, tg_rec rec) {
 
     bloc = g_read_alloc(io, v, &bloc_len);
 
-    rdstats[GT_Seq] += bloc_len;
-    rdcounts[GT_Seq]++;
+    io->rdstats[GT_Seq] += bloc_len;
+    io->rdcounts[GT_Seq]++;
 
     if (!bloc)
 	return NULL;
@@ -4025,8 +3964,8 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, tg_rec rec) {
 
     //    printf("Write rec %d len %d %.*s:%d\n", rec, cp-cpstart,
     //	   seq->name_len, seq->name, seq->mapping_qual);
-    wrstats[GT_Seq] += cp-cpstart;
-    wrcounts[GT_Seq]++;
+    io->wrstats[GT_Seq] += cp-cpstart;
+    io->wrcounts[GT_Seq]++;
     err |= g_write(io, v, (void *)cpstart, cp-cpstart);
     if (err == 0)
 	g_flush(io, v);
@@ -4158,8 +4097,8 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     b = (seq_block_t *)&ci->data;
     cp = buf = (unsigned char *)g_read_alloc((g_io *)dbh, v, &buf_len);
 
-    rdstats[GT_SeqBlock] += buf_len;
-    rdcounts[GT_SeqBlock]++;
+    io->rdstats[GT_SeqBlock] += buf_len;
+    io->rdcounts[GT_SeqBlock]++;
 
     if (!buf_len) {
 	b->est_size = 0;
@@ -4954,8 +4893,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
     
     assert(ci->lock_mode >= G_LOCK_RW);
-    wrstats[GT_SeqBlock] += cp-cp_start + 2;
-    wrcounts[GT_SeqBlock]++;
+    io->wrstats[GT_SeqBlock] += cp-cp_start + 2;
+    io->wrcounts[GT_SeqBlock]++;
 
     err = g_writev(io, ci->view, vec, 2);
     if (err == 0)
@@ -5023,8 +4962,8 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 
     have_links = fmt >= 1;
 
-    rdstats[GT_ContigBlock] += buf_len;
-    rdcounts[GT_ContigBlock]++;
+    io->rdstats[GT_ContigBlock] += buf_len;
+    io->rdcounts[GT_ContigBlock]++;
 
     /* Ungzip it too */
     if (1) {
@@ -5416,8 +5355,8 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
 
     assert(ci->lock_mode >= G_LOCK_RW);
-    wrstats[GT_ContigBlock] += cp-cp_start + 2;
-    wrcounts[GT_ContigBlock]++;
+    io->wrstats[GT_ContigBlock] += cp-cp_start + 2;
+    io->wrcounts[GT_ContigBlock]++;
     err = g_writev(io, ci->view, vec, 2);
     if (err == 0)
 	g_flush(io, ci->view);
@@ -5486,8 +5425,8 @@ static cached_item *io_scaffold_block_read(void *dbh, tg_rec rec) {
     fmt = buf[1] & 0x3f;
     g_assert(fmt < 1, NULL); /* Format */
 
-    rdstats[GT_ScaffoldBlock] += buf_len;
-    rdcounts[GT_ScaffoldBlock]++;
+    io->rdstats[GT_ScaffoldBlock] += buf_len;
+    io->rdcounts[GT_ScaffoldBlock]++;
 
     /* Ungzip it too */
     if (1) {
@@ -5716,8 +5655,8 @@ static int io_scaffold_block_write(void *dbh, cached_item *ci) {
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
 
     assert(ci->lock_mode >= G_LOCK_RW);
-    wrstats[GT_ScaffoldBlock] += cp-cp_start + 2;
-    wrcounts[GT_ScaffoldBlock]++;
+    io->wrstats[GT_ScaffoldBlock] += cp-cp_start + 2;
+    io->wrcounts[GT_ScaffoldBlock]++;
     err = g_writev(io, ci->view, vec, 2);
     if (err == 0)
 	g_flush(io, ci->view);
@@ -5826,8 +5765,8 @@ static cached_item *io_anno_ele_block_read(void *dbh, tg_rec rec) {
     fmt = buf[1] & 0x3f;
     g_assert(fmt <= 1, NULL); /* Format */
 
-    rdstats[GT_AnnoEleBlock] += buf_len;
-    rdcounts[GT_AnnoEleBlock]++;
+    io->rdstats[GT_AnnoEleBlock] += buf_len;
+    io->rdcounts[GT_AnnoEleBlock]++;
 
     /* Ungzip it too */
     if (1) {
@@ -6072,8 +6011,8 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
 
     assert(ci->lock_mode >= G_LOCK_RW);
-    wrstats[GT_AnnoEleBlock] += cp-cp_start + 2;
-    wrcounts[GT_AnnoEleBlock]++;
+    io->wrstats[GT_AnnoEleBlock] += cp-cp_start + 2;
+    io->wrcounts[GT_AnnoEleBlock]++;
     err = g_writev(io, ci->view, vec, 2);
     if (err == 0)
 	g_flush(io, ci->view);

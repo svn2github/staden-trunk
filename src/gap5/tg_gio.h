@@ -68,6 +68,15 @@ typedef struct GapIO {
     btree_iter_t *seq_name_iter;
     btree_iter_t *contig_name_iter;
 
+    /* Delayed increments for bin_add_to_range */
+    tg_rec last_bin;
+    int incr_svalue;
+    int incr_rvalue;
+    int incr_avalue;
+
+    /* Maximum template size, for template_max_size */
+    int max_template_size;
+
     int debug_level;
     FILE *debug_fp;
 } GapIO;
@@ -80,7 +89,6 @@ int gio_debug_level(GapIO *io, int level);
 void gio_debug(GapIO *io, int level, char *fmt, ...) __PRINTF_FORMAT__(3,4);
 
 int gio_read_contig(GapIO *io, int cnum, contig_t **c);
-
 
 /* ------------------------------------------------------------------------- */
 /* The cache aspect of the I/O mechanism */
@@ -118,6 +126,10 @@ int cache_item_init(GapIO *io, int type, void *from, tg_rec rec);
 int cache_item_remove(GapIO *io, int type, tg_rec rec);
 int cache_rec_deallocate(GapIO *io, int type, tg_rec rec);
 int cache_exists(GapIO *io, int type, int rec);
+
+/* used to initialise block record numbers */
+void init_block_record_numbers(database_t *db);
+
 
 /* ------------------------------------------------------------------------- */
 /* Data types used elsewhere, but useful here to remove circular dependencies

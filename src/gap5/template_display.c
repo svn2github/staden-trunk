@@ -732,7 +732,6 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     int i;
     int ymin = INT_MAX;
     int ymax = INT_MIN;
-    static int last_zoom = 0;
     int tsize = MIN(template_max_size(tdi->gr->io), GR_WINDOW_RANGE);
     
     tdi->force_redraw = 0;
@@ -849,8 +848,6 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     
     if (tdi->y_start > 0) tdi->y_start = 0;
     if (tdi->y_end < tdi->height) tdi->y_end = tdi->height;
-    
-    last_zoom = tdi->yzoom;
 }
     
     

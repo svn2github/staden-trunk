@@ -911,6 +911,11 @@ int cache_flush(GapIO *io) {
     void cache_ref_debug_dump(GapIO *io);
 #endif
 
+    if (0 != io->last_bin) {
+	/* Force update of bin item counts */
+	bin_add_range(io, NULL, NULL, NULL, NULL, -1);
+    }
+
     //printf("\n>>> cache flush <<<\n");
     //HacheTableRefInfo(io->cache, stdout);
 
@@ -1814,6 +1819,17 @@ int cache_exists(GapIO *io, int type, int rec) {
     }
 }
 
+void init_block_record_numbers(database_t *db) {
+    /* Initialize record numbers for use in cache_item_create_* routines.
+       Setting the sub_recs to the appropriate block size will cause
+       a new block to be created on the first call. */
+    db->seq_brec = db->contig_brec = db->scaff_brec = db->anno_ele_brec = 0;
+    db->seq_sub_rec      = SEQ_BLOCK_SZ;
+    db->contig_sub_rec   = CONTIG_BLOCK_SZ;
+    db->scaff_sub_rec    = SCAFFOLD_BLOCK_SZ;
+    db->anno_ele_sub_rec = ANNO_ELE_BLOCK_SZ;
+}
+
 /*
  * Creates a new seq_t item.
  */
@@ -1843,26 +1859,30 @@ static int cache_item_init_seq(GapIO *io, void *from, tg_rec rec) {
 }
 
 static tg_rec cache_item_create_seq(GapIO *io, void *from) {
-    static tg_rec brec = 0;
-    static tg_rec sub_rec = SEQ_BLOCK_SZ;
+    tg_rec brec    = io->db->seq_brec;
+    tg_rec sub_rec = io->db->seq_sub_rec;
     seq_block_t *b;
 
     if (sub_rec == SEQ_BLOCK_SZ) {
 	sub_rec = 0;
 	brec = io->iface->seq_block.create(io->dbh, NULL);
+	if (G_NO_REC == brec) return -1;
     }
 
     b = (seq_block_t *)cache_search(io, GT_SeqBlock, brec);
+    if (NULL == b) return -1;
 
     /* Start new blocks if they contain too much data too */
     if (b->est_size > 250000) {
 	//printf("New sub block after %d/%d seqs\n", sub_rec, SEQ_BLOCK_SZ);
 	sub_rec = 0;
 	brec = io->iface->seq_block.create(io->dbh, NULL);
+	if (G_NO_REC == brec) return -1;
 	b = (seq_block_t *)cache_search(io, GT_SeqBlock, brec);
+	if (NULL == b) return -1;
     }
 
-    cache_rw(io, b);
+    if (NULL == cache_rw(io, b)) return -1;
 
     /* FIXME: move this somewhere sensible */
     if (from) {
@@ -1870,9 +1890,12 @@ static tg_rec cache_item_create_seq(GapIO *io, void *from) {
 	    return -1;
     }
 
+    io->db->seq_brec    = brec;
+    io->db->seq_sub_rec = sub_rec + 1;
+
     //assert(brec < (1<<(31-SEQ_BLOCK_BITS)));
 
-    return (brec << SEQ_BLOCK_BITS) + sub_rec++;
+    return (brec << SEQ_BLOCK_BITS) + sub_rec;
 }
 
 /*
@@ -1904,17 +1927,18 @@ static int cache_item_init_contig(GapIO *io, void *from, tg_rec rec) {
 }
 
 static tg_rec cache_item_create_contig(GapIO *io, void *from) {
-    static tg_rec brec = 0; /* FIXME: store and load from GDatabase? */
-    static tg_rec sub_rec = CONTIG_BLOCK_SZ;
+    tg_rec brec    = io->db->contig_brec;
+    tg_rec sub_rec = io->db->contig_sub_rec;
     contig_block_t *b;
 
     if (sub_rec == CONTIG_BLOCK_SZ) {
 	sub_rec = 0;
 	brec = io->iface->contig_block.create(io->dbh, NULL);
+	if (G_NO_REC == brec) return -1;
     }
-
     b = (contig_block_t *)cache_search(io, GT_ContigBlock, brec);
-    cache_rw(io, b);
+    if (NULL == b) return -1;
+    if (NULL == cache_rw(io, b)) return -1;
 
     /* FIXME: move this somewhere sensible */
     if (from) {
@@ -1923,7 +1947,10 @@ static tg_rec cache_item_create_contig(GapIO *io, void *from) {
 	    return -1;
     }
 
-    return (brec << CONTIG_BLOCK_BITS) + sub_rec++;
+    io->db->contig_brec    = brec;
+    io->db->contig_sub_rec = sub_rec + 1;
+
+    return (brec << CONTIG_BLOCK_BITS) + sub_rec;
 }
 
 /*
@@ -1968,25 +1995,29 @@ static int cache_item_init_scaffold(GapIO *io, void *from, tg_rec rec) {
 }
 
 static tg_rec cache_item_create_scaffold(GapIO *io, void *from) {
-    static tg_rec brec = 0; /* FIXME: store and load from GDatabase? */
-    static tg_rec sub_rec = SCAFFOLD_BLOCK_SZ;
+    tg_rec brec    = io->db->scaff_brec;
+    tg_rec sub_rec = io->db->scaff_sub_rec;
     scaffold_block_t *b;
 
     if (sub_rec == SCAFFOLD_BLOCK_SZ) {
 	sub_rec = 0;
 	brec = io->iface->scaffold_block.create(io->dbh, NULL);
+	if (G_NO_REC == brec) return -1;
     }
 
     b = (scaffold_block_t *)cache_search(io, GT_ScaffoldBlock, brec);
+    if (NULL == b) return -1;
 
     /* Start new blocks if they contain too much data too */
     if (b->est_size > (1<<20)) {
 	sub_rec = 0;
 	brec = io->iface->scaffold_block.create(io->dbh, NULL);
+	if (G_NO_REC == brec) return -1;
 	b = (scaffold_block_t *)cache_search(io, GT_ScaffoldBlock, brec);
+	if (NULL == b) return -1;
     }
 
-    cache_rw(io, b);
+    if (NULL == cache_rw(io, b)) return -1;
 
     /* FIXME: move this somewhere sensible */
     if (from) {
@@ -1995,7 +2026,10 @@ static tg_rec cache_item_create_scaffold(GapIO *io, void *from) {
 	    return -1;
     }
 
-    return (brec << SCAFFOLD_BLOCK_BITS) + sub_rec++;
+    io->db->scaff_brec    = brec;
+    io->db->scaff_sub_rec = sub_rec + 1;
+
+    return (brec << SCAFFOLD_BLOCK_BITS) + sub_rec;
 }
 
 /*
@@ -2029,34 +2063,41 @@ static int cache_item_init_anno_ele(GapIO *io, void *from, tg_rec rec) {
 }
 
 static tg_rec cache_item_create_anno_ele(GapIO *io, void *from) {
-    static tg_rec brec = 0;
-    static tg_rec sub_rec = ANNO_ELE_BLOCK_SZ;
+    tg_rec brec    = io->db->anno_ele_brec;
+    tg_rec sub_rec = io->db->anno_ele_sub_rec;
     anno_ele_block_t *b;
 
     if (sub_rec == ANNO_ELE_BLOCK_SZ) {
 	sub_rec = 0;
 	brec = io->iface->anno_ele_block.create(io->dbh, NULL);
+	if (G_NO_REC == brec) return -1;
     }
 
     b = (anno_ele_block_t *)cache_search(io, GT_AnnoEleBlock, brec);
+    if (NULL == b) return -1;
 
     /* Start new blocks if they contain too much data too */
     if (b->est_size > 150000) {
 	sub_rec = 0;
 	brec = io->iface->anno_ele_block.create(io->dbh, NULL);
+	if (G_NO_REC == brec) return -1;
 	b = (anno_ele_block_t *)cache_search(io, GT_AnnoEleBlock, brec);
+	if (NULL == b) return -1;
     }
 
-    cache_rw(io, b);
+    if (NULL == (cache_rw(io, b))) return -1;
 
     if (from) {
 	if (cache_item_init_anno_ele(io, from, (brec << ANNO_ELE_BLOCK_BITS) + sub_rec))
 	    return -1;
     }
 
+    io->db->anno_ele_brec    = brec;
+    io->db->anno_ele_sub_rec = sub_rec + 1;
+
     //assert(brec < (1<<(31-ANNO_ELE_BLOCK_BITS)));
 
-    return (brec << ANNO_ELE_BLOCK_BITS) + sub_rec++;
+    return (brec << ANNO_ELE_BLOCK_BITS) + sub_rec;
 }
 
 /*

@@ -361,22 +361,23 @@ int get_library_stats(GapIO *io, tg_rec rec,
  */
 int template_max_size(GapIO *io) {
     int i;
-    static int max_size = 0;
 
-    if (max_size)
-	return max_size;
+    if (io->max_template_size)
+	return io->max_template_size;
     
     for (i = 0; i < io->db->Nlibraries; i++) {
 	tg_rec rec = ARR(tg_rec, io->library, i);
 	double mean, sd;
 
 	update_library_stats(io, rec, 1000, &mean, &sd, NULL);
-	if (max_size < (int)(mean + 3*sd))
-	    max_size = (int)(mean + 3*sd);
+	if (io->max_template_size < (int)(mean + 3*sd))
+	    io->max_template_size = (int)(mean + 3*sd);
     }
 
-    if (max_size == 0)
-	max_size = 1000; /* Random guess - old size used by T.Disp */
+    if (io->max_template_size == 0) {
+	/* Random guess - old size used by T.Disp */
+	io->max_template_size = 1000;
+    }
 
-    return max_size;
+    return io->max_template_size;
 }

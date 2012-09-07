@@ -212,6 +212,16 @@ typedef struct {
     tg_rec seq_name_index;	/* rec of type GT_Index */
     tg_rec contig_name_index;   /* rec of type GT_Index */
     tg_rec scaffold_name_index; /* rec of type GT_Index */
+
+    /* Record numbers to use when creating items that are part of a block */
+    tg_rec seq_brec;         /* Current seq block */
+    tg_rec seq_sub_rec;      /* Next seq sub-record */
+    tg_rec contig_brec;      /* Current contig block */
+    tg_rec contig_sub_rec;   /* Next contig sub-record */
+    tg_rec scaff_brec;       /* Current scaffold block */
+    tg_rec scaff_sub_rec;    /* Next scaffold sub-record */
+    tg_rec anno_ele_brec;    /* Current anno_ele block */
+    tg_rec anno_ele_sub_rec; /* Next anno_ele sub-record */
 } database_t;
 
 

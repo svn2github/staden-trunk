@@ -610,10 +610,6 @@ int bin_empty(bin_index_t *bin) {
  * Returns the bin we added the range to on success
  *         NULL on failure
  */
-static tg_rec last_bin = 0;
-static int incr_svalue = 0;
-static int incr_rvalue = 0;
-static int incr_avalue = 0;
 
 /*
  * As per bin_add_range() but add the range to a specific bin.
@@ -636,15 +632,16 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 
     /* Tidy-up operation when adding ranges in bulk */
     if (delay_nseq == -1) {
-	if (last_bin && (incr_svalue || incr_rvalue || incr_avalue)) {
+	if (io->last_bin
+	    && (io->incr_svalue || io->incr_rvalue || io->incr_avalue)) {
 	    if (c) *c = cache_rw(io, *c);
-	    bin = cache_search(io, GT_Bin, last_bin);
-	    bin_incr_nseq(io, bin, incr_svalue);
-	    bin_incr_nrefpos(io, bin, incr_rvalue);
-	    bin_incr_nanno(io, bin, incr_avalue);
+	    bin = cache_search(io, GT_Bin, io->last_bin);
+	    bin_incr_nseq(io, bin, io->incr_svalue);
+	    bin_incr_nrefpos(io, bin, io->incr_rvalue);
+	    bin_incr_nanno(io, bin, io->incr_avalue);
 	}
-	last_bin = 0;
-	incr_svalue = incr_rvalue = incr_avalue = 0;
+	io->last_bin = 0;
+	io->incr_svalue = io->incr_rvalue = io->incr_avalue = 0;
 
 	return NULL;
     }
@@ -734,15 +731,15 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 	*r_out = r2;
 
     /* Update nseq in bins, delaying this to avoid needless writes */
-    if (delay_nseq == 1 && bin->rec != last_bin
-	&& (incr_svalue || incr_rvalue || incr_avalue)) {
-	bin_index_t *b2 = cache_search(io, GT_Bin, last_bin);
+    if (delay_nseq == 1 && bin->rec != io->last_bin
+	&& (io->incr_svalue || io->incr_rvalue || io->incr_avalue)) {
+	bin_index_t *b2 = cache_search(io, GT_Bin, io->last_bin);
 	if (c) *c = cache_rw(io, *c);
-	bin_incr_nseq(io, b2, incr_svalue);
-	bin_incr_nrefpos(io, b2, incr_rvalue);
-	bin_incr_nanno(io, b2, incr_avalue);
-	incr_svalue = incr_rvalue = incr_avalue = 0;
-	last_bin = bin->rec;
+	bin_incr_nseq(io, b2, io->incr_svalue);
+	bin_incr_nrefpos(io, b2, io->incr_rvalue);
+	bin_incr_nanno(io, b2, io->incr_avalue);
+	io->incr_svalue = io->incr_rvalue = io->incr_avalue = 0;
+	io->last_bin = bin->rec;
     }
 
     if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
@@ -750,8 +747,8 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 	    *c = cache_rw(io, *c);
 	    bin_incr_nseq(io, bin, 1);
 	} else {
-	    incr_svalue++;
-	    last_bin = bin->rec;
+	    io->incr_svalue++;
+	    io->last_bin = bin->rec;
 	}
     }
 
@@ -760,8 +757,8 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 	    *c = cache_rw(io, *c);
 	    bin_incr_nrefpos(io, bin, 1);
 	} else {
-	    incr_rvalue++;
-	    last_bin = bin->rec;
+	    io->incr_rvalue++;
+	    io->last_bin = bin->rec;
 	}
     }
 
@@ -770,8 +767,8 @@ bin_index_t *bin_add_to_range(GapIO *io, contig_t **c, tg_rec brec, range_t *r,
 	    *c = cache_rw(io, *c);
 	    bin_incr_nanno(io, bin, 1);
 	} else {
-	    incr_avalue++;
-	    last_bin = bin->rec;
+	    io->incr_avalue++;
+	    io->last_bin = bin->rec;
 	}
     }
 

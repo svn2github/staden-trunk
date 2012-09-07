@@ -133,6 +133,11 @@ GapIO *gio_open(char *fn, int ro, int create) {
 	cp = fn;
     io->name = strdup(cp);
 
+    io->last_bin = 0;
+    io->incr_svalue = io->incr_rvalue = io->incr_avalue = 0;
+
+    io->max_template_size = 0;
+
     io->debug_level = 0;
     io->debug_fp = stderr;
 
@@ -190,6 +195,8 @@ void gio_close(GapIO *io) {
 GapIO *gio_child(GapIO *io_p) {
     GapIO *io = (GapIO *)calloc(1, sizeof(*io));
 
+    assert(0 == io_p->last_bin); /* No pending updates in bin_add_to_range */
+
     io->iface = get_iface_g();
     cache_create(io);
     
@@ -199,6 +206,8 @@ GapIO *gio_child(GapIO *io_p) {
     io->min_bin_size = io->base->min_bin_size;
     io->debug_level = io->base->debug_level;
     io->debug_fp = io->base->debug_fp;
+    io->last_bin = 0;
+    io->max_template_size = io->base->max_template_size;
     return io;
 }
 
