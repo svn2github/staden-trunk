@@ -401,19 +401,21 @@ int PlotTempMatches(GapIO *io, read_pair_t *rp) {
  *         1 for ends vs all.
  *	   2 for ends vs ends.
  */
+
 read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 			    contig_list_t *contig_array,
 			    enum readpair_mode mode,
 			    int end_size, int min_mq, int min_freq,
 			    tg_rec *library, int nlibrary) {
     int i, j;
-    HashTable *h;
-    HashIter *iter;
+    HashTable *h = NULL;
+    HashIter *iter = NULL;
     HashItem *hi;
     read_pair_t *pairs = NULL;
     int npairs = 0, nalloc = 0;
     int no_large_contigs = 1;
-    pool_alloc_t *rp_pool;
+    int slow_check_libs = 0;
+    pool_alloc_t *rp_pool = NULL;
     HashTable *lib_hash = NULL;
     HashTable *ctg_hash = NULL;
     tg_rec ctg_pair[2];
@@ -421,21 +423,22 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     h = HashTableCreate(1024, HASH_FUNC_HSIEH |
 			      HASH_DYNAMIC_SIZE |
 			      HASH_POOL_ITEMS);
+    if (NULL == h) return NULL;
     rp_pool = pool_create(sizeof(rangec_t));
+    if (NULL == rp_pool) goto fail;
 
     if (library) {
 	lib_hash = HashTableCreate(16, HASH_FUNC_HSIEH | 
 				       HASH_DYNAMIC_SIZE |
 				       HASH_POOL_ITEMS);
+	if (NULL == lib_hash) goto fail;
 	for (i = 0; i < nlibrary; i++) {
 	    HashData hd;
 	    hd.i = 1;
-	    HashTableAdd(lib_hash, (char *)&library[i], sizeof(tg_rec), hd, 0);
+	    if (!HashTableAdd(lib_hash, (char *)&library[i], sizeof(tg_rec),
+			      hd, 0)) goto fail;
 	}
     }
-
-    if (!h || !rp_pool)
-	return NULL;
 
     /*
      * For filtering by frequency. We construct a key consisting of
@@ -443,10 +446,12 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
      * Any contig-pair with insufficient depth of read-pair is then
      * rejected;
      */
-    if (min_freq)
+    if (min_freq) {
 	ctg_hash = HashTableCreate(1024, HASH_FUNC_HSIEH | 
 				         HASH_DYNAMIC_SIZE |
 				         HASH_POOL_ITEMS);
+	if (NULL == ctg_hash) goto fail;
+    }
 
     for (i = 0; i < num_contigs; i++) {
 	contig_iterator *ci;
@@ -456,6 +461,7 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	int large_contig;
 	
 	c = cache_search(io, GT_Contig, crec);
+	if (NULL == c) goto fail;
 	cstart = c->start;
 	cend   = c->end;
 
@@ -499,10 +505,22 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	 */
 	ci = contig_iter_new(io, crec, 1, CITER_FIRST,
 			     CITER_CSTART, CITER_CEND);
+	if (NULL == ci) goto fail;
 
 	while (r = contig_iter_next(io, ci)) {
 	    if (!r->pair_rec)
 		continue; /* unpaired */
+
+	    if (library) {
+		if (r->library_rec) {
+		    if (!HashTableSearch(lib_hash, (char *) &r->library_rec,
+					 sizeof(r->library_rec))) {
+			continue;
+		    }
+		} else {
+		    slow_check_libs = 1;
+		}
+	    }
 
 	    if (large_contig && r->start - cstart > 2*end_size)
 		break;
@@ -522,6 +540,7 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 		r->start - cstart < end_size || cend - r->start < end_size) {
 		HashData hd;
 		rangec_t *r2 = pool_alloc(rp_pool);
+		if (NULL == r2) goto fail;
 		*r2 = *r;
 		r2->orig_rec = crec; /* convenient place to store contig */
 		if (r->start - cstart < end_size ||
@@ -531,7 +550,8 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 		    r2->pair_start = 0;
 		hd.p = r2;
 
-		HashTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, 0);
+		if (!HashTableAdd(h, (char *)&r->rec, sizeof(r->rec),
+				  hd, 0)) goto fail;
 	    }
 	}
 
@@ -541,10 +561,22 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	if (large_contig) {
 	    ci = contig_iter_new(io, crec, 1, CITER_FIRST,
 				 MAX(cstart, cend - 2*end_size), CITER_CEND);
-	    
+	    if (NULL == ci) goto fail;
+
 	    while (r = contig_iter_next(io, ci)) {
 		if (!r->pair_rec)
 		    continue; /* unpaired */
+
+		if (library) {
+		    if (r->library_rec) {
+			if (!HashTableSearch(lib_hash, (char *) &r->library_rec,
+					     sizeof(r->library_rec))) {
+			    continue;
+			}
+		    } else {
+			slow_check_libs = 1;
+		    }
+		}
 
 		if ((hi = HashTableSearch(h, (char *)&r->pair_rec,
 					  sizeof(r->pair_rec)))){
@@ -559,6 +591,7 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 		if (mode == end_all || cend - r->start < end_size) {
 		    HashData hd;
 		    rangec_t *r2 = pool_alloc(rp_pool);
+		    if (NULL == r2) goto fail;
 		    *r2 = *r;
 		    r2->orig_rec = crec;
 		    if (r->start - cstart < end_size ||
@@ -568,14 +601,14 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 			r2->pair_start = 0;
 		    hd.p = r2;
 
-		    HashTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, 0);
+		    if (!HashTableAdd(h, (char *)&r->rec, sizeof(r->rec),
+				      hd, 0)) goto fail;
 		}
 	    }
 
 	    contig_iter_del(ci);
 	}
     }
-
 
     /*
      * Our hash table ideally now contains pairs with rec1 -> rec2 and 
@@ -592,6 +625,7 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
      * contigs.
      */
     iter = HashTableIterCreate();
+    if (NULL == iter) goto fail;
     while ((hi = HashTableIterNext(h, iter))) {
 	tg_rec rec1, rec2;
 	rangec_t *r1 = (rangec_t *)hi->data.p, *r2, r2_tmp;
@@ -635,11 +669,13 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	    continue;
 
 	/*
-	 * Filter by library: we do this late as it's a slow process due
-	 * to (currently) needing to load the sequence struct itself
-	 * rather than just iterate through the range arrays.
+	 * Filter by library for older database versions. We do this late as
+	 * it's a slow process due to needing to load the sequence struct
+	 * itself rather than just iterate through the range arrays.
+	 * If library_rec is set for some rangec_t's then they should
+	 * have been filtered earlier.
 	 */
-	if (library) {
+	if (slow_check_libs && !r1->library_rec) {
 	    seq_t *s = cache_search(io, GT_Seq, r1->rec);
 	    tg_rec lib;
 
@@ -655,10 +691,11 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 
 	/* Accepted - add it to pairs[] array */
 	if (npairs >= nalloc) {
+	    read_pair_t *new_pairs;
 	    nalloc = nalloc ? nalloc*2 : 1024;
-	    pairs = realloc(pairs, nalloc * sizeof(*pairs));
-	    if (!pairs)
-		return NULL;
+	    new_pairs = realloc(pairs, nalloc * sizeof(*pairs));
+	    if (!new_pairs) goto fail;
+	    pairs = new_pairs;
 	}
 
 	/*
@@ -692,6 +729,7 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 	    hd.i = 0;
 	    hi = HashTableAdd(ctg_hash, (char *)ctg_pair, sizeof(ctg_pair),
 			      hd, NULL);
+	    if (NULL == hi) goto fail;
 	    hi->data.i++;
 	}
 
@@ -718,10 +756,11 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 
     /* Indicate end of list */
     if (npairs >= nalloc) {
+	read_pair_t *new_pairs;
 	nalloc = nalloc ? nalloc*2 : 1024;
-	pairs = realloc(pairs, nalloc * sizeof(*pairs));
-	if (!pairs)
-	    return NULL;
+	new_pairs = realloc(pairs, nalloc * sizeof(*pairs));
+	if (!new_pairs) goto fail;
+	pairs = new_pairs;
     }
     pairs[npairs].rec[0] = 0;
 	
@@ -737,6 +776,15 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     vmessage("Found %d read-pairs\n", npairs);
 
     return pairs;
+
+ fail:
+    if (iter) HashTableIterDestroy(iter);
+    if (h) HashTableDestroy(h, 0);
+    if (rp_pool) pool_destroy(rp_pool);
+    if (lib_hash) HashTableDestroy(lib_hash, 0);
+    if (ctg_hash) HashTableDestroy(ctg_hash, 0);
+    if (pairs) free(pairs);
+    return NULL;
 }
 
 
