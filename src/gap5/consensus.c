@@ -159,7 +159,8 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 	if (bin->size >= CONS_BIN_SIZE && (bin->child[0] || bin->child[1]))
 	    continue;
 
-	r[j++] = r[i];
+	if (j != i) r[j] = r[i];
+	j++;
     }
     nr = j;
 
@@ -388,7 +389,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
 		}
 		
 		/* If not cached, create a new range */
-		if (!io->read_only && !cons_r) {
+		if (!io->read_only && !cons_r && !io->base) {
 		    r2.start    = bstart;
 		    r2.end      = bend;
 		    r2.rec      = 0;
