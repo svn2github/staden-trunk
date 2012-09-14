@@ -310,8 +310,9 @@ int update_library_stats(GapIO *io, tg_rec rec, int min_count,
 	    lib->sd[i] = sd_[i];
 	    lib->counts[i] = N[i];
 	}
-
 	lib->flags = 1;
+    } else {
+	lib->flags = 2;
     }
 
     return 0;

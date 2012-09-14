@@ -937,6 +937,8 @@ int sequence_get_template_info(GapIO *io, seq_t *s1,
 	if (-1 == update_library_stats(io, lib_rec, 100, NULL, NULL, NULL))
 	    return TEMPLATE_ERR;
     }
+    if (lib->flags == 2)
+	return TEMPLATE_PAIRED; /* insufficient data to say otherwise */
 
     total_count = lib->counts[0] + lib->counts[1] + lib->counts[2];
 
@@ -1671,7 +1673,7 @@ int sequence_fix_anno_bins(GapIO *io, seq_t **s) {
 	    continue;
 
 	/* In incorrect bin - fix it */
-	fprintf(stderr, "Fixing bin for anno %"PRIrec"\n", r[i].rec);
+	//fprintf(stderr, "Fixing bin for anno %"PRIrec"\n", r[i].rec);
 	a = cache_rw(io, a);
 
 	bin_remove_item(io, &c, GT_AnnoEle, r[i].rec);
