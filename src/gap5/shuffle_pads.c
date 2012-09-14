@@ -127,11 +127,13 @@ void malign_padcon(MALIGN *malign, int pos, int size, Array indels) {
 
 /*
  * Returns the number of consensus pads added or -1 for error.
+ * "*edited_p" is set to 0 or 1 to indicate if the sequence was edited.
  */
 int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos,
-	       Array indels) {
+	       Array indels, int *edited_p) {
     int i, npads, poso;
-    char *cp;
+    char *cp, *old_cp, *old_seq;
+    int edited = 0;
 
     /* Cons vector */
     npads = 0;
@@ -154,12 +156,19 @@ int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos,
 	cl->mseg->offset++;
     }
 
-    xfree(cl->mseg->seq);
+    //xfree(cl->mseg->seq);
+    old_cp = old_seq = cl->mseg->seq;
     cl->mseg->seq = strdup(cp);
     for (cp = cl->mseg->seq; *cp; cp++) {
 	if (*cp == '.')
 	    *cp = '*';
+	if (*old_cp) {
+	    if (!edited && *old_cp != *cp)
+		edited = 1;
+	    old_cp++;
+	}
     }
+    free(old_seq);
 
     /* Back off trailing pads */
     while (cp > cl->mseg->seq && *(cp-1) == '*')
@@ -171,6 +180,8 @@ int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos,
     printf("cl->mseg->seq=%.*s (len %d)\n",
 	   cl->mseg->length, cl->mseg->seq, cl->mseg->length);
     */
+    if (edited_p)
+	*edited_p = edited;
 
     return npads;
 }
@@ -212,7 +223,26 @@ typedef struct cl_list {
     struct cl_list *next;
 } cl_list;
 
-static void remove_pads(GapIO *io, MALIGN *malign, contig_t *c) {
+/*
+ * If running over a region then we may have this:
+ *
+ * A ------------- |                     |
+ * B      ---------|------------         |
+ * C               | --------------------|---
+ * D               |            ---------|------------
+ * E               |                     |   ------------------
+ *
+ * Read A and E aren't overlapping the region, therefore don't
+ * get entered into MALIGN.
+ * A pad at the start of B or end of D would be considered as 100%
+ * pad column causing the complete removal, but read A and E may
+ * not have a pad in that position.
+ *
+ * Solution: Remove pads only when between start..end and not
+ * outside that range. Delete other pads later on.
+ */
+static void remove_pads(GapIO *io, MALIGN *malign, contig_t *c,
+			int start, int end) {
     int i, removed = 0;
     CONTIGL *cl = malign->contigl;
     cl_list *head = NULL, *c2, *last, *next;
@@ -252,11 +282,14 @@ static void remove_pads(GapIO *io, MALIGN *malign, contig_t *c) {
 	if (npads != depth || depth == 0)
 	    continue;
 
-	/* We have a column of pads, so remove it */
-	//printf("Remove pad at %d\n", i+1-removed);
-	contig_delete_pad(io, &c, i+1-removed);
 
-	removed++;
+	/* We have a column of pads, so remove it */
+	if (i+1-removed >= start && i+1-removed <= end) {
+	    //printf("Remove pad at %d\n", i+1-removed);
+	    contig_delete_pad(io, &c, i+1-removed);
+
+	    removed++;
+	}
     }
 
     malign_recalc_scores(malign, 0, malign->length-1);
@@ -273,11 +306,24 @@ static void remove_pads(GapIO *io, MALIGN *malign, contig_t *c) {
  */
 MALIGN *realign_seqs(int contig, MALIGN *malign, int band, Array indels) {
     CONTIGL *lastl = NULL, *contigl;
-    int nsegs, r;
+    int r;
     int old_start, old_end, new_start, new_end;
+    int rstart, rend, rnum = 0, edited;
+    MALIGN new_reg;
+    int total_npads = 0;
 
-    for (contigl = malign->contigl, nsegs = 0; contigl; nsegs++)
-	contigl = contigl->next;
+    new_reg.nregion = 0;
+    new_reg.region = NULL;
+
+    //printf("=== Relign_seqs over %d regions\n", malign->nregion);
+
+    rstart = malign->nregion ? malign->region[0].start : INT_MIN;
+    rend   = malign->nregion ? malign->region[0].end   : INT_MAX;
+    //printf("Checking reg %d: %d..%d\n", rnum, rstart, rend);
+
+    /* FIXME
+     * Keep track of n-cons-pads when checking regions.
+     */
 
     /* Loop through all sequences in the contig */
     contigl = malign->contigl;
@@ -287,6 +333,23 @@ MALIGN *realign_seqs(int contig, MALIGN *malign, int band, Array indels) {
 	ALIGN_PARAMS *p;
 	int cons_pos;
 	int npads;
+#if 1
+	if (contigl->mseg->offset > rend) {
+	    if (++rnum >= malign->nregion) {
+		//printf("Last region ended at %d\n", rend);
+		break;
+	    }
+	    rstart = malign->region[rnum].start + total_npads;
+	    rend   = malign->region[rnum].end + total_npads;
+	    //printf("Checking reg %d: %d..%d\n", rnum, rstart, rend);
+	}
+
+	if (contigl->mseg->offset + contigl->mseg->length-1 < rstart) {
+	    lastl = contigl;
+	    contigl = contigl->next;
+	    continue;
+	}
+#endif
 
 	/* Obtain a depadded copy of this mseg */
 	len = contigl->mseg->length;
@@ -360,16 +423,38 @@ MALIGN *realign_seqs(int contig, MALIGN *malign, int band, Array indels) {
 	/* Edit the sequence with the alignment */
 	old_start = contigl->mseg->offset;
 	old_end   = contigl->mseg->offset + contigl->mseg->length-1;
+	edited = 0;
 	if (r == 0 && o->S1)
-	    npads = edit_mseqs(malign, contigl, o, cons_pos, indels);
+	    npads = edit_mseqs(malign, contigl, o, cons_pos, indels, &edited);
 	else
 	    npads = 0;
 	new_start = contigl->mseg->offset;
 	new_end   = contigl->mseg->offset + contigl->mseg->length-1;
 
+	/* Keep track of region adjustments as we edit the consensus */
+	total_npads += npads;
+	if (rend != INT_MAX)
+	    rend += npads;
 
 	/* Put sequence back */
 	malign_add_contigl(malign, lastl, contigl);
+
+	/*
+	 * Check if malign->mseg has changed between removal and addition.
+	 * Also count diffs here?
+	 *
+	 * If it's changed, call malign_add_region on a new region list
+	 * so we can reduce the work load in the next pass.
+	 *
+	 * However, still need to keep track of diffs on sequences we're
+	 * skipping?
+	 */
+	if (npads || edited) {
+	    malign_add_region(&new_reg,
+			      MIN(old_start, new_start),
+			      MAX(old_end, new_end));
+	}
+	// TODO
 
 
 	/* Update the malign structure */
@@ -429,6 +514,28 @@ MALIGN *realign_seqs(int contig, MALIGN *malign, int band, Array indels) {
 	contigl = contigl->next;
     }
 
+    /* Swap regions over */
+    if (0) {
+	int i;
+	printf("\nCur region = %d elements\n", malign->nregion);
+	for (i = 0; i < malign->nregion; i++) {
+	    printf("\t%d\t%d\n",
+		   malign->region[i].start,
+		   malign->region[i].end);
+	}
+	printf("\nNew region = %d elements\n", new_reg.nregion);
+	for (i = 0; i < new_reg.nregion; i++) {
+	    printf("\t%d\t%d\n",
+		   new_reg.region[i].start,
+		   new_reg.region[i].end);
+	}
+    }
+
+    if (malign->region)
+	free(malign->region);
+    malign->region = new_reg.region;
+    malign->nregion = new_reg.nregion;
+
     resort_contigl(malign);
 
     return malign;
@@ -437,16 +544,52 @@ MALIGN *realign_seqs(int contig, MALIGN *malign, int band, Array indels) {
 /**
  * Builds and returns MALIGN from a Gap5 IO handle for the contig 'cnum'.
  */
-MALIGN *build_malign(GapIO *io, tg_rec cnum /*, int start, int end */) {
+MALIGN *build_malign(GapIO *io, tg_rec cnum, int start, int end) {
     CONTIGL *contig, *first_contig = NULL, *last_contig = NULL;
     int i, j;
     contig_iterator *citer;
     rangec_t *r;
 
+    /* Expand start and end to the range covered by seqs overlapping
+     * start .. end
+     */
+
+    {
+	seq_t *s;
+	citer = contig_iter_new(io, cnum, 0,
+				CITER_FIRST | CITER_ICLIPPEDSTART,
+				start, start);
+	r = contig_iter_next(io, citer);
+	s = cache_search(io, GT_Seq, r->rec);
+
+	start = ((s->len < 0) ^ r->comp)
+	    ? r->end - s->right - 2
+	    : r->start + s->left - 2;
+
+	contig_iter_del(citer);
+    }
+
+    {
+	seq_t *s;
+	citer = contig_iter_new(io, cnum, 0,
+				CITER_LAST | CITER_ICLIPPEDEND,
+				end, end);
+	r = contig_iter_next(io, citer);
+	s = cache_search(io, GT_Seq, r->rec);
+
+	end = ((s->len < 0) ^ r->comp)
+	    ? r->end - s->left + 2
+	    : r->start + s->right + 2;
+
+	contig_iter_del(citer);
+    }
+    
+    //printf("Generating data for %d..%d\n", start, end);
+
     /* Generate contigl linked list */
-    citer = contig_iter_new(io, cnum, 1, CITER_FIRST, CITER_CSTART, CITER_CEND);
-    // citer = contig_iter_new(io, cnum, 0, CITER_FIRST, start, end);
-			   
+    //citer = contig_iter_new(io, cnum, 1, CITER_FIRST, CITER_CSTART, CITER_CEND);
+    citer = contig_iter_new(io, cnum, 0, CITER_FIRST, start, end);
+    
     while ((r = contig_iter_next(io, citer))) {
 	seq_t *s, *sorig;
 	char *seq;
@@ -652,11 +795,10 @@ void print_moverlap(MALIGN *malign, MOVERLAP *o, int offset) {
 }
 
 #include <ctype.h>
-int malign_diffs(MALIGN *malign, int *tot) {
+int64_t malign_diffs(MALIGN *malign, int64_t *tot) {
     CONTIGL *cl;
-    int diff_count = 0, tot_count = 0;
+    int64_t diff_count = 0, tot_count = 0;
 
-    /* printf("%.*s\n", malign->length, malign->consensus); */
     for (cl = malign->contigl; cl; cl = cl->next) {
 	int i;
 
@@ -671,6 +813,7 @@ int malign_diffs(MALIGN *malign, int *tot) {
 	}
 	*/
 
+#if 0
 	for (i = 0; i < cl->mseg->length; i++) {
 	    char c = toupper(malign->consensus[i+cl->mseg->offset]);
 	    char s = toupper(cl->mseg->seq[i]);
@@ -682,6 +825,26 @@ int malign_diffs(MALIGN *malign, int *tot) {
 		diff_count++;
 	    tot_count++;
 	}
+#else
+	/* See set_malign_lookup() */
+	static int l[128] = {
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /*   0-15 */
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /*  16 */
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 4, 5, 5, /*  32 */
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /*  48 */
+	    5, 0, 5, 1, 5, 5, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, /*  64 */
+	    5, 5, 5, 5, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /*  80 */
+	    5, 0, 5, 1, 5, 5, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, /*  96 */
+	    5, 5, 5, 5, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /* 112-127 */
+	};
+	for (i = 0; i < cl->mseg->length; i++) {
+	    char s = l[cl->mseg->seq[i]];
+
+	    /*printf("%c", c==s ? '.' : s);*/
+	    diff_count += malign->scores[i+cl->mseg->offset][s];
+	}
+	tot_count  += 128 * cl->mseg->length;
+#endif
     }
 
     if (tot)
@@ -1016,8 +1179,13 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 	    if (cl->mseg->comp)
 		complement_seq_t(s);
 
+	    /*
+	     * memcpy first, although not technically requested rw yet.
+	     * If we do it after we have to copy all except s->block as
+	     * sorig->block will differ when we're using a child I/O.
+	     */
+	    memcpy(sorig, s, sizeof(seq_t)); 
 	    sorig = cache_rw(io, sorig);
-	    memcpy(sorig, s, sizeof(seq_t));
 
 	    if (update_range)
 		sorig = cache_item_resize(sorig, sizeof(*sorig) +
@@ -1194,7 +1362,7 @@ void reassign_confidence_values(GapIO *io, int cnum) {
 
 
 int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
-		       int band) {
+		       int band, int flush) {
     int i, start;
     Array indels;
     
@@ -1205,7 +1373,7 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 
     for (i = 0; i < ncontigs; i++) {
 	tg_rec cnum = contigs[i].contig;
-	int old_score, new_score, tot_score, orig_score;
+	int64_t old_score, new_score, tot_score, orig_score;
 	//for (start = 0; start < 1000000; start += 1000) {
 	//  MALIGN *malign = build_malign(io, cnum, start, start + 1000);
 	MALIGN *malign;
@@ -1232,37 +1400,62 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 		return -1;
 	}
 
-	malign = build_malign(io, cnum);
+	//printf("Shuffle #%"PRIrec" from %d..%d, shift %d\n",
+	//       contigs[i].contig, contigs[i].start, contigs[i].end, c_shift);
+
+	malign = build_malign(io, cnum,
+			      contigs[i].start + c_shift,
+			      contigs[i].end   + c_shift);
 	resort_contigl(malign);
+
+	malign_add_region(malign,
+			  contigs[i].start + c_shift,
+			  contigs[i].end + c_shift);
 
 	ArrayMax(indels) = 0;
 	orig_score = new_score = malign_diffs(malign, &tot_score);
 	vmessage("Initial score %.2f%% mismatches (%d mismatches)\n",
-		 (100.0 * orig_score)/tot_score, orig_score);
+		 (100.0 * orig_score)/tot_score, orig_score/128);
 	UpdateTextOutput();
+	//print_malign(malign);
 	do {
 	    old_score = new_score;
 	    malign = realign_seqs(cnum, malign, band, indels);
 	    //print_malign(malign);
 	    new_score = malign_diffs(malign, &tot_score);
-	    vmessage("  Number of differences to consensus: %d\n", new_score);
+	    vmessage("  Consensus difference score: %d\n", new_score);
 	    UpdateTextOutput();
 	} while (new_score < old_score);
 
 	if (new_score < orig_score) {
 	    //print_malign(malign);
 	    update_io(io, cnum, malign, indels);
+
+	    /*
+	     * It's possible the contig ends could move if a sequence that
+	     * was previously the end of a contig has been moved such that
+	     * it's no longer the contig end. This can lead to tags off the
+	     * end of the contig, so trim them (reusing break_contig
+	     * code).
+	     */
+	     contig_visible_start(io, cnum, CITER_CSTART);
+	     contig_visible_end(io, cnum, CITER_CEND);
 	} else {
 	    vmessage("Could not reduce number of consensus differences.\n");
 	}
 
 	/* Remove pad columns */
+	//printf("New score=%d, orig_score=%d\n", new_score, orig_score);
 	if (new_score < orig_score) {
-	    contig_t *c;
-	    c = cache_search(io, GT_Contig, cnum);
-	    cache_incr(io, c);
-	    remove_pads(io, malign, c);
-	    cache_decr(io, c);
+	    contigs[i].start += c_shift;
+	    contigs[i].end += c_shift;
+	    remove_pad_columns(io, 1, &contigs[i], 100, 1);
+
+	    //contig_t *c;
+	    //c = cache_search(io, GT_Contig, cnum);
+	    //cache_incr(io, c);
+	    //remove_pads(io, malign, c, contigs[i].start, contigs[i].end);
+	    //cache_decr(io, c);
 	}
 
 	destroy_malign(malign, 1);
@@ -1288,7 +1481,8 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 		return -1;
 	}
 
-	cache_flush(io);
+	if (flush)
+	    cache_flush(io);
     }
 
     ArrayDestroy(indels);
@@ -1303,7 +1497,7 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
  * ----------------------------------------------------------------------
  */
 int remove_pad_columns(GapIO *io, int ncontigs, contig_list_t *contigs,
-		       int percent_pad) {
+		       int percent_pad, int quiet) {
     int i;
     consensus_t *cons = NULL;
     size_t max_alloc = 0;
@@ -1314,8 +1508,9 @@ int remove_pad_columns(GapIO *io, int ncontigs, contig_list_t *contigs,
 	int ndel = 0;
 	contig_t *c;
 
-	vmessage("Processing contig %d of %d (#%"PRIrec")\n",
-		 i+1, ncontigs, cnum);
+	if (!quiet)
+	    vmessage("Processing contig %d of %d (#%"PRIrec")\n",
+		     i+1, ncontigs, cnum);
 	UpdateTextOutput();
 
 	c = cache_search(io, GT_Contig, cnum);
@@ -1345,11 +1540,12 @@ int remove_pad_columns(GapIO *io, int ncontigs, contig_list_t *contigs,
 	    if (100 * cons[j].counts[4] / cons[j].depth < percent_pad)
 		continue;
 
-	    vmessage("  Removing column %d %d%% pad (%d of %d), conf. %f)\n",
-		     (int)j+contigs[i].start,
-		     100 * cons[j].counts[4] / cons[j].depth,
-		     cons[j].counts[4], cons[j].depth,
-		     cons[j].scores[cons[j].call]);
+	    if (!quiet)
+		vmessage("  Removing column %d %d%% pad (%d of %d), conf. %f)\n",
+			 (int)j+contigs[i].start,
+			 100 * cons[j].counts[4] / cons[j].depth,
+			 cons[j].counts[4], cons[j].depth,
+			 cons[j].scores[cons[j].call]);
 
 	    contig_delete_base(io, &c, contigs[i].start + j - ndel);
 	    ndel++;

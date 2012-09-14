@@ -250,23 +250,36 @@ int list_confidence(int *freqs, int length)
  *
  * The buffers are not initialised to zero; this is expected to be done by the
  * caller (if desired).
+ * Matrix returns frequencies with ACGTN* as 012345
  *
  * Returns 0 on success
  *        -1 on failure
  */
-int get_base_confidences(GapIO *io, tg_rec contig,
-			 int *match_freqs, int *mismatch_freqs) {
+int get_base_confidences(GapIO *io, tg_rec contig, int start, int end,
+			 int *match_freqs, int *mismatch_freqs,
+			 long matrix[6][6]) {
     char *con;
     contig_iterator *ci;
     rangec_t *r;
-    int clen = io_clength(io, contig);
+    int clen = end-start+1;
+    static char L[256];
+
+    if (!L['*']) {
+	memset(L, 4, 256);
+	L['A'] = L['a'] = 0;
+	L['C'] = L['c'] = 1;
+	L['G'] = L['g'] = 2;
+	L['T'] = L['t'] = 3;
+	L['U'] = L['u'] = 3;
+	L['*'] = 5;
+    }
 
     /* Get the consensus along with the confidence values */
     con = (char *)xmalloc((clen+1) * sizeof(*con));
     if (!con)
 	return -1;
 
-    calc_consensus(contig, 1, clen, CON_SUM,
+    calc_consensus(contig, start, end, CON_SUM,
 		   con, NULL, NULL, NULL,
 		   consensus_cutoff, quality_cutoff,
 		   database_info, (void *)io);
@@ -284,8 +297,10 @@ int get_base_confidences(GapIO *io, tg_rec contig,
 	    complement_seq_t(s);
 	}
 
-	for (i = s->left-1, p = r->start + i - 1; i < s->right; i++, p++) {
-	    char con_base = p-1 >= 0 && p-1 < clen ? con[p] : 'N';
+	for (i = s->left-1, p = r->start + i; i < s->right; i++, p++) {
+	    char con_base = p >= start && p <= end ? con[p-start] : 'N';
+
+	    matrix[L[con_base]][L[s->seq[i]]]++;
 
 	    /* Skip pads for now */
 	    if (con_base == '*' || s->seq[i] == '*')
@@ -311,7 +326,7 @@ int get_base_confidences(GapIO *io, tg_rec contig,
  * Produces a textual report of the match and mismatch frequencies
  * Returns the total "problem" score.
  */
-double list_base_confidence(int *matfreqs, int *misfreqs)
+double list_base_confidence(int *matfreqs, int *misfreqs, long matrix[6][6])
 {
     int max = 0, i;
     double var_denominator = 0, var_numerator = 0;
@@ -343,6 +358,32 @@ double list_base_confidence(int *matfreqs, int *misfreqs)
     vmessage("Problem score          : %f\n",
 	     var_numerator / var_denominator);
     vmessage("\n");
+
+    /* Substitution matrix */
+    {
+	char b1, b2;
+	long tmis = 0, tins = 0, tdel = 0;
+
+	vmessage("Substitution matrix:\n");
+	vmessage("call\\cons  A        C        G        T        N        *");
+	for (b2 = 0; b2 < 6; b2++) {
+	    vmessage("\n%c  ", "ACGTN*"[b2]);
+	    for (b1 = 0; b1 < 6; b1++) {
+		vmessage(" %8d", matrix[b1][b2]);
+		if (b1 != b2) {
+		    if (b1 == 5)
+			tdel += matrix[b1][b2];
+		    else if (b2 == 5)
+			tins += matrix[b1][b2];
+		    else
+			tmis += matrix[b1][b2];
+		}
+	    }
+	}
+	vmessage("\n\nTotal mismatches = %ld, insertions = %ld, "
+		 "deletions = %ld\n\n",
+		 tmis, tins, tdel);
+    }
 
     /* Headings */
     vmessage("Conf.        Match        Mismatch           Expected      Over-\n");

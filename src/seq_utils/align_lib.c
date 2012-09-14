@@ -320,6 +320,8 @@ MALIGN *create_malign(void) {
     malign->scores = NULL;
     malign->matrix = NULL;
     malign->charset_size = 6; /*  a,c,g,t,*,n */
+    malign->region = NULL;
+    malign->nregion = 0;
     return malign;
 }
 
@@ -360,6 +362,9 @@ void destroy_malign (MALIGN *malign, int contig_links_too) {
 	    }
 	}
 
+	if (malign->region)
+	    free(malign->region);
+
 	free_malign(malign);
 	xfree (malign);
     }
@@ -382,6 +387,29 @@ void set_malign_lookup(int charset_size) {
     malign_lookup['U'] = 3;
     malign_lookup['u'] = 3;
     malign_lookup['*'] = 4;
+}
+
+/*
+ * Add start..end to the malign->region list.
+ * If start..end overlaps the last element it extends, otherwise it allocates
+ * a new region.
+ */
+void malign_add_region(MALIGN *malign, int start, int end) {
+    if (malign->nregion > 0 &&
+	start <= malign->region[malign->nregion-1].end) {
+	malign->region[malign->nregion-1].end = end;
+    } else {
+	/*
+	if (malign->nregion)
+	    printf("New region %d..%d\n",
+		   malign->region[malign->nregion-1].start,
+		   malign->region[malign->nregion-1].end);
+	*/
+	malign->region = realloc(malign->region,
+				 ++malign->nregion * sizeof(CONTIGR));
+	malign->region[malign->nregion-1].start = start;
+	malign->region[malign->nregion-1].end   = end;
+    }
 }
 
 /*
@@ -610,9 +638,22 @@ void get_malign_consensus(MALIGN *malign, int start, int end) {
   }
 }
 
+void print_malign_counts(MALIGN *malign) {
+  int i,j;
+  for(i=0;i<malign->length;i++) {
+      printf("%04d: ", i);
+      for(j=0;j<malign->charset_size;j++) {
+	  printf(" %+4d ",malign->counts[i][j]);
+      }
+      printf("\n");
+  }
+  printf("\n");
+}
+
 void print_malign_scores(MALIGN *malign) {
   int i,j;
   for(i=0;i<malign->length;i++) {
+      printf("%04d: ", i);
       for(j=0;j<malign->charset_size;j++) {
 	  printf(" %+4d ",malign->scores[i][j]);
       }
@@ -654,6 +695,9 @@ void scale_malign_scores(MALIGN *malign, int start, int end) {
   /* Simple unit based scores with 0 = perfect 1 = wrong. Based on ReAligner */
   /* Scale by 100 to fit in integers */
 #if 1
+
+//#define OLD_MODE
+#ifdef OLD_MODE
   for(i=start;i<=end;i++) {
       int t = 0;
       double s = 0;
@@ -678,6 +722,29 @@ void scale_malign_scores(MALIGN *malign, int start, int end) {
 	  }
       }
   }
+#else
+  for(i=start;i<=end;i++) {
+      int t = 0, max = 0, s;
+
+      for (j = 0; j < malign->charset_size; j++) {
+	  t += malign->counts[i][j];
+	  if (max < malign->counts[i][j])
+	      max = malign->counts[i][j];
+      }
+      if (t) {
+	  for(j=0;j<malign->charset_size;j++) {
+	      malign->scores[i][j] = 128 - (malign->counts[i][j]<<7)/t;
+	  }
+
+	  /* Penalty for gaps is marginally higher */
+	  malign->scores[i][5]++;
+      } else {
+	  for(j=0;j<malign->charset_size;j++) {
+	      malign->scores[i][j] = 0;
+	  }
+      }
+  }
+#endif
 #endif
 }
 
@@ -722,14 +789,12 @@ void print_malign_seqs(MALIGN *malign) {
   i = 0;
   t = malign->contigl;
   while(t) {
-      /*
     printf("%d %d %*.s %s\n",
 	   i++,
 	   t->mseg->length,
 	   t->mseg->offset,
 	   "                       ",
 	   t->mseg->seq);
-	   */
     t = t->next;
   }
 }
@@ -747,7 +812,7 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
   }
   contigl = contigl_in;
   malign->contigl = contigl;
-  print_malign_seqs(malign);
+  //print_malign_seqs(malign);
   i = set_malign_charset(malign,"acgt*n");
 
   /*printf("charset %s\n",malign->charset);*/
@@ -756,7 +821,7 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
 
   malign->matrix = create_malign_counts(malign->charset_size,malign->charset_size);
   init_malign_matrix(malign);
-  /*print_malign_matrix(malign);*/
+  //print_malign_matrix(malign);
 
   malign->length = contigl_length(contigl);
 
@@ -768,9 +833,7 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
   malign->orig_scores = malign->scores[0];
   malign->orig_length = malign->length;
   get_malign_counts(malign, 0, malign->length-1);
-
-
-  //print_malign_scores(malign);
+  //print_malign_counts(malign);
 
   /* make a 100% consensus for the alignment */
 
@@ -780,7 +843,7 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
       malign->orig_pos[i] = i+1;
   }
   get_malign_consensus(malign, 0, malign->length-1);
-  /* printf("      %s\n",malign->consensus); */
+  //printf("      %s\n",malign->consensus);
 
   /* scale the scores with the gap penalties and the external score matrix */
 
@@ -6026,7 +6089,8 @@ int fixed_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
  * get away with very small bands in order to realign sequences with the
  * minimal amount of effort.
  */
-#define GAPM 101
+//#define GAPM 129
+#define GAPM 140
 int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
     char *seq1, *seq2;
     int seq1_len, seq2_len, seq_out_len;

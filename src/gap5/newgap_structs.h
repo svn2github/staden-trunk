@@ -540,6 +540,7 @@ typedef struct {
     GapIO *io;
     char *inlist;
     int band;
+    int flush;
 } shuffle_arg;
 
 #ifdef USE_BIOLIMS

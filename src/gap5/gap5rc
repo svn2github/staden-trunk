@@ -1028,7 +1028,8 @@ set_def CHECK_ASSEMBLY.USED.WINSIZE.VALUE	50
 
 # Shuffle Pads
 set_def SHUFFLE_PADS.INFILE		$defs_c_in
-set_def SHUFFLE_PADS.BAND_SIZE		8
+set_def SHUFFLE_PADS.BAND_SIZE		15
+set_def SHUFFLE_PADS.EDITOR_BAND_SIZE	51
 
 # Remove Pad Columns
 set_def REMOVE_PAD_COLUMNS.INFILE		$defs_c_in

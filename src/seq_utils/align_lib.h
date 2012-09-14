@@ -16,6 +16,15 @@ typedef struct Contigl {
   int64_t id;
 }CONTIGL;
 
+/*
+ * Region of contig to realign.
+ * Successive rounds may reduce this down or break into small islands.
+ */
+typedef struct ContigRegion {
+    int start;
+    int end;
+}CONTIGR;
+
 CONTIGL *create_contig_link(void);
 
 void print_contig_links(CONTIGL *contigl);
@@ -31,6 +40,8 @@ typedef struct Malign {
     int  length;
     int  **matrix;
     CONTIGL *contigl;
+    CONTIGR *region;
+    int nregion;
     char *consensus;
     int *orig_pos;
     int **counts;
@@ -83,6 +94,8 @@ void malign_remove_contigl(MALIGN *malign, CONTIGL *previous, CONTIGL *del);
 void malign_add_contigl(MALIGN *malign, CONTIGL *previous, CONTIGL *add);
 
 void malign_recalc_scores(MALIGN *malign, int start, int end);
+
+void malign_add_region(MALIGN *malign, int start, int end);
 
 typedef struct Moverlap {
     double	percent;

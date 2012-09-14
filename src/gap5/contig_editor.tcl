@@ -100,6 +100,13 @@ proc io_undo_exec {w crec cmdu} {
     foreach cmd $cmdu {
 	foreach {code op1 op2 op3 op4 op5} $cmd break
 	switch -- $code {
+	    CHILD_IO {
+		$io close
+		set io $op1
+		$w io $io
+		set cio(io) $io
+	    }
+
 	    C_SET {
 		$w set_cursor $op1 $op2 $op3 1
 		# This may change the Cutoffs status, so update button
@@ -385,6 +392,16 @@ proc io_undo {ed crec} {
     contig_notify -io $cio(base) -cnum $crec -type GENERIC \
 	-args [list TASK_GENERIC "" data {redo normal}]
     contig_notify -io $cio(base) -cnum $crec -type CHILD_EDIT -args ""
+}
+
+# Clears Undo history. Used in cases where undoing is currently just too
+# hard to implement.
+proc io_undo_clear {ed crec} {
+    upvar \#0 contigIO_$crec cio
+    
+    set cio(Undo) {}
+    contig_notify -io $cio(base) -cnum $crec -type GENERIC \
+	-args [list TASK_GENERIC "" data {undo disable}]
 }
 
 proc io_undo_state {crec} {
@@ -1868,6 +1885,8 @@ proc editor_undo_info {top {clear 0}} {
     foreach cmd $cmdu {
 	foreach {code op1 op2 op3 op4} $cmd break
 	switch -- $code {
+	    CHILD_IO { }
+
 	    C_SET { }
 
 	    B_REP {
@@ -2871,6 +2890,7 @@ proc string_reverse {str} {
 
 proc editor_align_cutoff {ed} {
     global gap5_defs
+    upvar contigIO_[$ed contig_rec] cio
 
     set io [$ed io]
 
@@ -2879,18 +2899,41 @@ proc editor_align_cutoff {ed} {
 	return
     }
 
-    # Fetch start/end relative to sequence start
     foreach {type rec start end} [$ed select get] break
-    if {$type != 18} {
-	# Only work on sequences
-	bell
-	return
-    }
-
     if {$end < $start} {
 	set tmp $end
 	set end $start
 	set start $tmp
+    }
+
+    # Fetch start/end relative to sequence start
+    if {$type != 18} {
+	# In consensus => shuffle pads / multiple realignment of seqs.
+	#bell
+	#return
+
+#	set old_io $io
+#	set io [$io child]
+#	$ed io $io
+#	parray cio
+#	set cio(io) $io
+#	parray cio
+
+	shuffle_pads \
+	    -io $io \
+	    -contigs "{=[$ed contig_rec] $start $end}" \
+	    -flush 0 \
+	    -band [keylget gap5_defs SHUFFLE_PADS.EDITOR_BAND_SIZE]
+	$ed clear_visibility_cache
+	$ed redraw
+
+#	store_undo $ed \
+#	    [list \
+#		 [list CHILD_IO $old_io] ] {}
+
+	io_undo_clear $ed [$ed contig_rec]
+
+	return
     }
 
     # Get absolute position in consensus

@@ -1081,6 +1081,7 @@ int tcl_list_base_confidence(ClientData clientData, Tcl_Interp *interp,
 	{NULL,	    0,	     0, NULL, 0}
     };
     int freqmat[256], freqmis[256];
+    long matrix[6][6];
     int i;
 
     vfuncheader("list base confidence");
@@ -1093,9 +1094,11 @@ int tcl_list_base_confidence(ClientData clientData, Tcl_Interp *interp,
     memset(freqmat, 0, 256 * sizeof(int));
     memset(freqmis, 0, 256 * sizeof(int));
 
+    memset(&matrix[0][0], 0, 6*6*sizeof(matrix[0][0]));
     for (i = 0; i < rargc; i++) {
 	if (-1 == get_base_confidences(args.io, rargv[i].contig,
-				       freqmat, freqmis)) {
+				       rargv[i].start, rargv[i].end,
+				       freqmat, freqmis, matrix)) {
 	    verror(ERR_WARN, "list_base_confidence",
 		   "Failed to get base confidences");
 	    continue;
@@ -1104,7 +1107,7 @@ int tcl_list_base_confidence(ClientData clientData, Tcl_Interp *interp,
     }
 
     vTcl_SetResult(interp, "%f",
-		   list_base_confidence(freqmat, freqmis)
+		   list_base_confidence(freqmat, freqmis, matrix)
 		   );
 
     xfree(rargv);
@@ -2090,6 +2093,7 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
 	{"-io",		ARG_IO,  1, NULL,  offsetof(shuffle_arg, io)},
 	{"-contigs",	ARG_STR, 1, "*",   offsetof(shuffle_arg, inlist)},
 	{"-band",	ARG_INT, 1, "8",   offsetof(shuffle_arg, band)},
+	{"-flush",	ARG_INT, 1, "1",   offsetof(shuffle_arg, flush)},
 	{NULL,	    0,	     0, NULL, 0}
     };
     int rargc;
@@ -2101,7 +2105,7 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
     vfuncheader("Shuffle Pads");
 
     active_list_contigs(args.io, args.inlist, &rargc, &rargv);
-    shuffle_contigs_io(args.io, rargc, rargv, args.band);
+    shuffle_contigs_io(args.io, rargc, rargv, args.band, args.flush);
 
     xfree(rargv);
 
@@ -2127,7 +2131,7 @@ int tcl_remove_pad_columns(ClientData clientData, Tcl_Interp *interp,
     vfuncheader("Remove Pad Columns");
 
     active_list_contigs(args.io, args.inlist, &rargc, &rargv);
-    remove_pad_columns(args.io, rargc, rargv, args.band);
+    remove_pad_columns(args.io, rargc, rargv, args.band, 0);
 
     xfree(rargv);
 

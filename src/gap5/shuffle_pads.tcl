@@ -7,7 +7,7 @@ proc ShufflePads {io} {
     set t [keylget gap5_defs SHUFFLE_PADS.WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Shuffle Pads"
-    contig_id $t.id -io $io -range 0
+    contig_id $t.id -io $io -range 1
 
     lorf_in $t.infile [keylget gap5_defs SHUFFLE_PADS.INFILE] \
 	"{contig_id_configure $t.id -state disabled} \
@@ -31,6 +31,9 @@ proc ShufflePads {io} {
 ;proc ShufflePads2 {io t infile id band_size} {
     if {[lorf_in_get $infile] == 4} {
 	set list [list [contig_id_gel $id]]
+	set lreg [contig_id_lreg $id]
+	set rreg [contig_id_rreg $id]
+	set list "{$list $lreg $rreg}"
     } elseif {[lorf_in_get $infile] == 3} {
 	set list [CreateAllContigList $io]
     } else {
