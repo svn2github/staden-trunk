@@ -225,7 +225,7 @@ typedef struct {
 } database_t;
 
 
-#define DB_VERS(io) (((io)->base ? (io)->base : (io))->db->version)
+//#define DB_VERS(io) (((io)->base ? (io)->base : (io))->db->version)
 
 /* ----------------------------------------------------------------------
  * Sequences and SequenceBlocks
@@ -603,6 +603,7 @@ typedef struct {
     int size_hist[3][LIB_BINS+1];
     int counts[3];
     int flags; /* 0 => just loaded, 1 => update_library_stats ran */
+               /* 2 => insufficient data */
 
     char *name;
     char data[1];

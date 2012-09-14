@@ -1,3 +1,142 @@
+/*
+ * Reference counting in a copy-on-write world.
+ *
+ * 1) All objects start with a reference count of zero.
+ *    So s=cache_search(io_base, GT_Seq, 100) implies rec 100 has ref-count 0.
+ *
+ *    Enough querying of other data can therefore make s0 be freed. If you
+ *    need to hold the pointer for any length of time call cache_incr() and
+ *    later cache_decr().
+ *
+ * 2) Tcl objects maintain a reference to the cache object, both storing the
+ *    pointer and also doing appropriate cache_incr/decr.
+ *    So "set s [$io get_seq 100]" implies rec 100 has ref-count 1
+ *
+ * 3) Calling cache_rw() also bumps the reference count and sets
+ *    cache->updated=1. The reason for this is that we can do cache_search(),
+ *    cache_rw(), (and edit) without needing explicit cache_incr calls. [The
+ *    ref_count is in the hache table and not the cache structure so it
+ *    doesn't know about things like lock or update statuses to reject items
+ *    for purging in the LRU cache.]
+ *
+ * 4) Cache_flush() decrements the ref count on any rw object and clears the
+ *    updated flag. (Ie the reverse of 3 above.)
+ *
+ *    So far this means from tcl:
+ *    set s [$io get_seq 100]; # rc=1, upd=0: the tcl var
+ *    $s set_clips 40 60;      # rc=2, upd=1: +1 from cache_re
+ *    $io flush;               # rc=1, upd=0: -1 from clearing upd flag
+ *    $s delete;               # rc=0, upd=0: in cache still, but no refs
+ *
+ * 5) Making a child io does not explicitly boost references. That's done
+ *    per object, not per GapIO cache.
+ *
+ * 6) Reading a record from a child I/O, if not modified in child I/O, just
+ *    returns the parent I/O copy (and it's parent - recursively). If none
+ *    have a copy yet then the base io will populate its cache. The ref
+ *    count will not change (unless it's being assigned to a Tcl var - see
+ *    point 2 above).
+ *
+ *    Thus:
+ *    set io_child [$io child]
+ *    set s [$io_child get_seq 100]; # io_base has rc=1 due to $s.
+ *                                # io_child has no copy of rec 100
+ *
+ *    If it already exists in the child I/O due to previously being modified
+ *    then that copy is returned instead.
+ * 
+ * 7) Calling cache_rw() on a child will call cache_dup(). By definition the
+ *    object already exists in a parent or base I/O cache.
+ *    For Block objects (SeqBlock, ContigBlock etc) we only copy the
+ *    relevant slots, otherwise it is all copied. Eg the base io may have
+ *    a SeqBlock with 1024 elements while the child has just 1 element.
+ *
+ *    As before, the parent has the ref count boosted by 1.
+ *    The child I/O obj has ref count of 2. (Why 2?)
+
+ *    eg:
+ *    b=cache_search(io_child, GT_Bin, 30); // base rc 0
+ *    cache_rw(io_child, b);                // base rc 1, child rc 2.
+ *
+ *    SeqBlock items are only partially copied. Each query to the base IO
+ *    can lookup in the complete object so nothing happens to ref count.
+ *    Similarly read-only lookups in child IOs, as the object returned is
+ *    from the base IO.
+ *    However for each cache_rw on a child object the base and child ref
+ *    counts get incremented by 1, in addition to the previous rc updates.
+ *
+ *    s1=cache_search(io_child, GT_Seq, 9122); // base rc 0
+ *    s2=cache_search(io_child, GT_Seq, 9123); // base rc 0
+ *    s3=cache_search(io_child, GT_Seq, 9124); // base rc 0
+ *    s4=cache_search(io_child, GT_Seq, 9125); // base rc 0
+ *    cache_rw(io_child, s1);                  // base rc 3 (2+1), child rc 3
+ *    cache_rw(io_child, s2);                  // base rc 4 (2+2), child rc 4
+ *    cache_rw(io_child, s3);                  // base rc 5 (2+3), child rc 5
+ *    cache_rw(io_child, s4);                  // base rc 6 (2+4), child rc 6
+ *
+ * 8) Flushing a child IO copies the cache_dup()ed data back over the parent
+ *    IO, possibly recursively. See the gotchas below for issues this can
+ *    cause.
+ *    
+ *    Reference counting? Explain... (it's messy!)
+ *
+ * 9) Nested IOs. We can create child io of child io! (**Work in progress**)
+ *    For non Block based data structs this mostly recurses well.  Eg see
+ *    point 6. above regarding cache_search().
+ *
+ *    In a SeqBlock it is trickier. Our parent may just have a shell block
+ *    with only a few entries filled out, while the base will have the entire
+ *    block. We need to recurse up to find not only the SeqBlock, but the
+ *    SeqBlock with the correct subrec.
+ *
+ * 10) Flushing nesteed IOs involves great care. We will flush all the way
+ *     to the base, not just to the parent. This means we can collapse nested
+ *     IOs too down to parent -> child. (Will this cause issues?)
+ *
+ *     Flushing is done in a recursive manner. We merge data with the parent
+ *     and then call cache_flush on the parent. If the parent doesn't have a
+ *     copy of our data (eg base -> child -> g.child; child reads and modifies
+ *     bin 9; bin 9 now in base + g.child but not in child) then we our
+ *     merge has to move it there instead of simply merge.
+ *
+ * 11) Losing the will to live...
+ *
+ *
+ * Gotchas to be aware of.
+ *
+ * G1) Holding a reference to an object which is being modified will fail.
+ *     Eg.
+ *
+ *     c = cache_search(io, GT_Contig, 111); // long term storage in a struct
+ *     cache_incr(io, c);
+ *
+ *     // in some other func:
+ *     c2=cache_search(io, GT_Contig, 111);
+ *     c2=cache_rw(io, c2);
+ *     // do stuff to edit c2.
+ *
+ *     At this point our still existing copy of c is defunct. The cache_rw
+ *     realloced a new pointer and it's quite possibly different.
+ *
+ * G2) G1 applies to Tcl too.
+ *     set c [$io get_contig 111]
+ *     complement_contig -io $io -contig =111
+ *     puts [$c get_name]; # <---- Potential ERROR
+ *
+ *     This is nasty to solve. Solution - remember record numbers and treat
+ *     tcl objects as temporary.
+ *
+ * G3) There is a lack of error checking. You could create a rw object in
+ *     the base IO, a rw object in a child IO, and then edit both. One of the
+ *     other is going to get clobbered. You will not get an error or be
+ *     warned about this. With nested IOs it gets worse - always use the
+ *     lowest IO for editing and the higher IOs for reading.
+ *
+ *     Equally so multiple child IOs holding the same data are best avoided.
+ *     In the editor we have one child per contig. If you join contigs you
+ *     need to handle this bizarity.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -461,6 +600,7 @@ void *cache_item_resize(void *item, size_t size) {
     switch (new->type) {
     case GT_Seq: {
 	seq_t *s = (seq_t *)&new->data;
+	assert(item == s->block->seq[s->idx]);
 	s->block->seq[s->idx] = s;
 	sequence_reset_ptr(s);
 	break;
@@ -636,7 +776,7 @@ static void cache_unload(void *clientdata, HacheData hd) {
 	if (hi_base) {
 	    unlock = 0;
 
-	    /* But do decrememnt the reference count of the base */
+	    /* But do decrement the reference count of the base */
 	    HacheTableDecRef(hi_base->h, hi_base);
 	}
     }
@@ -933,6 +1073,7 @@ int cache_flush(GapIO *io) {
 	    for (hi = h->bucket[i]; hi; hi = next) {
 		HacheData data;
 		cached_item *ci = hi->data.p;
+		HacheItem *htmp;
 
 		next = hi->next;
 
@@ -942,19 +1083,27 @@ int cache_flush(GapIO *io) {
 		}
 
 		/*
+		 * Check if the parent has a copy. It may not if we
+		 * went from base -> child -> grandchild and we did a
+		 * direct modiify in grandchild without having seen it
+		 * in child first.
+		 *
+		 * In this case we move our hache item rather than
+		 * merge it.
+		 */
+		htmp = HacheTableSearch(io->base->cache, hi->key, hi->key_len);
+
+		/*
 		 * For blocked data structures, merge with base copy first.
 		 * Also free up the items that are to be replaced with
 		 * new versions.
 		 */
-		switch (ci->type) {
+		switch ((htmp != NULL) * ci->type) {
 		case GT_SeqBlock: {
-		    HacheItem *htmp;
 		    seq_block_t *bn = (seq_block_t *)&ci->data;
 		    seq_block_t *bo;
 		    int j;
 
-		    htmp = HacheTableSearch(io->base->cache,
-					    hi->key, hi->key_len);
 		    bo = (seq_block_t *)&((cached_item *)htmp->data.p)->data;
 
 		    for (j = 0; j < SEQ_BLOCK_SZ; j++) {
@@ -973,13 +1122,10 @@ int cache_flush(GapIO *io) {
 		}
 
 		case GT_ContigBlock: {
-		    HacheItem *htmp;
 		    contig_block_t *bn = (contig_block_t *)&ci->data;
 		    contig_block_t *bo;
 		    int j;
 
-		    htmp = HacheTableSearch(io->base->cache,
-					    hi->key, hi->key_len);
 		    bo = (contig_block_t *)&((cached_item*)htmp->data.p)->data;
 
 		    for (j = 0; j < CONTIG_BLOCK_SZ; j++) {
@@ -998,13 +1144,10 @@ int cache_flush(GapIO *io) {
 		}
 
 		case GT_ScaffoldBlock: {
-		    HacheItem *htmp;
 		    scaffold_block_t *bn = (scaffold_block_t *)&ci->data;
 		    scaffold_block_t *bo;
 		    int j;
 
-		    htmp = HacheTableSearch(io->base->cache,
-					    hi->key, hi->key_len);
 		    bo = (scaffold_block_t *)&((cached_item*)htmp->data.p)->data;
 
 		    for (j = 0; j < SCAFFOLD_BLOCK_SZ; j++) {
@@ -1023,13 +1166,10 @@ int cache_flush(GapIO *io) {
 		}
 
 		case GT_AnnoEleBlock: {
-		    HacheItem *htmp;
 		    anno_ele_block_t *bn = (anno_ele_block_t *)&ci->data;
 		    anno_ele_block_t *bo;
 		    int j;
 
-		    htmp = HacheTableSearch(io->base->cache,
-					    hi->key, hi->key_len);
 		    bo = (anno_ele_block_t *)&((cached_item *)htmp->data.p)->data;
 
 		    for (j = 0; j < ANNO_ELE_BLOCK_SZ; j++) {
@@ -1068,43 +1208,47 @@ int cache_flush(GapIO *io) {
 		parent_hi = HacheTableQuery(io->base->cache,
 					    ci->hi->key,
 					    ci->hi->key_len);
-		ref_count = parent_hi->ref_count;
-		parent_ci = (cached_item*) parent_hi->data.p;
-		/* Purge from parent */
-		switch (ci->type) {
-		    /* Clean up parts that won't be removed
-		       by HacheTableRemove */
-		case GT_Bin: 
-		    bin_unload(io->base, parent_ci, 0);
-		    break;
+		if (parent_hi) {
+		    ref_count = parent_hi->ref_count;
+		    parent_ci = (cached_item*) parent_hi->data.p;
+		    /* Purge from parent */
+		    switch (ci->type) {
+			/* Clean up parts that won't be removed
+			   by HacheTableRemove */
+		    case GT_Bin: 
+			bin_unload(io->base, parent_ci, 0);
+			break;
 		
-		case GT_Seq:
-		    seq_unload(io->base, parent_ci, 0);
-		    break;
+		    case GT_Seq:
+			seq_unload(io->base, parent_ci, 0);
+			break;
 
-		case GT_Track:
-		    track_unload(io->base, parent_ci, 0);
-		    break;
+		    case GT_Track:
+			track_unload(io->base, parent_ci, 0);
+			break;
 		
-		case GT_Contig:
-		    contig_unload(io->base, parent_ci, 0);
-		    break;
+		    case GT_Contig:
+			contig_unload(io->base, parent_ci, 0);
+			break;
 
-		case GT_RecArray:
-		    array_unload(io->base, parent_ci, 0);
-		    break;
+		    case GT_RecArray:
+			array_unload(io->base, parent_ci, 0);
+			break;
 
-		case GT_Library:
-		    library_unload(io->base, parent_ci, 0);
-		    break;
+		    case GT_Library:
+			library_unload(io->base, parent_ci, 0);
+			break;
 
-		default:
-		    cache_free(parent_ci);
-		    break;
+		    default:
+			cache_free(parent_ci);
+			break;
+		    }
+
+		    HacheTableRemove(io->base->cache,
+				     ci->hi->key, ci->hi->key_len, 0);
+		} else {
+		    ref_count = 0;
 		}
-
-		HacheTableRemove(io->base->cache,
-				 ci->hi->key, ci->hi->key_len, 0);
 
 		/* Move this item to parent; Add() sets ref_count to 1 */
 		data.p = ci;
@@ -1127,7 +1271,7 @@ int cache_flush(GapIO *io) {
 		 * Fix parent ref_count.
 		 */
 		//ci->hi->ref_count += ref_count-1;
-		while (--ref_count) {
+		while (--ref_count >= 0) {
 		    HacheTableIncRef(ci->hi->h, ci->hi);
 		}
 
@@ -1515,12 +1659,14 @@ int cache_updated(GapIO *io) {
  * Dumps information about the cache, for debugging purposes.
  */
 static int interested_rec = -1;
+//static int interested_rec = 9;
+
 void cache_dump(GapIO *io) {
     int i;
     HacheTable *h = io->cache;
     int nused = 0, nlocked = 0, nupdated = 0;
 
-    printf("\nCheck for io = %p (%s)\n", io,
+    printf("Check for io = %p (%s)\n", io,
 	   io->base ? "child" : "base");
 
     for (i = 0; i < h->nbuckets; i++) {
@@ -2277,7 +2423,7 @@ void cache_incr(GapIO *io, void *data) {
     cached_item *ci = cache_master(ci_ptr(data));
 
     if (io->base) {
-	void *vbase = cache_search_no_load(io->base, ci->type, ci->rec);
+	void *vbase = cache_search_no_load(gio_base(io), ci->type, ci->rec);
 	ci = cache_master(ci_ptr(vbase));
     }
 
@@ -2288,7 +2434,7 @@ void cache_decr(GapIO *io, void *data) {
     cached_item *ci = cache_master(ci_ptr(data));
 
     if (io->base) {
-	void *vbase = cache_search_no_load(io->base, ci->type, ci->rec);
+	void *vbase = cache_search_no_load(gio_base(io), ci->type, ci->rec);
 	ci = cache_master(ci_ptr(vbase));
     }
 
@@ -2801,17 +2947,23 @@ void *cache_rw(GapIO *io, void *data) {
     if (io->read_only)
 	return NULL;
 
-    if (io->base && io->base->cache == mi->hi->h) {
-	/*
-	 * The editor currently updates library stats on a regular basis
-	 * while scrolling, but we haven't implemented a dup function for
-	 * it yet. It's not something the user is changing though so we
-	 * can ignore this and update the live one.
-	 */
-	if (ci->type != GT_Library) {
-	    ci = cache_dup(io, ci);
-	    mi = cache_master(ci);
-	    data = &ci->data;
+    if (io->base) {
+	GapIO *iob;
+	for (iob = io->base; iob; iob = iob->base)
+	    if (iob->cache == mi->hi->h)
+		break;
+	if (iob && iob->cache == mi->hi->h) {
+	    /*
+	     * The editor currently updates library stats on a regular basis
+	     * while scrolling, but we haven't implemented a dup function for
+	     * it yet. It's not something the user is changing though so we
+	     * can ignore this and update the live one.
+	     */
+	    if (ci->type != GT_Library) {
+		ci = cache_dup(io, ci);
+		mi = cache_master(ci);
+		data = &ci->data;
+	    }
 	}
     }
 

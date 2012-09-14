@@ -212,6 +212,15 @@ GapIO *gio_child(GapIO *io_p) {
 }
 
 /*
+ * Returns the original GapIO regardless of how many children deep we are.
+ */
+GapIO *gio_base(GapIO *io) {
+    while (io->base)
+	io = io->base;
+    return io;
+}
+
+/*
  * Sets debugging to a specific level.
  * Level 0 turns off debugging output.
  * Returns the previous debug level.

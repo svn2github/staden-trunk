@@ -87,7 +87,7 @@ int contig_set_bin(GapIO *io, contig_t **c, tg_rec value) {
  */
 int contig_set_name(GapIO *io, contig_t **c, char *name) {
     contig_t *n;
-    GapIO *iob = io->base ? io->base : io;
+    GapIO *iob = gio_base(io);
 
     if (!(n = cache_rw(io, *c)))
 	return -1;
@@ -1153,9 +1153,9 @@ static int contig_delete_base_fix(GapIO *io, tg_rec crec, tg_rec bnum,
 	if (r->start < 0) {
 	    bin_index_t *new_bin;
 
-	    printf("Bin %"PRIrec" obj %"PRIrec" with start %d. Loc %d..%d\n",
-		   bin->rec, r->rec, r->start,
-		   NORM(r->start), NORM(r->end));
+	    //printf("Bin %"PRIrec" obj %"PRIrec" with start %d. Loc %d..%d\n",
+	    //	   bin->rec, r->rec, r->start,
+	    //	   NORM(r->start), NORM(r->end));
 
 	    /* Convert range coords to absolute locations */
 	    r2 = *r;
@@ -1194,8 +1194,8 @@ static int contig_delete_base_fix(GapIO *io, tg_rec crec, tg_rec bnum,
 		s->bin = new_bin->rec;
 		s->bin_index = r_out - ArrayBase(range_t, new_bin->rng);
 
-		printf("Old bin comp=%d new bin comp=%d\n",
-		       old_comp, new_comp);
+		//printf("Old bin comp=%d new bin comp=%d\n",
+		//       old_comp, new_comp);
 
 		if (new_comp != old_comp) {
 		    s->len *= -1;

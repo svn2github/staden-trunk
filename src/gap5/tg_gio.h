@@ -81,10 +81,17 @@ typedef struct GapIO {
     FILE *debug_fp;
 } GapIO;
 
+static int DB_VERS(GapIO *io) {
+    while (io->base)
+	io = io->base;
+    return io->db->version;
+}
+
 int gio_set_db_version(int vers);
 GapIO *gio_open(char *fn, int ro, int create);
 void gio_close(GapIO *io);
 GapIO *gio_child(GapIO *io_p);
+GapIO *gio_base(GapIO *io);
 int gio_debug_level(GapIO *io, int level);
 void gio_debug(GapIO *io, int level, char *fmt, ...) __PRINTF_FORMAT__(3,4);
 

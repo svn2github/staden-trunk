@@ -131,7 +131,7 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
 		     TCL_GLOBAL_ONLY);
     xx->reg_id = cp ? atoi(cp) : 0;
     if (io->base)
-	xx->cursor = create_contig_cursor(io->base, contig, 1, xx->reg_id);
+	xx->cursor = create_contig_cursor(gio_base(io), contig, 1, xx->reg_id);
     edSetApos(xx);
     xx->displayPos = xx->cursor_apos;
     
@@ -169,7 +169,7 @@ void edview_destroy(edview *xx) {
     }
 
     if (xx->cursor)
-	delete_contig_cursor(xx->io->base, xx->cnum, xx->cursor->id, 1);
+	delete_contig_cursor(gio_base(xx->io), xx->cnum, xx->cursor->id, 1);
 
     if (xx->r)
 	free(xx->r);
@@ -2019,7 +2019,7 @@ static void cursor_notify(edview *xx) {
     xx->cursor->sent_by = xx->reg_id;
     cn.job = REG_CURSOR_NOTIFY;
     cn.cursor = xx->cursor;
-    contig_notify(xx->io->base, xx->cnum, (reg_data *)&cn);
+    contig_notify(gio_base(xx->io), xx->cnum, (reg_data *)&cn);
 }
 
 /*

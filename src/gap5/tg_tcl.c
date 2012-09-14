@@ -146,7 +146,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"new_contig",  "new_sequence", "new_anno_ele", "rec_exists",
 	"seq_name_iter","seq_name_next","seq_name_end","check",
 	"contig_name2rec", "base",     "get_scaffold", "num_scaffolds",
-	"scaffold_order", (char *)NULL,
+	"scaffold_order", "dump", (char *)NULL,
     };
 
     enum options {
@@ -157,7 +157,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,   IO_REC_EXISTS,
 	SEQ_NAME_ITER,SEQ_NAME_NEXT,  SEQ_NAME_END,   CHECK,
 	CONTIG_NAME2REC, IO_BASE,     IO_SCAFFOLD,    NUM_SCAFFOLDS,
-	IO_SORDER,
+	IO_SORDER,    IO_DUMP,
     };
 
     if (objc < 2) {
@@ -322,6 +322,11 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	    /* This *will* exist already in the Tcl Interpreter */
 	    vTcl_SetResult(interp, "%s", cmd);
 	}
+	break;
+    }
+
+    case IO_DUMP: {
+	cache_dump(io);
 	break;
     }
 

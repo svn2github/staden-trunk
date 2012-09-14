@@ -583,7 +583,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	rl.job = REG_LENGTH;
 	rl.length = c->end - c->start + 1;
-	contig_notify(xx->io->base, c->rec, (reg_data *)&rl);
+	contig_notify(gio_base(xx->io), c->rec, (reg_data *)&rl);
 
 	vTcl_SetResult(interp, "%d", result);
 	break;

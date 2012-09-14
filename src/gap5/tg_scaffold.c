@@ -59,7 +59,7 @@ Scaffold names must be unique. They are stored in their own index.
  */
 int scaffold_set_name(GapIO *io, scaffold_t **f, char *name) {
     scaffold_t *n;
-    GapIO *iob = io->base ? io->base : io;
+    GapIO *iob = gio_base(io);
 
     if (!(n = cache_rw(io, *f)))
 	return -1;
