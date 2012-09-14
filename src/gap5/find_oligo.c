@@ -577,7 +577,7 @@ int inexact_pad_match(char *seq,
 	    }
 	    return -1; /* out of match storage */
 	}
-	pos++;
+	while (*pos++ == '*');
 	pos = pstrnstr_inexact(pos, seq_len - (pos-seq),
 			       uppert, string_len, mis_match, &n_mis);
     }
