@@ -66,6 +66,13 @@ proc gap4_text_init {t} {
     set range [$w tag prevrange $tag current]
     set text [$w get [lindex $range 0] [lindex $range 1]]
 
+    foreach {key val idx} [$w dump -tag [lindex $range 0] [lindex $range 1]] {
+	if {$key != "tagon"} continue
+	if {[regsub {SEQID:([0-9]+)$} $val {\1} _] == 1} {
+	    set text "#$_"
+	}
+    }
+
 #    if {[db_info get_read_num $io $text] <= 0} {
 #	verror ERR_WARN "Reading '$text' not found in database"
 #	bell
@@ -266,7 +273,7 @@ proc gap4_text_init {t} {
 	    }
 	} else {
 	    foreach {id name} $list {
-		lappend l2 $name
+		lappend l2 "#$id $name"
 	    }
 	}
 	ListCreate2 $lname $l2 $tag
@@ -300,7 +307,7 @@ proc SearchSeqDialog {io} {
 }
 
 ;proc search_sequence_disp {io id name} {
-    vmessage_tagged $name SEQID
+    vmessage_tagged $name "SEQID SEQID:$id"
 }
 
 

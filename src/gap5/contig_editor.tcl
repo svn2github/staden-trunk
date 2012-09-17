@@ -4441,7 +4441,6 @@ proc editor_return {w} {
 }
 
 proc ednames_select {W x y pair} {
-    puts [info level [info level]]
     upvar #0 [winfo toplevel $W] opt
 
     global EdNames_select EdNames_select_last

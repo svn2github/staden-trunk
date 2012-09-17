@@ -1387,7 +1387,7 @@ proc ContigsToReadings2 {io t id infile outfile} {
     destroy $t
     update idletasks
 
-    ListCreate2 $out $list
+    ListCreate2 $out $list SEQID
     if {"$format" == 2} {
 	lorf_out_save $out
     } else {
