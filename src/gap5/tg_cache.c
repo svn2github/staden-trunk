@@ -144,7 +144,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-//#undef CACHE_REF_PURGE
+//#define CACHE_REF_PURGE 1
 
 #ifdef CACHE_REF_DEBUG
 /*  So tg_gio.h doesn't redefine prototypes */
@@ -2491,17 +2491,24 @@ void *cache_item_resize_debug(void *item, size_t size, char *where) {
 void cache_incr_debug(GapIO *io, void *data, char *where) {
     char key[100];
     cached_item *ci = cache_master(ci_ptr(data));
+    //cached_item *ci = ci_ptr(data);
     HacheData hd;
+
+    if (io->base) {
+	void *vbase = cache_search_no_load(gio_base(io), ci->type, ci->rec);
+	ci = cache_master(ci_ptr(vbase));
+    }
 
     if (!ref_debug)
 	ref_debug = HacheTableCreate(1024, HASH_DYNAMIC_SIZE);
 
-    sprintf(key, "%p-%d", data, ci->hi->ref_count - ci->updated);
+    sprintf(key, "%p-%d", &ci->data, ci->hi->ref_count - ci->updated);
     hd.p = strdup(where);
     HacheTableAdd(ref_debug, key, 0, hd, NULL);
 
-    //fprintf(stderr, "INCR %s %s master %p\n", key, where,
-    //	    &(cache_master(ci_ptr(data)))->data);
+    //fprintf(stderr, "INCR %s %s master %p, child=%c\n", key, where,
+    //	    &(cache_master(ci_ptr(data)))->data,
+    //	    io->base ? 'y' : 'n');
 
     cache_incr(io, data);
 }
@@ -2509,15 +2516,22 @@ void cache_incr_debug(GapIO *io, void *data, char *where) {
 void cache_decr_debug(GapIO *io, void *data, char *where) {
     char key[100];
     cached_item *ci = cache_master(ci_ptr(data));
-    sprintf(key, "%p-%d", data, ci->hi->ref_count-1 - ci->updated);
+    //cached_item *ci = ci_ptr(data);
+
+    if (io->base) {
+	void *vbase = cache_search_no_load(gio_base(io), ci->type, ci->rec);
+	ci = cache_master(ci_ptr(vbase));
+    }
+    sprintf(key, "%p-%d", &ci->data, ci->hi->ref_count-1 - ci->updated);
 
     if (HacheTableRemove(ref_debug, key, 0, 1) != 0) {
 	fprintf(stderr, "Failed to remove %s - not in hash table?\n",
 		key);
     }
 
-    //fprintf(stderr, "DECR %s %s master %p\n", key, where,
-    //	    &(cache_master(ci_ptr(data)))->data);
+    //fprintf(stderr, "DECR %s %s master %p, child=%c\n", key, where,
+    //	    &(cache_master(ci_ptr(data)))->data,
+    //	    io->base ? 'y' : 'n');
 
     cache_decr(io, data);
 }
@@ -2983,6 +2997,46 @@ void *cache_rw(GapIO *io, void *data) {
     }
 
     return data;
+}
+
+void *cache_rw_debug(GapIO *io, void *data, char *where) {
+    cached_item *ci = cache_master(ci_ptr(data));
+    void *rw;
+    char key[100];
+    HacheData hd;
+
+    if (io->base) {
+	void *vbase = cache_search_no_load(gio_base(io), ci->type, ci->rec);
+	ci = cache_master(ci_ptr(vbase));
+    }
+
+    /* For debug versions we need to migrate the ref-count hache */
+    sprintf(key, "%p-%d", &ci->data, ci->hi->ref_count - ci->updated);
+
+    rw = cache_rw(io, data);
+    if (rw == data)
+	return rw;
+
+    printf("cache_rw_debug: swap %s for ", key);
+
+    hd.p = strdup(ci->hi->data.p);
+
+    if (HacheTableRemove(ref_debug, key, 0, 1) != 0) {
+	fprintf(stderr, "Failed to remove %s - not in hash table? (%s)\n",
+		key, where);
+    }
+    
+    ci = cache_master(ci_ptr(rw));
+    if (io->base) {
+	void *vbase = cache_search_no_load(gio_base(io), ci->type, ci->rec);
+	ci = cache_master(ci_ptr(vbase));
+    }
+    sprintf(key, "%p-%d", &ci->data, ci->hi->ref_count - ci->updated);
+    HacheTableAdd(ref_debug, key, 0, hd, NULL);
+
+    printf("%s\n", key);
+
+    return rw;
 }
 
 /*
