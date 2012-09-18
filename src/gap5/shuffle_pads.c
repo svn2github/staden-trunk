@@ -889,10 +889,14 @@ static void tag_shift_for_insert(GapIO *io, tg_rec crec, tg_rec srec,
 
     //printf("> tag in seq %"PRIrec" at %d+%d\n", srec, start, pos);
 
+    cache_incr(io, c);
+
     ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST | CITER_ISTART,
 				 start+pos, end, GRANGE_FLAG_ISANNO);
-    if (!ci)
+    if (!ci) {
+	cache_decr(io, c);
 	return;
+    }
 
     while ((r = contig_iter_next(io, ci))) {
 	range_t r2, *r_out;
@@ -922,6 +926,7 @@ static void tag_shift_for_insert(GapIO *io, tg_rec crec, tg_rec srec,
     }
 
     contig_iter_del(ci);
+    cache_decr(io, c);
 }
 
 static void tag_shift_for_delete(GapIO *io, tg_rec crec, tg_rec srec,
@@ -932,10 +937,14 @@ static void tag_shift_for_delete(GapIO *io, tg_rec crec, tg_rec srec,
 
     //printf("< tag in seq %"PRIrec" at %d\n", srec, pos);
 
+    cache_incr(io, c);
+
     ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST | CITER_ISTART,
 				 start+pos, end, GRANGE_FLAG_ISANNO);
-    if (!ci)
+    if (!ci) {
+	cache_decr(io, c);
 	return;
+    }
 
     while ((r = contig_iter_next(io, ci))) {
 	range_t r2, *r_out;
@@ -972,6 +981,7 @@ static void tag_shift_for_delete(GapIO *io, tg_rec crec, tg_rec srec,
 	}
     }
 
+    cache_decr(io, c);
     contig_iter_del(ci);
 }
 
@@ -1179,13 +1189,13 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 	    if (cl->mseg->comp)
 		complement_seq_t(s);
 
-	    /*
-	     * memcpy first, although not technically requested rw yet.
-	     * If we do it after we have to copy all except s->block as
-	     * sorig->block will differ when we're using a child I/O.
-	     */
-	    memcpy(sorig, s, sizeof(seq_t)); 
-	    sorig = cache_rw(io, sorig);
+	    /* The memcpy trashes the block pointer, so special care needed */
+	    {
+		sorig = cache_rw(io, sorig);
+		void *blk = sorig->block;
+		memcpy(sorig, s, sizeof(seq_t)); 
+		sorig->block = blk;
+	    }
 
 	    if (update_range)
 		sorig = cache_item_resize(sorig, sizeof(*sorig) +
@@ -1416,7 +1426,8 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 	orig_score = new_score = malign_diffs(malign, &tot_score);
 	vmessage("Initial score %.2f%% mismatches (%d mismatches)\n",
 		 (100.0 * orig_score)/tot_score, orig_score/128);
-	UpdateTextOutput();
+	if (flush)
+	    UpdateTextOutput();
 	//print_malign(malign);
 	do {
 	    old_score = new_score;
@@ -1424,7 +1435,8 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 	    //print_malign(malign);
 	    new_score = malign_diffs(malign, &tot_score);
 	    vmessage("  Consensus difference score: %d\n", new_score);
-	    UpdateTextOutput();
+	    if (flush)
+		UpdateTextOutput();
 	} while (new_score < old_score);
 
 	if (new_score < orig_score) {
@@ -1508,10 +1520,11 @@ int remove_pad_columns(GapIO *io, int ncontigs, contig_list_t *contigs,
 	int ndel = 0;
 	contig_t *c;
 
-	if (!quiet)
+	if (!quiet) {
 	    vmessage("Processing contig %d of %d (#%"PRIrec")\n",
 		     i+1, ncontigs, cnum);
-	UpdateTextOutput();
+	    UpdateTextOutput();
+	}
 
 	c = cache_search(io, GT_Contig, cnum);
 	if (!c)
