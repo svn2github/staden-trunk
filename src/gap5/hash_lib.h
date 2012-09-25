@@ -2,6 +2,7 @@
 #define HASH_H
 #include "align_lib.h"
 #include "consen.h"
+#include "io_lib/hash_table.h"
 
 #define MINMAT 12
 
@@ -95,9 +96,10 @@ int poisson_diagonals(int min_diag, int max_diag, int word_size,
 int best_intercept ( Hash *h, int *seq1_i, int *seq2_i );
 
 int compare_b_bulk(Hash *h,
-		   ALIGN_PARAMS *params, OVERLAP *overlap, int cnum,
+		   ALIGN_PARAMS *params, OVERLAP *overlap,
+		   int cnum, tg_rec crec2,
 		   Contig_parms *contig_list, int number_of_contigs,
-		   int ignore_after1,
+		   int ignore_after1, HashTable *links,
 		   void (*add_func)(OVERLAP *overlap,
 				    int cnum1,
 				    int cnum2,

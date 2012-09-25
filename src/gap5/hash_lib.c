@@ -12,6 +12,8 @@
 #include "dna_utils.h"
 #include "hash_lib.h"
 #include "consen.h"
+#include "fij.h"
+#include "io_lib/hash_table.h"
 
 #define MINMAT 12
 
@@ -2034,8 +2036,9 @@ int align_blocks (Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap) {
 }
 
 int align_blocks_bulk(Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap,
-		      int cnum,
+		      int cnum, tg_rec crec2,
 		      Contig_parms *contig_list, int number_of_contigs,
+		      HashTable *links,
 		      void (*add_func)(OVERLAP *overlap,
 				       int cnum1,
 				       int cnum2,
@@ -2099,6 +2102,14 @@ int align_blocks_bulk(Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap,
 
 	    if (max_mat < h->min_match) {
 		goto next;
+	    }
+	    if (links) { /* Read-pair prefiltering */
+		HashItem *hi;
+		contig_pair cp;
+		cp.c1 = MIN(contig_list[c].contig_number, crec2);
+		cp.c2 = MAX(contig_list[c].contig_number, crec2);
+		hi = HashTableSearch(links, (char *)&cp, sizeof(cp));
+		if (NULL == hi) goto next;
 	    }
 
 	    memcpy(&h1, h, sizeof(h1));
@@ -2620,9 +2631,10 @@ int compare_b(Hash *h,
  * so we can then do alignments on each in turn.
  */
 int compare_b_bulk(Hash *h,
-		   ALIGN_PARAMS *params, OVERLAP *overlap, int cnum2,
+		   ALIGN_PARAMS *params, OVERLAP *overlap,
+		   int cnum2, tg_rec crec2,
 		   Contig_parms *contig_list1, int number_of_contigs1,
-		   int ignore_after1,
+		   int ignore_after1, HashTable *links,
 		   void (*add_func)(OVERLAP *overlap,
 				    int cnum1,
 				    int cnum2,
@@ -2746,8 +2758,8 @@ int compare_b_bulk(Hash *h,
 
     job_in = params->job;
     params->job = 3; /* force return of edit buffers */
-    pw2 = align_blocks_bulk ( h, params, overlap, cnum2,
-			      contig_list1, number_of_contigs1,
+    pw2 = align_blocks_bulk ( h, params, overlap, cnum2, crec2,
+			      contig_list1, number_of_contigs1, links,
 			      add_func, add_data);
     params->job = job_in;
 

@@ -1,4 +1,5 @@
 #include <tk.h>
+#include <assert.h>
 
 #include "io_utils.h"
 #include "gap_globals.h"
@@ -13,6 +14,8 @@
 #include "gap4_compat.h"
 #include "editor_view.h"
 #include "tk-io-reg.h"
+#include "readpair.h"
+#include "io_lib/hash_table.h"
 
 static int counter;
 static int counter_max;
@@ -93,7 +96,7 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 		    bell();
 		    break;
 		}
-
+#if 0
 		if (io_clength(fij->io, ABS(obj->c1))
 		    < io_clength(fij->io, ABS(obj->c2))) {
 		    if (-1 == complement_contig(fij->io, ABS(obj->c1)))
@@ -104,6 +107,11 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 			if (-1 == complement_contig(fij->io, ABS(obj->c1)))
 			    return NULL;
 		}
+#else
+		if (-1 == complement_contig(fij->io, ABS(obj->c2)))
+		    if (-1 == complement_contig(fij->io, ABS(obj->c1)))
+			    return NULL;
+#endif
 	    }
 
 	    /*
@@ -301,17 +309,15 @@ static int cl_compare(const void *va, const void *vb) {
     return 0;
 }
 
-static Contig_parms * fij_get_contig_list(GapIO *io,
-					  int num1, contig_list_t *contigs1,
-					  int num2, contig_list_t *contigs2,
-					  int *num_contigs_out,
-					  int *list1end_out,
-					  int *list2start_out) {
+static contig_list_t * fij_get_contig_list(GapIO *io,
+					   int num1, contig_list_t *contigs1,
+					   int num2, contig_list_t *contigs2,
+					   int *num_contigs_out,
+					   int *list1end_out,
+					   int *list2start_out) {
     contig_list_t *combined;
     int i1, i2, num_shared, o1, o2, os;
     tg_rec last_c = 0;
-    int database_size;
-    Contig_parms *contig_list;
 
     qsort(contigs1, num1, sizeof(contig_list_t), cl_compare);
     qsort(contigs2, num2, sizeof(contig_list_t), cl_compare);
@@ -372,13 +378,107 @@ static Contig_parms * fij_get_contig_list(GapIO *io,
     *list1end_out = num1;
     *list2start_out = num1 - num_shared;
 
+    return combined;
+}
+
+static Contig_parms * contig_list2contig_parms(GapIO *io, int num_contigs,
+					       contig_list_t *list) {
+
     /* Make a contig list */
-    database_size = io_dbsize(io);
-    contig_list = get_contig_list(database_size, io, *num_contigs_out,
-				  combined);
-    xfree(combined);
+    int database_size = io_dbsize(io);
+    Contig_parms *contig_list;
+    contig_list = get_contig_list(database_size, io, num_contigs, list);
     
     return contig_list;
+}
+
+static HashTable * fij_prefilter_repeats(fij_arg *fij_args,
+					 HashTable *lib_hash, int *num_contigs,
+					 contig_list_t *list, int *list1end,
+					 int *list2start) {
+    read_pair_t *pairs;
+    read_pair_t *pair;
+    HashTable *links = NULL;
+    HashTable *index = NULL;
+    uint8_t *used = NULL;
+    int l1e = *list1end, l2s = *list2start;
+    int i, j, count = 0;
+
+    pairs = spanning_pairs(fij_args->io, *num_contigs, list,
+			   fij_args->rp_mode, fij_args->rp_end_size,
+			   fij_args->rp_min_mq, fij_args->rp_min_freq,
+			   lib_hash);
+    if (NULL == pairs) return NULL;
+    links = HashTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
+    if (NULL == links) goto fail;
+    index = HashTableCreate(*num_contigs, HASH_NONVOLATILE_KEYS);
+    if (NULL == index) goto fail;
+    used = calloc((*num_contigs >> 3) + 1, sizeof(uint8_t));
+    if (NULL == used) goto fail;
+
+    for (i = 0; i < *num_contigs; i++) {
+	HashData hd;
+	hd.i = i;
+	if (!HashTableAdd(index, (char *)&list[i].contig,
+			  sizeof(list[i].contig), hd, NULL)) goto fail;
+    }
+
+    for (pair = pairs; pair->rec[0]; pair++) {
+	contig_pair cp;
+	HashData hd;
+	HashItem *hi;
+	int idx1, idx2;
+	tg_rec c1 = ABS(pair->contig[0]), c2 = ABS(pair->contig[1]);
+	int new = 0;
+
+	if (c1 == c2) continue;
+	hi = HashTableSearch(index, (char *) &c1, sizeof(c1));
+	assert(NULL != hi);
+	idx1 = hi->data.i;
+	hi = HashTableSearch(index, (char *) &c2, sizeof(c2));
+	assert(NULL != hi);
+	idx2 = hi->data.i;
+	if (!((idx1 < *list1end && idx2 >= *list2start)
+	      || (idx2 < *list1end && idx1 >= *list2start))) continue;
+
+	cp.c1 = MIN(c1, c2);
+	cp.c2 = MAX(c1, c2);
+	hd.i = 0;
+	if (!HashTableAdd(links, (char *)&cp, sizeof(cp), hd, &new)) goto fail;
+	used[idx1 >> 3] |= 1 << (idx1 & 7);
+	used[idx2 >> 3] |= 1 << (idx2 & 7);
+	if (new) count++;
+    }
+
+    vmessage("%d contig pairs are linked by read pairs\n", count);
+
+    for (i = j = 0; i < *num_contigs; i++) {
+	if (0 == (used[i >> 3] & (1 << (i & 7)))) {
+	    if (i < *list1end)   --l1e;
+	    if (i < *list2start) --l2s;
+	    continue;
+	}
+	if (i != j) list[j] = list[i];
+	j++;
+    }
+    vmessage("After first stage read-pair filter:\n"
+	     "  List 1 includes %d contigs (was %d)\n"
+	     "  List 2 includes %d contigs (was %d)\n",
+	     l1e, *list1end, j - l2s, *num_contigs - *list2start);
+    *num_contigs = j;
+    *list1end = l1e;
+    *list2start = l2s;
+    HashTableDestroy(index, 0);
+    free(used);
+    free(pairs);
+    return links;
+
+ fail:
+    if (NULL != pairs) free(pairs);
+    if (NULL != links) HashTableDestroy(links, 0);
+    if (NULL != index) HashTableDestroy(index, 0);
+    if (NULL != used)  free(used);
+    return NULL;
 }
 
 /*
@@ -390,37 +490,27 @@ static Contig_parms * fij_get_contig_list(GapIO *io,
  * 
  */
 int
-fij(GapIO *io,
-    int mask,
-    int min_overlap,
-    double max_percent_mismatch,
-    int word_len,
-    double max_prob,
-    int min_match,
-    int band,
-    int window_len,
-    int max_unknown,
-    double min_conf,
-    int use_conf,
-    int use_hidden,
-    int max_alignment,
-    int fast_mode,
-    double filter_words,
+fij(fij_arg *fij_args,
     int num_contigs1,
     contig_list_t *contig_array1,
     int num_contigs2,
     contig_list_t *contig_array2)
 {
-    char *consensus;
-    mobj_fij *FIJMatch;
+    GapIO *io = fij_args->io;
+    char *consensus = NULL;
+    mobj_fij *FIJMatch = NULL;
     int i, id;
     char *val;
-    Contig_parms *contig_list;
+    Contig_parms *contig_list = NULL;
+    contig_list_t *combined = NULL;
+    HashTable *links = NULL;
+    HashTable *lib_hash = NULL;
     int number_of_contigs, list1end, list2start;
     int task_mask;
     int consensus_length, max_read_length;
     static char buf[80];
     Hidden_params p;
+    int retval = -1;
 
     /* FIXME: get these from elsewhere */
 
@@ -430,16 +520,16 @@ fij(GapIO *io,
     gap_extend = gextendval;
 
     p.min = p.max = p.verbose = 0;
-    p.do_it = use_hidden;
-    p.use_conf = use_conf;
+    p.do_it = fij_args->use_hidden;
+    p.use_conf = fij_args->use_conf;
     p.test_mode = 0;
     p.start = 0;
     p.lwin1 = 0;
     p.lcnt1 = 0;
-    p.rwin1 = window_len;
-    p.rcnt1 = max_unknown;
-    p.qual_val = min_conf;
-    p.window_len = window_len;
+    p.rwin1 = fij_args->win_size;
+    p.rcnt1 = fij_args->dash; /* was max_unknown */
+    p.qual_val = fij_args->min_conf;
+    p.window_len = fij_args->win_size;
     p.gap_open = gopenval;
     p.gap_extend = gextendval;
     p.band = 30; /*FIXME: hardwired 30 bases band for aligning hidden data */
@@ -453,26 +543,39 @@ fij(GapIO *io,
     counter_max = 14;
     if (NULL == (FIJMatch->match = (obj_fij *)xmalloc(counter_max *
 						      sizeof(obj_fij)))) {
-	xfree(FIJMatch);
-	return -1;
+	goto out;
     }
 
-    contig_list = fij_get_contig_list(io, num_contigs1, contig_array1,
-				      num_contigs2, contig_array2,
-				      &number_of_contigs,
+    combined = fij_get_contig_list(io, num_contigs1, contig_array1,
+				   num_contigs2, contig_array2,
+				   &number_of_contigs,
+				   &list1end, &list2start);
+    if (NULL == combined) goto out;
+
+    if (fij_args->rp_mode >= 0) {
+	if (fij_args->rp_library) {
+	    lib_hash = create_lib_hash(fij_args->rp_library,
+				       fij_args->rp_nlibrary);
+	    if (NULL == lib_hash) goto out;
+	}
+	links = fij_prefilter_repeats(fij_args, lib_hash,
+				      &number_of_contigs, combined,
 				      &list1end, &list2start);
+	if (NULL == links) goto out;
+    }
+
+    contig_list = contig_list2contig_parms(io, number_of_contigs, combined);
     if (NULL == contig_list) {
-	xfree(FIJMatch->match);
-	xfree(FIJMatch);
-	return -5;
+	retval = -5;
+	goto out;
     }
 
     global_match = FIJMatch;
     counter = 0;
 
     task_mask = ADDTITLE | NORMALCONSENSUS;
-    if ( mask == 2 ) task_mask |= MARKING;
-    if ( mask == 3 ) task_mask |= MASKING;
+    if ( fij_args->mask == 2 ) task_mask |= MARKING;
+    if ( fij_args->mask == 3 ) task_mask |= MASKING;
     if ( p.do_it ) task_mask |= ADDHIDDENDATA;
 
     consensus_length = 0;
@@ -482,35 +585,18 @@ fij(GapIO *io,
 			  max_read_length,
 			  p,
 			  consensus_cutoff ) ) {
-
-	xfree(FIJMatch->match);
-	xfree(FIJMatch);
-	xfree(contig_list);
-	return -1;
+	goto out;
     }
 
-    if (do_it_fij(consensus, consensus_length, word_len,
-		  min_overlap, max_percent_mismatch, COMPARE_ALL,
-		  band, gap_open, gap_extend, max_prob, min_match,
-		  max_alignment, fast_mode, filter_words,
-		  contig_list, list1end,
+    if (do_it_fij(fij_args, consensus, consensus_length, gap_open, gap_extend,
+		  COMPARE_ALL, lib_hash, links, contig_list, list1end,
 		  contig_list + list2start, number_of_contigs - list2start,
-		  list1end - list2start)) {
-
-	xfree(FIJMatch->match);
-	xfree(FIJMatch);
-	xfree(contig_list);
-	xfree ( consensus );
-	return -1;
-    }
+		  list1end - list2start)) goto out;
 
     if (0 == counter) {
 	vmessage("No joins found \n");
-	xfree(FIJMatch->match);
-	xfree(FIJMatch);
-	xfree(contig_list);
-	xfree ( consensus );
-	return 0;
+	retval = 0;
+	goto out;
     }
 
     sprintf(buf, " Number of potential joins found   %d", counter);
@@ -580,10 +666,20 @@ fij(GapIO *io,
 	update_results(io);
     }
 
-    xfree(contig_list);
-    xfree ( consensus );
+    retval = 0;
+    FIJMatch = NULL; /* So we don't free it below */
+ out:
+    if (NULL != FIJMatch) {
+	if (NULL != FIJMatch->match) xfree(FIJMatch->match);
+	xfree(FIJMatch);
+    }
+    if (NULL != lib_hash) HashTableDestroy(lib_hash, 0);
+    if (NULL != links) HashTableDestroy(links, 0);
+    if (NULL != combined) xfree(combined);
+    if (NULL != contig_list) xfree(contig_list);
+    if (NULL != consensus) xfree(consensus);
 
-    return 0;
+    return retval;
 } /* end fij */
 
 /* store hits of find internal joins */
@@ -600,9 +696,9 @@ buffij(tg_rec c1,
     global_match->match[counter].data = global_match;
 
     global_match->match[counter].c1 = c1;
-    global_match->match[counter].pos1 = pos2;
+    global_match->match[counter].pos1 = pos1;
     global_match->match[counter].c2 = c2;
-    global_match->match[counter].pos2 = pos1;
+    global_match->match[counter].pos2 = pos2;
     global_match->match[counter].length = len;
     global_match->match[counter].score = score;
     global_match->match[counter].percent = 10000 * percent;

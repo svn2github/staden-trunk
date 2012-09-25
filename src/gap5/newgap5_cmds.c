@@ -1310,11 +1310,11 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
     Tcl_DString input_params;
     char *name1;
     char *name2;
-    int mask = 0;
+    Array libraries = NULL;
 
     cli_args a[] = {
 	{"-io",		  ARG_IO,   1, NULL,   offsetof(fij_arg, io)},
-	{"-mask",	  ARG_STR,  1, "none", offsetof(fij_arg, mask)},
+	{"-mask",	  ARG_STR,  1, "none", offsetof(fij_arg, mask_str)},
 	{"-min_overlap",  ARG_INT,  1, "20",   offsetof(fij_arg, min_overlap)},
 	{"-max_pmismatch",ARG_FLOAT,1, "30.0", offsetof(fij_arg, max_mis)},
 	{"-word_length",  ARG_INT,  1, "4",    offsetof(fij_arg, word_len)},
@@ -1332,6 +1332,12 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
 	{"-max_display",  ARG_INT,  1, "0",    offsetof(fij_arg, max_display)},
 	{"-filter_words", ARG_FLOAT,1, "0",    offsetof(fij_arg,filter_words)},
 	{"-fast_mode",    ARG_INT,  1, "0",    offsetof(fij_arg, fast_mode)},
+	/* Read-pair screening options */
+	{"-rp_mode",      ARG_STR,  1, "off",  offsetof(fij_arg, rp_mode_str)},
+	{"-rp_end_size",  ARG_INT,  1, "1000", offsetof(fij_arg, rp_end_size)},
+	{"-rp_min_mq",    ARG_INT,  1, "10",   offsetof(fij_arg, rp_min_mq)},
+	{"-rp_min_freq",  ARG_INT,  1, "0",    offsetof(fij_arg, rp_min_freq)},
+	{"-rp_libraries", ARG_STR,  1, "",     offsetof(fij_arg, rp_libraries)},
 	{NULL,		  0,	    0, NULL,   0}
     };
 
@@ -1341,12 +1347,12 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
 	return TCL_ERROR;
 
     /* Parse mode and mask */
-    if (strcmp(args.mask, "none") == 0)
-	mask = 1;
-    else if (strcmp(args.mask, "mark") == 0)
-	mask = 2;
-    else if (strcmp(args.mask, "mask") == 0)
-	mask = 3;
+    if (strcmp(args.mask_str, "none") == 0)
+	args.mask = 1;
+    else if (strcmp(args.mask_str, "mark") == 0)
+	args.mask = 2;
+    else if (strcmp(args.mask_str, "mask") == 0)
+	args.mask = 3;
     else {
 	Tcl_SetResult(interp, "invalid mask mode", TCL_STATIC);
 	return TCL_ERROR;
@@ -1383,7 +1389,7 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
 #endif
 
     name1 = get_default_string(interp, gap5_defs,
-			       vw("FIJ.SELMODE.BUTTON.%d", mask));
+			       vw("FIJ.SELMODE.BUTTON.%d", args.mask));
     vTcl_DStringAppend(&input_params, "%s %s\n", name1, args.tag_list);
 
     vfuncparams("%s", Tcl_DStringValue(&input_params));
@@ -1392,13 +1398,46 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
     if (SetActiveTags(args.tag_list) == -1) {
 	return TCL_OK;
     }
+    
+    /* Parse read-pair options */
+    if (strcmp(args.rp_mode_str, "off") == 0) {
+	args.rp_mode = -1;
+    } else if (strcmp(args.rp_mode_str, "end_end") == 0) {
+	args.rp_mode = end_end;
+    } else if (strcmp(args.rp_mode_str, "end_all") == 0) {
+	args.rp_mode = end_all;
+    } else if (strcmp(args.rp_mode_str, "all_all") == 0) {
+	args.rp_mode = all_all;
+    } else {
+	vTcl_SetResult(interp,
+		       "Unknown -rp_mode parameter '%s'", args.rp_mode_str);
+        return TCL_ERROR;
+    }
 
-    if (fij(args.io, mask, args.min_overlap, (double)args.max_mis,
-	    args.word_len, (double)args.max_prob, args.min_match, args.band,
-	    args.win_size, args.dash, args.min_conf, args.use_conf,
-	    args.use_hidden, args.max_display, args.fast_mode,
-	    args.filter_words,
-	    num_contigs1, contig_array1, num_contigs2, contig_array2) < 0 ) {
+    if (*args.rp_libraries) {
+        tg_rec rec;
+        int n;
+        char *cp, *endptr;
+
+        libraries = ArrayCreate(100, sizeof(tg_rec));
+
+        cp = args.rp_libraries;
+        for (n = 0; ;n++) {
+            rec = strtol64(cp, &endptr, 10);
+            if (endptr == cp)
+                break;
+            else
+                cp = endptr;
+
+            ArrayRef(libraries, n);
+            arr(tg_rec, libraries, n) = rec;
+        }
+    }
+    args.rp_library  = libraries ? ArrayBase(tg_rec, libraries) : NULL;
+    args.rp_nlibrary = libraries ? ArrayMax(libraries) : 0;
+
+    if (fij(&args, num_contigs1, contig_array1,
+	    num_contigs2, contig_array2) < 0 ) {
 	verror(ERR_WARN,
 	       "Find internal joins", "Failure in Find Internal Joins");
 	SetActiveTags("");
@@ -1410,6 +1449,7 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
     SetActiveTags("");
     xfree(contig_array1);
     xfree(contig_array2);
+    if (libraries) ArrayDestroy(libraries);
 
     return TCL_OK;
 

@@ -696,6 +696,26 @@ set_def FIJ.ALIGN_MODE          2
 set_def FIJ.USEBAND.NAME        "Use banded alignment" 
 set_def FIJ.USEBAND.VALUE       1 
 
+# FIJ readpair settings
+set_def FIJ.READPAIR.MODE.NAME	"Read-pair filter"
+set_def FIJ.READPAIR.MODE.BUTTON1	"All vs All"
+set_def FIJ.READPAIR.MODE.BUTTON2	"End vs All"
+set_def FIJ.READPAIR.MODE.BUTTON3	"End vs End"
+set_def FIJ.READPAIR.MODE.BUTTON4	"Off"
+
+set_def FIJ.READPAIR.DIALOG.BUTTON.NAME	"Edit read pair filter parameters"
+set_def FIJ.READPAIR.DIALOG.NAME	"Read pair filter parameters"
+
+set_def FIJ.READPAIR.END_SIZE.NAME	"Size of contig 'ends'"
+set_def FIJ.READPAIR.END_SIZE.VALUE	1000
+set_def FIJ.READPAIR.MIN_MAP_QUAL.NAME	"Minimum mapping quality"
+set_def FIJ.READPAIR.MIN_MAP_QUAL.VALUE	10
+set_def FIJ.READPAIR.MIN_MAP_QUAL.MIN	0
+set_def FIJ.READPAIR.MIN_MAP_QUAL.MAX	100
+set_def FIJ.READPAIR.MIN_FREQ.NAME	"Minimum spanning pair count"
+set_def FIJ.READPAIR.MIN_FREQ.VALUE	1
+set_def FIJ.READPAIR.MIN_FREQ.MIN	1
+set_def FIJ.READPAIR.MIN_FREQ.MAX	100
 
 #Auto assemble
 set_def AUTO_ASSEMBLE.USE_EXP_ARCHIVES   0

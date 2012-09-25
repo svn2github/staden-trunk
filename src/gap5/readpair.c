@@ -36,15 +36,6 @@
 #include "tk-io-reg.h"
 #include "io_lib/hash_table.h"
 
-typedef struct {
-    tg_rec template; /* maybe 0 if only a direct pair */
-    // tg_rec library;  /* ? want this */
-    tg_rec rec[2];
-    int start[2], end[2];
-    tg_rec contig[2];
-    int mqual[2];
-} read_pair_t;
-
 /*
  * Match callback.
  * 'obj' is a match contained within the 'repeat' list.
@@ -390,6 +381,26 @@ int PlotTempMatches(GapIO *io, read_pair_t *rp) {
     return 0;
 }
 
+HashTable *create_lib_hash(tg_rec *library, int nlibrary) {
+    int i;
+    HashTable *lib_hash = HashTableCreate(16, HASH_FUNC_HSIEH | 
+					  HASH_DYNAMIC_SIZE |
+					  HASH_POOL_ITEMS);
+    if (NULL == lib_hash) return NULL;
+
+    for (i = 0; i < nlibrary; i++) {
+	    HashData hd;
+	    hd.i = 1;
+	    if (!HashTableAdd(lib_hash, (char *)&library[i], sizeof(tg_rec),
+			      hd, 0)) {
+		HashTableDestroy(lib_hash, 0);
+		return NULL;
+	    }
+    }
+
+    return lib_hash;
+}
+
 /*
  * Identifies spanning read pairs within end_size of the end of each contig.
  * Library/nlibrary is used to filter read-pairs as coming only from specific
@@ -406,7 +417,7 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 			    contig_list_t *contig_array,
 			    enum readpair_mode mode,
 			    int end_size, int min_mq, int min_freq,
-			    tg_rec *library, int nlibrary) {
+			    HashTable *lib_hash) {
     int i, j;
     HashTable *h = NULL;
     HashIter *iter = NULL;
@@ -416,7 +427,6 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     int no_large_contigs = 1;
     int slow_check_libs = 0;
     pool_alloc_t *rp_pool = NULL;
-    HashTable *lib_hash = NULL;
     HashTable *ctg_hash = NULL;
     tg_rec ctg_pair[2];
 
@@ -426,19 +436,6 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     if (NULL == h) return NULL;
     rp_pool = pool_create(sizeof(rangec_t));
     if (NULL == rp_pool) goto fail;
-
-    if (library) {
-	lib_hash = HashTableCreate(16, HASH_FUNC_HSIEH | 
-				       HASH_DYNAMIC_SIZE |
-				       HASH_POOL_ITEMS);
-	if (NULL == lib_hash) goto fail;
-	for (i = 0; i < nlibrary; i++) {
-	    HashData hd;
-	    hd.i = 1;
-	    if (!HashTableAdd(lib_hash, (char *)&library[i], sizeof(tg_rec),
-			      hd, 0)) goto fail;
-	}
-    }
 
     /*
      * For filtering by frequency. We construct a key consisting of
@@ -507,11 +504,11 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 			     CITER_CSTART, CITER_CEND);
 	if (NULL == ci) goto fail;
 
-	while (r = contig_iter_next(io, ci)) {
+	while (NULL != (r = contig_iter_next(io, ci))) {
 	    if (!r->pair_rec)
 		continue; /* unpaired */
 
-	    if (library) {
+	    if (lib_hash) {
 		if (r->library_rec) {
 		    if (!HashTableSearch(lib_hash, (char *) &r->library_rec,
 					 sizeof(r->library_rec))) {
@@ -563,11 +560,11 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
 				 MAX(cstart, cend - 2*end_size), CITER_CEND);
 	    if (NULL == ci) goto fail;
 
-	    while (r = contig_iter_next(io, ci)) {
+	    while (NULL != (r = contig_iter_next(io, ci))) {
 		if (!r->pair_rec)
 		    continue; /* unpaired */
 
-		if (library) {
+		if (lib_hash) {
 		    if (r->library_rec) {
 			if (!HashTableSearch(lib_hash, (char *) &r->library_rec,
 					     sizeof(r->library_rec))) {
@@ -767,8 +764,6 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     HashTableIterDestroy(iter);
     HashTableDestroy(h, 0);
     pool_destroy(rp_pool);
-    if (lib_hash)
-	HashTableDestroy(lib_hash, 0);
 
     if (ctg_hash)
 	HashTableDestroy(ctg_hash, 0);
@@ -781,7 +776,6 @@ read_pair_t *spanning_pairs(GapIO *io, int num_contigs,
     if (iter) HashTableIterDestroy(iter);
     if (h) HashTableDestroy(h, 0);
     if (rp_pool) pool_destroy(rp_pool);
-    if (lib_hash) HashTableDestroy(lib_hash, 0);
     if (ctg_hash) HashTableDestroy(ctg_hash, 0);
     if (pairs) free(pairs);
     return NULL;
@@ -797,16 +791,25 @@ int find_read_pairs(GapIO *io, int num_contigs, contig_list_t *contig_array,
 		    int min_freq, tg_rec *library, int nlibrary) {
     
     read_pair_t *tarr;
+    HashTable *lib_hash = NULL;
+
+    if (library) {
+	lib_hash = create_lib_hash(library, nlibrary);
+	if (NULL == lib_hash) return -1;
+    }
 
     if (NULL == (tarr = spanning_pairs(io, num_contigs, contig_array,
 				       mode, end_size, min_mq, min_freq,
-				       library, nlibrary)))
+				       lib_hash))) {
+	if (NULL != lib_hash) HashTableDestroy(lib_hash, 0);
 	return -1;
+    }
 
     /* Find only those templates spanning multiple contigs and plot them. */
     PlotTempMatches(io, tarr);
 
     /* Tidy up */
+    if (NULL != lib_hash) HashTableDestroy(lib_hash, 0);
     free(tarr);
 
     return 0;

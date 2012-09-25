@@ -198,6 +198,49 @@ proc FIJDialog { f io } {
     pack $f.match.f.use_filter -fill x
     pack $f.match.f.filter_cutoff -fill x
     
+    #######################################################################
+    #readpair filter
+
+    frame $f.rp -bd 2 -relief groove
+
+    ReadPairParametersDialogInit $io $f.rp_params
+
+    scalebox $f.rp.min_freq \
+        -title [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.NAME] \
+        -from [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.MIN] \
+	-to [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.MAX] \
+        -default [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.VALUE] \
+        -width 5 \
+        -type CheckInt \
+        -orient horiz
+
+    button $f.rp.options \
+	-text [keylget gap5_defs FIJ.READPAIR.DIALOG.BUTTON.NAME] \
+	-command "ReadPairParametersDialog $f $io $f.rp_params"
+
+    set fij_rp_sc_d "scalebox_configure $f.rp.min_freq -state disabled ; \
+$f.rp.options configure -state disabled"
+    set fij_rp_sc_e "scalebox_configure $f.rp.min_freq -state normal ; \
+$f.rp.options configure -state normal"
+
+    radiolist $f.rp.mode \
+	-title [keylget gap5_defs FIJ.READPAIR.MODE.NAME] \
+	-default 4 \
+	-orient horizontal \
+	-buttons [list [list [keylget gap5_defs FIJ.READPAIR.MODE.BUTTON1] \
+			    -command $fij_rp_sc_e ] \
+		      [list [keylget gap5_defs FIJ.READPAIR.MODE.BUTTON2] \
+			   -command $fij_rp_sc_e ] \
+		      [list [keylget gap5_defs FIJ.READPAIR.MODE.BUTTON3] \
+			   -command $fij_rp_sc_e ] \
+		      [list [keylget gap5_defs FIJ.READPAIR.MODE.BUTTON4] \
+			   -command $fij_rp_sc_d ] \
+		 ]
+
+    pack $f.rp.mode -side top -fill x
+    pack $f.rp.min_freq -side top -fill x
+    pack $f.rp.options -side top -anchor w
+
     ###########################################################################
     #hidden data
 
@@ -265,7 +308,8 @@ proc FIJDialog { f io } {
 	    $f.match.f.min_match $f.match.f.use_band $f.match.s.max_diag\
 	    $f.match.s.band_size $f.match.max_mis \
 	    $f.hidden.yn $f.sel_mode.rl $f.ops $f.align_length \
-            $f.match.f.use_filter $f.match.f.filter_cutoff" \
+            $f.match.f.use_filter $f.match.f.filter_cutoff \
+            $f.rp.mode $f.rp_params" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap5 {FIJ-Dialogue}" \
 	    -bd 2 \
@@ -280,6 +324,7 @@ proc FIJDialog { f io } {
 #    pack $f.sc -fill x
     pack $f.align_length -fill x
     pack $f.hidden -fill x
+    pack $f.rp -fill x
     pack $f.match -fill x
     pack $f.ok_cancel -fill x
 
@@ -312,7 +357,7 @@ proc FIJ_OK_Pressed { f io infile1 id1 infile2 id2 blocks min_overlap
 		      word_length \
 		      min_match use_band max_diag band_size max_mis \
 		      yn sel_mode hidden_ops align_length \
-		      use_filter filter_cutoff} {
+		      use_filter filter_cutoff rp_mode rp_params } {
     
     global CurContig
     global LREG
@@ -360,6 +405,21 @@ proc FIJ_OK_Pressed { f io infile1 id1 infile2 id2 blocks min_overlap
     
     set max_prob [entrybox_get $max_diag]
     set max_align_length [entrybox_get $align_length]
+
+    set rp_mode_str [lindex {all_all end_all end_end off } \
+		     [expr {[radiolist_get $rp_mode] - 1} ]]
+    if { $rp_mode_str ne "off" } {
+	upvar #0 $rp_params rpdata
+	set rp_end_size $rpdata(end_size)
+	set rp_min_mq   $rpdata(min_mq)
+	set rp_min_freq [scalebox_get $f.rp.min_freq]
+	set rp_libs     $rpdata(libs)
+    } else {
+	set rp_end_size 1000
+	set rp_min_mq   0
+	set rp_min_freq 0
+	set rp_libs     {}
+    }
 
     set fast_mode 0
     if {[radiolist_get $blocks] <= 2} {
@@ -409,6 +469,11 @@ proc FIJ_OK_Pressed { f io infile1 id1 infile2 id2 blocks min_overlap
 	    -max_display $max_align_length \
 	    -fast_mode $fast_mode \
 	    -filter_words $filter_words \
+	    -rp_mode $rp_mode_str \
+	    -rp_end_size $rp_end_size \
+	    -rp_min_mq $rp_min_mq \
+	    -rp_min_freq $rp_min_freq \
+	    -rp_libraries $rp_libs \
 	    -contigs1 $list1 \
 	    -contigs2 $list2
 
@@ -543,6 +608,151 @@ proc HiddenParametersDialog_OK {w aname} {
     set data(base_max_dash) [scalebox_get $w.unc.max_dash]
     set data(conf_win_size) [scalebox_get $w.conf.win_size]
     set data(conf_min_conf) [scalebox_get $w.conf.min_conf]
+
+    destroy $w
+}
+
+proc FIJRPUpdateLibList { io libinfo } {
+    upvar $libinfo li
+    set db [$io get_database]
+    set nl [$db get_num_libraries]
+    set li(num_libs) $nl
+    set max_end_size 0
+    for {set i 0} {$i < $nl} {incr i} {
+	set rec [$db get_library_rec $i]
+        set lib [$io get_library $rec]
+        $lib update_stats
+	
+	set count [$lib get_count]
+        set size  [$lib get_insert_size]
+	set sd    [$lib get_insert_sd]
+	for {set max 0; set k 0; set j 0} {$j < 3} {incr j} {
+	    if {$max < [lindex $count $j]} {
+                set max [lindex $count $j]
+                set k $j
+            }
+        }
+	set count [lindex $count $k]
+        set size  [lindex $size  $k]
+	set sd    [lindex $sd    $k]
+	set end_size [expr { int(($size + 3 * $sd + 9) / 10) * 10 }]
+	if { $max_end_size < $end_size } { set max_end_size $end_size }
+	set li($i) [ list $rec [$lib get_name] $count $size ]
+	$lib delete
+    }
+    set li(max_end_size) $max_end_size
+}
+
+proc ReadPairParametersDialog { w io aname } {
+    global gap5_defs
+    upvar #0 $aname data
+
+    set f $w.readpair
+
+    if {![winfo exists $f]} {
+	xtoplevel $f -resizable 0
+	wm title $f [keylget gap5_defs FIJ.READPAIR.DIALOG.NAME]
+    } else {
+	wm deiconify $f
+	raise $f
+	return
+    }
+    
+    set end_size [keylget gap5_defs FIJ.READPAIR.END_SIZE.VALUE]
+    if { $data(max_end_size) > $end_size } {
+	set end_size $data(max_end_size)
+    }
+    xentry $f.end_size \
+	-label [keylget gap5_defs FIJ.READPAIR.END_SIZE.NAME] \
+	-default $end_size
+
+    scalebox $f.min_mq \
+	-title [keylget gap5_defs FIJ.READPAIR.MIN_MAP_QUAL.NAME] \
+        -from [keylget gap5_defs FIJ.READPAIR.MIN_MAP_QUAL.MIN] \
+	-to [keylget gap5_defs FIJ.READPAIR.MIN_MAP_QUAL.MAX] \
+        -default [keylget gap5_defs FIJ.READPAIR.MIN_MAP_QUAL.VALUE] \
+        -width 5 \
+        -type CheckInt \
+        -orient horiz
+
+    # scalebox $f.min_freq \
+    #     -title [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.NAME] \
+    #     -from [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.MIN] \
+    # 	-to [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.MAX] \
+    #     -default [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.VALUE] \
+    #     -width 5 \
+    #     -type CheckInt \
+    #     -orient horiz
+
+    label $f.spacer -text ""
+
+    labelframe $f.libs -text ""
+
+    label $f.libs.label -text "By default templates in all libraries are used to spot read pairs. To restrict to specific libraries, select them from the list below." -wrap 400 -justify left
+
+    tablelist $f.libs.tl \
+        -height 5 \
+        -columns {15 Name 10 "Pair count" 10 "Insert size"} \
+        -selectmode extended \
+        -exportselection 0 \
+        -stretch 0 \
+        -yscrollcommand [list $f.libs.ys set]
+    scrollbar $f.libs.ys -command "$f.libs.tl yview" -orient vertical
+    pack $f.libs.label -side top -fill both
+    pack $f.libs.tl -side left -expand 1 -fill both
+    pack $f.libs.ys -side right -fill both
+
+    upvar #0 $f.libs.tl l_rec
+
+    set nl $data(num_libs)
+    for {set i 0} {$i < $nl} {incr i} {
+	set li $data($i)
+	foreach { rec name count size } $li {
+	    $f.libs.tl insert end [list $name $count $size]
+	    set l_rec($i) $rec
+	}
+    }
+
+    okcancelhelp $f.ok_cancel \
+	-ok_command "ReadPairParametersDialogOK $f $aname" \
+	-cancel_command "destroy $f" \
+	-help_command "show_help gap5 {FIJ-Dialogue}" \
+	-bd 2 \
+	-relief groove
+    
+    pack $f.end_size $f.min_mq $f.spacer $f.libs $f.ok_cancel \
+	-side top -fill both -expand 1
+}
+
+proc ReadPairParametersDialogInit {io aname} {
+    global gap5_defs
+    upvar #0 $aname data
+
+    FIJRPUpdateLibList $io data
+
+    set end_size [keylget gap5_defs FIJ.READPAIR.END_SIZE.VALUE]
+    if { $data(max_end_size) >  $end_size } {
+	set end_size $data(max_end_size)
+    }
+
+    set data(end_size) $end_size
+    set data(min_mq)   [keylget gap5_defs FIJ.READPAIR.MIN_MAP_QUAL.VALUE]
+    # set data(min_freq) [keylget gap5_defs FIJ.READPAIR.MIN_FREQ.VALUE]
+    set data(libs)     {}
+}
+
+proc ReadPairParametersDialogOK {w aname} {
+    upvar #0 $aname data
+    upvar #0 $w.libs.tl l_rec
+
+    set data(end_size) [$w.end_size get]
+    set data(min_mq)   [scalebox_get $w.min_mq]
+    # set data(min_freq) [scalebox_get $w.min_freq]
+    set libs {}
+    foreach idx [$w.libs.tl curselection] {
+	lappend libs $l_rec($idx)
+    }
+    set data(libs) $libs
 
     destroy $w
 }

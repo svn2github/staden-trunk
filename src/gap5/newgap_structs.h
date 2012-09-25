@@ -143,8 +143,9 @@ typedef struct {
 
 typedef struct {
     GapIO *io;
-    char *mask;
-    char *mode;
+    char *mask_str;
+    /* char *mode; */
+    int mask;
     int min_overlap;
     float max_mis;
     int word_len;
@@ -162,6 +163,15 @@ typedef struct {
     char *tag_list;
     char *inlist1;
     char *inlist2;
+    /* Read-pair screening options */
+    char   *rp_mode_str;
+    int     rp_mode;
+    int     rp_end_size;
+    int     rp_min_mq;
+    int     rp_min_freq;
+    char   *rp_libraries;
+    tg_rec *rp_library;
+    int     rp_nlibrary;
 } fij_arg;
 
 typedef struct {
