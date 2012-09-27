@@ -152,18 +152,29 @@ proc complement_tag_list {io tags} {
 #
 # If you do not wish the parent to be destroyed, skip the $w parameter.
 #
-# Returns 1 on success
-#         0 on failure
-proc contig_rename {io crec name {w {}}} {
+# The final "auto" parameter is used to determine whether contig names should
+# be disambiguated automatically.
+#
+# Returns new name on success
+#         "" on failure
+proc contig_rename {io crec name {w {}} {auto 0}} {
     if {[$io contig_name2rec $name] > 0} {
-	bell
-	if {$w != ""} {
-	    tk_messageBox -type ok -icon error -parent $w \
-		-message "Contig name already exists"
+	if {$auto} {
+	    set cid 1
+	    while {[$io contig_name2rec $name#$cid] > 0} {
+		incr cid
+	    }
+	    append name #$cid
 	} else {
-	    verror ERR_WARN "rename_contig" "Contig name already exists"
+	    bell
+	    if {$w != ""} {
+		tk_messageBox -type ok -icon error -parent $w \
+		    -message "Contig name already exists"
+	    } else {
+		verror ERR_WARN "rename_contig" "Contig name already exists"
+	    }
+	    return ""
 	}
-	return 0
     }
 
     set c [$io get_contig $crec]
@@ -182,7 +193,7 @@ proc contig_rename {io crec name {w {}}} {
 	destroy $w
     }
 
-    return 1
+    return $name
 }
 
 # Adds a contig to a named scaffold

@@ -2858,7 +2858,8 @@ proc editor_set_name2 {ed w} {
     set old_name [$c get_name]
     $c delete
 
-    if {![contig_rename $io [$ed contig_rec] $nm $w]} {
+    if {[contig_rename $io [$ed contig_rec] $nm $w] == ""} {
+	bell
 	return
     }
 
@@ -3575,10 +3576,14 @@ proc editor_select_dialog {ed sel pair} {
     global $ed
     global editor_right_click
 
-    set pos [lindex [$ed get_cursor absolute] 2]
+    foreach {type rec start end} [$ed select get] break
+    if {$type == 18} {
+	set start [lindex [$ed get_cursor absolute] 2]
+	set end $start
+    }
 
     if {$editor_right_click} {
-	return [editor_select_reads $ed $sel 0 $pos $pos $pair]
+	return [editor_select_reads $ed $sel 0 $start $end $pair]
     }
 
     set t $ed.select_dialog
@@ -3588,13 +3593,13 @@ proc editor_select_dialog {ed sel pair} {
     # Positional parameters
     entrybox $t.start \
 	-title "From consensus base" \
-	-default $pos \
+	-default $start \
 	-width 10 \
 	-type CheckInt
 
     entrybox $t.end \
 	-title "To consensus base" \
-	-default $pos \
+	-default $end \
 	-width 10 \
 	-type CheckInt
 
