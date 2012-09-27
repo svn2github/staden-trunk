@@ -417,8 +417,11 @@ int bam_parse_header(bam_file_t *b) {
 	    tags[ntabs].value = NULL;
 	    
 	    if (id) {
+		int new = 0;
 		hd.p = tags;
-		HashTableAdd(b->rg_hash, id, id_len, hd, NULL);
+		HashTableAdd(b->rg_hash, id, id_len, hd, &new);
+		if (!new)
+		    free(tags);
 	    } else {
 		fprintf(stderr, "No ID record in @RG line\n");
 	    }
@@ -2262,8 +2265,16 @@ int bam_write_header(bam_file_t *out) {
     }
 
     if (out->binary) {
-	if (bgzf_write(out->fd, header, hp-header))
-	    return -1;
+	int len = hp-header;
+	char *cp = header;
+
+	while (len) {
+	    int sz = BGZF_BUFF_SIZE < len ? BGZF_BUFF_SIZE : len;
+	    if (bgzf_write(out->fd, cp, sz))
+		return -1;
+	    cp  += sz;
+	    len -= sz;
+	}
     } else {
 	if (hp-header != write(out->fd, header, hp-header))
 	    return -1;

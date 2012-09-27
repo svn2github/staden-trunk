@@ -306,6 +306,9 @@ static int export_header_sam(GapIO *io, bam_file_t *bf,
     if (!ds)
 	return -1;
 
+    /* Generated in sorted order, adhering to version 1.4 */
+    dstring_appendf(ds, "@HD\tVN:1.4\tSO:coordinate\n");
+
     /* Inefficient as we have to loop twice - here and when outputting reads */
     for (i = 0; i < cc; i++) {
 	contig_t *c;
