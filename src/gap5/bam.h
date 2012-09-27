@@ -49,6 +49,10 @@ typedef union {
     int    i;
     float  f;
     double d;
+    struct {
+	int n, t;
+	unsigned char *s;
+    } B;
 } bam_aux_t;
 
 
@@ -58,9 +62,10 @@ typedef union {
  * translating these to fewer, larger, gzread calls. The overhead is
  * therefore minimal.
  */
-#define Z_BUFF_SIZE 65536 /* Max size of a BGZF block */
+#define Z_BUFF_SIZE 65536    /* Max size of a zlib block */
+#define BGZF_BUFF_SIZE 65400 /* Max size of a BGZF block, 65477 actual */
 typedef struct {
-    int fd;
+    int fd, mode, binary;
     z_stream s;
 
     unsigned char in[Z_BUFF_SIZE];
@@ -127,7 +132,7 @@ typedef struct {
     ((b)->flag_nc = ((b)->flag_nc & 0xffff0000) | ((v) & 0xffff))
 #else
 #  define bam_cigar_len(b)        ((b)->cigar_len)
-#  define bam_set_cigar_len(b, v) ((b)->cigar_len = (v))
+#  define bam_set_cigar_len(b, v) ((b)->cigar_len = (v), (b)->flag_nc = ((b)->flag_nc & 0xffff0000) | ((v) & 0xffff))
 #endif
 
 #define bam_strand(b)    ((bam_flag((b)) & BAM_FREVERSE) != 0)

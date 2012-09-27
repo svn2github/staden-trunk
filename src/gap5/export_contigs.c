@@ -16,6 +16,7 @@
 #include "sam_index.h"
 #include "dstring.h"
 #include "tagdb.h"
+#include "bam.h"
 
 /* Sequence formats */
 #define FORMAT_FASTA 0
@@ -24,6 +25,7 @@
 #define FORMAT_BAF   3
 #define FORMAT_ACE   4
 #define FORMAT_CAF   5
+#define FORMAT_BAM   6
 
 /* Annotation formats */
 #define FORMAT_GFF   10
@@ -71,6 +73,8 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
 	format_code = FORMAT_FASTQ;
     else if( 0 == strcmp(args.format, "sam"))
 	format_code = FORMAT_SAM;
+    else if( 0 == strcmp(args.format, "bam"))
+	format_code = FORMAT_BAM;
     else if( 0 == strcmp(args.format, "baf"))
 	format_code = FORMAT_BAF;
     else if( 0 == strcmp(args.format, "ace"))
@@ -292,9 +296,15 @@ static char *false_name(GapIO *io, seq_t *s, int suffix, int *name_len) {
     return false_name;
 }
 
-static int export_header_sam(GapIO *io, FILE *fp,
+static int export_header_sam(GapIO *io, bam_file_t *bf,
 			     int cc, contig_list_t *cv) {
     int i;
+    dstring_t *ds;
+
+    /* Construct a header string */
+    ds = dstring_create(NULL);
+    if (!ds)
+	return -1;
 
     /* Inefficient as we have to loop twice - here and when outputting reads */
     for (i = 0; i < cc; i++) {
@@ -307,7 +317,7 @@ static int export_header_sam(GapIO *io, FILE *fp,
 	len = c->end;
 	if (c->start <= 0)
 	    len += 1-c->start;
-	fprintf(fp, "@SQ\tSN:%s\tLN:%d\n",  c->name, len);
+	dstring_appendf(ds, "@SQ\tSN:%s\tLN:%d\n",  c->name, len);
     }
 
     /* Libraries - well read-groups in SAM. */
@@ -315,211 +325,211 @@ static int export_header_sam(GapIO *io, FILE *fp,
 	tg_rec lrec = arr(tg_rec, io->library, i);
 	library_t *lib = cache_search(io, GT_Library, lrec);
 	if (lib->name) {
-	    fprintf(fp, "@RG\tID:%s\tSM:%s\tLB:%s\n",
+	dstring_appendf(ds, "@RG\tID:%s\tSM:%s\tLB:%s\n",
 		    lib->name, "unknown", lib->name);
 	} else {
 	    char buf[100];
 	    sprintf(buf, "rg#%"PRIrec, lib->rec);
-	    fprintf(fp, "@RG\tID:SM:%s\t%s\tLB:%s\n",
-		    buf, "unknown", buf);
+	    dstring_appendf(ds, "@RG\tID:SM:%s\t%s\tLB:%s\n",
+			    buf, "unknown", buf);
 	}
     }
+
+    /* Copy it into the bam header and parse it to populate refs[] array */
+    if (bf->header)
+	free(bf->header);
+    bf->header = strdup(dstring_str(ds));
+    bf->header_len = strlen(bf->header);
+    
+    dstring_destroy(ds);
+
+    if (-1 == bam_parse_header(bf))
+	return -1;
+
+    bam_write_header(bf);
 
     return 0;
 }
 
-static char *sam_padded_cigar(char *seq, int left, int right, int olen) {
-    static char *cigar = NULL;
+static uint32_t *sam_padded_cigar(char *seq, int left, int right, int olen,
+				  int *ncigar_p) {
+    static uint32_t *cigar = NULL;
     static int cg_alloc = 0;
-    int i, j;
-    char *cp = cigar;
-    int op = 'S', oplen = 0, cglen = 0;
+    int i, j, ncigar = 0;
+    int oplen = 0, cglen = 0;
+    enum cigar_op op = BAM_CSOFT_CLIP;
 
     for (i = j = 0; i < olen; i++) {
 	//printf("%c %c\n", s->seq[i], cons[pos+i-c->start]);
-	if (cp - cigar + 50 > cg_alloc) {
-	    ptrdiff_t d = cp-cigar;
-	    cg_alloc += 100;
-	    cigar = realloc(cigar, cg_alloc);
-	    cp = cigar + d;
+	if (ncigar >= cg_alloc) {
+	    cg_alloc += 32;
+	    cigar = realloc(cigar, cg_alloc*4);
 	}
 
 	if (seq[i] == '*') {
-	    if (op != 'S' || i == left) {
-		if (op != 'D' && oplen > 0) {
-		    cp += sprintf(cp, "%d%c", oplen, op);
+	    if (op != BAM_CSOFT_CLIP || i == left) {
+		if (op != BAM_CDEL && oplen > 0) {
+		    cigar[ncigar++] = (oplen<<4) + op;
 		    cglen += oplen;
 		    oplen = 0;
 		}
-		op = 'D';
+		op = BAM_CDEL;
 		oplen++;
 	    }
 	    /* else, gap in soft-clips.
 	     * Right now this causes tview to fail an assertion though.
 	     */
 	} else if (i < left) {
-	    if (op != 'S' && oplen) {
-		cp += sprintf(cp, "%d%c", oplen, op);
-		if (op != 'D') cglen += oplen;
+	    if (op != BAM_CSOFT_CLIP && oplen) {
+		cigar[ncigar++] = (oplen<<4) + op;
+		if (op != BAM_CDEL) cglen += oplen;
 		oplen = 0;
 	    }
-	    op = 'S';
+	    op = BAM_CSOFT_CLIP;
 	    oplen++;
 	} else if (i >= left && i < right) {
-	    if (op != 'M' && oplen) {
-		cp += sprintf(cp, "%d%c", oplen, op);
-		if (op != 'D') cglen += oplen;
+	    if (op != BAM_CMATCH && oplen) {
+		cigar[ncigar++] = (oplen<<4) + op;
+		if (op != BAM_CDEL) cglen += oplen;
 		oplen = 0;
 	    }
-	    op = 'M';
+	    op = BAM_CMATCH;
 	    oplen++;
 	} else {
-	    if (op != 'S' && oplen) {
-		/* Switching from deletion to 'S' breaks tview */
-		if (op != 'D') {
-		    cp += sprintf(cp, "%d%c", oplen, op);
-		    if (op != 'D') cglen += oplen;
+	    if (op != BAM_CSOFT_CLIP && oplen) {
+		/* Switching from deletion to BAM_CSOFT_CLIP breaks tview */
+		if (op != BAM_CDEL) {
+		    cigar[ncigar++] = (oplen<<4) + op;
+		    if (op != BAM_CDEL) cglen += oplen;
 		}
 		oplen = 0;
 	    }
-	    op = 'S';
+	    op = BAM_CSOFT_CLIP;
 	    oplen++;
 	}
 
 	j++;
     }
     if (oplen > 0) {
-	if (cp - cigar + 50 > cg_alloc) {
-	    ptrdiff_t d = cp-cigar;
-	    cg_alloc += 100;
-	    cigar = realloc(cigar, cg_alloc);
-	    cp = cigar + d;
+	if (ncigar >= cg_alloc) {
+	    cg_alloc += 32;
+	    cigar = realloc(cigar, cg_alloc*4);
 	}
 
-	cp += sprintf(cp, "%d%c", oplen, op);
-	if (op != 'D') cglen += oplen;
+	cigar[ncigar++] = (oplen<<4) + op;
+	if (op != BAM_CDEL) cglen += oplen;
     }
 
     //assert(cglen == len);
 
     /* Sam cannot handle gaps at the end of sequences */
-    assert(cp);
-    if (*(cp-1) == 'D') {
-	cp-=2;
-	while(*cp >= '0' && *cp <= '9')
-	    cp--;
-	cp++;
-	*cp = 0;
+    assert(ncigar);
+    if ((cigar[ncigar-1] & 15) == BAM_CDEL) {
+	ncigar--;
     }
 
+    *ncigar_p = ncigar;
     return cigar;
 }
 
-static char *sam_depadded_cigar(char *seq, int left, int right, int olen,
-				char *cons) {
-    static char *cigar = NULL;
+static uint32_t *sam_depadded_cigar(char *seq, int left, int right, int olen,
+				    char *cons, int *ncigar_p) {
+    static uint32_t *cigar = NULL;
     static int cg_alloc = 0;
     int i, j;
-    char *cp = cigar;
-    int op = 'S', oplen = 0, cglen = 0;
-    int last_op = 0, last_oplen = 0;
-    char *last_cp = NULL;
+    int oplen = 0, cglen = 0;
+    enum cigar_op op = BAM_CSOFT_CLIP, last_op = -1;
+    int ncigar = 0, last_ncigar = 0, last_oplen = 0;
 
     for (i = j = 0; i < olen; i++) {
 	//printf("%2d %c %c\n", i, seq[i], 
 	//       i >= left && i < right ? cons[j] : '.');
-	if (cp - cigar + 50 > cg_alloc) {
-	    ptrdiff_t d = cp-cigar;
-	    ptrdiff_t d2 = last_cp ? last_cp-cigar : 0;
-	    cg_alloc += 100;
-	    cigar = realloc(cigar, cg_alloc);
-	    cp = cigar + d;
-	    if (last_cp)
-		last_cp = cigar + d2;
+	if (ncigar >= cg_alloc) {
+	    cg_alloc += 32;
+	    cigar = realloc(cigar, cg_alloc*4);
 	}
 
 	if (seq[i] == '*' && i >= left && i < right && cons[j] == '*') {
 	    /* gap in both so skip unless we're neighbouring I/D */
-	    if (op != 'P' && oplen) {
+	    if (op != BAM_CPAD && oplen) {
 		/* May need to merge next op with previous op */
 		last_op    = op;
 		last_oplen = oplen;
-		last_cp    = cp;
-		cp += sprintf(cp, "%d%c", oplen, op);
-		if (op != 'D') cglen += oplen;
+		last_ncigar= ncigar;
+		cigar[ncigar++] = (oplen<<4) + op;
+		if (op != BAM_CDEL) cglen += oplen;
 		oplen = 0;
 	    }
-	    op = 'P';
+	    op = BAM_CPAD;
 	    oplen++;
 	} else if (seq[i] == '*' && i >= left & i < right) {
 	    /* gap is seq only */
-	    //if (op != 'S') {
-		if (op != 'D' && oplen > 0) {
-		    if (op == 'P' && last_op == 'D') {
+	    //if (op != BAM_CSOFT_CLIP) {
+		if (op != BAM_CDEL && oplen > 0) {
+		    if (op == BAM_CPAD && last_op == BAM_CDEL) {
 			oplen = last_oplen;
-
-			cp    = last_cp;
+			ncigar = last_ncigar;
 		    } else {
-			cp += sprintf(cp, "%d%c", oplen, op);
+			cigar[ncigar++] = (oplen<<4) + op;
 			cglen += oplen;
 			oplen = 0;
 		    }
 		}
-		op = 'D';
+		op = BAM_CDEL;
 		oplen++;
 	     //}
 	} else if (seq[i] == '*') {
 	    /* else, gap in soft-clips - remove as SAM cannot represent this */
 	} else if (i < left) {
-	    if (op != 'S' && oplen) {
-		cp += sprintf(cp, "%d%c", oplen, op);
-		if (op != 'D') cglen += oplen;
+	    if (op != BAM_CSOFT_CLIP && oplen) {
+		cigar[ncigar++] = (oplen<<4) + op;
+		if (op != BAM_CDEL) cglen += oplen;
 		oplen = 0;
 	    }
-	    op = 'S';
+	    op = BAM_CSOFT_CLIP;
 	    oplen++;
 	} else if (i >= left && i < right) {
 	    if (cons[j] == '*') {
 		/* Insertion */
-		if (op != 'I' && oplen) {
-		    cp += sprintf(cp, "%d%c", oplen, op);
-		    if (op != 'D') cglen += oplen;
+		if (op != BAM_CINS && oplen) {
+		    cigar[ncigar++] = (oplen<<4) + op;
+		    if (op != BAM_CDEL) cglen += oplen;
 		    oplen = 0;
 		}
 		/* Handle seqs starting in xPyI */
-		if (op == 'S') {
+		if (op == BAM_CSOFT_CLIP) {
 		    int plen = 0;
 		    while (cons[j-plen-1] == '*')
 			plen++;
 		    if (plen)
-			cp += sprintf(cp, "%dP", plen);
+			cigar[ncigar++] = (plen<<4) + BAM_CPAD;
 		}
-		op = 'I';
+		op = BAM_CINS;
 		oplen++;
 	    } else {
-		if (op != 'M' && oplen) {
-		    if (op == 'P' && last_op == 'M') {
+		if (op != BAM_CMATCH && oplen) {
+		    if (op == BAM_CPAD && last_op == BAM_CMATCH) {
 			oplen = last_oplen;
-			cp    = last_cp;
+			ncigar= last_ncigar;
 		    } else {
-			cp += sprintf(cp, "%d%c", oplen, op);
-			if (op != 'D') cglen += oplen;
+			cigar[ncigar++] = (oplen<<4) + op;
+			if (op != BAM_CDEL) cglen += oplen;
 			oplen = 0;
 		    }
 		}
-		op = 'M';
+		op = BAM_CMATCH;
 		oplen++;
 	    }
 	} else {
-	    if (op != 'S' && oplen) {
-		/* Switching from deletion to 'S' breaks tview */
-		if (op != 'D') {
-		    cp += sprintf(cp, "%d%c", oplen, op);
-		    if (op != 'D') cglen += oplen;
+	    if (op != BAM_CSOFT_CLIP && oplen) {
+		/* Switching from deletion to BAM_CSOFT_CLIP breaks tview */
+		if (op != BAM_CDEL) {
+		    cigar[ncigar++] = (oplen<<4) + op;
+		    if (op != BAM_CDEL) cglen += oplen;
 		}
 		oplen = 0;
 	    }
-	    op = 'S';
+	    op = BAM_CSOFT_CLIP;
 	    oplen++;
 	}
 
@@ -527,46 +537,73 @@ static char *sam_depadded_cigar(char *seq, int left, int right, int olen,
 	    j++;
     }
     if (oplen > 0) {
-	if (cp - cigar + 50 > cg_alloc) {
-	    ptrdiff_t d = cp-cigar;
-	    cg_alloc += 100;
-	    cigar = realloc(cigar, cg_alloc);
-	    cp = cigar + d;
+	if (ncigar >= cg_alloc) {
+	    cg_alloc += 32;
+	    cigar = realloc(cigar, cg_alloc*4);
 	}
 
-	cp += sprintf(cp, "%d%c", oplen, op);
-	if (op != 'D') cglen += oplen;
+	cigar[ncigar++] = (oplen<<4) + op;
+	if (op != BAM_CDEL) cglen += oplen;
     }
 
     //assert(cglen == len);
 
     /* Sam cannot handle gaps at the end of sequences */
-    assert(cp);
-    if (*(cp-1) == 'D') {
-	cp-=2;
-	while(*cp >= '0' && *cp <= '9')
-	    cp--;
-	cp++;
-	*cp = 0;
+    assert(ncigar);
+    if ((cigar[ncigar-1] & 15) == BAM_CDEL) {
+	ncigar--;
     }
 
-    //puts(cigar);
-
+    *ncigar_p = ncigar;
     return cigar;
 }
 
 /*
  * Exports a single consensus tag as a fake sam sequence.
  */
-static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
+static void sam_export_cons_tag(GapIO *io, bam_file_t *bf, fifo_t *fi,
 				contig_t *c, int offset,
 				int depad, char *cons,
 				int *npad, int *pad_to) {
-    anno_ele_t *a = (anno_ele_t *)cache_search(io, GT_AnnoEle, fi->r.rec);
-    /* A single SAM line */
+    static unsigned char *bam = NULL;
+    static size_t bam_alloc = 0;
+    int bam_idx, bam_len;
     static dstring_t *ds = NULL;
+    uint32_t cigar;
+    anno_ele_t *a = (anno_ele_t *)cache_search(io, GT_AnnoEle, fi->r.rec);
     int start, end, i;
     char type[5];
+
+#define BAM_EXTEND(sz)					      \
+    do {						      \
+	while (bam_alloc < bam_idx + (sz)) {		      \
+	    bam_alloc *= 2;				      \
+	    bam = realloc(bam, bam_alloc);		      \
+	    if (bam == NULL) {				      \
+		abort();				      \
+		fprintf(stderr, "Error allocating memory\n"); \
+	    }						      \
+        }						      \
+    } while (0)
+
+#define BAM_AUX_Z(type, str, len);           \
+    do {				     \
+	size_t l = (len);		     \
+	BAM_EXTEND(l+4);		     \
+	bam[bam_idx++] = type[0];	     \
+	bam[bam_idx++] = type[1];	     \
+	bam[bam_idx++] = 'Z';		     \
+	memcpy(&bam[bam_idx], (str), l);     \
+	bam_idx += l;			     \
+	bam[bam_idx++] = 0;                  \
+    } while (0)
+
+    /* Initial allocation of bam string and dstring */
+    bam_len = 2 + 9*36 + 4 + 1 + 1;
+    if (bam_alloc < bam_len) {
+	bam_alloc = bam_len;
+	bam = realloc(bam, bam_alloc);
+    }
 
     if (ds)
 	dstring_empty(ds);
@@ -600,19 +637,38 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
 
     /* sometimes 784? bottom strand ones? */
     /* Basic SAM record */
-    dstring_appendf(ds, "*\t768\t%s\t%d\t255\t%dM\t*\t0\t0\t*\t*\t",
-		    c->name, start + offset, end - start + 1);
+    cigar = ((end-start+1)<<4) | BAM_CMATCH;
+    bam_idx = bam_construct_seq(bam, bam_alloc,
+				"*", 1,
+				768,
+				bam_name2ref(bf, c->name),
+				start + offset,
+				start, end,
+				255,
+				1, &cigar,
+				-1, 0, 0,
+				0, "", "");
+    //dstring_appendf(ds, "*\t768\t%s\t%d\t255\t%dM\t*\t0\t0\t*\t*\t",
+    //                c->name, start + offset, end - start + 1);
     
     /* Annotation itself. */
-    dstring_appendf(ds, "CT:Z:%c;", a->direction);
+    dstring_appendf(ds, "%c;", a->direction);
     dstring_append_hex_encoded(ds, type2str(fi->r.mqual, type), ";|");
     if (a->comment && *a->comment) {
 	dstring_append(ds, ";Note=");
 	dstring_append_hex_encoded(ds, a->comment, ";|");
     }
 
-    dstring_append_char(ds, '\n');
-    fputs(dstring_str(ds), fp);
+    BAM_AUX_Z("CT", dstring_str(ds), dstring_length(ds));
+
+    //dstring_append_char(ds, '\n');
+    //fputs(dstring_str(ds), fp);
+
+    BAM_EXTEND(1); bam[bam_idx] = 0; // terminate aux list.
+    ((bam_seq_t *)bam)->blk_size = &bam[bam_idx] -
+	(unsigned char *)&((bam_seq_t *)bam)->ref;
+    
+    bam_put_seq(bf, bam);
 }
 
 /*
@@ -626,7 +682,8 @@ static void sam_export_cons_tag(GapIO *io, FILE *fp, fifo_t *fi,
  * keep track of the number of pads seen so far up to base 'pad_to', and
  * update these fields as we go (with an assumption data is in sorted order).
  */
-static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
+static void sam_export_seq(GapIO *io, bam_file_t *bf,
+			   fifo_t *fi, fifo_queue_t *tq,
 			   int fixmates, tg_rec crec, contig_t *c, int offset,
 			   int depad, char *cons, int *npad, int *pad_to) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec), *sorig = s;
@@ -641,10 +698,12 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     library_t *lib = NULL;
     tg_rec last_lrec = -1;
     int mqual;
-    char *cigar_tmp;
     char rg_buf[1024], *aux_ptr;
     int first_tag = 1;
     int *depad_map = NULL;
+    static unsigned char *bam = NULL;
+    static size_t bam_alloc = 0;
+    int bam_idx = 0, bam_len, start, end;
 
     fifo_t *last, *ti;
 
@@ -653,12 +712,11 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     static char *Q = NULL, *S = NULL;
 
     /* Cigar encoding */
-    static int cg_alloc = 0;
-    static char *cigar = NULL;
+    uint32_t *cigar = NULL, *cigar_tmp;
+    int ncigar, ncigar_tmp;
 
     /* A single SAM line */
     static dstring_t *ds = NULL;
-
 
     /*--- Reserve enough memory */
     if (len > qalloc) {
@@ -676,9 +734,9 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
     /*--- Depad sequence/qual */
     for (i = j = 0; i < len; i++) {
-	int v = '!' + s->conf[i];
-	if (v < '!') v = '!';
-	if (v > '~') v = '~';
+	int v = s->conf[i];
+	if (v < 0) v = 0;
+	if (v > 93) v = 93;
 	Q[j] = v;
 	if (s->conf[i])
 	    lenQ = 1;
@@ -693,8 +751,8 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     if (lenQ) {
 	lenQ = len;
     } else { 
-	lenQ = 1;
-	Q[0] = '*';
+	lenQ = len;
+	memset(Q, 255, len);
     }
 
 
@@ -788,13 +846,26 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	pos -= *npad;
     }
 
-
     /*--- Generate cigar string. */
     if (depad)
 	cigar = sam_depadded_cigar(s->seq, left, right, olen,
-				   &cons[pos - c->start + *npad]);
+				   &cons[pos - c->start + *npad],
+				   &ncigar);
     else
-	cigar = sam_padded_cigar(s->seq, left, right, olen);
+	cigar = sam_padded_cigar(s->seq, left, right, olen, &ncigar);
+    
+    /*--- Compute start and end value for bin */
+    start = end =  pos + offset;
+    for (i = 0; i < ncigar; i++) {
+	switch(cigar[i]&15) {
+	case BAM_CMATCH:
+	case BAM_CDEL:
+	case BAM_CREF_SKIP:
+	case BAM_CBASE_MATCH:
+	case BAM_CBASE_MISMATCH:
+	    end += cigar[i]>>4;
+	}
+    }
 
 
     /*--- Compute insert sizes */
@@ -846,10 +917,12 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	flag |=  0x04; /* query unmapped */
 	flag &= ~0x02; /* proper pair */
 	mqual = 0;
-	cigar_tmp = "*";
+	ncigar_tmp = 0;
+	cigar_tmp = NULL;
 	isize = 0;
     } else {
 	mqual = fi->r.mqual;
+	ncigar_tmp = ncigar;
 	cigar_tmp = cigar;
     }
 
@@ -858,19 +931,27 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     else
 	ds = dstring_create(NULL);
 
-    dstring_appendf(ds, "%.*s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%.*s\t%.*s",
-		    tname_len, tname,
-		    flag,
-		    c->name,
-		    pos+offset,
-		    mqual,
-		    cigar_tmp,
-		    mate_ref,
-		    iend,
-		    isize,
-		    len, S,
-		    lenQ, Q);
 
+    /* Create BAM struct */
+    bam_len = tname_len + len + (len+1)/2 + 9*36 + ncigar_tmp*4;
+
+    /* Initial allocation of bam string */
+    if (bam_alloc < bam_len) {
+	bam_alloc = bam_len;
+	bam = realloc(bam, bam_alloc);
+    }
+    bam_idx = bam_construct_seq(bam, bam_alloc,
+				tname, tname_len,
+				flag,
+				bam_name2ref(bf, c->name),
+				pos+offset,
+				start, end,
+				mqual,
+				ncigar_tmp, cigar_tmp,
+				bam_name2ref(bf, mate_ref),
+				iend,
+				isize,
+				len, S, Q);
 
     /*--- Aux strings */
     if (s->parent_type == GT_Library) {
@@ -879,50 +960,47 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	    lib = cache_search(io, GT_Library, s->parent_rec);
 	}
 	if (lib->name)
-	    sprintf(rg_buf, "\tRG:Z:%s", lib->name);
+	    sprintf(rg_buf, "%s", lib->name);
 	else
-	    sprintf(rg_buf, "\tRG:Z:rg#%"PRIrec, lib->rec);
+	    sprintf(rg_buf, "rg#%"PRIrec, lib->rec);
 
-	dstring_append(ds, rg_buf);
+	BAM_AUX_Z("RG", rg_buf, strlen(rg_buf));
     }
 
     if (tname_len != s->name_len) {
 	sprintf(rg_buf, "\tFS:Z:%.*s",
 		s->name_len - tname_len,
 		s->name + tname_len);
-	
-	dstring_append(ds, rg_buf);
+
+	BAM_AUX_Z("FS", s->name + tname_len, s->name_len - tname_len);
     }
 
     if (s->aux_len) {
-	aux_ptr = sam_aux_stringify(s->sam_aux, s->aux_len);
-	if (aux_ptr && *aux_ptr) {
-	    dstring_append(ds, "\t");
-	    dstring_append(ds, aux_ptr);
-	}
+	BAM_EXTEND(s->aux_len);
+	memcpy(&bam[bam_idx], s->sam_aux, s->aux_len);
+	bam_idx += s->aux_len;
     }
 
     /*--- Attach tags for this sequence too */
     if (fifo_queue_head(tq)) {
-	char *c, *d;
-	int i = 0, j = 0, l = ABS(s->len);
+	char *d;
+	int i = 0, j = 0, l = ABS(s->len), n = 0;
 	int op, op_len = 0;
 	depad_map = malloc(l * sizeof(*depad_map));
 	if (!depad_map)
 	    return;
 
-	c = cigar;
 	d = s->seq;
 	
 	for (i = 0; i < l; i++) {
 	    if (op_len == 0) {
-		while (isdigit(*c))
-		    op_len = op_len*10 + *c++ - '0';
-		op = *c++;
+		op = cigar[n] & 15;
+		op_len = cigar[n] >> 4;
+		n++;
 	    }
 
 	    depad_map[i] = j;
-	    if (d[i] != '*' || op == 'P' || (!depad && op == 'D')) {
+	    if (d[i] != '*' || op == BAM_CPAD || (!depad && op == BAM_CDEL)) {
 		//printf("%2d %c/%c %2d  %d%c\n", i+1, d[i], S[j], j+1, op_len, op);
 		op_len--;
 		j++;
@@ -956,7 +1034,7 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 
 	
 	if (first_tag) {
-	    dstring_append(ds, "\tPT:Z:");
+	    //dstring_append(ds, "\tPT:Z:");
 	    first_tag = 0;
 	} else {
 	    dstring_append(ds, "|");
@@ -1006,20 +1084,30 @@ static void sam_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
 	    ti = fifo_queue_head(tq);
 	}
     }
+    if (!first_tag) {
+	BAM_AUX_Z("PT", dstring_str(ds), dstring_length(ds));
+    }
     if (depad_map)
 	free(depad_map);
 
 
     /*--- Finally output it */
-    dstring_append_char(ds, '\n');
-    fputs(dstring_str(ds), fp);
+    //dstring_append_char(ds, '\n');
+    //fputs(dstring_str(ds), fp);
+
+    /*--- Finally output it */
+    BAM_EXTEND(1); bam[bam_idx] = 0; // terminate aux list.
+    ((bam_seq_t *)bam)->blk_size = &bam[bam_idx] -
+	(unsigned char *)&((bam_seq_t *)bam)->ref;
+
+    bam_put_seq(bf, bam);
 
     if (s != sorig)
 	free(s);
 
 }
 
-static int export_contig_sam(GapIO *io, FILE *fp,
+static int export_contig_sam(GapIO *io, bam_file_t *bf,
 			     tg_rec crec, int start, int end,
 			     int fixmates, int depad) {
     contig_iterator *ci;
@@ -1114,10 +1202,10 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	    if (fi->r.end < last_start) {
 		fifo_queue_pop(fq);
 		if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-		    sam_export_cons_tag(io, fp, fi, c, offset,
+		    sam_export_cons_tag(io, bf, fi, c, offset,
 					depad, cons+1, &npads, &pad_to);
 		} else {
-		    sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
+		    sam_export_seq(io, bf, fi, tq, fixmates, crec, c, offset,
 				   depad, cons+1, &npads, &pad_to);
 		}
 		free(fi);
@@ -1131,10 +1219,10 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     while (fi = fifo_queue_head(fq)) {
 	fifo_queue_pop(fq);
 	if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	    sam_export_cons_tag(io, fp, fi, c, offset,
+	    sam_export_cons_tag(io, bf, fi, c, offset,
 				depad, cons+1, &npads, &pad_to);
 	} else {
-	    sam_export_seq(io, fp, fi, tq, fixmates, crec, c, offset,
+	    sam_export_seq(io, bf, fi, tq, fixmates, crec, c, offset,
 			   depad, cons+1, &npads, &pad_to);
 	}
 	free(fi);
@@ -1922,14 +2010,32 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 			  char *fn, int fixmates, int depad) {
     int i;
-    FILE *fp;
+    FILE *fp = NULL;
+    bam_file_t *bf = NULL;
     
-    if (0 == strcmp(fn, "-")) {
-	fp = stdout;
-    } else {
-	if (NULL == (fp = fopen(fn, "w"))) {
+    switch (format) {
+    case FORMAT_SAM:
+	if (NULL == (bf = bam_open(fn, "w"))) {
 	    perror(fn);
 	    return -1;
+	}
+	break;
+
+    case FORMAT_BAM:
+	if (NULL == (bf = bam_open(fn, "wb"))) {
+	    perror(fn);
+	    return -1;
+	}
+	break;
+
+    default:
+	if (0 == strcmp(fn, "-")) {
+	    fp = stdout;
+	} else {
+	    if (NULL == (fp = fopen(fn, "w"))) {
+		perror(fn);
+		return -1;
+	    }
 	}
     }
 
@@ -1940,7 +2046,8 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 	break;
 
     case FORMAT_SAM:
-	export_header_sam(io, fp, cc, cv);
+    case FORMAT_BAM:
+	export_header_sam(io, bf, cc, cv);
 	break;
     }
 
@@ -1948,7 +2055,8 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
     for (i = 0; i < cc; i++) {
 	switch (format) {
 	case FORMAT_SAM:
-	    export_contig_sam(io, fp, cv[i].contig, cv[i].start, cv[i].end,
+	case FORMAT_BAM:
+	    export_contig_sam(io, bf, cv[i].contig, cv[i].start, cv[i].end,
 			      fixmates, depad);
 	    break;
 
@@ -1980,8 +2088,16 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 	}
     }
 
-    if (fp != stdout)
-	fclose(fp);
+    switch (format) {
+    case FORMAT_SAM:
+    case FORMAT_BAM:
+	bam_close(bf);
+	break;
+
+    default:
+	if (fp != stdout)
+	    fclose(fp);
+    }
 
     return 0;
 }
