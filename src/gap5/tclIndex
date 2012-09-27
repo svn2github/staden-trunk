@@ -30,6 +30,7 @@ set auto_index(QClipEnds) [list source [file join $dir clip.tcl]]
 set auto_index(DifferenceClip) [list source [file join $dir clip.tcl]]
 
 set auto_index(ComplementContig) [list source [file join $dir complement.tcl]]
+set auto_index(ContigRenameBulk) [list source [file join $dir complement.tcl]]
 
 set auto_index(ConfigureCutoffs) [list source [file join $dir configure.tcl]]
 set auto_index(SetMaxseq) [list source [file join $dir configure.tcl]]

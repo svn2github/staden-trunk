@@ -1376,6 +1376,14 @@ set_def EXTEND_CONTIGS.MIN_DEPTH	5
 set_def EXTEND_CONTIGS.MATCH_SCORE	1
 set_def EXTEND_CONTIGS.MISMATCH_SCORE	-3
 
+# Bulk Contig Rename
+set_def CONTIG_BULK_RENAME.INFILE       $defs_c_in
+set_def CONTIG_BULK_RENAME.INFILE.WHICH.BUTTONS {list file pattern}
+set_def CONTIG_BULK_RENAME.INFILE.WHICH.VALUE   3
+set_def CONTIG_BULK_RENAME.SEARCH 	* 
+set_def CONTIG_BULK_RENAME.REPLACE 	Contig_%06d
+set_def CONTIG_BULK_RENAME.INDEX 	1
+
 # Set this to a Tcl list of the interpreter names of programs which Gap4 can
 # communicate with using the Send To command. If they're not already running,
 # it'll start one itself with the second half of the name. NB, interpreter

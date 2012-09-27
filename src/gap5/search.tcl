@@ -95,7 +95,7 @@ proc gap4_text_init {t} {
     set range [$w tag prevrange $tag current]
     set text [$w get [lindex $range 0] [lindex $range 1]]
 
-    if {[db_info get_read_num $io $text] <= 0} {
+    if {[db_info get_contig_num $io $text] <= 0} {
 	verror ERR_WARN "Reading '$text' not found in database"
 	bell
 	return
