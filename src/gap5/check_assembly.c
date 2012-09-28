@@ -378,6 +378,7 @@ int check_assembly_plot(GapIO *io, tg_rec *reads, tg_rec *conts, int *score,
 	matches[i].data = (mobj_repeat *)ca;
 	matches[i].c1 = matches[i].c2 = conts[i];
 	matches[i].pos1 = matches[i].pos2 = pos[i];
+	matches[i].end1 = matches[i].end2 = pos[i] + length[i];
 	matches[i].length = length[i];
 	matches[i].score = score[i];
 	matches[i].flags = 0;

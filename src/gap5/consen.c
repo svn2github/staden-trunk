@@ -241,18 +241,27 @@ Contig_parms *get_contig_list (int database_size, GapIO *io,
 int contig_listel_from_con_pos ( Contig_parms *contig_list, 
 				 int number_of_contigs, int pos_in_contig ) {
 
-    int i;
+    int i, hi, lo;
 
     if ( 0 == number_of_contigs ) return -1;
     if ( 1 == number_of_contigs ) return 0;
 
-    for ( i=1; i<number_of_contigs; i++ ) {
+    lo = 0;
+    hi = number_of_contigs - 1;
 
-	if ( pos_in_contig <= contig_list[i].contig_start_offset ) {
-	    return i - 1;
+    while (lo < hi) {
+	i = (hi + lo) / 2;
+	if (pos_in_contig < contig_list[i].contig_start_offset) {
+	    hi = i;
+	} else if (pos_in_contig >= contig_list[i + 1].contig_start_offset) {
+	    lo = i + 1;
+	} else {
+	    return i;
 	}
     }
-    /* must be in last contig */
+    /* If here, pos_in_contig is either before the first contig or after 
+       the last */
+    if (pos_in_contig < contig_list[0].contig_start_offset) return 0;
     return number_of_contigs - 1;
 }
 

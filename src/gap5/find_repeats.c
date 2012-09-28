@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "tg_gio.h"
 #include "gap_globals.h"
 #include "misc.h"
@@ -12,6 +13,7 @@
 #include "gap4_compat.h"
 #include "editor_view.h"
 #include "tk-io-reg.h"
+#include "dna_utils.h"
 
 /*
  * Match callback.
@@ -85,16 +87,9 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 		    break;
 		}
 
-		if (io_clength(repeat->io, ABS(obj->c1)) <
-		    io_clength(repeat->io, ABS(obj->c2))) {
+		if (-1 == complement_contig(repeat->io, ABS(obj->c2)))
 		    if (-1 == complement_contig(repeat->io, ABS(obj->c1)))
-			if (-1 == complement_contig(repeat->io, ABS(obj->c2)))
-			    return NULL;
-		} else {
-		    if (-1 == complement_contig(repeat->io, ABS(obj->c2)))
-			if (-1 == complement_contig(repeat->io, ABS(obj->c1)))
-			    return NULL;
-		}
+			return NULL;
 	    }
 
 	    /*
@@ -104,26 +99,23 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	    pos[0] = obj->pos1;
 	    pos[1] = obj->pos2;
 
-	    llino[0] = io_clnbr(repeat->io, cnum[0]);
-	    llino[1] = io_clnbr(repeat->io, cnum[1]);
-
+	    llino[0] = 0;
+	    llino[1] = 0;
 	    join_contig(repeat->io, cnum, llino, pos);
 	    break;
 	}
 
 	case 3: /* Invoke contig editors */ {
-	    tg_rec cnum, llino;
+	    tg_rec cnum;
 	    int pos;
 
 	    cnum  = ABS(obj->c1);
-	    llino = io_clnbr(repeat->io, cnum);
 	    pos   = obj->pos1;
-	    edit_contig(repeat->io, cnum, llino, pos);
+	    edit_contig(repeat->io, cnum, 0, pos);
     
 	    cnum  = ABS(obj->c2);
-	    llino = io_clnbr(repeat->io, cnum);
 	    pos   = obj->pos2;
-	    edit_contig(repeat->io, cnum, llino, pos);
+	    edit_contig(repeat->io, cnum, 0, pos);
 	    break;
 	}
 
@@ -136,11 +128,9 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	break;
 
     case OBJ_GET_BRIEF:
-	sprintf(buf, "Repeat: %c#%"PRIrec"@%d with %c#%"PRIrec"@%d, len %d",
-		obj->c1 > 0 ? '+' : '-',
-		io_clnbr(repeat->io, ABS(obj->c1)), obj->pos1,
-		obj->c2 > 0 ? '+' : '-',
-		io_clnbr(repeat->io, ABS(obj->c2)), obj->pos2,
+	sprintf(buf, "Repeat: %c=%"PRIrec"@%d with %c=%"PRIrec"@%d, len %d",
+		obj->c1 > 0 ? '+' : '-', ABS(obj->c1), obj->pos1,
+		obj->c2 > 0 ? '+' : '-', ABS(obj->c2), obj->pos2,
 		obj->length);
 	return buf;
     }
@@ -267,31 +257,16 @@ void repeat_callback(GapIO *io, tg_rec contig, void *fdata, reg_data *jdata) {
     }
 }
 
-void
-plot_rpt(GapIO *io,
-	 int nres,
-	 tg_rec c1[],
-	 int pos1[],
-	 tg_rec c2[],
-	 int pos2[],
-	 int len[])
-{
+int plot_rpt(GapIO *io, int nres, obj_match *matches) {
     int i, id;
     mobj_repeat *repeat;
-    obj_match *matches = NULL;
     char *val;
 
     /* If nres is zero - do nothing */
-    if (0 == nres)
-	return;
+    if (0 == nres) return 0;
 
     if (NULL == (repeat = (mobj_repeat *)xmalloc(sizeof(mobj_repeat)))) {
-	f_proc_return();
-    }
-
-    if (NULL == (matches = (obj_match *)xmalloc(nres * sizeof(obj_match)))) {
-	xfree(repeat);
-	f_proc_return();
+	return -1;
     }
 
     repeat->num_match = nres;
@@ -313,17 +288,10 @@ plot_rpt(GapIO *io,
     repeat->reg_func = repeat_callback;
     repeat->match_type = REG_TYPE_REPEAT;
 
-    /* Create and plot our match array */
+    /* Fill in the rest of the match array */
     for (i= 0; i < nres; i++){
 	matches[i].func = repeat_obj_func;
 	matches[i].data = repeat;
-        matches[i].c1 = rnumtocnum(io, ABS(c1[i])) * (c1[i] < 1 ? -1 : 1);
-        matches[i].pos1 = pos1[i];
-        matches[i].c2 = rnumtocnum(io, ABS(c2[i])) * (c2[i] < 1 ? -1 : 1);
-        matches[i].pos2 = pos2[i];
-        matches[i].length = len[i];
-        matches[i].score = len[i];
-	matches[i].flags = 0;
     }
 
     /* Sort matches */
@@ -341,22 +309,9 @@ plot_rpt(GapIO *io,
 		    REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
 		    REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_REPEAT);
     update_results(io);
+
+    return 0;
 }
-
-
-int repeat_search (
-	           int mode,		/* 1=f,2=r,3=b */
-		   int min_match,	/* the minimum match length */
-		   int **seq1_match,	/* positions of matches in seq1 */
-		   int **seq2_match,	/* positions of matches in seq2 */
-		   int **len_match,	/* length of matches */
-		   int max_matches,	/* maximum number of matches */
-		   char *seq1,		/* seq1 */
-		   int seq1_len,	/* size of seq1 and its hash array */
-		   int *num_f_matches,
-		   int *num_r_matches
-		   );
-
 
 int
 find_repeats(GapIO *io,
@@ -368,16 +323,20 @@ find_repeats(GapIO *io,
 	     contig_list_t *contig_array,
 	     char *out_name)
 {
-    tg_rec *crec1, *crec2;
-    int *pos1, *pos2, *len; /* position in crec1/2 and joint length */
-    char *consensus;
+    int *pos1 = NULL, *pos2 = NULL, *len = NULL;
+    char *consensus = NULL;
     int max_read_length, database_size, number_of_contigs;
     int consensus_length, ret, task_mask;
     int max_matches;
-    int i,j;
+    int i, dirn;
     int num_f_matches, num_r_matches;
-    Contig_parms *contig_list;
+    int *depad_to_pad = NULL;
+    char *depadded = NULL;
+    int depadded_len = 0;
+    Contig_parms *contig_list = NULL;
+    obj_match *matches = NULL;
     Hidden_params p;
+    int retval = -1;
 
     p.min = p.max = p.verbose = p.use_conf = p.qual_val = p.window_len =0;
     p.test_mode = 0;
@@ -391,10 +350,6 @@ find_repeats(GapIO *io,
     p.gap_extend = 4;
 
     max_matches = 10000; /* FIXME: make this adjustable */
-    consensus = NULL;
-    contig_list = NULL;
-    crec1 = crec2 = NULL;
-    pos1 = pos2 = len = NULL;
 
     if ((pos1 = (int *)xmalloc(max_matches * sizeof(int)))==NULL){
 	goto bail_out;
@@ -421,71 +376,57 @@ find_repeats(GapIO *io,
     consensus_length = 0;
 
 /*    printf("TASK mask %d mask %d mode %d\n",task_mask,mask,mode); */
-    if ( ret = make_consensus ( task_mask, io, &consensus, NULL,
-			  contig_list, number_of_contigs,
-			  &consensus_length,
-			  max_read_length,
-			  p,
-			  consensus_cutoff ) ) {
+    ret = make_consensus(task_mask, io, &consensus, NULL,
+			 contig_list, number_of_contigs,
+			 &consensus_length, max_read_length,
+			 p, consensus_cutoff );
+    if (ret) goto bail_out;
+
+    depadded = alloc_depadded_seq(consensus, consensus_length,
+				  &depadded_len, &depad_to_pad);
+
+    ret =  repeat_search_depadded(mode, min_match, &pos1, &pos2, &len,
+				  max_matches, depadded, depadded_len,
+				  &num_f_matches, &num_r_matches);
+    if (ret <= 0) {
+	if (0 == ret) retval = 0;
 	goto bail_out;
     }
 
-    ret =  repeat_search ( mode, min_match, &pos2, &pos1, &len, max_matches,
-			   consensus, consensus_length,
-			   &num_f_matches, &num_r_matches );
+    matches = xmalloc(ret * sizeof(obj_match));
+    if (NULL == matches) goto bail_out;
 
-    if( ret < 0 ) {
-	goto bail_out;
-    }
+    for (dirn = 1; dirn >= -1; dirn -= 2) {
+	int lim = dirn > 0 ? num_f_matches : ret;
 
-    /* get the output arrays filled in to fit with old routines!!*/
-    if ((crec1 = (tg_rec *)xmalloc((num_f_matches + num_r_matches + 1) * sizeof(tg_rec)))==NULL){
-	goto bail_out;
-    }
-
-    if ((crec2 = (tg_rec *)xmalloc((num_f_matches + num_r_matches + 1) * sizeof(tg_rec)))==NULL){
-	goto bail_out;
-    }
-
-    for ( i=0;i<num_f_matches; i++ ) {
-	if ( -1 != (j = (contig_listel_from_con_pos ( contig_list, number_of_contigs,
-					pos1[i] )))) {
-	    crec1[i] = contig_list[j].contig_left_gel;
-	    pos1[i] += contig_list[j].contig_start
-		     - contig_list[j].contig_start_offset - 1;
-	}
-	else {
-	    goto bail_out;
-	}
-	if ( -1 != (j = (contig_listel_from_con_pos ( contig_list, number_of_contigs,
-					pos2[i] )))) {
-	    crec2[i] = contig_list[j].contig_left_gel;
-	    pos2[i] += contig_list[j].contig_start
-		     - contig_list[j].contig_start_offset - 1;
-	}
-	else {
-	    goto bail_out;
-	}
-    }
-
-    for ( i=num_f_matches; i<num_f_matches+num_r_matches;i++ ) {
-	if ( -1 != (j = (contig_listel_from_con_pos ( contig_list, number_of_contigs,
-					pos1[i] )))) {
-	    crec1[i] = -contig_list[j].contig_left_gel;
-	    pos1[i] += contig_list[j].contig_start
-		     - contig_list[j].contig_start_offset - 1;;
-	}
-	else {
-	    goto bail_out;
-	}
-	if ( -1 != (j = (contig_listel_from_con_pos ( contig_list, number_of_contigs,
-					pos2[i] )))) {
-	    crec2[i] = contig_list[j].contig_left_gel;
-	    pos2[i] += contig_list[j].contig_start
-		     - contig_list[j].contig_start_offset - 1;
-	}
-	else {
-	    goto bail_out;
+	for ( i = dirn > 0 ? 0 : num_f_matches; i < lim; i++ ) {
+	    int j1, j2, offset1, offset2, pad1, pad2;
+	    
+	    pad1 = depad_to_pad[pos1[i]];
+	    j1 = contig_listel_from_con_pos(contig_list,
+					    number_of_contigs, pad1);
+	    assert(j1 >= 0);
+	    offset1 = contig_list[j1].contig_start
+		- contig_list[j1].contig_start_offset - 1;
+	    
+	    matches[i].c1 = contig_list[j1].contig_number;
+	    matches[i].pos1 = pad1 + offset1;
+	    matches[i].end1 = depad_to_pad[pos1[i] + len[i] - 1] + offset1;
+	    
+	    pad2 = depad_to_pad[pos2[i]];
+	    j2 = contig_listel_from_con_pos(contig_list,
+					    number_of_contigs, pad2);
+	    assert(j2 >= 0);
+	    offset2 = contig_list[j2].contig_start
+		- contig_list[j2].contig_start_offset - 1;
+	    
+	    matches[i].c2 = contig_list[j2].contig_number * dirn;
+	    matches[i].pos2 = pad2 + offset2;
+	    matches[i].end2 = depad_to_pad[pos2[i] + len[i] - 1] + offset2;
+	    matches[i].length = matches[i].score = len[i];
+	    matches[i].read = 0;
+	    matches[i].rpos = 0;
+	    matches[i].flags = 0;
 	}
     }
 
@@ -500,26 +441,19 @@ find_repeats(GapIO *io,
     }
 #endif
 
-    plot_rpt(io, num_f_matches+num_r_matches, crec1, pos1, crec2, pos2, len);
+    if (plot_rpt(io, ret, matches)) goto bail_out;
 
-	if ( crec1 ) xfree(crec1);
-	if ( pos1 )  xfree(pos1);
-	if ( crec2 ) xfree(crec2);
-	if ( pos2 )  xfree(pos2);
-	if ( len )   xfree(len);
-	if ( consensus )   xfree(consensus);
-	if ( contig_list ) xfree(contig_list);
+    retval = 0;
 
-	return 0;
  bail_out:
+    if ( pos1 )  xfree(pos1);
+    if ( pos2 )  xfree(pos2);
+    if ( len )   xfree(len);
+    if ( consensus )    xfree(consensus);
+    if ( contig_list )  xfree(contig_list);
+    if ( depadded )     free(depadded);
+    if ( depad_to_pad ) free(depad_to_pad);
+    if ( retval && matches ) xfree(matches);
 
-	if ( crec1 ) xfree(crec1);
-	if ( pos1 )  xfree(pos1);
-	if ( crec2 ) xfree(crec2);
-	if ( pos2 )  xfree(pos2);
-	if ( len )   xfree(len);
-	if ( consensus )   xfree(consensus);
-	if ( contig_list ) xfree(contig_list);
-
-	return -1;
+    return retval;
 } /* end FindRepeats */

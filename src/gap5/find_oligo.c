@@ -118,8 +118,8 @@ void *find_oligo_obj_func1(int job,
 	    pos[0] = obj->pos1;
 	    pos[1] = obj->pos2;
 
-	    llino[0] = io_clnbr(find_oligo->io, cnum[0]);
-	    llino[1] = io_clnbr(find_oligo->io, cnum[1]);
+	    llino[0] = 0; /* io_clnbr(find_oligo->io, cnum[0]); */
+	    llino[1] = 0; /* io_clnbr(find_oligo->io, cnum[1]); */
 
 	    join_contig(find_oligo->io, cnum, llino, pos);
 
@@ -475,6 +475,8 @@ RegFindOligo(GapIO *io,
 	matches[i].c1     = c1[i];
 	matches[i].pos1   = pos1[i];
 	matches[i].length = length[i];
+	matches[i].end1   = matches[i].pos1 + matches[i].length;
+	matches[i].end2   = matches[i].pos2 + matches[i].length;
 	matches[i].score  = score[i];
 	matches[i].flags  = 0;
     }
@@ -798,12 +800,14 @@ StringMatch(GapIO *io,                                                 /* in */
     char name1[10];
     int max_imatches = max_matches;
     size_t stringlen = strlen(string);
+    char *seq, *seq2 = NULL;
+    seq_t *s = NULL;
 
     if (NULL == (cons_match = (char *)xmalloc(stringlen + 1)))
 	return -1;
 
     /* convert percentage mis-matches into number of mis matches */
-    mis_match = strlen(string) - (ceil(strlen(string) * mis_fmatch / 100.));
+    mis_match = stringlen - (ceil(stringlen * mis_fmatch / 100.));
 
     /* complement string */
     for (c = 0; c < 2; c++) {
@@ -819,9 +823,6 @@ StringMatch(GapIO *io,                                                 /* in */
 	     * Sequences in that contig on subsequent loops.
 	     */
 	    for (r = (rangec_t *)1; r; r = contig_iter_next(io, ci)) {
-		char *seq, *seq2 = NULL;
-		seq_t *s = NULL;
-
 		if (ci == 0) {
 		    /* First time through is consensus */
 		    seq = cons_array[i];
@@ -833,6 +834,7 @@ StringMatch(GapIO *io,                                                 /* in */
 			continue;
 
 		    s = cache_search(io, GT_Seq, r->rec);
+		    if (NULL == s) goto fail;
 		    cache_incr(io, s);
 
 		    if (cutoff_data) {
@@ -844,10 +846,9 @@ StringMatch(GapIO *io,                                                 /* in */
 		    }
 
 		    if ((s->len < 0) ^ r->comp) {
-			seq2 = malloc(seq_len);
-			strncpy(seq2, seq, seq_len);
+			seq2 = alloc_complement_seq(seq, seq_len);
+			if (NULL == seq2) goto fail;
 			seq = seq2;
-			complement_seq(seq, seq_len);
 		    }
 		}
 
@@ -856,11 +857,7 @@ StringMatch(GapIO *io,                                                 /* in */
 					stringlen, mis_match,
 					&pos1[n_matches], &score[n_matches],
 					max_imatches);
-		if (res == -2) {
-		    if (s)
-			cache_decr(io, s);
-		    return -1;
-		}
+		if (res == -2) goto fail;
 
 		if (res < 0) {
 		    verror(ERR_WARN, "find_oligos", "Too many matches");
@@ -966,8 +963,10 @@ StringMatch(GapIO *io,                                                 /* in */
 		    }
 		}
 
-		if (s)
+		if (s) {
 		    cache_decr(io, s);
+		    s = NULL;
+		}
 
 		n_matches -= j-k;
 		max_imatches += j-k;
@@ -989,8 +988,10 @@ StringMatch(GapIO *io,                                                 /* in */
 			break;
 		}
 
-		if (seq2)
+		if (seq2) {
 		    free(seq2);
+		    seq2 = NULL;
+		}
 	    }
 
 	    if (too_many)
@@ -1004,6 +1005,11 @@ StringMatch(GapIO *io,                                                 /* in */
     xfree(cons_match);
     vmessage("Number of matches found %d \n", n_matches);
     return n_matches;
+ fail:
+    if (seq2) free(seq2);
+    if (cons_match) xfree(cons_match);
+    if (s) cache_decr(io, s);
+    return -1;
 }
 
 int

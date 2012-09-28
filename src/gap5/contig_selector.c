@@ -51,7 +51,7 @@ PlotRepeats(GapIO *io,
 	    mobj_repeat *repeat) {
     int i;
     char cmd[1024];
-    int pos1, pos2;
+    int pos1, pos2, end1, end2;
     int64_t x1, y1, x2, y2;
     /* int max_x = 0; */
     int sense1 = 1;
@@ -107,11 +107,13 @@ PlotRepeats(GapIO *io,
 	hi = HashTableSearch(cstart, (char *)&rec, sizeof(rec));
 	if (!hi) return;
 	pos1 = hi->data.i + new_match.pos1;
+	end1 = hi->data.i + new_match.end1;
 
 	rec = ABS(new_match.c2);
 	hi = HashTableSearch(cstart, (char *)&rec, sizeof(rec));
 	if (!hi) return;
 	pos2 = hi->data.i + new_match.pos2;
+	end2 = hi->data.i + new_match.end2;
 
 	/* convert contig code back to sense ie -ve contig number means
 	 * match on opposite strand
@@ -136,12 +138,12 @@ PlotRepeats(GapIO *io,
 	 *                                                 p1, p2+len
 	 */
 	x1 = pos1;
-	x2 = pos1 + new_match.length;
+	x2 = end1;
 	if (sense1 == sense2) {
 	    y1 = pos2;
-	    y2 = pos2 + new_match.length;
+	    y2 = end2;
 	} else {
-	    y1 = pos2 + new_match.length;
+	    y1 = end2;
 	    y2 = pos2;
 
 	}
@@ -526,55 +528,34 @@ CSLocalCursor(GapIO *io,
 int
 DoClipping(GapIO *io,                                                  /* in */
 	   obj_match *match)                                      /* in, out */
-
 {
-    int64_t length[4];
-    int64_t min_length = INT_MAX;
-    int64_t c1_len, c2_len, i;
-
-    length[0] = match->length;
-    length[1] = length[0];
-    length[2] = length[0];
-    length[3] = length[0];
-
+    int c1_len, c2_len;
     if (match->pos1 <= 0) {
-	length[0] = match->length + match->pos1 - 1;
-	if (length[0] < 1) length[0] = 1;
 	match->pos1 = 1;
-    }
-    if (match->pos2 <= 0) {
-	length[1] = match->length + match->pos2 - 1;
-	if (length[1] < 1) length[1] = 1;
-	match->pos2 = 1;
-    }
-
-    /* clip the length of contig 1 if necessary */
-    c1_len = io_clength(io, ABS(match->c1));
-    if (match->pos1 + match->length > c1_len) {
-	length[2] = c1_len - match->pos1;
-	if (length[2] < 1) length[2] = 1;
-    if (match->pos1 > c1_len)
-	match->pos1 = c1_len;
-    }
-
-    /* clip the length of contig 1 if necessary */
-    c2_len = io_clength(io, ABS(match->c2));
-    if (match->pos2 + match->length > c2_len) {
-	length[3] = c2_len - match->pos2;
-	if (length[3] < 1) length[3] = 1;
-    if (match->pos2 > c2_len)
-	match->pos2 = c2_len;
-    }
-
-    /* select smallest of clipped lengths */
-    for (i = 0; i < 4; i++) {
-	if (length[i] < min_length) {
-	    min_length = length[i];
+	if (match->end1 <= 0) {
+	    match->end1 = 1;
 	}
     }
-
-    match->length = min_length;
-
+    if (match->pos2 <= 0) {
+	match->pos2 = 1;
+	if (match->end2 <= 0) {
+	    match->end2 = 1;
+	}
+    }
+    c1_len = io_clength(io, ABS(match->c1));
+    if (match->end1 > c1_len) {
+	match->end1 = c1_len;
+	if (match->pos1 > c1_len) {
+	    match->pos1 = c1_len;
+	}
+    }
+    c2_len = io_clength(io, ABS(match->c2));
+    if (match->end2 > c2_len) {
+	match->end2 = c2_len;
+	if (match->pos2 > c2_len) {
+	    match->pos2 = c2_len;
+	}
+    }
     return 0;
 }
 

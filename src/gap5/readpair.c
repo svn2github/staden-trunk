@@ -103,6 +103,8 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 	    {
 	        tg_rec cnum[2], llino[2];
 		int pos[2];
+		seq_t *s;
+		int comp;
 
 		cnum[0] = ABS(obj->c1);
 		cnum[1] = ABS(obj->c2);
@@ -124,20 +126,15 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 		llino[0] = obj->read1;
 		llino[1] = obj->read2;
 
-		if (sequence_get_orient(template->io, obj->read1)) {
-		    pos[0] = 0;
-		} else {
-		    seq_t *s = cache_search(template->io, GT_Seq, obj->read1);
-		    pos[0] = ABS(s->len)-1;
-		}
+		comp = sequence_get_orient(template->io, obj->read1);
+		s = cache_search(template->io, GT_Seq, obj->read1);
+		if (NULL == s) return NULL;
+		pos[0] = comp ? ABS(s->len) - s->right : s->right - 1;
 
-		if (sequence_get_orient(template->io, obj->read2)) {
-		    pos[1] = 0;
-		} else {
-		    seq_t *s = cache_search(template->io, GT_Seq, obj->read2);
-		    pos[1] = ABS(s->len)-1;
-		}
-
+		comp = sequence_get_orient(template->io, obj->read2);
+		s = cache_search(template->io, GT_Seq, obj->read2);
+		if (NULL == s) return NULL;
+		pos[1] = comp ? ABS(s->len) - s->right : s->right - 1;
 		join_contig(template->io, cnum, llino, pos);
 
 		break;
@@ -309,6 +306,8 @@ int PlotTempMatches(GapIO *io, read_pair_t *rp) {
 	matches[n_matches].c2 = rp->contig[1];
 	matches[n_matches].pos1 = rp->start[0];
 	matches[n_matches].pos2 = rp->start[1];
+	matches[n_matches].end1 = rp->end[0];
+	matches[n_matches].end2 = rp->end[1];
 	matches[n_matches].length = (ABS(rp->end[0] - rp->start[0]) + 
 				     ABS(rp->end[1] - rp->start[1])) / 2;
 	matches[n_matches].read1 = rp->rec[0];

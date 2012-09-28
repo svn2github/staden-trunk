@@ -1,6 +1,8 @@
 #ifndef _DNA_UTILS_H
 #define _DNA_UTILS_H
 
+#include <stdlib.h>  /* For size_t */
+#include <string.h>
 
 #ifdef _MSC_VER
 #  ifdef BUILDING_SEQ_UTILS_DLL
@@ -42,7 +44,8 @@ int best_inexact_match(char *seq, int seq_len, char *string, int string_len,
 /*
  * copy a sequence
  */
-void copy_seq ( char *copy, char *original, int seq_len );
+/* void copy_seq ( char *copy, char *original, int seq_len ); */
+#define copy_seq(C, O, L) memcpy((C), (O), (L))
 
 
 /*
@@ -59,6 +62,8 @@ int iubc_list_alignment(char *seq1, char *seq2, char *name1, char *name2,
  * Complement and reverse a dna sequence
  */
 void complement_seq(char *seq, int seq_len);
+void copy_complement_seq(char *seq_out, char *seq_in, size_t seq_len);
+char * alloc_complement_seq(char *seq, size_t seq_len);
 char complement_base(char base);
 
 /*
@@ -143,7 +148,8 @@ void depad_seq(char *str, int *len, int *depad_to_pad);
 void copy_and_depad_seq(const char *str1, int len1,
 			char *str2, int *len2,
 			int *depad_to_pad);
-
+char * alloc_depadded_seq(const char *seq, int seq_len,
+			  int *depad_len_out, int **depad_to_pad_out);
 /*
  * Given a combination of A, C, G or T, all of which are 0 for not present
  * and 1 for present, this returns an ambiguity code.

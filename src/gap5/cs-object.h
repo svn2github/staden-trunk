@@ -59,6 +59,7 @@ typedef struct obj_match_t {
     int inum;
     tg_rec c1, c2;
     int pos1, pos2;
+    int end1, end2;
     int length;
     int flags;
 
@@ -89,6 +90,7 @@ typedef struct obj_read_pair_t {
     int inum;
     tg_rec c1, c2;
     int pos1, pos2;
+    int end1, end2;
     int length;
     int flags;
 
@@ -115,6 +117,7 @@ typedef struct obj_fij_t {
     int inum;
     tg_rec c1, c2;
     int pos1, pos2;
+    int end1, end2;
     int length;
     int flags;
 

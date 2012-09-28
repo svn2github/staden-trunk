@@ -575,10 +575,12 @@ char complement_base (char base) {
     return complementary_base[(unsigned char)base];
 }
 
+/* Reverse complements a sequence in-place */
+
 void complement_seq ( char *seq, int seq_len ) {
 
     int i, middle, j;
-    char temp;
+    unsigned char temp;
 
     middle = seq_len/2;
     for ( i = 0, j = seq_len-1; i < middle; i++, j--) {
@@ -589,6 +591,29 @@ void complement_seq ( char *seq, int seq_len ) {
 
     if ( seq_len % 2 )
       seq[middle] = complementary_base [ (unsigned char) seq[middle] ];
+}
+
+/*
+ * Make a reverse complemented copy of sequence.
+ * NB: Doesn't try to NUL-terminate the copy.
+ */
+
+void copy_complement_seq(char *seq_out, char *seq_in, size_t seq_len) {
+    size_t i = 0, j = seq_len;
+
+    while (j > 0) {
+	seq_out[--j] = complementary_base[(unsigned char) seq_in[i++]];
+    }
+}
+
+/* Allocate some memory and put a reverse-complemented copy of seq in it */
+
+char * alloc_complement_seq(char *seq, size_t seq_len) {
+    char *comp = malloc((seq_len + 1) * sizeof(char));
+    if (NULL == comp) return NULL;
+    copy_complement_seq(comp, seq, seq_len);
+    comp[seq_len] = '\0';
+    return comp;
 }
 
 /************************************************************/
@@ -619,7 +644,8 @@ void complement_dna(char *seq, int seq_len) {
 
 /************************************************************/
 
-
+#if 0
+/* Replaced with memcpy */
 void copy_seq ( char *copy, char *original, int seq_len ) {
 
 /*	copy a sequence  */
@@ -628,6 +654,7 @@ void copy_seq ( char *copy, char *original, int seq_len ) {
 
     for ( i=0; i < seq_len; i++) *copy++ = *original++;
 }
+#endif
 
 /************************************************************/
 /* count identities (ignoring case) between two aligned strings */
@@ -983,6 +1010,42 @@ void copy_and_depad_seq(const char *str1, int len1,
     if (new_len < old_len) {
 	*a = 0;
     }
+}
+
+/* 
+ * Allocate some memory and put a depadded copy of seq in it.
+ *
+ * The length of the unpadded sequence will be put in
+ * depad_len_out (if not NULL).
+ *
+ * If depad_to_pad_out is not NULL, an array mapping unpadded to padded
+ * positions will be created and its location will be returned
+ * in (*depad_to_pad_out).
+ * 
+ * Returns a pointer to the unpadded sequence on success
+ *         NULL on failure
+ */
+
+char * alloc_depadded_seq(const char *seq, int seq_len,
+			  int *depad_len_out, int **depad_to_pad_out) {
+    char *unpadded = malloc((seq_len + 1) * sizeof(char));
+    int  *depad_to_pad = NULL;
+    int   depad_len = 0;
+
+    if (NULL == unpadded) return NULL;
+    if (NULL != depad_to_pad_out) {
+	depad_to_pad = malloc(seq_len * sizeof(int));
+	if (NULL == depad_to_pad) {
+	    free(unpadded);
+	    return NULL;
+	}
+    }
+
+    copy_and_depad_seq(seq, seq_len, unpadded, &depad_len, depad_to_pad);
+    
+    if (NULL != depad_len_out)    *depad_len_out = depad_len;
+    if (NULL != depad_to_pad_out) *depad_to_pad_out = depad_to_pad;
+    return unpadded;
 }
 
 /*

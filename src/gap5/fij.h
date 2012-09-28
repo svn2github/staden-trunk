@@ -46,8 +46,8 @@ int do_it_fij(fij_arg *fij_args, char *seq, int seq_len,
 	      Contig_parms *contig_list2, int number_of_contigs2,
 	      int num_shared);
 
-void buffij(tg_rec c1, int pos1, 
-	    tg_rec c2, int pos2,
+void buffij(tg_rec c1, int pos1, int end1, 
+	    tg_rec c2, int pos2, int end2,
 	    int len, int score, double percent);
 
 #endif /* _FIJ_H_ */

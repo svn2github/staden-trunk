@@ -267,12 +267,14 @@ void csmatch_join_to(GapIO *io, tg_rec contig, reg_join *j, mobj_repeat *r,
     for (i = 0; i < r->num_match; i++) {
 	if (ABS(r->match[i].c1) == contig) {
 	    r->match[i].pos1 += j->offset;
+	    r->match[i].end1 += j->offset;
 	    r->match[i].c1 = r->match[i].c1 > 0
 		? j->contig : -j->contig;
 	}
 
 	if (ABS(r->match[i].c2) == contig) {
 	    r->match[i].pos2 += j->offset;
+	    r->match[i].end2 += j->offset;
 	    r->match[i].c2 = r->match[i].c2 > 0
 		? j->contig : -j->contig;
 	}
@@ -311,18 +313,19 @@ void csmatch_complement(GapIO *io, tg_rec contig, mobj_repeat *r,
      * the extended cutoff start to end.
      */
     consensus_valid_range(io, contig, &ustart, &uend);
-
     n = r->num_match;
     for (i = 0; i < n; i++) {
 	if (ABS(r->match[i].c1) == contig) {
-	    r->match[i].pos1 = ustart + uend - (r->match[i].pos1 +
-						r->match[i].length - 1);
+	    int end1 = uend - (r->match[i].pos1 - ustart);
+	    r->match[i].pos1 = uend - (r->match[i].end1 - ustart);
+	    r->match[i].end1 = end1;
 	    r->match[i].c1 = -r->match[i].c1;
 	}
 
 	if (ABS(r->match[i].c2) == contig) {
-	    r->match[i].pos2 = ustart + uend - (r->match[i].pos2 +
-						r->match[i].length - 1);
+	    int end2 = uend - (r->match[i].pos2 - ustart);
+	    r->match[i].pos2 = uend - (r->match[i].end2 - ustart);
+	    r->match[i].end2 = end2;
 	    r->match[i].c2 = -r->match[i].c2;
 	}
     }

@@ -253,3 +253,66 @@ int repeat_search (
 
     return n_matches;
 }
+
+int repeat_search_depadded(int mode,         /* 1=f, 2=r, 3=b */
+			   int min_match,    /* the minimum match length */
+			   int **seq1_match, /* positions of matches in seq1 */
+			   int **seq2_match, /* positions of matches in seq2 */
+			   int **len_match,  /* length of matches */
+			   int max_mat,	     /* maximum number of matches */
+			   char *seq1,	     /* seq1 */
+			   int seq1_len,     /* size of seq1 */
+			   int *num_f_matches,
+			   int *num_r_matches) {
+    char *seq1_rev = NULL;
+    Hash *h        = NULL;
+    int word_size  = min_match >= 12 ? 12 : 8;
+    int dirn;
+    int counts[2] = {0, 0};
+    int retval = -1;
+
+    if (seq1_len > 100000000) {
+	word_size = 14;
+	if (min_match < 14)
+	    min_match = 14;
+    }
+    
+    if (init_hash8n(seq1_len, seq1_len, word_size, max_mat, min_match,
+		    HASH_JOB_DIAG | HASH_JOB_COUNTLESS, &h)) {
+	return -1;
+    }
+
+    h->seq1     = seq1;
+    h->seq1_len = h->seq2_len = seq1_len;
+
+    if (hash_seqn(h, 1)) goto out;
+
+    store_hashn_nocount(h);
+
+    for (dirn = 0; dirn < 2; dirn++) {
+	if (0 == (mode & (1 << dirn))) continue;
+	if (0 == dirn) {
+	    h->seq2 = seq1;
+	} else {
+	    h->seq2 = seq1_rev = alloc_complement_seq(seq1, seq1_len);
+	    if (NULL == seq1_rev) goto out;
+	}
+
+	if (hash_seqn(h, 2)) {
+	    verror(ERR_WARN, "hash_seqn", "sequence too short");
+	    goto out;
+	}
+
+	counts[dirn] = reps_nocount(h, seq1_match, seq2_match, len_match,
+				    counts[0], dirn == 0 ? 'f' : 'r');
+    }
+    
+    retval = counts[0] + counts[1];
+    if (NULL != num_f_matches) *num_f_matches = counts[0];
+    if (NULL != num_r_matches) *num_r_matches = counts[1];
+
+ out:
+    if (NULL != h) free_hash8n(h);
+    if (NULL != seq1_rev) free(seq1_rev);
+    return retval;
+}

@@ -75,7 +75,6 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
         case 3: /* Invoke join editor */ {
 	    tg_rec cnum[2], llino[2];
 	    int pos[2];
-	    int cl[2];
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    fij->current = obj - (obj_fij *)fij->match;
@@ -96,58 +95,41 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 		    bell();
 		    break;
 		}
-#if 0
-		if (io_clength(fij->io, ABS(obj->c1))
-		    < io_clength(fij->io, ABS(obj->c2))) {
-		    if (-1 == complement_contig(fij->io, ABS(obj->c1)))
-			if (-1 == complement_contig(fij->io, ABS(obj->c2)))
-			    return NULL;
-		} else {
-		    if (-1 == complement_contig(fij->io, ABS(obj->c2)))
-			if (-1 == complement_contig(fij->io, ABS(obj->c1)))
-			    return NULL;
-		}
-#else
 		if (-1 == complement_contig(fij->io, ABS(obj->c2)))
 		    if (-1 == complement_contig(fij->io, ABS(obj->c1)))
 			    return NULL;
-#endif
 	    }
 
 	    /*
 	     * NB: obj->pos1 now may not be the same value as when this
 	     * function was entered, due to the complementing!
 	     */
-	    consensus_valid_range(fij->io, cnum[0], &cl[0], NULL);
-	    consensus_valid_range(fij->io, cnum[1], &cl[1], NULL);
-	    pos[0] = obj->pos1 + cl[0]-1;
-	    pos[1] = obj->pos2 + cl[1]-1;
+	    pos[0] = obj->pos1; 
+	    pos[1] = obj->pos2;
 	    
-	    llino[0] = cnum[0];
-	    llino[1] = cnum[1];
+	    llino[0] = 0;
+	    llino[1] = 0;
 
 	    join_contig(fij->io, cnum, llino, pos);
 	    break;
 	}
 
 	case 4: /* Invoke contig editors */ {
-	    tg_rec cnum, llino;
+	    tg_rec cnum;
 	    int pos, reveal;
 	    
 	    cnum  = ABS(obj->c1);
-	    llino = io_clnbr(fij->io, cnum);
 	    pos   = obj->pos1;
 	    reveal= (obj->pos1 <= 0 ||
 		     obj->pos2 <= 0 ||
 		     obj->pos1 >= io_clength(fij->io, ABS(obj->c1)) ||
 		     obj->pos2 >= io_clength(fij->io, ABS(obj->c2))) ? 1 : 0;
 
-	    edit_contig(fij->io, cnum, llino, pos);
+	    edit_contig(fij->io, cnum, 0, pos);
 
 	    cnum  = ABS(obj->c2);
-	    llino = cnum;
 	    pos   = obj->pos2;
-	    edit_contig(fij->io, cnum, llino, pos);
+	    edit_contig(fij->io, cnum, 0, pos);
 	    break;
 	}
 
@@ -161,12 +143,10 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 
     case OBJ_GET_BRIEF:
 	sprintf(buf,
-		"FIJ: %c#%"PRIrec"@%d with %c#%"PRIrec"@%d, "
+		"FIJ: %c=%"PRIrec"@%d with %c=%"PRIrec"@%d, "
 		"len %d, score %d, mis %2.2f%%",
-		obj->c1 > 0 ? '+' : '-',
-		io_clnbr(fij->io, ABS(obj->c1)), obj->pos1,
-		obj->c2 > 0 ? '+' : '-',
-		io_clnbr(fij->io, ABS(obj->c2)), obj->pos2,
+		obj->c1 > 0 ? '+' : '-', ABS(obj->c1), obj->pos1,
+		obj->c2 > 0 ? '+' : '-', ABS(obj->c2), obj->pos2,
 		obj->length, obj->score, ((float)obj->percent)/10000);
 	return buf;
     }
@@ -499,7 +479,7 @@ fij(fij_arg *fij_args,
     GapIO *io = fij_args->io;
     char *consensus = NULL;
     mobj_fij *FIJMatch = NULL;
-    int i, id;
+    int id;
     char *val;
     Contig_parms *contig_list = NULL;
     contig_list_t *combined = NULL;
@@ -620,34 +600,6 @@ fij(fij_arg *fij_args,
     FIJMatch->reg_func = fij_callback;
     FIJMatch->match_type = REG_TYPE_FIJ;
 
-    for (i = 0; i < counter; i++){
-	obj_fij *match = &FIJMatch->match[i];
-	int ustart = 0, uend = 0;
-	tg_rec last_c = 0;
-
-	/* FIXME: Inefficient - try caching this data */
-	if (match->c1 < 0) {
-	    match->c1 =  rnumtocnum(io, ABS(match->c1)) * -1;
-	    if (last_c != -match->c1) {
-		consensus_valid_range(io, -match->c1, &ustart, &uend);
-		last_c = -match->c1;
-	    }
-	    match->pos1 = ustart + uend - match->pos1 - 1;
-	} else {
-	    match->c1 =  rnumtocnum(io, ABS(match->c1));
-	}
-	if (match->c2 < 0) {
-	    match->c2 =  rnumtocnum(io, ABS(match->c2)) * -1;
-	    if (last_c != -match->c2) {
-		consensus_valid_range(io, -match->c2, &ustart, &uend);
-		last_c = -match->c2;
-	    }
-	    match->pos2 = ustart + uend - match->pos2 - 1;
-	} else {
-	    match->c2 =  rnumtocnum(io, ABS(match->c2));
-	}
-    }
-
     /* Sort matches */
     qsort(FIJMatch->match, FIJMatch->num_match, sizeof(obj_fij), sort_func);
 
@@ -684,21 +636,19 @@ fij(fij_arg *fij_args,
 
 /* store hits of find internal joins */
 void
-buffij(tg_rec c1,
-       int pos1,
-       tg_rec c2,
-       int pos2,
-       int len,
-       int score,
-       double percent)
+buffij(tg_rec c1, int pos1, int end1,
+       tg_rec c2, int pos2, int end2,
+       int len, int score, double percent)
 {
     global_match->match[counter].func = fij_obj_func;
     global_match->match[counter].data = global_match;
 
     global_match->match[counter].c1 = c1;
     global_match->match[counter].pos1 = pos1;
+    global_match->match[counter].end1 = end1;
     global_match->match[counter].c2 = c2;
     global_match->match[counter].pos2 = pos2;
+    global_match->match[counter].end2 = end2;
     global_match->match[counter].length = len;
     global_match->match[counter].score = score;
     global_match->match[counter].percent = 10000 * percent;

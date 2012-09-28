@@ -213,13 +213,15 @@ static void add_fij_overlap(OVERLAP *overlap, int contig1_num,
 			    int contig2_num, void *clientdata) {
     double percent_mismatch;
     int seq1_start_f, seq2_start_f;
+    int seq1e, seq2e;
+    int seq1_end_f, seq2_end_f;
     static char buf[1024],name1[10],name2[10];
     add_fij_t *cd = (add_fij_t *)clientdata;
+    Contig_parms *c1p = cd->contig_list1 + contig1_num;
+    Contig_parms *c2p = cd->contig_list2 + contig2_num;
     int c1_s;
 
-    c1_s = cd->one_by_one
-	? 0 
-	: cd->contig_list1[contig1_num].contig_start_offset;
+    c1_s = cd->one_by_one ? 0 : c1p->contig_start_offset;
 
     percent_mismatch = 100.0 - overlap->percent;
 
@@ -232,42 +234,42 @@ static void add_fij_overlap(OVERLAP *overlap, int contig1_num,
        overlap->left1 = no. pads to left of seq1 = start pos in seq2 */
     seq1_start_f = cd->depad_to_pad1[overlap->left2 + c1_s]
 	- cd->depad_to_pad1[c1_s]
-	- cd->contig_list1[contig1_num].contig_left_extension + 1 ; 
+	+ c1p->contig_start
+	- c1p->contig_left_extension; 
     
     /* add 1 to get base number */
     seq2_start_f = cd->depad_to_pad2[overlap->left1]
-	- cd->contig_list2[contig2_num].contig_left_extension + 1 ; 
+	+ c2p->contig_start
+	- c2p->contig_left_extension; 
+
+    /* Overhang at right of seq1 = overlap->right1 - overlap->right
+       Overhang at right of seq2 = overlap->right2 - overlap->right
+       Hence end positions in seq1 and seq2 are... */
+    seq1e = overlap->seq1_len - 1 - overlap->right1 + overlap->right;
+    seq2e = overlap->seq2_len - 1 - overlap->right2 + overlap->right;
+    seq1_end_f = cd->depad_to_pad1[seq1e + c1_s]
+	- cd->depad_to_pad1[c1_s]
+	+ c1p->contig_start
+	- c1p->contig_left_extension;
+    seq2_end_f = cd->depad_to_pad2[seq2e]
+	+ c2p->contig_start
+	- c2p->contig_left_extension;
 
     /* Check read pairs if screening on */
-    if (cd->fij_args->rp_mode >= 0) {
-	/* Overhang at right of seq1 = overlap->right1 - overlap->right
-	   Overhang at right of seq2 = overlap->right2 - overlap->right
-	   Hence end positions in seq1 and seq2 are... */
-	int seq1e = overlap->seq1_len - 1 - overlap->right1 + overlap->right;
-	int seq2e = overlap->seq2_len - 1 - overlap->right2 + overlap->right;
-	int seq1_end_f = cd->depad_to_pad1[seq1e + c1_s]
-	    - cd->depad_to_pad1[c1_s]
-	    - cd->contig_list1[contig1_num].contig_left_extension + 1;
-	int seq2_end_f = cd->depad_to_pad2[seq2e]
-	    - cd->contig_list2[contig2_num].contig_left_extension + 1;
-	
+    if (cd->fij_args->rp_mode >= 0) {	
 	if (check_overlap_pairs(cd, 0, contig1_num, seq1_start_f, seq1_end_f,
 				contig2_num, seq2_start_f, seq2_end_f)) {
 	    return;
 	}
     }
     
-    sprintf(name1,"%"PRIrec,
-	    cd->contig_list1[contig1_num].contig_left_gel);
-    sprintf(name2,"%"PRIrec,
-	    cd->contig_list2[contig2_num].contig_left_gel);
+    sprintf(name1,"%"PRIrec, c1p->contig_left_gel);
+    sprintf(name2,"%"PRIrec, c2p->contig_left_gel);
     sprintf(buf,
 	    " Possible join between contig =%"PRIrec
 	    " in the + sense and contig =%"PRIrec"\n"
 	    " Length %d",
-	    cd->contig_list1[contig1_num].contig_number,
-	    cd->contig_list2[contig2_num].contig_number,
-	    overlap->length);
+	    c1p->contig_number, c2p->contig_number, overlap->length);
     
 #if 0
     /* Oops.  The initial coordinates in list_alignment are
@@ -292,10 +294,8 @@ static void add_fij_overlap(OVERLAP *overlap, int contig1_num,
 	     percent_mismatch);
 #endif
     
-    buffij(cd->contig_list1[contig1_num].contig_left_gel,
-	   seq1_start_f,
-	   cd->contig_list2[contig2_num].contig_left_gel,
-	   seq2_start_f,
+    buffij(c1p->contig_number, seq1_start_f, seq1_end_f,
+	   c2p->contig_number, seq2_start_f, seq2_end_f,
 	   overlap->length, (int)overlap->score,
 	   percent_mismatch);
 }
@@ -306,11 +306,11 @@ static void add_fij_overlap_r(OVERLAP *overlap, int contig1_num,
     int seq1_start_r, seq1_end_r, seq2_start_r, seq2_end_r, seq1e, seq2e;
     static char buf[1024],name1[10],name2[10];
     add_fij_t *cd = (add_fij_t *)clientdata;
+    Contig_parms *c1p = cd->contig_list1 + contig1_num;
+    Contig_parms *c2p = cd->contig_list2 + contig2_num;
     int c1_s;
 
-    c1_s = cd->one_by_one
-	? 0 
-	: cd->contig_list1[contig1_num].contig_start_offset;
+    c1_s = cd->one_by_one ? 0 : c1p->contig_start_offset;
 
     percent_mismatch = 100.0 - overlap->percent;
 
@@ -323,56 +323,41 @@ static void add_fij_overlap_r(OVERLAP *overlap, int contig1_num,
        overlap->left1 = no. pads to left of seq1 = start pos in seq2 */
     seq1_start_r = cd->depad_to_pad1[overlap->left2 + c1_s]
 	- cd->depad_to_pad1[c1_s]
-	- cd->contig_list1[contig1_num].contig_left_extension + 1 ; 
+	+ c1p->contig_start
+	- c1p->contig_left_extension; 
     
-    /* add 1 to get base number */
-    seq2_start_r = cd->depad_to_pad2[overlap->left1]
-	- cd->contig_list2[contig2_num].contig_right_extension + 1 ; 
-#if 0
-    {
-	int p = overlap->left1 + overlap->length - 1;
-	int diff = 0;
-	if (p > cd->seq2_len-1) {
-	    diff = p - (cd->seq2_len-1);
-	    p = cd->seq2_len-1;
-	}
-	seq2_end_r = cd->depad_to_pad2[p] + diff;
-    }
-#endif
+    seq2_end_r = c2p->contig_end - cd->depad_to_pad2[overlap->left1]
+	- c2p->contig_right_extension; 
 
     /* Overhang at right of seq1 = overlap->right1 - overlap->right
        Overhang at right of seq2 = overlap->right2 - overlap->right
        Hence end positions in seq1 and seq2 are... */
-    seq2e = overlap->seq2_len - 1 - overlap->right2 + overlap->right;
-    seq2_end_r = cd->depad_to_pad2[seq2e]
-	- cd->contig_list2[contig2_num].contig_right_extension + 1;
+    seq1e = overlap->seq1_len - overlap->right1 + overlap->right;
+    seq1_end_r = cd->depad_to_pad1[seq1e - 1 + c1_s]
+	- cd->depad_to_pad1[c1_s]
+	+ c1p->contig_start
+	- c1p->contig_left_extension;
+    seq2e = overlap->seq2_len - overlap->right2 + overlap->right;
+    seq2_start_r = c2p->contig_end - cd->depad_to_pad2[seq2e - 1]
+	- c2p->contig_right_extension;
 
     /* Check read pairs if screening on */
     if (cd->fij_args->rp_mode >= 0) {
-	int seq2len_pad = cd->depad_to_pad2[cd->seq2_len - 1];
-	seq1e = overlap->seq1_len - 1 - overlap->right1 + overlap->right;
-	seq1_end_r = cd->depad_to_pad1[seq1e + c1_s]
-	    - cd->depad_to_pad1[c1_s]
-	    - cd->contig_list1[contig1_num].contig_left_extension + 1;
 	/* Note conversion of seq2_start, seq2_end to complementary strand */
-	if (check_overlap_pairs(cd, 1, contig1_num, seq1_start_r, seq1_end_r,
-				contig2_num, seq2len_pad - seq2_end_r,
-				seq2len_pad - seq2_start_r)) {
+	if (check_overlap_pairs(cd, 1, contig1_num,
+				seq1_start_r, seq1_end_r,
+				contig2_num, seq2_start_r, seq2_end_r)) {
 	    return;
 	}
     }
 
-    sprintf(name1,"%"PRIrec,
-	    cd->contig_list1[contig1_num].contig_left_gel);
-    sprintf(name2,"%"PRIrec,
-	    cd->contig_list2[contig2_num].contig_left_gel);
+    sprintf(name1,"%"PRIrec, c1p->contig_left_gel);
+    sprintf(name2,"%"PRIrec, c2p->contig_left_gel);
     sprintf(buf,
 	    " Possible join between contig =%"PRIrec
 	    " in the - sense and contig =%"PRIrec"\n"
 	    " Length %d",
-	    cd->contig_list1[contig1_num].contig_number,
-	    cd->contig_list2[contig2_num].contig_number,
-	    overlap->length);
+	    c1p->contig_number, c2p->contig_number, overlap->length);
     
     /* Oops.  The initial coordinates in list_alignment are
        padded, but then the alignment is depadded.  Hopefully
@@ -397,10 +382,8 @@ static void add_fij_overlap_r(OVERLAP *overlap, int contig1_num,
 	     percent_mismatch);
 #endif
 
-    buffij(cd->contig_list1[contig1_num].contig_left_gel,
-	   seq1_start_r,
-	   -cd->contig_list2[contig2_num].contig_left_gel,
-	   seq2_end_r,
+    buffij(c1p->contig_number, seq1_start_r, seq1_end_r,
+	   -c2p->contig_number, seq2_start_r, seq2_end_r,
 	   overlap->length, (int)overlap->score,
 	   percent_mismatch);
 }
@@ -646,9 +629,11 @@ int do_it_fij(fij_arg *fij_args, char *seq, int seq_len,
 		/* Depad seq2 */
 		overlap->seq2 =
 		    &seq[(contig_list2[contig2_num].contig_start_offset)];
-		copy_seq(depad_seq2, overlap->seq2, seq2_len);
+		
 		if (1 == strand) { /* Reverse strand */
-		    complement_seq(depad_seq2, seq2_len);
+		    copy_complement_seq(depad_seq2, overlap->seq2, seq2_len);
+		} else {
+		    copy_seq(depad_seq2, overlap->seq2, seq2_len);
 		}
 		depad_seq(depad_seq2, &seq2_len, depad_to_pad2);
 		overlap->seq2 = h->seq2 = depad_seq2;
