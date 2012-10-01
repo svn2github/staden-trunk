@@ -297,7 +297,8 @@ static char *false_name(GapIO *io, seq_t *s, int suffix, int *name_len) {
 }
 
 static int export_header_sam(GapIO *io, bam_file_t *bf,
-			     int cc, contig_list_t *cv) {
+			     int cc, contig_list_t *cv,
+			     int fixmates) {
     int i;
     dstring_t *ds;
 
@@ -310,17 +311,38 @@ static int export_header_sam(GapIO *io, bam_file_t *bf,
     dstring_appendf(ds, "@HD\tVN:1.4\tSO:coordinate\n");
 
     /* Inefficient as we have to loop twice - here and when outputting reads */
-    for (i = 0; i < cc; i++) {
-	contig_t *c;
-	int len;
+    if (fixmates) {
+	/* When listing mate pairs we need to list all seqs due to spanning
+	 * reads. We can't predict which will be mentioned either.
+	 */
+	for (i = 0; i < io->db->Ncontigs; i++) {
+	    contig_t *c;
+	    int len;
+	    tg_rec cnum;
 
-	if (NULL == (c = cache_search(io, GT_Contig, cv[i].contig)))
-	    return -1;
+	    cnum = arr(tg_rec, io->contig_order, i);
 
-	len = c->end;
-	if (c->start <= 0)
-	    len += 1-c->start;
-	dstring_appendf(ds, "@SQ\tSN:%s\tLN:%d\n",  c->name, len);
+	    if (NULL == (c = cache_search(io, GT_Contig, cnum)))
+		return -1;
+	    
+	    len = c->end;
+	    if (c->start <= 0)
+		len += 1-c->start;
+	    dstring_appendf(ds, "@SQ\tSN:%s\tLN:%d\n",  c->name, len);
+	}
+    } else {
+	for (i = 0; i < cc; i++) {
+	    contig_t *c;
+	    int len;
+
+	    if (NULL == (c = cache_search(io, GT_Contig, cv[i].contig)))
+		return -1;
+
+	    len = c->end;
+	    if (c->start <= 0)
+		len += 1-c->start;
+	    dstring_appendf(ds, "@SQ\tSN:%s\tLN:%d\n",  c->name, len);
+	}
     }
 
     /* Libraries - well read-groups in SAM. */
@@ -707,7 +729,7 @@ static void sam_export_seq(GapIO *io, bam_file_t *bf,
     static unsigned char *bam = NULL;
     static size_t bam_alloc = 0;
     int bam_idx = 0, bam_len, start, end;
-
+    int ref_id, mate_ref_id;
     fifo_t *last, *ti;
 
     /* Sequence and quality buffers */
@@ -943,15 +965,19 @@ static void sam_export_seq(GapIO *io, bam_file_t *bf,
 	bam_alloc = bam_len;
 	bam = realloc(bam, bam_alloc);
     }
+
+    ref_id = bam_name2ref(bf, c->name);
+    mate_ref_id = (mate_ref[0] == '=' && mate_ref[1] == '\0')
+	? ref_id : bam_name2ref(bf, mate_ref);
     bam_idx = bam_construct_seq(bam, bam_alloc,
 				tname, tname_len,
 				flag,
-				bam_name2ref(bf, c->name),
+				ref_id,
 				pos+offset,
 				start, end,
 				mqual,
 				ncigar_tmp, cigar_tmp,
-				bam_name2ref(bf, mate_ref),
+				mate_ref_id,
 				iend,
 				isize,
 				len, S, Q);
@@ -2050,7 +2076,7 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 
     case FORMAT_SAM:
     case FORMAT_BAM:
-	export_header_sam(io, bf, cc, cv);
+	export_header_sam(io, bf, cc, cv, fixmates);
 	break;
     }
 
