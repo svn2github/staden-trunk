@@ -241,8 +241,8 @@ int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double new
 }
 
 int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv, 
-    	    	int fwd_col, int rev_col, int single_col, int span_col, int inconsistent_col,
-		int force, int reads_only) {
+    	    	int fwd_col, int rev_col, int single_col, int span_col,
+		int inconsistent_col, int force, int reads_only) {
     int i, j;
     double max_height = 0;
     int lib_type;
@@ -471,14 +471,20 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    } else if (r->end == tl->x[3]) {
 		tl->x[2]   = r->start;
 		tl->col[2] = col;
+	    } else if (!span && r->pair_rec &&
+		       r->pair_start < r->start && r->pair_end > r->end) {
+		/* Containment, so colour middle */
+		tl->x[1] = r->start;
+		tl->x[2] = r->end;
+		tl->col[1] = col;
 	    } else {
 		verror(ERR_WARN, "gap_range_x",
-		       "error, start/end do not match template pos (single)\n");
-		verror(ERR_WARN, "gap_range_x", "start %d/%d end %d/%d\n",
+		       "error, start/end do not match template pos (single)");
+		verror(ERR_WARN, "gap_range_x", "start %d/%d end %d/%d",
 		       r->start, tl->x[0], r->end, tl->x[3]); 
 	    }
 		
-	    if (r->pair_rec && (r->pair_start || r->pair_end)) {
+	    if (!span && r->pair_rec && (r->pair_start || r->pair_end)) {
 		
 		col = (r->flags & GRANGE_FLAG_PEND_MASK)
 		    == GRANGE_FLAG_PEND_FWD ? fwd_col : rev_col;
@@ -489,11 +495,16 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		} else if (r->pair_end == tl->x[3]) {
 		    tl->x[2]   = r->pair_start;
 		    tl->col[2] = col;
+		} else if (r->pair_start > r->start && r->pair_end < r->end) {
+		    /* Containment, so colour middle */
+		    tl->x[1] = r->pair_start;
+		    tl->x[2] = r->pair_end;
+		    tl->col[1] = col;
 		} else {
 		    verror(ERR_WARN, "gap_range_x",
-			   "error, start/end do not match template pos (pair)\n");
+			   "error, start/end do not match template pos (pair)");
 		    verror(ERR_WARN, "gap_range_x",
-			   "start %d/%d end %d/%d\n",
+			   "start %d/%d end %d/%d",
 			   r->pair_start, tl->x[0], r->pair_end, tl->x[3]);
 		}
 	    }
