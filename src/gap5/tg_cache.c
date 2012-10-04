@@ -859,7 +859,7 @@ int cache_create(GapIO *io) {
     if (NULL == (h = HacheTableCreate(8, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 	return -1;
 #else
-    if (NULL == (h = HacheTableCreate(1024, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
+    if (NULL == (h = HacheTableCreate(2048, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 	return -1;
 #endif
     h->name = "tg_cache";
@@ -1730,7 +1730,7 @@ void *cache_search(GapIO *io, int type, tg_rec rec) {
     tg_rec orec = rec;
     cache_key_t k;
     HacheItem *hi;
-    
+
 #if CACHE_REF_PURGE
     cache_nuke(io);
 #endif
@@ -2005,8 +2005,8 @@ static int cache_item_init_seq(GapIO *io, void *from, tg_rec rec) {
 }
 
 static tg_rec cache_item_create_seq(GapIO *io, void *from) {
-    tg_rec brec    = io->db->seq_brec;
-    tg_rec sub_rec = io->db->seq_sub_rec;
+    tg_rec brec    = gio_base(io)->db->seq_brec;
+    tg_rec sub_rec = gio_base(io)->db->seq_sub_rec;
     seq_block_t *b;
 
     if (sub_rec == SEQ_BLOCK_SZ) {
@@ -2036,8 +2036,8 @@ static tg_rec cache_item_create_seq(GapIO *io, void *from) {
 	    return -1;
     }
 
-    io->db->seq_brec    = brec;
-    io->db->seq_sub_rec = sub_rec + 1;
+    gio_base(io)->db->seq_brec    = brec;
+    gio_base(io)->db->seq_sub_rec = sub_rec + 1;
 
     //assert(brec < (1<<(31-SEQ_BLOCK_BITS)));
 
@@ -2073,8 +2073,8 @@ static int cache_item_init_contig(GapIO *io, void *from, tg_rec rec) {
 }
 
 static tg_rec cache_item_create_contig(GapIO *io, void *from) {
-    tg_rec brec    = io->db->contig_brec;
-    tg_rec sub_rec = io->db->contig_sub_rec;
+    tg_rec brec    = gio_base(io)->db->contig_brec;
+    tg_rec sub_rec = gio_base(io)->db->contig_sub_rec;
     contig_block_t *b;
 
     if (sub_rec == CONTIG_BLOCK_SZ) {
@@ -2093,8 +2093,8 @@ static tg_rec cache_item_create_contig(GapIO *io, void *from) {
 	    return -1;
     }
 
-    io->db->contig_brec    = brec;
-    io->db->contig_sub_rec = sub_rec + 1;
+    gio_base(io)->db->contig_brec    = brec;
+    gio_base(io)->db->contig_sub_rec = sub_rec + 1;
 
     return (brec << CONTIG_BLOCK_BITS) + sub_rec;
 }
@@ -2141,8 +2141,8 @@ static int cache_item_init_scaffold(GapIO *io, void *from, tg_rec rec) {
 }
 
 static tg_rec cache_item_create_scaffold(GapIO *io, void *from) {
-    tg_rec brec    = io->db->scaff_brec;
-    tg_rec sub_rec = io->db->scaff_sub_rec;
+    tg_rec brec    = gio_base(io)->db->scaff_brec;
+    tg_rec sub_rec = gio_base(io)->db->scaff_sub_rec;
     scaffold_block_t *b;
 
     if (sub_rec == SCAFFOLD_BLOCK_SZ) {
@@ -2172,8 +2172,8 @@ static tg_rec cache_item_create_scaffold(GapIO *io, void *from) {
 	    return -1;
     }
 
-    io->db->scaff_brec    = brec;
-    io->db->scaff_sub_rec = sub_rec + 1;
+    gio_base(io)->db->scaff_brec    = brec;
+    gio_base(io)->db->scaff_sub_rec = sub_rec + 1;
 
     return (brec << SCAFFOLD_BLOCK_BITS) + sub_rec;
 }
@@ -2209,8 +2209,8 @@ static int cache_item_init_anno_ele(GapIO *io, void *from, tg_rec rec) {
 }
 
 static tg_rec cache_item_create_anno_ele(GapIO *io, void *from) {
-    tg_rec brec    = io->db->anno_ele_brec;
-    tg_rec sub_rec = io->db->anno_ele_sub_rec;
+    tg_rec brec    = gio_base(io)->db->anno_ele_brec;
+    tg_rec sub_rec = gio_base(io)->db->anno_ele_sub_rec;
     anno_ele_block_t *b;
 
     if (sub_rec == ANNO_ELE_BLOCK_SZ) {
@@ -2238,8 +2238,8 @@ static tg_rec cache_item_create_anno_ele(GapIO *io, void *from) {
 	    return -1;
     }
 
-    io->db->anno_ele_brec    = brec;
-    io->db->anno_ele_sub_rec = sub_rec + 1;
+    gio_base(io)->db->anno_ele_brec    = brec;
+    gio_base(io)->db->anno_ele_sub_rec = sub_rec + 1;
 
     //assert(brec < (1<<(31-ANNO_ELE_BLOCK_BITS)));
 
