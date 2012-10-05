@@ -560,11 +560,13 @@ MALIGN *build_malign(GapIO *io, tg_rec cnum, int start, int end) {
 				CITER_FIRST | CITER_ICLIPPEDSTART,
 				start, start);
 	r = contig_iter_next(io, citer);
-	s = cache_search(io, GT_Seq, r->rec);
+	if (r) {
+	    s = cache_search(io, GT_Seq, r->rec);
 
-	start = ((s->len < 0) ^ r->comp)
-	    ? r->end - s->right - 2
-	    : r->start + s->left - 2;
+	    start = ((s->len < 0) ^ r->comp)
+		? r->end - s->right - 2
+		: r->start + s->left - 2;
+	}
 
 	contig_iter_del(citer);
     }
@@ -575,11 +577,13 @@ MALIGN *build_malign(GapIO *io, tg_rec cnum, int start, int end) {
 				CITER_LAST | CITER_ICLIPPEDEND,
 				end, end);
 	r = contig_iter_next(io, citer);
-	s = cache_search(io, GT_Seq, r->rec);
+	if (r) {
+	    s = cache_search(io, GT_Seq, r->rec);
 
-	end = ((s->len < 0) ^ r->comp)
-	    ? r->end - s->left + 2
-	    : r->start + s->right + 2;
+	    end = ((s->len < 0) ^ r->comp)
+		? r->end - s->left + 2
+		: r->start + s->right + 2;
+	}
 
 	contig_iter_del(citer);
     }
@@ -1424,7 +1428,7 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 
 	ArrayMax(indels) = 0;
 	orig_score = new_score = malign_diffs(malign, &tot_score);
-	vmessage("Initial score %.2f%% mismatches (%d mismatches)\n",
+	vmessage("Initial score %.2f%% mismatches (%"PRId64" mismatches)\n",
 		 (100.0 * orig_score)/tot_score, orig_score/128);
 	if (flush)
 	    UpdateTextOutput();
@@ -1434,7 +1438,7 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 	    malign = realign_seqs(cnum, malign, band, indels);
 	    //print_malign(malign);
 	    new_score = malign_diffs(malign, &tot_score);
-	    vmessage("  Consensus difference score: %d\n", new_score);
+	    vmessage("  Consensus difference score: %"PRId64"\n", new_score);
 	    if (flush)
 		UpdateTextOutput();
 	} while (new_score < old_score);
