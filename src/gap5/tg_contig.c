@@ -2636,6 +2636,8 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
     bin_index_t *bin = get_bin(io, bin_num);
     range_t *l;
     
+    if (NULL == bin) return -1;
+
     cache_incr(io, bin);
     if (bin->flags & BIN_COMPLEMENTED) {
 	complement ^= 1;
@@ -2771,17 +2773,30 @@ void update_range_y(GapIO *io, rangec_t *r, int count) {
 }
 
 
-static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,int start, int end,
-				int first, int second, int *count, int mask, int val) {
+static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,
+					 int start, int end,
+					 int first, int second,
+					 int *count, int mask, int val) {
 
-    rangec_t *r = NULL;
-    int alloc = 0;
+    rangec_t *r = malloc(16 * sizeof(rangec_t));
+    int alloc = 16;
     
+    if (NULL == r) {
+	*count = -1;
+	return NULL;
+    }
+
     cache_incr(io, *c);
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   mask, val);
-				   
+    if (*count <= 0) {
+	cache_decr(io, *c);
+	if (*count == 0) return r;
+	if (NULL != r) free(r);
+	return NULL;
+    }
+
     if (r) {
     	int job;
     
@@ -3555,6 +3570,8 @@ static int range_populate(GapIO *io, contig_iterator *ci,
 			  tg_rec cnum, int start, int end) {
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
     
+    if (NULL == c) return -1;
+
     if (ci->r) {
 	free(ci->r);
 	ci->r = NULL;
@@ -3599,6 +3616,7 @@ static int range_populate(GapIO *io, contig_iterator *ci,
     else
 	ci->r = contig_items_in_range(io, &c, start, end,
 				      ci->sort_mode, 0, &ci->nitems);
+    if (NULL == ci->r) return -1;
 
     /*
      * If we've requested a CLIPPED_START or CLIPPED_END then filter out
@@ -3619,6 +3637,7 @@ static int range_populate(GapIO *io, contig_iterator *ci,
 	    }
 
 	    s = cache_search(io, GT_Seq, ci->r[i].rec);
+	    if (NULL == s) return -1;
 	    if ((s->len < 0) ^ ci->r[i].comp) {
 		c_start = ci->r[i].start + ABS(s->len) - (s->right-1) - 1;
 	    } else {
@@ -3643,6 +3662,7 @@ static int range_populate(GapIO *io, contig_iterator *ci,
 	    }
 
 	    s = cache_search(io, GT_Seq, ci->r[i].rec);
+	    if (NULL == s) return -1;
 	    if ((s->len < 0) ^ ci->r[i].comp) {
 		c_end = ci->r[i].start + ABS(s->len) - (s->left-1) - 1;
 	    } else {
@@ -3900,33 +3920,38 @@ int iterator_expand_range(GapIO *io, tg_rec crec, int start, int end,
     cache_incr(io, c);
 
     if (e_start) {
+	int i;
 	r = contig_seqs_in_range(io, &c, start, start, 0, &nr);
+	if (NULL == r) {
+	    cache_decr(io, c);
+	    return -1;
+	}
 	*e_start = start;
 
-	if (r) {
-	    int i;
-	    for (i = 0; i < nr; i++) {
-		if (*e_start > r[i].start)
-		    *e_start = r[i].start;
-	    }
-	    free(r);
+	for (i = 0; i < nr; i++) {
+	    if (*e_start > r[i].start)
+		*e_start = r[i].start;
 	}
+	free(r);
     }
 
     if (e_end) {
+	int i;
 	r = contig_seqs_in_range(io, &c, end, end, 0, &nr);
+	if (NULL == r) {
+	    cache_decr(io, c);
+	    return -1;
+	}
 	*e_end = end;
 
-	if (r) {
-	    int i;
-	    for (i = 0; i < nr; i++) {
-		if (*e_end < r[i].end)
-		    *e_end = r[i].end;
-	    }
-	    free(r);
+	for (i = 0; i < nr; i++) {
+	    if (*e_end < r[i].end)
+		*e_end = r[i].end;
 	}
+	free(r);
     }
 
+    cache_decr(io, c);
     return 0;
 }
 

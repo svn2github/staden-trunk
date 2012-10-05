@@ -471,6 +471,7 @@ static int tcl_contig_seqs_range(tcl_contig *tc, Tcl_Interp *interp,
     r = (rangec_t *)contig_seqs_in_range(io, &c, start, end,
 					 CSIR_SORT_BY_X | CSIR_PAIR,
 					 &nr);
+    if (NULL == r) return TCL_ERROR;
     qsort(r, nr, sizeof(*r), sort_range);
 
     items = Tcl_NewListObj(0, NULL);
@@ -525,6 +526,7 @@ static int tcl_contig_anno_range(tcl_contig *tc, Tcl_Interp *interp,
     r = (rangec_t *)contig_anno_in_range(io, &c, start, end,
 					 CSIR_SORT_BY_X,
 					 &nr);
+    if (NULL == r) return TCL_ERROR;
 
     items = Tcl_NewListObj(0, NULL);
     for (i = 0; i < nr; i++) {
@@ -578,6 +580,7 @@ static int tcl_contig_pileup(tcl_contig *tc, Tcl_Interp *interp,
     r = (rangec_t *)contig_seqs_in_range(io, &c, pos, pos,
 					 CSIR_SORT_BY_X | CSIR_PAIR,
 					 &nr);
+    if (NULL == r) return TCL_ERROR;
     qsort(r, nr, sizeof(*r), sort_range);
 
     /* Produce a tcl list of elements consisting of seq rec, pos, base, qual */

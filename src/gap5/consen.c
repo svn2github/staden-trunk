@@ -1018,32 +1018,36 @@ int get_hidden(GapIO *io, int contig, int max_read_length,
 static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
 			    char *cons, char *hidden_seq) {
     int start;
-    rangec_t *r;
     int nr, i, max_ext = 0;
-    contig_t *c;
+    contig_t *c = NULL;
+    rangec_t *r = NULL;
+    seq_t    *s = NULL;
+    OVERLAP *overlap = NULL;
+    ALIGN_PARAMS *params = NULL;
 
     if (consensus_valid_range(io, contig, &start, NULL) != 0) {
 	return -1;
     }
 
     c = cache_search(io, GT_Contig, contig);
+    if (NULL == c) return -1;
     cache_incr(io, c);
 
     if (!(r = contig_seqs_in_range(io, &c, start-1, start-1, 0, &nr))) {
-	cache_decr(io, c);
-	return -1;
+	goto fail;
     }
 
     //printf("Contig #%"PRIrec" start has %d seqs\n", contig, nr);
 
     /* All these reads extend the contig by at least one base */
     for (i = 0; i < nr; i++) {
-	seq_t *s = cache_search(io, GT_Seq, r[i].rec);
-	seq_t *sorig = s;
+	seq_t *sorig = cache_search(io, GT_Seq, r[i].rec);
 	int cstart, cend;
 	int j, k, slen, lclip, ext;
 
-	s = dup_seq(s);
+	if (NULL == sorig) goto fail;
+	if (NULL == (s = dup_seq(sorig))) goto fail;
+	
 	if ((s->len < 0) ^ r[i].comp) {
 	    complement_seq_t(s);
 	}
@@ -1063,8 +1067,6 @@ static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
 	//       ext, s->seq+lclip-1);
 
 	if (ext > 0 && r[i].start + s->left-1 > start && 0) {
-	    OVERLAP *overlap;
-	    ALIGN_PARAMS *params;
 	    int j, k, jx, kx, j_end;
 	    char rseq[MAXGEL_PLUS], rcons[MAXGEL_PLUS];
 	    int rseq_len, rcons_len;
@@ -1072,13 +1074,8 @@ static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
 	    //printf("Hidden_seq for #%"PRIrec" = %.*s\n",
 	    //	   r[i].rec, ABS(s->len)-s->right, &s->seq[s->right]);
 
-	    if (NULL == (params = create_align_params()) ||
-		NULL == (overlap = create_overlap())) {
-		if (params)
-		    destroy_alignment_params(params);
-		cache_decr(io, c);
-		return -1;
-	    }
+	    if (NULL == (params = create_align_params())) goto fail;
+	    if (NULL == (overlap = create_overlap())) goto fail;
 
 	    set_align_params (params,
 			      20, /* band */
@@ -1158,6 +1155,7 @@ static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
 
 	    destroy_alignment_params(params);
 	    destroy_overlap(overlap);
+	    params = overlap = NULL;
 	}
 
 	if (max_ext < ext) {
@@ -1167,44 +1165,58 @@ static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
 	    //printf("New hidden_seq=%s\n", hidden_seq);
 	}
 
-	if (sorig != s)
-	    free(s);
+	free(s);
+	s = NULL;
     }
 
+    free(r);
     cache_decr(io, c);
     return max_ext;
+
+ fail:
+    if (NULL != params)  destroy_alignment_params(params);
+    if (NULL != overlap) destroy_overlap(overlap);
+    if (NULL != s) free(s);
+    if (NULL != r) free(r);
+    cache_decr(io, c);
+    return -1;
 }
 
 static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
 			  char *cons, char *hidden_seq) {
-    int end;
-    rangec_t *r;
+    int start, end;
     int nr, i, max_ext = 0;
-    contig_t *c;
+    contig_t *c          = NULL;
+    rangec_t *r          = NULL;
+    seq_t    *s          = NULL;
+    seq_t    *sorig      = NULL;
+    OVERLAP  *overlap    = NULL;
+    ALIGN_PARAMS *params = NULL;
 
-    if (consensus_valid_range(io, contig, NULL, &end) != 0) {
+    if (consensus_valid_range(io, contig, &start, &end) != 0) {
 	return -1;
     }
 
     c = cache_search(io, GT_Contig, contig);
+    if (NULL == c) return -1;
     cache_incr(io, c);
 
     if (!(r = contig_seqs_in_range(io, &c, end+1, end+1, 0, &nr))) {
-	cache_decr(io, c);
-	return -1;
+	goto fail;
     }
 
     //printf("Contig #%"PRIrec" end has %d seqs\n", contig, nr);
 
     /* All these reads extend the contig by at least one base */
     for (i = 0; i < nr; i++) {
-	seq_t *s = cache_search(io, GT_Seq, r[i].rec);
-	seq_t *sorig = s;
 	int cstart, cend;
 	int j, k, slen, rclip, rfrom, ext;
 
+	sorig = s = cache_search(io, GT_Seq, r[i].rec);
+	if (NULL == s) goto fail;
 	if ((s->len < 0) ^ r[i].comp) {
 	    s = dup_seq(s);
+	    if (NULL == s) goto fail;
 	    complement_seq_t(s);
 	}
 
@@ -1226,20 +1238,13 @@ static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
 	ext = rclip-1 + r[i].start - end;
 
 	if (ext > 0 && end > r[i].start + s->right-1) {
-	    OVERLAP *overlap;
-	    ALIGN_PARAMS *params;
 	    int j, k, jx, kx;
 
 	    //printf("Hidden_seq for #%"PRIrec" = %.*s\n",
 	    //	   r[i].rec, ABS(s->len)-s->right, &s->seq[s->right]);
 
-	    if (NULL == (params = create_align_params()) ||
-		NULL == (overlap = create_overlap())) {
-		if (params)
-		    destroy_alignment_params(params);
-		cache_decr(io, c);
-		return -1;
-	    }
+	    if (NULL == (params = create_align_params())) goto fail;
+	    if (NULL == (overlap = create_overlap())) goto fail;
 
 	    set_align_params (params,
 			      20, /* band */
@@ -1253,7 +1258,7 @@ static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
 			      0, 0, 0, 0,0);
 
 	    init_overlap(overlap,
-			 &cons[r[i].start + s->right-1],
+			 &cons[r[i].start + s->right - start],
 			 &s->seq[s->right],
 			 end - (r[i].start + s->right-1),
 			 rclip - s->right);
@@ -1308,6 +1313,7 @@ static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
 
 	    destroy_alignment_params(params);
 	    destroy_overlap(overlap);
+	    params = overlap = NULL;
 	} else {
 	    rfrom = s->right;
 	}
@@ -1323,8 +1329,17 @@ static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
 	    free(s);
     }
 
+    free(r);
     cache_decr(io, c);
     return max_ext;
+
+ fail:
+    if (NULL != params)  destroy_alignment_params(params);
+    if (NULL != overlap) destroy_overlap(overlap);
+    if (NULL != s && s != sorig) free(s);
+    if (NULL != r) free(r);
+    cache_decr(io, c);
+    return -1;
 }
 
 /*

@@ -194,43 +194,46 @@ static void update_filter(gap_range_t *gr) {
    if out of memory, returns 1 with a null gr->r pointer
    returns 1 on change, 0 otherwise
 */
-int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double new_wx1, int new_mode, int force) {
+int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0,
+			  double new_wx1, int new_mode, int force) {
     int changed = 0;
     contig_t *c;
 
     /* only change if needed or if force is true */
-    if (force || gr->r == NULL || new_wx0 != gr->wx0 || new_wx1 != gr->wx1 || new_mode != gr->template_mode ||
-    	gr->width != width || gr->new_filter.accuracy != gr->old_filter.accuracy) {
-
-    	if (gr->r) {
-	    free(gr->r);
-	}
+    if (force || gr->r == NULL
+	|| new_wx0 != gr->wx0 || new_wx1 != gr->wx1
+	|| new_mode != gr->template_mode || gr->width != width
+	|| gr->new_filter.accuracy != gr->old_filter.accuracy) {
 
 	c = cache_search(gr->io, GT_Contig, gr->crec);
+	if (NULL == c) goto fail;
 	cache_incr(gr->io, c);
-	gr->r = contig_seqs_in_range(gr->io, &c, new_wx0, new_wx1, new_mode, &gr->nr);
+
+    	if (gr->r) free(gr->r);
+	gr->r = contig_seqs_in_range(gr->io, &c, new_wx0, new_wx1,
+				     new_mode, &gr->nr);
 	cache_decr(gr->io, c);
 	
 	if (gr->r) {
 	    tline *tmp_line = NULL;
-	
+	    gap_depth_t *new_depth = NULL;
+	    size_t nlines = gr->nr > 0 ? gr->nr : 1;
+
 	    gr->wx0  = new_wx0;
 	    gr->wx1  = new_wx1;
 	    gr->template_mode = new_mode;
 	    update_filter(gr);
 	    
-	    tmp_line = (tline *)realloc(gr->tl, gr->nr * sizeof(tline));
-	    
-	    if (!tmp_line) {
-	    	fprintf(stderr, "GR tline memory problem\n");
-		gr->tl = tmp_line; // but don't stop yet
-	    } else {
-		gr->tl = tmp_line;
-	    }
+	    tmp_line = realloc(gr->tl, nlines * sizeof(tline));
+	    if (NULL == tmp_line) goto fail;
+	    gr->tl = tmp_line;
 	    
 	    if (gr->width != width) {
+		size_t w = width > 0 ? width : 1;
+		new_depth = realloc(gr->depth, w * sizeof(gap_depth_t));
+		if (NULL == new_depth) goto fail;
 	    	gr->width = width;
-		gr->depth = (gap_depth_t *)realloc(gr->depth, width * sizeof(gap_depth_t));
+		gr->depth = new_depth;
 	    }
 	}
 	
@@ -238,6 +241,11 @@ int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double new
     }
     
     return changed;
+ fail:
+    if (gr->r) free(gr->r);
+    gr->r = NULL;
+    gr->nr = 0;
+    return 1;
 }
 
 int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv, 

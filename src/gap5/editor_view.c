@@ -975,6 +975,8 @@ int edview_visible_items(edview *xx, int start, int end) {
 	? CSIR_ALLOCATE_Y_MULTIPLE
 	: CSIR_ALLOCATE_Y_SINGLE;
 
+    if (NULL == c) return -1;
+
     /* sort... */
     mode |= CSIR_DEFAULT;
     
@@ -1001,6 +1003,7 @@ int edview_visible_items(edview *xx, int start, int end) {
     }
 
     xx->rec_hash = HacheTableCreate(8192, HASH_DYNAMIC_SIZE);
+    if (NULL == xx->rec_hash) return -1;
     xx->rec_hash->name = "rec_hash";
 
     /* Work out Y dimension */
@@ -1013,7 +1016,8 @@ int edview_visible_items(edview *xx, int start, int end) {
 	    xx->max_height = xx->r[i].y;
 
 	hd.i = i;
-	HacheTableAdd(xx->rec_hash, (char *)&key, sizeof(key), hd, NULL);
+	if (!HacheTableAdd(xx->rec_hash, (char *)&key, sizeof(key), hd, NULL))
+	    return -1;
     }
     xx->max_height += 3; /* +1 for from 0, +2 for consensus+ruler */
 
@@ -1023,6 +1027,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 
     xx->anno_hash = HacheTableCreate(8192, HASH_DYNAMIC_SIZE |
 				     HASH_ALLOW_DUP_KEYS);
+    if (!xx->anno_hash) return -1;
     xx->anno_hash->name = "anno_hash";
     for (i = 0; i < xx->nr; i++) {
 	tg_rec key = xx->r[i].pair_rec; /* aka obj_rec */
@@ -1041,7 +1046,8 @@ int edview_visible_items(edview *xx, int start, int end) {
 	    key = xx->cnum;
 
 	hd.i = i;
-	HacheTableAdd(xx->anno_hash, (char *)&key, sizeof(key), hd, NULL);
+	if (!HacheTableAdd(xx->anno_hash, (char *)&key, sizeof(key), hd, NULL))
+	    return -1;
     }
 
     /* Reverse the order of annotations in the anno_hash. */
@@ -3070,6 +3076,7 @@ void edDisplayTrace(edview *xx) {
     if (xx->cursor_type == GT_Seq) {
 	/* Single sequence */
 	s = get_seq(xx->io, xx->cursor_rec);
+	if (NULL == s) return;
 	tman_manage_trace("ANY", sequence_get_name(&s), xx->cursor_pos,
 			  0, 0, /* left/right clips */
 			  sequence_get_orient(xx->io, xx->cursor_rec),
@@ -3082,6 +3089,8 @@ void edDisplayTrace(edview *xx) {
 	int nr, i;
 	contig_t *c = cache_search(xx->io, GT_Contig, xx->cnum);
 
+	if (NULL == c) return;
+
 	/* Shut down existing traces */
 	tman_shutdown_traces(xx, 2);
 
@@ -3090,11 +3099,13 @@ void edDisplayTrace(edview *xx) {
 	r = contig_seqs_in_range(xx->io, &c,
 				 xx->cursor_apos, xx->cursor_apos,
 				 CSIR_SORT_BY_X, &nr);
+	if (NULL == r) return;
 
 	for (i = 0; i < nr; i++) {
 	    s = get_seq(xx->io, r[i].rec);
 	    /* For now don't try to bring up mass-sequencing data from cons */
-	    if (s->seq_tech == STECH_SOLEXA ||
+	    if (NULL == s ||
+		s->seq_tech == STECH_SOLEXA ||
 		s->seq_tech == STECH_SOLID)
 		continue;
 

@@ -853,19 +853,19 @@ static Bitmap contig_hole_bitmap(GapIO *io, tg_rec contig,
     Bitmap hole = BitmapCreate(end - start + 1);
     int last;
 
+    if (NULL == hole) return NULL;
+
     iter = contig_iter_new(io, contig, 0,
 			   CITER_LAST | CITER_ICLIPPEDEND,
 			   start, end);
-    if (!iter)
-	return NULL;
+    if (!iter) goto fail;
 
     last = end+1;
     while (r = contig_iter_prev(io, iter)) {
 	seq_t *s = cache_search(io, GT_Seq, r->rec);
 	int cstart, cend;
 		
-	if (!s)
-	    return NULL;
+	if (!s) goto fail;
 
 	if ((s->len < 0) ^ r->comp) {
 	    cstart = r->start + ABS(s->len) - (s->right-1) - 1;
@@ -895,6 +895,10 @@ static Bitmap contig_hole_bitmap(GapIO *io, tg_rec contig,
     contig_iter_del(iter);
 
     return hole;
+ fail:
+    if (NULL != iter) contig_iter_del(iter);
+    if (NULL != hole) BitmapDestroy(hole);
+    return NULL;
 }
 
 /*
@@ -909,13 +913,17 @@ static Bitmap contig_hole_bitmap(GapIO *io, tg_rec contig,
  */
 static int copy_contig_anno(GapIO *io, Array cmap) {
     int n = ArrayMax(cmap), i, j, k;
+    contig_t *c, *new_c;
+    rangec_t *rc;
+    Bitmap hole;
 
     for (i = 0; i < n; i++) {
 	contig_map *map = arrp(contig_map, cmap, i);
-	rangec_t *rc;
 	int nr;
-	contig_t *c, *new_c;
-	Bitmap hole = NULL;
+
+	c = new_c = NULL;
+	rc = NULL;
+	hole = NULL;
 
 	/* Convert dest from unclipped to clipped */
 	map->dest_start = 1;
@@ -927,9 +935,11 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 
 	/* Find annotations spanning this source region */
 	c = cache_search(io, GT_Contig, map->src);
+	if (NULL == c) goto fail;
 	cache_incr(io, c);
 	rc = contig_anno_in_range(io, &c, map->src_start, map->src_end,
 				  0, &nr);
+	if (NULL == rc) goto fail;
 
 	/* Trim to only consensus tags */
 	for (k = j = 0; j < nr; j++) {
@@ -956,16 +966,17 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 	nr = k;
 
 	if (!nr) {
-	    if (rc)
-		free(rc);
+	    free(rc);
 	    cache_decr(io, c);
 	    continue;
 	}
 
 	/* Produce a bitmap of hole or no-hole for source contig */
 	hole = contig_hole_bitmap(io, c->rec, map->src_start, map->src_end);
+	if (NULL == hole) goto fail;
 
 	new_c = cache_search(io, GT_Contig, map->dest);
+	if (NULL == new_c) goto fail;
 	cache_incr(io, new_c);
 
 	/* Duplicate them onto the destination contig */
@@ -998,6 +1009,7 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 	    //}
 
 	    a = cache_search(io, GT_AnnoEle, r->rec);
+	    if (NULL == a) goto fail;
 
 	    new_r.start    = r->start - map->src_start + map->dest_start;
 	    new_r.end      = r->end   - map->src_start + map->dest_start;
@@ -1011,6 +1023,7 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 	    } else {
 		new_r.rec  = anno_ele_new(io, 0, GT_Contig, 0, 0,
 					  r->mqual, a->direction, a->comment);
+		if (new_r.rec < 0) goto fail;
 	    }
 
 	    if (new_r.start < map->dest_start)
@@ -1019,23 +1032,28 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 		new_r.end   = map->dest_end;
 
 	    bin = bin_add_range(io, &new_c, &new_r, NULL, NULL, 0);
+	    if (NULL == bin) goto fail;
 
-	    a = cache_search(io, GT_AnnoEle, new_r.rec);
-	    a = cache_rw(io, a);
+	    if (NULL == (a = cache_search(io, GT_AnnoEle, new_r.rec)))
+		goto fail;
+	    if (NULL == (a = cache_rw(io, a))) goto fail;
 	    a->bin = bin->rec;
 	}
 
 	cache_decr(io, c);
 	cache_decr(io, new_c);
-
-	if (rc)
-	    free(rc);
-
-	if (hole)
-	    BitmapDestroy(hole);
+	free(rc);
+	BitmapDestroy(hole);
     }
 
     return 0;
+    
+ fail:
+    if (c)     cache_decr(io, c);
+    if (new_c) cache_decr(io, new_c);
+    if (rc)    free(rc);
+    if (hole)  BitmapDestroy(hole);
+    return -1;
 }
 
 /*
@@ -1144,9 +1162,11 @@ static int anno_range(GapIO *io, tg_rec contig, int start, int end,
 
     /* Find annotations in this region */
     anno = contig_anno_in_range(io, &c, start, end, 0, &n_anno);
+    if (NULL == anno) goto fail;
 
     /* Copy to the pos[] array */
     for (i = 0; i < n_anno; i++) {
+	rangec_t *a;
 	if (!(hi = HacheTableQuery(rmap, (char *)&anno[i].pair_rec,
 				   sizeof(anno[i].pair_rec))))
 	    continue;
@@ -1154,7 +1174,9 @@ static int anno_range(GapIO *io, tg_rec contig, int start, int end,
 	/* Could be more efficient, but not likely the slow bit now */
 	j = hi->data.i;
 	pos[j].n_anno++;
-	pos[j].anno = realloc(pos[j].anno, pos[j].n_anno * sizeof(rangec_t));
+	a = realloc(pos[j].anno, pos[j].n_anno * sizeof(rangec_t));
+	if (NULL == a) goto fail;
+	pos[j].anno = a;
 	pos[j].anno[pos[j].n_anno-1] = anno[i];
     }
 
@@ -1162,6 +1184,11 @@ static int anno_range(GapIO *io, tg_rec contig, int start, int end,
 
     HacheTableDestroy(rmap, 0);
     return 0;
+
+ fail:
+    if (NULL != rmap) HacheTableDestroy(rmap, 0);
+    if (NULL != anno) free(anno);
+    return -1;
 }
 
 static int find_annos(GapIO *io, r_pos_t *pos, int nreads) {

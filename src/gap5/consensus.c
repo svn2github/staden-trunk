@@ -61,6 +61,7 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
     consensus_t q[CONS_BLOCK_SIZE];
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
 
+    if (NULL == c) return -1;
     cache_incr(io, c);
     
     /* Compute in small ranges */
@@ -75,7 +76,8 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 	/* Find sequences visible */
 	r = contig_seqs_in_range(io, &c, st, en, CSIR_SORT_BY_X, &nr);
 
-	if (0 != calculate_consensus_bit_het(io, contig, st, en,
+	if (NULL == r ||
+	    0 != calculate_consensus_bit_het(io, contig, st, en,
 					     qual ? CONS_SCORES : 0,
 					     r, nr, q)){
 	    for (j = 0; j < en-st; j++) {
@@ -84,11 +86,12 @@ int calculate_consensus_simple2(GapIO *io, tg_rec contig, int start, int end,
 		if (qual)
 		    qual[i-start+j] = 0;
 	    }
+	    if (NULL != r) free(r);
 	    cache_decr(io, c);
 	    return -1;
 	}
 
-	if (r) free(r);
+	free(r);
 
 	for (j = 0; j < en-st+1; j++) {
 	    if (q[j].call == 6) {
@@ -130,6 +133,7 @@ int calculate_consensus_simple(GapIO *io, tg_rec contig, int start, int end,
      * a certain degree of editing without switching bins commonly.
      */
     c = (contig_t *)cache_search(io, GT_Contig, contig);
+    if (NULL == c) return -1;
     cache_incr(io, c);
     //contig_dump_ps(io, &c, "/tmp/tree.ps");
     r = contig_bins_in_range(io, &c, start, end,
@@ -528,6 +532,8 @@ int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 			consensus_t *cons) {
     int i;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
+
+    if (NULL == c) return -1;
     cache_incr(io, c);
 
     /* Compute in small ranges */
@@ -542,7 +548,8 @@ int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 	/* Find sequences visible */
 	r = contig_seqs_in_range(io, &c, st, en, 0, &nr);
 
-	if (0 != calculate_consensus_bit_het(io, contig, st, en,
+	if (NULL == r ||
+	    0 != calculate_consensus_bit_het(io, contig, st, en,
 					     CONS_ALL, r, nr,
 					     &cons[i-start])) {
 	    if (r)
@@ -551,8 +558,7 @@ int calculate_consensus(GapIO *io, tg_rec contig, int start, int end,
 	    return -1;
 	}
 
-	if (r)
-	    free(r);
+	free(r);
     }
 
     cache_decr(io, c);
@@ -564,6 +570,9 @@ int calculate_consensus_fast(GapIO *io, tg_rec contig, int start, int end,
 			     consensus_t *cons) {
     int i;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
+
+    if (NULL == c) return -1;
+    cache_incr(io, c);
 
     /* Compute in small ranges */
     for (i = start; i <= end; i += CONS_BLOCK_SIZE) {
@@ -577,17 +586,19 @@ int calculate_consensus_fast(GapIO *io, tg_rec contig, int start, int end,
 	/* Find sequences visible */
 	r = contig_seqs_in_range(io, &c, st, en, 0, &nr);
 
-	if (0 != calculate_consensus_bit_het(io, contig, st, en,
+	if (NULL == r || 
+	    0 != calculate_consensus_bit_het(io, contig, st, en,
 					     0, r, nr, &cons[i-start])) {
-	    return -1;
 	    if (r)
 		free(r);
+	    cache_decr(io, c);
+	    return -1;
 	}
 
-	if (r)
-	    free(r);
+	free(r);
     }
 
+    cache_decr(io, c);
     return 0;
 }
 

@@ -42,7 +42,7 @@ typedef struct TagPlot {
     char *tag;              /* tag name under pointer */
 
     gap_range_t *gr;        /* range info */
-    rangec_t *ar;           /* anno range info, use for now */
+    // rangec_t *ar;           /* anno range info, use for now */
     tline *tl;              /* line structure for drawing */
     int nr;                 /* number of annotations found */
     
@@ -451,7 +451,9 @@ static void tagplot_redraw(TagPlot *tp, Display *display) {
     int ymin = INT_MAX;
     int ymax = INT_MIN;
     contig_t *c;
-    
+    rangec_t *ar;
+    tline *new_tl;
+
     if (!tp->showtag) return; // not visible so do no work
      
     image_remove(tp->image);
@@ -459,18 +461,27 @@ static void tagplot_redraw(TagPlot *tp, Display *display) {
 
     // probably need to put something to not query the range code each time
     c = cache_search(tp->gr->io, GT_Contig, tp->gr->crec);
+    if (NULL == c) return;
     cache_incr(tp->gr->io, c);
-    tp->ar = contig_anno_in_range(tp->gr->io, &c, tp->wx0, tp->wx1, CSIR_SORT_BY_X, &tp->nr);
+
+    ar = contig_anno_in_range(tp->gr->io, &c, tp->wx0, tp->wx1,
+			      CSIR_SORT_BY_X, &tp->nr);
     cache_decr(tp->gr->io, c);
-    
+    if (NULL == ar) return;
+
     if (tp->nr == 0) { // if no tags have a blank track
     	create_image_from_buffer(tp->image);
-    	XPutImage(display, (Drawable)tp->pm, tp->gc, tp->image->img, 0, 0, 0, 0, tp->width, tp->height);
+    	XPutImage(display, (Drawable)tp->pm, tp->gc, tp->image->img,
+		  0, 0, 0, 0, tp->width, tp->height);
+	free(ar);
 	return;
     }
     
     /* world to pixmap conversion values */
-    if (tp->wx1 - tp->wx0 == 0) return;
+    if (tp->wx1 - tp->wx0 == 0) {
+	free(ar);
+	return;
+    }
     
     ax = tp->width / (tp->wx1 - tp->wx0);
     bx = tp->wx0;
@@ -479,16 +490,22 @@ static void tagplot_redraw(TagPlot *tp, Display *display) {
     by = tp->wy0;
         
 
-    tp->tl = (tline *)realloc(tp->tl, tp->nr * sizeof(tline));
-    
+    new_tl = (tline *)realloc(tp->tl, tp->nr * sizeof(tline));
+    if (NULL == new_tl) {
+	free(ar);
+	return;
+    }
+    tp->tl = new_tl;
+
     for (i = 0; i < tp->nr; i++) {
     	char type[5];
     
-	tp->tl[i].x[0] = tp->ar[i].start;
-	tp->tl[i].x[3] = tp->ar[i].end;
-	tp->tl[i].col[0] = idToIndex(type2str(tp->ar[i].mqual, type));
+	tp->tl[i].x[0] = ar[i].start;
+	tp->tl[i].x[3] = ar[i].end;
+	tp->tl[i].col[0] = idToIndex(type2str(ar[i].mqual, type));
     }
-    
+    free(ar);
+
     // now make some Y positions
     qsort(tp->tl, tp->nr, sizeof(tline), sort_tline_by_x);
     compute_ypos(tp, xgap, tp->tl, tp->nr);

@@ -1549,20 +1549,20 @@ int sequence_range_length(GapIO *io, seq_t **s) {
  *        -1 on failure
  */
 int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
-    contig_t *c;
+    contig_t *c = NULL;
     int start, end, orient;
     tg_rec contig;
-    rangec_t *r;
+    rangec_t *r = NULL;
     int nr, i;
     tg_rec brec = 0;
+    bin_index_t *bin = NULL;
 
     /* Find the position and contig this sequence currently covers */
     cache_incr(io, *s);
     if (0 != sequence_get_position2(io, (*s)->rec,
 				    &contig, &start, &end, &orient,
 				    &brec, NULL, NULL)) {
-	cache_decr(io, *s);
-	return -1;
+	goto fail;
     }
 
 
@@ -1583,13 +1583,15 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
      * take short cuts here if we can get away with it.
      */
     c = cache_search(io, GT_Contig, contig);
+    if (NULL == c) goto fail;
+    cache_incr(io, c);
     r = (rangec_t *)contig_anno_in_range(io, &c, start-1, end+1, 0, &nr);
+    if (NULL == r) goto fail;
 
     /* Figure out what to move */
     for (i = 0; i < nr; i++) {
 	range_t R, *R_out;
 	anno_ele_t *a;
-	bin_index_t *bin;
 
 	assert((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO);
 
@@ -1605,15 +1607,18 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
 	R.pair_rec = r[i].pair_rec;
 	R.flags    = r[i].flags;
 	bin = bin_add_to_range(io, &c, brec, &R, &R_out, NULL, 0);
+	if (NULL == bin) goto fail;
 	cache_incr(io, bin);
 
 	/* With luck the bin & index into bin haven't changed */
 	a = cache_search(io, GT_AnnoEle, r[i].rec);
+	if (NULL == a) goto fail;
 	if (a->bin != bin->rec /*||
 	    a->bin_idx != R_out - ArrayBase(range_t, bin->rng)*/) {
 	    //printf("New tag bin %d->%d %d->%d\n", a->bin, bin->rec,
 	    //	   a->idx, R_out - ArrayBase(range_t, bin->rng));
 	    a = cache_rw(io, a);
+	    if (NULL == a) goto fail;
 	    a->bin = bin->rec;
 	    //a->bin_idx = R_out - ArrayBase(range_t, bin->rng);
 	}
@@ -1622,10 +1627,17 @@ int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
     }
 
     free(r);
-
+    cache_decr(io, c);
     cache_decr(io, *s);
 
     return 0;
+
+ fail:
+    if (NULL != bin) cache_decr(io, bin);
+    if (NULL != c)   cache_decr(io, c);
+    if (NULL != r)   free(r);
+    cache_decr(io, *s);
+    return -1;
 }
 
 /*
@@ -1641,21 +1653,25 @@ int sequence_fix_anno_bins(GapIO *io, seq_t **s) {
     tg_rec brec;
     int start, end, orient;
     tg_rec contig;
-    contig_t *c;
-    rangec_t *r;
+    contig_t *c = NULL;
+    rangec_t *r = NULL;
     int nr, i;
+
+    cache_incr(io, *s);
 
     if (0 != sequence_get_position2(io, (*s)->rec, &contig, &start, &end,
 				    &orient, &brec, NULL, NULL)) {
-	return -1;
+	goto fail;
     }
 
     assert(brec == (*s)->bin);
 
     /* Identify annotations spanning this region. */
     c = cache_search(io, GT_Contig, contig);
+    if (NULL == c) goto fail;
+    cache_incr(io, c);
     r = (rangec_t *)contig_anno_in_range(io, &c, start-1, end+1, 0, &nr);
-
+    if (NULL == r) goto fail;
 
     /* Check and update if needed */
     for (i = 0; i < nr; i++) {
@@ -1675,6 +1691,7 @@ int sequence_fix_anno_bins(GapIO *io, seq_t **s) {
 	/* In incorrect bin - fix it */
 	//fprintf(stderr, "Fixing bin for anno %"PRIrec"\n", r[i].rec);
 	a = cache_rw(io, a);
+	if (NULL == a) goto fail;
 
 	bin_remove_item(io, &c, GT_AnnoEle, r[i].rec);
 	R.start    = r[i].start;
@@ -1684,8 +1701,18 @@ int sequence_fix_anno_bins(GapIO *io, seq_t **s) {
 	R.pair_rec = r[i].pair_rec;
 	R.flags    = r[i].flags;
 	bin = bin_add_to_range(io, &c, brec, &R, &R_out, NULL, 0);
+	if (NULL == bin) goto fail;
 	a->bin = bin->rec;
     }
     
+    free(r);
+    cache_decr(io, c);
+    cache_decr(io, *s);
     return 0;
+
+ fail:
+    if (NULL != r) free(r);
+    if (NULL != c) cache_decr(io, c);
+    cache_decr(io, *s);
+    return -1;
 }

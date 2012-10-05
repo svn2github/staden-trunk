@@ -27,6 +27,8 @@ int *avg_sequence_depth(GapIO *io, tg_rec cnum, int start, int end,
     int nr;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
 
+    if (NULL == c) return NULL;
+
     /* Compute resolution such that length is less than WIN_ITEMS */
     rshift = 0;
     len2 = len;
@@ -43,8 +45,13 @@ int *avg_sequence_depth(GapIO *io, tg_rec cnum, int start, int end,
     *inc_out = 1<<rshift;
 
     depth = xcalloc(len2+1, sizeof(*depth));
+    if (NULL == depth) return NULL;
 
     r = contig_seqs_in_range(io, &c, start, end, 0, &nr);
+    if (NULL == r) {
+	free(depth);
+	return NULL;
+    }
 
     for (i = 0; i < nr; i++) {
 	/* FIXME: care about clipped depth? */
