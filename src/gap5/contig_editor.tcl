@@ -2535,6 +2535,7 @@ proc editor_move_seq {w where direction} {
 	     [list B_MOVE $rec $upos] ] {}
 
     $w redraw
+    $w show_cursor
 }
 
 proc editor_clip_seq {w where end} {
