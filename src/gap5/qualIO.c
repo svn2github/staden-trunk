@@ -369,7 +369,7 @@ double list_base_confidence(int *matfreqs, int *misfreqs, long matrix[6][6])
 	for (b2 = 0; b2 < 6; b2++) {
 	    vmessage("\n%c  ", "ACGTN*"[b2]);
 	    for (b1 = 0; b1 < 6; b1++) {
-		vmessage(" %8d", matrix[b1][b2]);
+		vmessage(" %8ld", matrix[b1][b2]);
 		if (b1 != b2) {
 		    if (b1 == 5)
 			tdel += matrix[b1][b2];
