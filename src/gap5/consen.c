@@ -1155,7 +1155,8 @@ static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
 
 	    destroy_alignment_params(params);
 	    destroy_overlap(overlap);
-	    params = overlap = NULL;
+	    params = NULL;
+	    overlap = NULL;
 	}
 
 	if (max_ext < ext) {
@@ -1313,7 +1314,8 @@ static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
 
 	    destroy_alignment_params(params);
 	    destroy_overlap(overlap);
-	    params = overlap = NULL;
+	    params = NULL;
+	    overlap = NULL;
 	} else {
 	    rfrom = s->right;
 	}
