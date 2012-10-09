@@ -66,6 +66,7 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	case 2: /* Invoke join editor */ {
 	    tg_rec cnum[2], llino[2];
 	    int pos[2];
+	    int shortest;
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    repeat->current = obj - repeat->match;
@@ -86,9 +87,10 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 		    bell();
 		    break;
 		}
-
-		if (-1 == complement_contig(repeat->io, ABS(obj->c2)))
-		    if (-1 == complement_contig(repeat->io, ABS(obj->c1)))
+		shortest = (io_clength(repeat->io, cnum[0])
+			    < io_clength(repeat->io, cnum[1])) ? 0 : 1;
+		if (-1 == complement_contig(repeat->io, cnum[shortest]))
+		    if (-1 == complement_contig(repeat->io, cnum[1 - shortest]))
 			return NULL;
 	    }
 

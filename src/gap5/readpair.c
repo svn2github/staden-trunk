@@ -104,7 +104,7 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 	        tg_rec cnum[2], llino[2];
 		int pos[2];
 		seq_t *s;
-		int comp;
+		int comp, shortest;
 
 		cnum[0] = ABS(obj->c1);
 		cnum[1] = ABS(obj->c2);
@@ -117,9 +117,12 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 			       "different orientations");
 			break;
 		    }
-
-		    if (-1 == complement_contig(template->io, cnum[0]))
-			if (-1 == complement_contig(template->io, cnum[1]))
+		    
+		    shortest = (io_clength(template->io, cnum[0])
+				< io_clength(template->io, cnum[1])) ? 0 : 1;
+		    if (-1 == complement_contig(template->io, cnum[shortest]))
+			if (-1 == complement_contig(template->io,
+						    cnum[1 - shortest]))
 			    return NULL;
 		}
 

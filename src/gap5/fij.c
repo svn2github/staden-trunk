@@ -75,6 +75,7 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
         case 3: /* Invoke join editor */ {
 	    tg_rec cnum[2], llino[2];
 	    int pos[2];
+	    int shortest;
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    fij->current = obj - (obj_fij *)fij->match;
@@ -95,8 +96,10 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 		    bell();
 		    break;
 		}
-		if (-1 == complement_contig(fij->io, ABS(obj->c2)))
-		    if (-1 == complement_contig(fij->io, ABS(obj->c1)))
+		shortest = (io_clength(fij->io, cnum[0])
+			    < io_clength(fij->io, cnum[1])) ? 0 : 1;
+		if (-1 == complement_contig(fij->io, cnum[shortest]))
+		    if (-1 == complement_contig(fij->io, cnum[1 - shortest]))
 			    return NULL;
 	    }
 
