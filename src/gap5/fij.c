@@ -37,7 +37,7 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 	    return "Information\0Hide\0IGNORE\0"
 		"IGNORE\0SEPARATOR\0Remove\0";
 	} else {
-	    return "Information\0Hide\0Make join\0Invoke join editor *\0"
+	    return "Information\0Hide\0IGNORE\0Invoke join editor *\0"
 		"Invoke contig editors\0SEPARATOR\0Remove\0";
 	}
 
@@ -368,9 +368,8 @@ static Contig_parms * contig_list2contig_parms(GapIO *io, int num_contigs,
 					       contig_list_t *list) {
 
     /* Make a contig list */
-    int database_size = io_dbsize(io);
     Contig_parms *contig_list;
-    contig_list = get_contig_list(database_size, io, num_contigs, list);
+    contig_list = get_contig_list(io, num_contigs, list);
     
     return contig_list;
 }

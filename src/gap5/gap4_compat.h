@@ -35,10 +35,9 @@ int64_t CalcTotalContigLen(GapIO *io);
 void bell(void);
 
 /* FIXME */
-#define io_rdonly(io) (0)
+#define io_rdonly(io) ((io)->read_only)
 #define find_max_gel_len(io,a,b) 65536
-#define io_name(io) "FIXME"
-#define io_dbsize(io) 1
+#define io_name(io) ((io)->name)
 
 /*
  * Complements an individual contig.

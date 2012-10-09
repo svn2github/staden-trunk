@@ -115,8 +115,7 @@ int sort_contigs ( Contig_parms *contig_list,
  * ((8000-1)..(8000-Num)), generate a Contig_parms array containing
  * contig number, start, end, and left gel.
  */
-Contig_parms *get_contig_list (int database_size, GapIO *io,
-			       int number_of_contigs,
+Contig_parms *get_contig_list (GapIO *io, int number_of_contigs,
 			       contig_list_t *contig_array);
 
 

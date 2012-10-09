@@ -327,7 +327,7 @@ find_repeats(GapIO *io,
 {
     int *pos1 = NULL, *pos2 = NULL, *len = NULL;
     char *consensus = NULL;
-    int max_read_length, database_size, number_of_contigs;
+    int max_read_length, number_of_contigs;
     int consensus_length, ret, task_mask;
     int max_matches;
     int i, dirn;
@@ -365,10 +365,9 @@ find_repeats(GapIO *io,
 
     max_read_length = find_max_gel_len(io, 0, 0);
 
-    database_size = io_dbsize(io);
     number_of_contigs = num_contigs;
-    if ( ! (contig_list = get_contig_list ( database_size, io,
-			   number_of_contigs, contig_array ))) {
+    if ( ! (contig_list = get_contig_list (io, number_of_contigs,
+					   contig_array ))) {
 	goto bail_out;
     }
 
