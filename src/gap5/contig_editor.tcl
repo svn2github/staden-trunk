@@ -778,6 +778,9 @@ proc contig_editor {w args} {
     set opt(io) [io_child $opt(-io) $opt(-contig)]
 
     set join [info exists opt(-contig2)]
+    set autocutoffs [expr {$join \
+			       && [info exists opt(-pos)] \
+			       && [info exists opt(-pos2)]}]
 
     #set opt(contig) [contig_order_to_number -io $opt(-io) -order 0]
     set opt(contig) $opt(-contig)
@@ -829,6 +832,21 @@ proc contig_editor {w args} {
 	    } else {
 		set opt(-pos2) 1
 	    }
+	}
+	if { $autocutoffs } {
+	    set vis [consensus_valid_range -io $opt(-io) -contigs [list "=$opt(-contig)" "=$opt(-contig2)"]]
+	    foreach { vis1 vis2 } $vis {
+		foreach { ctg start end } $vis1 {
+		    if {$opt(-pos) < $start || $opt(-pos) > $end } {
+			set opt(Cutoffs) 1
+		    }
+		}
+		foreach { ctg start end } $vis2 {
+		    if {$opt(-pos2) < $start || $opt(-pos2) > $end } {
+			set opt(Cutoffs) 1
+		    }
+		}
+	    } 
 	}
     }
 

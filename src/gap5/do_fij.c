@@ -326,8 +326,8 @@ static void add_fij_overlap_r(OVERLAP *overlap, int contig1_num,
 	+ c1p->contig_start
 	- c1p->contig_left_extension; 
     
-    seq2_end_r = c2p->contig_end - cd->depad_to_pad2[overlap->left1]
-	- c2p->contig_right_extension; 
+    seq2_end_r = c2p->contig_end
+	- (cd->depad_to_pad2[overlap->left1] - c2p->contig_right_extension);
 
     /* Overhang at right of seq1 = overlap->right1 - overlap->right
        Overhang at right of seq2 = overlap->right2 - overlap->right
@@ -338,8 +338,8 @@ static void add_fij_overlap_r(OVERLAP *overlap, int contig1_num,
 	+ c1p->contig_start
 	- c1p->contig_left_extension;
     seq2e = overlap->seq2_len - overlap->right2 + overlap->right;
-    seq2_start_r = c2p->contig_end - cd->depad_to_pad2[seq2e - 1]
-	- c2p->contig_right_extension;
+    seq2_start_r = c2p->contig_end
+	- ( cd->depad_to_pad2[seq2e - 1] - c2p->contig_right_extension);
 
     /* Check read pairs if screening on */
     if (cd->fij_args->rp_mode >= 0) {
