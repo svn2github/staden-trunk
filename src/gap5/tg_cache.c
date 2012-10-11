@@ -154,9 +154,13 @@
 #include "tg_gio.h"
 #include "misc.h"
 
+//#define CACHE_STATS 1
+#ifdef CACHE_STATS
+static int search_counts[100];
 static int load_counts[100];
 static int unload_counts[100];
 static int write_counts[100];
+#endif
 
 //#define CACHE_CHKSUM
 
@@ -645,7 +649,9 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
     cache_key_t *k = (cache_key_t *)key;
     static HacheData hd;
 
+#ifdef CACHE_STATS
     load_counts[k->type]++;
+#endif
 
     switch (k->type) {
     case GT_Database:
@@ -781,7 +787,9 @@ static void cache_unload(void *clientdata, HacheData hd) {
 	}
     }
 
+#ifdef CACHE_STATS
     unload_counts[ci->type]++;
+#endif
 
     switch (ci->type) {
     case GT_Seq:
@@ -1342,7 +1350,9 @@ int cache_flush(GapIO *io) {
 	//	long d1, d2;
 	//	gettimeofday(&tp1, NULL);
 
+#ifdef CACHE_STATS
 	write_counts[ci->type]++;
+#endif
 
 	/*
 	 * Should we delay this until we've written data, so that these
@@ -1441,46 +1451,72 @@ int cache_flush(GapIO *io) {
     //printf(">>> flush done <<<\n");
     //HacheTableRefInfo(io->cache, stdout);
 
-#if 0
-    printf("\nType       Load\tUnload\tWrite\n");
-    printf("----------------------------------\n");
-    printf("RecArray     %d\t%d\t%d\n",
+#ifdef CACHE_STATS
+    printf("\n"
+	   "Type         \t Search\t   Load\t Unload\t  Write\n");
+    printf("-----------------------------------------------\n");
+    printf("RecArray     \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_RecArray],
 	   load_counts[GT_RecArray],
 	   unload_counts[GT_RecArray],
 	   write_counts[GT_RecArray]);
-    printf("Bin          %d\t%d\t%d\n",
+    printf("Bin          \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_Bin],
 	   load_counts[GT_Bin],
 	   unload_counts[GT_Bin],
 	   write_counts[GT_Bin]);
-    printf("Range        %d\t%d\t%d\n",
+    printf("Range        \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_Range],
 	   load_counts[GT_Range],
 	   unload_counts[GT_Range],
 	   write_counts[GT_Range]);
-    printf("BTree        %d\t%d\t%d\n",
+    printf("BTree        \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_BTree],
 	   load_counts[GT_BTree],
 	   unload_counts[GT_BTree],
 	   write_counts[GT_BTree]);
-    printf("Database     %d\t%d\t%d\n",
+    printf("Database     \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_Database],
 	   load_counts[GT_Database],
 	   unload_counts[GT_Database],
 	   write_counts[GT_Database]);
-    printf("Contig       %d\t%d\t%d\n",
+    printf("Contig       \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_Contig],
 	   load_counts[GT_Contig],
 	   unload_counts[GT_Contig],
 	   write_counts[GT_Contig]);
-    printf("Scaffold     %d\t%d\t%d\n",
+    printf("ContigBlock  \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_ContigBlock],
+	   load_counts[GT_ContigBlock],
+	   unload_counts[GT_ContigBlock],
+	   write_counts[GT_ContigBlock]);
+    printf("Scaffold     \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_Scaffold],
 	   load_counts[GT_Scaffold],
 	   unload_counts[GT_Scaffold],
 	   write_counts[GT_Scaffold]);
-    printf("Seq          %d\t%d\t%d\n",
+    printf("ScaffoldBlk  \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_ScaffoldBlock],
+	   load_counts[GT_ScaffoldBlock],
+	   unload_counts[GT_ScaffoldBlock],
+	   write_counts[GT_ScaffoldBlock]);
+    printf("Seq          \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_Seq],
 	   load_counts[GT_Seq],
 	   unload_counts[GT_Seq],
 	   write_counts[GT_Seq]);
-    printf("Library    %d\t%d\t%d\n",
+    printf("SeqBlock     \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_SeqBlock],
+	   load_counts[GT_SeqBlock],
+	   unload_counts[GT_SeqBlock],
+	   write_counts[GT_SeqBlock]);
+    printf("Library      \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_Library],
 	   load_counts[GT_Library],
 	   unload_counts[GT_Library],
 	   write_counts[GT_Library]);
-    printf("Track        %d\t%d\t%d\n",
+    printf("Track        \t%7d\t%7d\t%7d\t%7d\n",
+	   search_counts[GT_Track],
 	   load_counts[GT_Track],
 	   unload_counts[GT_Track],
 	   write_counts[GT_Track]);
@@ -1606,7 +1642,7 @@ int cache_flush(GapIO *io) {
 	    tc  += total[i];
 	}
 	gio_debug(io, 1, "After flush: %ld items, %ld bytes in cache\n",
-		  tc, tsz);
+		  (long)tc, (long)tsz);
 	for (i = 0; i < 100; i++) {
 	    char *s[] = {
 		"", "", "", "RecArray", "", "Bin", "Range", "BTree",
@@ -1618,7 +1654,7 @@ int cache_flush(GapIO *io) {
 	    if (!total[i]) continue;
 	    gio_debug(io, 1, "  Type %d %s\n", i, s[i]);
 	    gio_debug(io, 1, "    Size      = %ld (%ld/item)\n",
-		      sz[i], sz[i]/total[i]);
+		      (long)sz[i], (long)sz[i]/total[i]);
 	    gio_debug(io, 1, "    Total rec = %d\n", total[i]);
 	    gio_debug(io, 1, "    locked    = %d\n", ref_count[i]);
 	    if (in_use[i] != ref_count[i])
@@ -1730,6 +1766,11 @@ void *cache_search(GapIO *io, int type, tg_rec rec) {
     tg_rec orec = rec;
     cache_key_t k;
     HacheItem *hi;
+
+
+#ifdef CACHE_STATS
+    search_counts[type]++;
+#endif
 
 #if CACHE_REF_PURGE
     cache_nuke(io);
