@@ -1263,7 +1263,7 @@ proc seq_ruler {w t x1 x2 y1 y2} {
 proc track_settings {w} {
     global $w
     
-    set ${w}(Accurate) 1
+    set ${w}(Accurate) 0
     set ${w}(YLog) 1
     set ${w}(Simple) 0
     set ${w}(Y) "Template Size"
