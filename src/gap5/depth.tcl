@@ -138,6 +138,10 @@ proc 1.5plot_exit {w} {
     global $w
     rename [set ${w}(grange)] ""
     contig_deregister -io [set ${w}(io)] -id [set ${w}(reg)]
+
+    # Flush changes incase we have updated pair caches
+    [set ${w}(io)] flush
+
     destroy $w
     unset $w
 }
@@ -1259,7 +1263,7 @@ proc seq_ruler {w t x1 x2 y1 y2} {
 proc track_settings {w} {
     global $w
     
-    set ${w}(Accurate) 0
+    set ${w}(Accurate) 1
     set ${w}(YLog) 1
     set ${w}(Simple) 0
     set ${w}(Y) "Template Size"

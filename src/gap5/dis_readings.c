@@ -303,6 +303,7 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
 	r->pair_rec = 0;
 	r->flags &= ~GRANGE_FLAG_TYPE_MASK;
 	r->flags |=  GRANGE_FLAG_TYPE_SINGLE;
+	r->pair_timestamp = 0;
     }
 
     return 0;
@@ -374,10 +375,14 @@ int remove_contig_holes(GapIO *io, tg_rec contig, int start, int end,
 
 	if (c->bin)
 	    bin_destroy_recurse(io, c->bin);
+	c->timestamp = io_timestamp_incr(io);
 	cache_decr(io, c);
 	contig_destroy(io, contig);
 	return 0;
     }
+
+    /* Used fast_remove_item_from_bin => invalidate the read pairs posn */
+    c->timestamp = io_timestamp_incr(io);
 
     /* Invalidate any cached consensus copies */
     if (bin_invalidate_consensus(io, contig, start, end) != 0) {
@@ -1107,6 +1112,8 @@ static int fix_contigs(GapIO *io, r_pos_t *pos, int nreads) {
 		c = cache_rw(io, c);
 		if (ns) c->start = *ns;
 		if (ne) c->end   = *ne;
+		if (ns || ne)
+		    c->timestamp = io_timestamp_incr(io);
 	    }
 	}
     }

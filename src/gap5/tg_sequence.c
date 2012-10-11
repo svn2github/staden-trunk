@@ -1478,6 +1478,7 @@ int sequence_range_length(GapIO *io, seq_t **s) {
 	contig_t *c;
 	int offset = bin->pos;
 	int comp = 0;
+	int orig_start, orig_end;
 
 	for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	    range_t *r = arrp(range_t, bin->rng, i);
@@ -1518,6 +1519,9 @@ int sequence_range_length(GapIO *io, seq_t **s) {
 
 	/* Make sure contig extends are at least as large as bin start..end */
 	c = cache_rw(io, c);
+	orig_start = c->start;
+	orig_end   = c->end;
+
 	if (c->start > start)
 	    c->start = start;
 	if (c->end < end)
@@ -1531,6 +1535,25 @@ int sequence_range_length(GapIO *io, seq_t **s) {
 	 * actual size.
 	 */
 	consensus_unclipped_range(io, c->rec, &c->start, &c->end);
+
+	if (orig_start != c->start || orig_end != c->end)
+	    c->timestamp = io_timestamp_incr(io);
+    }
+
+    	
+    /* Also force the pair's r->pair_start/end to be invalidated */
+    if (r->pair_rec) {
+	seq_t *s;
+	bin_index_t *b;
+	range_t *r2;
+		
+	s = cache_search(io, GT_Seq, r->pair_rec);
+	b = cache_search(io, GT_Bin, s->bin);
+	b = cache_rw(io, b);
+	r2 = arrp(range_t, b->rng, s->bin_index);
+	assert(r2->rec == s->rec);
+			 
+	r2->pair_timestamp = 0;
     }
 
     return 0;
@@ -1715,4 +1738,73 @@ int sequence_fix_anno_bins(GapIO *io, seq_t **s) {
     if (NULL != c) cache_decr(io, c);
     cache_decr(io, *s);
     return -1;
+}
+
+/*
+ * Fills out the r->pair_{start,end,mqual,contig} fields of a rangec_t
+ * struct and the cooresponding bin range_t element.
+ *
+ * When we update any timestamp we copy it from the io->db->timestamp.
+ * When we modify data we increment the io->db->timestamp. If we modify a
+ * bin we update the bin time and also contig time.
+ *
+ * However that means modifying contig X would make contig Y appear older.
+ * For this reason we check multiple times.
+ *
+ * Range time >= db time => OK
+ * Range time >= contig time => OK
+ * Range time < bin time => FAIL (>= may still fail though, if < contig)
+ * (So bin time is worthless?)
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_get_range_pair_position(GapIO *io, rangec_t *r) {
+    range_t r_out;
+
+    io = gio_base(io);
+
+    /* If matches global time stamp then we're up to date */
+    if (r->pair_timestamp == io->db->timestamp)
+	return 0;
+
+    /* May also match the mate coting time stamp */
+    if (r->pair_contig && cache_exists(io, GT_Contig, r->pair_contig)) {
+	contig_t *c = cache_search(io, GT_Contig, r->pair_contig);
+
+	if (r->pair_timestamp >= c->timestamp)
+	    return 0;
+    }
+
+//    printf("%d,%d Updating pair %"PRIrec"/%"PRIrec" pos=%d in %"PRIrec,
+//	   r->pair_timestamp, io->db->timestamp,
+//	   r->rec, r->pair_rec, r->pair_start, r->pair_contig);
+
+    /* Otherwise do a full search and update it */
+    bin_get_item_position(io, GT_Seq, r->pair_rec,
+			  &r->pair_contig, &r->pair_start, &r->pair_end,
+			  NULL, NULL, &r_out, NULL);
+    r->pair_mqual = r_out.mqual;
+    r->pair_timestamp = io->db->timestamp;
+
+//    printf(" / %d in %"PRIrec"\n", r->pair_start, r->pair_contig);
+
+    /* Copy to original bin rec too */
+    if (!io->read_only) {
+	bin_index_t *bin = cache_search(io, GT_Bin, r->orig_rec);
+	range_t *R = arrp(range_t, bin->rng, r->orig_ind);
+
+	if (DB_VERS(io) >= 6) {
+	    bin = cache_rw(io, bin);
+	    bin->flags |= BIN_RANGE_UPDATED;
+	}
+
+	R->pair_timestamp = r->pair_timestamp;
+	R->pair_contig    = r->pair_contig;
+	R->pair_mqual     = r->pair_mqual;
+	R->pair_start     = r->pair_start;
+	R->pair_end       = r->pair_end;
+    }
+    
+    return 0;
 }

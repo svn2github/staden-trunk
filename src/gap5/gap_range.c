@@ -318,19 +318,13 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	    }
 		
 	    /* accurate drawing, this will slow things down */
-	    if (gr->new_filter.accuracy && !(r->pair_start || r->pair_end)) {
-		/* Pair was off-screen, so get the results */
-		seq_t *s;
-		tg_rec crec;
-		    
-		sequence_get_position(gr->io, r->pair_rec, &crec, &r->pair_start, &r->pair_end, NULL);
-		s = (seq_t *)cache_search(gr->io, GT_Seq, r->pair_rec);
-		r->pair_mqual = s->mapping_qual;
-		    
-		if (gr->crec != crec) span = 1;
-	    } else if (!gr->new_filter.accuracy && !(r->pair_start || r->pair_end)) {
-		span = 1;
+	    if (gr->new_filter.accuracy) {
+		/* Pair was off-screen, so get more accurate results */
+		if (r->pair_timestamp < gr->io->db->timestamp)
+		    sequence_get_range_pair_position(gr->io, r);
 	    }
+
+	    span = (gr->crec != r->pair_contig);
 		
 	    if (gr->new_filter.filter & FILTER_SPANNING && !span) continue;
 		

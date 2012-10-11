@@ -14,7 +14,8 @@ typedef struct {
     int pos;
     int orient;
     int flags;
-    //int mq;
+    int mq;
+    int len;
 } pair_loc_t;
 
 typedef struct {
@@ -23,6 +24,8 @@ typedef struct {
     string_alloc_t *name_pool;
     int index;
     int pair_size;
+    int mq;
+    int len;
 } pair_queue_t;
 
 typedef struct {

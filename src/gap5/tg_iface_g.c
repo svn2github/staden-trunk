@@ -1529,7 +1529,7 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
 
     fmt = cp[1] & 0x3f;
     g_assert(cp[0] == GT_Database, NULL);
-    g_assert(fmt <= 2, NULL); /* initial format */
+    g_assert(fmt <= 3, NULL); /* initial format */
     cp += 2;
 
     if (fmt == 0) {
@@ -1558,6 +1558,11 @@ static cached_item *io_database_read(void *dbh, tg_rec rec) {
     } else {
 	db->Nscaffolds = 0;
 	db->scaffold = 0;
+    }
+    if (fmt >= 3) {
+	cp += u72int(cp, (uint32_t *)&db->timestamp);
+    } else {
+	db->timestamp = 2;
     }
 
     g_assert(cp-buf == buf_len, NULL);
@@ -1622,7 +1627,11 @@ static int io_database_write_view(g_io *io, database_t *db, GView v) {
 
     /* Construct the on-disc format */
     *cp++ = GT_Database;
-    *cp++ = (db->scaffold && io->db_vers >= 5) ? 2 : 1; /* format */
+    switch (io->db_vers) {
+    case 6:  *cp++ = 3; break;
+    case 5:  *cp++ = db->scaffold ? 2 : 1; break;
+    default: *cp++ = 1; break;
+    }
 
     cp += int2u7(db->version, cp);
     cp += int2u7(db->Ncontigs, cp);
@@ -1635,6 +1644,9 @@ static int io_database_write_view(g_io *io, database_t *db, GView v) {
 	cp += int2u7(db->Nscaffolds, cp);
 	cp += intw2u7(db->scaffold, cp);
 	cp += intw2u7(db->scaffold_name_index, cp);
+    }
+    if (io->db_vers >= 6) {
+	cp += int2u7(db->timestamp, cp);
     }
     
     /* FIXME: Should write block record numbers */
@@ -1676,6 +1688,7 @@ static tg_rec io_database_create(void *dbh, void *from, int version) {
 
     db.Ncontigs = 0;
     db.version = version;
+    db.timestamp = 2;
 
     /* Contig order */
     db.contig_order = allocate(io, GT_RecArray); /* contig array */
@@ -1856,6 +1869,7 @@ static cached_item *io_contig_read(void *dbh, tg_rec rec) {
     c->nseqs = 0;
     c->nanno = 0;
     c->nrefpos = 0;
+    c->timestamp = 1;
 
     free(ch);
 
@@ -2365,18 +2379,23 @@ static cached_item *io_vector_read(void *dbh, tg_rec rec) {
 static char *pack_rng_array(int comp_mode, int fmt,
 			    GRange *rng, int nr, int *sz) {
     int i;
-    size_t part_sz[8];
+    size_t part_sz[13];
     GRange last, last_tag, last_refpos;
-    unsigned char *cp[7], *cp_orig[7], *out;
+    unsigned char *cp[12], *cp_orig[12], *out;
     char *out_orig;
     //char *cpt, *cpt_orig;
     //HacheTable *h = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
     //int ntags;
-    int np = 6 + (fmt >= 3);
+
+    int np = 6 + (fmt >= 3) + 5*(fmt >= 4);
 
     int last_r_rec = 0;
     int last_r_mqual = 0;
     int last_r_pair_rec = 0;
+    int last_pair_mqual = 0;
+    int last_pair_start = 0;
+    int last_pair_contig = 0;
+    int last_pair_time = 0;
 
     memset(&last, 0, sizeof(last));
     memset(&last_tag, 0, sizeof(last_tag));
@@ -2504,12 +2523,57 @@ static char *pack_rng_array(int comp_mode, int fmt,
 		cp[3] += int2u7 (r.mqual, cp[3]);
 		cp[4] += int2u7 (r.flags, cp[4]);
 
-		if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
-		    cp[5] += intw2s7(r.pair_rec - last.pair_rec, cp[5]);
+		if (fmt >= 4) {
+		    if ((r.flags & GRANGE_FLAG_TYPE_MASK) !=
+			GRANGE_FLAG_TYPE_SINGLE) {
+			cp[5] += intw2s7(r.pair_rec - last.pair_rec, cp[5]);
+
+			if (r.pair_rec) {
+			    /*
+			     * Store cached read-pair positioning:
+			     * pair_{start,end,mqual,timestamp,contig}.
+			     *
+			     * Start is delta to last_pair_start.
+			     *
+			     * End is stored as length, vs this length. Ie
+			     * (r.pair_end - r.pair_start) - (r.end - r.start).
+			     *
+			     * Contig and timestamp is delta to
+			     * last_pair_contig.
+			     *
+			     * Mqual is as-is (it's only 1 byte anyway
+			     * normally).
+			     * Should it be delta to r.mqual?
+			     */
+			    cp[7] += int2s7(r.pair_start - last_pair_start,
+					    cp[7]);
+			    last_pair_start = r.pair_start;
+
+			    cp[8] += int2s7((r.pair_end - r.pair_start)
+					    - ABS(r.end - r.start), cp[8]);
+
+			    cp[9] += intw2s7(r.pair_contig - last_pair_contig,
+					     cp[9]);
+			    last_pair_contig = r.pair_contig;
+
+
+			    cp[10] += int2s7(r.pair_timestamp - last_pair_time,
+					     cp[10]);
+			    last_pair_time = r.pair_timestamp;
+
+			    cp[11] += int2u7(r.pair_mqual, cp[11]);
+			}
+		    }
+		} else {
+		    if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE)) {
+			cp[5] += intw2s7(r.pair_rec-last.pair_rec, cp[5]);
+		    }
+		}
 
 		if (fmt >= 3)
 		    cp[6] += intw2u7(r.library_rec, cp[6]);
 		last = rng[i];
+
 		break;
 	    }
 	}
@@ -2520,7 +2584,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
     }
 
     /* Construct a header with nr and the size of the 6 packed struct fields */
-    *sz =  7*5;
+    *sz =  13*5;
     for (i = 1; i <= np; i++)
 	*sz += part_sz[i];
 
@@ -2550,6 +2614,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 	    gzout = mem_deflate(comp_mode, out_orig, *sz, &ssz);
 	else
 	    gzout = mem_deflate_parts(comp_mode, out_orig, part_sz, np+1,&ssz);
+
 	*sz = ssz;
 
     	free(out_orig);
@@ -2566,14 +2631,18 @@ static char *pack_rng_array(int comp_mode, int fmt,
 static GRange *unpack_rng_array(int comp_mode, int fmt,
 				unsigned char *packed,
 				int packed_sz, int *nrp) {
-    uint32_t i, off[6];
+    uint32_t i, off[11];
     int32_t i32;
-    unsigned char *cp[7], *zpacked = NULL;
+    unsigned char *cp[12], *zpacked = NULL;
     GRange last, *r, *ls = &last, *lt = &last, lastr, *lr = &lastr;
     size_t ssz;
     int64_t last_r_rec = 0, last_r_pair_rec = 0;
     int32_t last_r_mqual = 0;
-    int nr, np = 6 + (fmt >= 3);
+    int nr, np = 6 + (fmt >= 3) + 5*(fmt >= 4);
+    int last_pair_mqual = 0;
+    int last_pair_start = 0;
+    int last_pair_contig = 0;
+    int last_pair_time = 0;
 
     /* First of all, inflate the compressed data */
     zpacked = packed = (unsigned char *)mem_inflate(comp_mode,
@@ -2601,6 +2670,13 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
     for (i = 0; i < nr; i++) {
 	r[i].library_rec = 0;
 	r[i].y = 0;
+
+	r[i].pair_start     = 0;
+	r[i].pair_end       = 0;
+	r[i].pair_mqual     = 0;
+	r[i].pair_timestamp = 0;
+	r[i].pair_contig    = 0;
+	r[i].pair_rec       = 0;
 
 	switch (fmt) {
 	case 0:
@@ -2700,6 +2776,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 	    break;
 	}
 
+	case 4:
 	case 3:
 	case 2: {
 	    int64_t rec_tmp;
@@ -2781,12 +2858,60 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 		cp[3] += u72int (cp[3], (uint32_t *)&r[i].mqual);
 		r[i].rec = rec_tmp;
 
-		if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
-		    int64_t pr;
-		    cp[5] += s72intw(cp[5], &pr);
-		    r[i].pair_rec = pr + ls->pair_rec;
+		if (fmt >= 4) {
+		    if ((r[i].flags & GRANGE_FLAG_TYPE_MASK) !=
+			GRANGE_FLAG_TYPE_SINGLE) {
+			int32_t i32;
+			int64_t i64;
+
+			cp[5] += s72intw(cp[5], &i64);
+			r[i].pair_rec = i64 + ls->pair_rec;
+			
+			if (r[i].pair_rec) {
+			    cp[7] += s72int(cp[7], &i32);
+			    r[i].pair_start = i32 + last_pair_start;
+			    last_pair_start = r[i].pair_start;
+
+			    cp[8] += s72int(cp[8], &i32);
+			    r[i].pair_end = r[i].pair_start + i32 +
+				ABS(r[i].end - r[i].start);
+
+			    cp[9] += s72intw(cp[9], &i64);
+			    r[i].pair_contig = i64 + last_pair_contig;
+			    last_pair_contig = r[i].pair_contig;
+
+			    cp[10] += s72int(cp[10], &i32);
+			    r[i].pair_timestamp = i32 + last_pair_time;
+			    last_pair_time = r[i].pair_timestamp;
+
+			    cp[11] += u72int(cp[11], &r[i].pair_mqual);
+
+//			    printf("#%"PRIrec" pair #%"PRIrec" ctg #%"PRIrec" %d..%d mq %d time %d flag %d\n",
+//				   r[i].rec + ls->rec, r[i].pair_rec,
+//				   r[i].pair_contig,
+//				   r[i].pair_start, r[i].pair_end,
+//				   r[i].pair_mqual, r[i].pair_timestamp,
+//				   r[i].flags);
+			}
+		    } else {
+			r[i].pair_rec = 0;
+		    }
 		} else {
-		    r[i].pair_rec = 0;
+		    if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
+			int64_t pr;
+			cp[5] += s72intw(cp[5], &pr);
+			r[i].pair_rec = pr + ls->pair_rec;
+		    } else {
+			r[i].pair_rec = 0;
+		    }
+		}
+
+		if (r[i].pair_rec == 0) {
+		    r[i].pair_contig    = 0;
+		    r[i].pair_start     = 0;
+		    r[i].pair_end       = 0;
+		    r[i].pair_mqual     = 0;
+		    r[i].pair_timestamp = 0;
 		}
 	    
 		r[i].rec += ls->rec;
@@ -2871,7 +2996,7 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 
     g_assert(cp[0] == GT_Bin, NULL);
     version = cp[1];
-    g_assert(version <= 2, NULL); /* format */
+    g_assert(version <= 3, NULL); /* format */
     cp += 2;
     cp += u72int(cp, &bflag);
     g.flags = (bflag & BIN_COMPLEMENTED) ? BIN_COMPLEMENTED : 0;
@@ -2976,6 +3101,7 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
      *     1 - 64-bit records
      *     2 - added refpos
      *     3 - added library record
+     *     4 - added cached pair pos/ctg/mqual/time
      */
     if (b->range) {
 	GViewInfo vi;
@@ -2993,7 +3119,7 @@ static cached_item *io_bin_read(void *dbh, tg_rec rec) {
 	    g_read(io, v, buf, vi.used);
 	    fmt = buf[1] & 0x3f;
 	    g_assert(buf[0] == GT_Range, NULL);
-	    g_assert(fmt <= 3, NULL);
+	    g_assert(fmt <= 4, NULL);
 	    comp_mode = ((unsigned char)buf[1]) >> 6;
 	    r = unpack_rng_array(comp_mode, fmt, buf+2, vi.used-2, &nranges);
 	    free(buf);
@@ -3071,6 +3197,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	GIOVec vec[2];
 	int fmt2 = io->db_vers >= 2 ? 2 : 1;
 	if (io->db_vers >= 5) fmt2 = 3;
+	if (io->db_vers >= 6) fmt2 = 4;
 
 	fmt[0] = GT_Range;
 	fmt[1] = fmt2 | (io->comp_mode << 6);
@@ -3225,7 +3352,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (g.flags & BIN_CONS_VALID)   bflag |= BIN_CONS_VALID_;
 
 	*cp++ = GT_Bin;
-	vers = io->db_vers >= 2 ? 2 : 1;
+	vers = 1;
+	if (io->db_vers >= 2) vers++;
 	*cp++ = vers; /* Format */
 
 	cp += int2u7(bflag, cp);
@@ -4938,7 +5066,7 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
     int32_t s32;
     uint64_t last, i64;
     int name_len[CONTIG_BLOCK_SZ];
-    int fmt, have_links;
+    int fmt, have_links, have_time;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -4958,9 +5086,10 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 
     g_assert(buf[0] == GT_ContigBlock, NULL);
     fmt = buf[1] & 0x3f;
-    g_assert(fmt < 2, NULL); /* Format */
+    g_assert(fmt <= 2, NULL); /* Format */
 
     have_links = fmt >= 1;
+    have_time  = fmt >= 2;
 
     io->rdstats[GT_ContigBlock] += buf_len;
     io->rdcounts[GT_ContigBlock]++;
@@ -4987,6 +5116,9 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
     for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
 	cp += u72int(cp, (uint32_t *)&in[i].flags);
+
+	/* Move elsewhere once we start storing this */
+	in[i].timestamp = 1;
     }
 
     /* Start */
@@ -5174,6 +5306,19 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 	}
     }
 
+    /* Timestamps */
+    if (have_time) {
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    cp += u72int(cp, (uint32_t *)&b->contig[i]->timestamp);
+	}
+    } else {
+	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    b->contig[i]->timestamp = 1;
+	}
+    }
+
     g_assert(cp - buf == buf_len, NULL);
     free(buf);
 
@@ -5186,20 +5331,20 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
     contig_block_t *b = (contig_block_t *)&ci->data;
     int i;
     unsigned char *cp, *cp_start;
-    unsigned char *out[19], *out_start[19];
-    size_t out_size[19], total_size;
+    unsigned char *out[20], *out_start[20];
+    size_t out_size[20], total_size;
     GIOVec vec[2];
     char fmt[2];
     int nparts = 12;
     tg_rec last_scaffold_rec;
-    int have_links = 0;
+    int have_links = 0, have_time = (io->db_vers >= 6);
 
     assert(ci->lock_mode >= G_LOCK_RW);
     assert(ci->rec > 0);
     check_view_rec(io, ci);
 
     /* Compute worst-case sizes, for memory allocation */
-    for (i = 0; i < 19; i++) {
+    for (i = 0; i < 20; i++) {
 	out_size[i] = 0;
     }
     for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
@@ -5209,7 +5354,8 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 	    continue;
 	}
 
-	if (c->link && ArrayMax(c->link) && io->db_vers >= 5)
+	if ((c->link && ArrayMax(c->link) && io->db_vers >= 5) ||
+	    io->db_vers >= 6)
 	    have_links = 1;
 
 	out_size[ 0] += 10;/* bin */
@@ -5235,9 +5381,13 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 	    out_size[18] += nl*5;  /* score */
 	} else {
 	}
+	if (have_time)
+	    out_size[19] += 5;
     }
     if (have_links)
 	nparts = 19;
+    if (have_time)
+	nparts++;
 
     for (i = 0; i < nparts; i++)
 	out_start[i] = out[i] = malloc(out_size[i]+1);
@@ -5317,6 +5467,10 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 
 	    out[12] += int2u7(nl2, out[12]);
 	}
+
+	if (have_time) {
+	    out[19] += int2u7(c->timestamp, out[19]);
+	}
     }
 
     /* Concatenate data types together and adjust out_size to actual usage */
@@ -5349,7 +5503,7 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 
     /* Finally write the serialised data block */
     fmt[0] = GT_ContigBlock;
-    fmt[1] = have_links ? 1 : 0;
+    fmt[1] = have_time ? 2 : (have_links ? 1 : 0);
 
     vec[0].buf = fmt;      vec[0].len = 2;
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;

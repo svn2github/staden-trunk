@@ -806,6 +806,8 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
     int i, offset1 = 0, offset2 = 0, found = 0;
     int comp = 0;
     int idx = -1;
+    int orig_start, orig_end;
+    tg_rec orig_bin;
 
     if (type == GT_AnnoEle) {
 	anno_ele_t *a = cache_search(io, GT_AnnoEle, rec);
@@ -874,6 +876,29 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 
     if (!found) goto fail;
 
+    orig_start = offset1;
+    orig_end   = offset2;
+    orig_bin   = bin->rec;
+
+#if 0
+    {
+	bin_check_cache(io, bin);
+	if (contig) *contig = bin->cached_contig;
+	if (start)  *start  = bin->cached_abspos + offset1;
+	if (end)    *start  = bin->cached_abspos + offset2;
+	if (orient) *orient = bin->cached_orient;
+	/*
+	printf("Orig range=%d..%d final=%d..%d in =%"PRIrec"\n",
+	       orig_start, orig_end,
+	       bin->cached_abspos + orig_start,
+	       bin->cached_abspos + orig_end,
+	       bin->cached_contig);
+	*/
+	return 0;
+    }
+#endif
+
+
     /* Find the position of this bin relative to the contig itself */
     for (;;) {
 	if (bin->flags & BIN_COMPLEMENTED) {
@@ -902,6 +927,21 @@ int bin_get_item_position(GapIO *io, int type, tg_rec rec,
 	*end = offset1 > offset2 ? offset1 : offset2;
     if (orient)
 	*orient = comp;
+
+#if 0
+    /*
+    tg_rec ccc = bin->parent;
+    bin = cache_search(io, GT_Bin, orig_bin);
+    bin_check_cache(io, bin);
+    printf("Orig range=%d..%d final=%d..%d in =%"PRIrec
+	   " bin_abs=%d..%d in =%"PRIrec"\n",
+	   orig_start, orig_end,
+	   offset1, offset2, ccc,
+	   bin->cached_abspos + orig_start,
+	   bin->cached_abspos + orig_end,
+	   bin->cached_contig);
+    */
+#endif
 
     return 0;
  fail:
@@ -1015,19 +1055,35 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    }
 	}
 
-	/* Errors when called from break_contig. */
-	//if (r->start < seq_start || r->end > seq_end)
-	//    new_contig_range = 1;
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ &&
+	    (r->start < seq_start || r->end > seq_end))
+	    new_contig_range = 1;
 
 	/* Remove from bin */
 	r->flags |= GRANGE_FLAG_UNUSED;
 	r->rec = (tg_rec)bin->rng_free;
+	r->pair_timestamp = 0;
 	bin->rng_free = bin_idx;
 	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	    *c = cache_rw(io, *c);
 	    bin_incr_nseq(io, bin, -1);
+
+	    /* Also fix pair's timestamp for where we are */
+	    if (r->pair_rec) {
+		seq_t *s;
+		bin_index_t *b;
+		range_t *r2;
+		
+		s = cache_search(io, GT_Seq, r->pair_rec);
+		b = cache_search(io, GT_Bin, s->bin);
+		b = cache_rw(io, b);
+		r2 = arrp(range_t, b->rng, s->bin_index);
+		assert(r2->rec == s->rec);
+			 
+		r2->pair_timestamp = 0;
+	    }
 	}
 
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS) {
@@ -1110,6 +1166,16 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
 	    if (-1 != consensus_unclipped_range(io, (*c)->rec, ns, ne)) {
 		if (ns) (*c)->start = *ns;
 		if (ne) (*c)->end   = *ne;
+
+#if 0
+		/* Technically this doesn't invalidate object
+		 * locations, just contig sizes. However it may be
+		 * good to reuse c->timestamp for cached_clipped_start
+		 * and end?
+		 */
+		if (ns || ne)
+		    (*c)->timestamp = io_timestamp_incr(io);
+#endif
 	    }
 	}
     }
@@ -1630,3 +1696,91 @@ int bin_invalidate_consensus(GapIO *io, tg_rec contig, int start, int end) {
 
     return 0;
 }
+
+#if 0
+/*
+ * Recursively fixes cached bin values.
+ */
+static int bin_fix_cache(GapIO *io, bin_index_t *bin) {
+    if (gio_base(io)->db->timestamp == bin->timestamp)
+	return 0;
+
+    cache_incr(io, bin);
+
+    printf("Fixing bin #%"PRIrec" time=%d vs %d\n", bin->rec,
+	   bin->timestamp, gio_base(io)->db->timestamp);
+
+    if (bin->parent_type == GT_Bin) {
+	bin_index_t *p = cache_search(io, GT_Bin, bin->parent);
+	if (!p) {
+	    cache_decr(io, bin);
+	    abort();
+	    return -1;
+	}
+	cache_incr(io, p);
+
+	if (bin_fix_cache(io, p) != 0) {
+	    cache_decr(io, bin);
+	    cache_decr(io, p);
+	    abort();
+	    return -1;
+	}
+
+	/* compute vs parent */
+	bin->cached_contig = p->cached_contig;
+	if (bin->flags & BIN_COMPLEMENTED) {
+	    bin->cached_orient = p->cached_orient ^ 1;
+	    bin->cached_abspos = p->cached_abspos + bin->size-1 - bin->pos;
+	} else {
+	    bin->cached_orient = p->cached_orient;
+	    bin->cached_abspos = p->cached_abspos + bin->pos;
+	}
+
+	cache_decr(io, p);
+    } else {
+	/* Root bin */
+	bin->cached_contig = bin->parent;
+	bin->cached_orient = (bin->flags & BIN_COMPLEMENTED) ? 1 : 0;
+	bin->cached_abspos = bin->pos;
+    }
+
+    bin->timestamp = gio_base(io)->db->timestamp;
+    cache_decr(io, bin);
+
+    return 0;
+}
+
+/*
+ * Ensures the cached_abspos and cached_contig fields are up to date.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_check_cache(GapIO *io, bin_index_t *bin) {
+    int ctg_correct = 0;
+
+    if (!bin)
+	return -1;
+
+    /*
+     * Check bin vs database first as this needs no IO.
+     * If that fails, check if contig is valid and if that timestamp is
+     * correc too.
+     */
+    if (bin->cached_contig) {
+	if (bin->timestamp == gio_base(io)->db->timestamp) {
+	    ctg_correct = 1;
+	} else if (cache_exists(io, GT_Contig, bin->cached_contig)){
+	    contig_t *c = cache_search(io, GT_Contig, bin->cached_contig);
+	    if (bin->timestamp >= c->timestamp)
+		ctg_correct = 1;
+	}
+    }
+
+    if (ctg_correct)
+	return 0;
+
+    /* The bin is out of date. So correct it */
+    return bin_fix_cache(io, bin);
+}
+#endif

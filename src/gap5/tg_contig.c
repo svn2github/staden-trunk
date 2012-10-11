@@ -42,6 +42,8 @@ int contig_set_start(GapIO *io, contig_t **c, int value) {
     n->start = value;
     *c = n;
 
+    //n->timestamp = io_timestamp_incr(io);
+
     return 0;
 }
 
@@ -59,6 +61,8 @@ int contig_set_end(GapIO *io, contig_t **c, int value) {
     n->end = value;
     *c = n;
 
+    //n->timestamp = io_timestamp_incr(io);
+
     return 0;
 }
 
@@ -75,6 +79,9 @@ int contig_set_bin(GapIO *io, contig_t **c, tg_rec value) {
 
     n->bin = value;
     *c = n;
+
+    // Up to caller to do if required.
+    //n->timestamp = io_timestamp_incr(io);
 
     return 0;
 }
@@ -583,7 +590,6 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
     consensus_valid_range(io, (*c)->rec, &cstart, &cend);
 
     if (pos-1 < cstart || pos > cend) {
-	puts("Do nothing");
 	return 0;
     }
     
@@ -720,6 +726,8 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 	contig_set_start(io, c, cstart);
     if (contig_get_end(c) != cend)
 	contig_set_end(io, c, cend);
+
+    (*c)->timestamp = io_timestamp_incr(io);
 
     if (hash)
 	HacheTableDestroy(hash, 0);
@@ -1404,6 +1412,8 @@ int contig_delete_base_common(GapIO *io, contig_t **c, int pos, int shift,
     if (contig_get_end(c) != cend)
 	contig_set_end(io, c, cend);
 
+    (*c)->timestamp = io_timestamp_incr(io);
+
     if (hash)
 	HacheTableDestroy(hash, 0);
 
@@ -1462,6 +1472,8 @@ contig_t *contig_new(GapIO *io, char *name) {
     io->db = cache_rw(io, io->db);
     ARR(tg_rec, io->contig_order, io->db->Ncontigs++) = rec;
 
+    c->timestamp = io_timestamp_incr(io);
+
     /* Add to the new contigs list */
     if (name)
 	add_to_list("new_contigs", name);
@@ -1511,7 +1523,7 @@ int contig_index_update(GapIO *io, char *name, int name_len, tg_rec rec) {
  * This means when we have both ends visible within our range, we link them
  * together. When we don't we leave the pair information as unknown.
  */
-static void pair_rangec(GapIO *io, rangec_t *r, int count) {
+static void pair_rangec(GapIO *io, tg_rec crec, rangec_t *r, int count) {
     int chunk = 5000; /* number of reads to deal with, 5k works well, not sure why */
     int count_start = 0;
     int count_end;
@@ -1563,14 +1575,19 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 		if (r[p].rec > r[i].rec)
 		    continue;
 
-		r[i].pair_ind = p;
-		r[p].pair_ind = i;
-		r[i].pair_start = r[p].start;
-		r[i].pair_end   = r[p].end;
-		r[i].pair_mqual = r[p].mqual;
-		r[p].pair_start = r[i].start;
-		r[p].pair_end   = r[i].end;
-		r[p].pair_mqual = r[i].mqual;
+		r[i].pair_ind    = p;
+		r[p].pair_ind    = i;
+		r[i].pair_start  = r[p].start;
+		r[i].pair_end    = r[p].end;
+		r[i].pair_mqual  = r[p].mqual;
+		r[i].pair_contig = crec;
+		r[p].pair_start  = r[i].start;
+		r[p].pair_end    = r[i].end;
+		r[p].pair_mqual  = r[i].mqual;
+		r[p].pair_contig = crec;
+
+		r[i].pair_timestamp = gio_base(io)->db->timestamp;
+		r[p].pair_timestamp = gio_base(io)->db->timestamp;
 
 		/*
 		 * Convert relative (to bin) orientation to absolute (to
@@ -1649,14 +1666,16 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 	    if (r[p].rec > r[i].rec)
 		continue;
 
-	    r[i].pair_ind = p;
-	    r[p].pair_ind = i;
-	    r[i].pair_start = r[p].start;
-	    r[i].pair_end   = r[p].end;
-	    r[i].pair_mqual = r[p].mqual;
-	    r[p].pair_start = r[i].start;
-	    r[p].pair_end   = r[i].end;
-	    r[p].pair_mqual = r[i].mqual;
+	    r[i].pair_ind    = p;
+	    r[p].pair_ind    = i;
+	    r[i].pair_start  = r[p].start;
+	    r[i].pair_end    = r[p].end;
+	    r[i].pair_mqual  = r[p].mqual;
+	    r[i].pair_contig = crec;
+	    r[p].pair_start  = r[i].start;
+	    r[p].pair_end    = r[i].end;
+	    r[p].pair_mqual  = r[i].mqual;
+	    r[p].pair_contig = crec;
 
 	    if (((r[i].flags & GRANGE_FLAG_COMP1) != 0) ^ r[i].comp) {
 		r[i].flags |=  GRANGE_FLAG_COMP1;
@@ -2696,13 +2715,15 @@ static int contig_seqs_in_range2(GapIO *io, tg_rec bin_num,
 		    (*results)[count].start = en;
 		    (*results)[count].end   = st;
 		}
-		(*results)[count].comp  = complement;
-		(*results)[count].mqual = l->mqual;
-		(*results)[count].pair_rec   = l->pair_rec;
-		(*results)[count].pair_start = 0;
-		(*results)[count].pair_end   = 0;
-		(*results)[count].pair_mqual = 0;
-		(*results)[count].library_rec = l->library_rec;
+		(*results)[count].comp           = complement;
+		(*results)[count].mqual          = l->mqual;
+		(*results)[count].pair_rec       = l->pair_rec;
+		(*results)[count].pair_start     = l->pair_start;
+		(*results)[count].pair_end       = l->pair_end;
+		(*results)[count].pair_mqual     = l->pair_mqual;
+		(*results)[count].pair_contig    = l->pair_contig;
+		(*results)[count].pair_timestamp = l->pair_timestamp;
+		(*results)[count].library_rec    = l->library_rec;
 		
 		(*results)[count].flags = l->flags;
 		(*results)[count].y = l->y;
@@ -2811,7 +2832,7 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,
 	job = first | second;
     
 	if (job & CSIR_PAIR) {
-	    pair_rangec(io, r, *count);
+	    pair_rangec(io, (*c)->rec, r, *count);
 	}
 	
 	if (job & (CSIR_DEFAULT | CSIR_SORT_BY_XEND | CSIR_SORT_BY_CLIPPED |
@@ -2989,6 +3010,7 @@ static int contig_cons_in_range2(GapIO *io, tg_rec bin_num,
 		(*results)[count].pair_start = 0;
 		(*results)[count].pair_end   = 0;
 		(*results)[count].pair_mqual = 0;
+		(*results)[count].pair_contig= 0;
 
 		(*results)[count].flags = l->flags;
 		(*results)[count].y = l->y;
@@ -5302,7 +5324,6 @@ int reference_to_padded_pos2(GapIO *io, tg_rec cnum, int ref_id, int ref_pos,
 	}
 	
 	rguess = padded_to_reference_pos(io, cnum, cguess, &dir, &rid);
-	printf("Got %d,%d\n", cguess, rguess);
 
 	if (ref_id != -1 && rid != ref_id)
 	    return -1;
@@ -5353,6 +5374,8 @@ int move_contig(GapIO *io, tg_rec crec, int distance) {
     bin->flags |= BIN_BIN_UPDATED;
     c->start += distance;
     c->end   += distance;
+
+    c->timestamp = io_timestamp_incr(io);
 
     return 0;
 }

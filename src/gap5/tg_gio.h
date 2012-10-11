@@ -92,6 +92,7 @@ GapIO *gio_open(char *fn, int ro, int create);
 void gio_close(GapIO *io);
 GapIO *gio_child(GapIO *io_p);
 GapIO *gio_base(GapIO *io);
+int io_timestamp_incr(GapIO *io);
 int gio_debug_level(GapIO *io, int level);
 void gio_debug(GapIO *io, int level, char *fmt, ...) __PRINTF_FORMAT__(3,4);
 

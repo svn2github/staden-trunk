@@ -84,6 +84,12 @@ typedef struct {
     GCardinal flags; /* see below */
     GCardinal y; /* Not stored on disc, just cached */
     tg_rec    library_rec;
+    /* Cached data */
+    GCardinal pair_start;
+    GCardinal pair_end;
+    GCardinal pair_mqual;
+    GCardinal pair_timestamp;
+    tg_rec    pair_contig;
 } GRange; /* An element of the bin->rng record */
 
 
@@ -193,7 +199,8 @@ typedef struct {
 //#define DB_VERSION 2 /* 1.2.12, annotation range fixes */
 //#define DB_VERSION 3 /* 1.2.14, added template_name_len in seq_t */
 //#define DB_VERSION 4 /* 2.0.0b8-p16, added direction to tags */
-#define DB_VERSION 5 /* ?, added ContigBlocks, Scaffolds and Range library */
+//#define DB_VERSION 5 /* ?, added ContigBlocks, Scaffolds and Range library */
+#define DB_VERSION 6 /* ?, added pair position cache and data timestamps */
 
 typedef struct {
     int    version;
@@ -222,6 +229,9 @@ typedef struct {
     tg_rec scaff_sub_rec;    /* Next scaffold sub-record */
     tg_rec anno_ele_brec;    /* Current anno_ele block */
     tg_rec anno_ele_sub_rec; /* Next anno_ele sub-record */
+
+    /* Global incrememnting timestamp */
+    int timestamp;
 } database_t;
 
 
@@ -326,6 +336,7 @@ typedef struct {
     int nrefpos;
     struct contig_block *block;
     int    idx;   /* Index to block */
+    int    timestamp;
     Array  link;  /* Array of contig_link_t fields */
     char  *name;
     char   data[1];
@@ -406,6 +417,10 @@ typedef struct index {
     int rng_free; /* forms a linked list of items in rng that are free */
     int nrefpos;  /* number of refpos markers in and below this bin */
     int nanno;    /* number of annotations in and below this bin */
+    //int timestamp;        /* cached data and time of validity */
+    //int cached_abspos;
+    //int cached_orient;
+    //tg_rec cached_contig;
 } bin_index_t;
 
 /* Bit flags for bin_index_t.flags */
@@ -453,9 +468,14 @@ typedef struct {
     int mqual; /* Mapping qual */
     int comp;  /* complemented y/n */
     tg_rec pair_rec;
+
+    /* Cached data */
     int pair_start;
     int pair_end;
     int pair_mqual;
+    int pair_timestamp; // time of pair_{start,end,mqual,contig} update.
+    tg_rec pair_contig;
+
     int flags;
     int y;     /* nominal display position, not stored on disc */
     int pair_ind; /* -1 if not found, or index into array of rangec_t */
@@ -481,6 +501,13 @@ typedef struct {
     int    flags;
     int    y; /* Not stored on disc, just cached */
     tg_rec library_rec;
+
+    /* Cached mate information */
+    int pair_start;
+    int pair_end;
+    int pair_mqual;
+    int pair_timestamp; // time of pair_{start,end,mqual,contig} update.
+    tg_rec pair_contig;
 } range_t;
 
 /* Decoded from GTrack_header above */

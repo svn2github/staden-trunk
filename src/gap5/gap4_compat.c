@@ -854,6 +854,7 @@ int complement_contig(GapIO *io, tg_rec crec) {
     b->pos   += delta;
     c->start += delta;
     c->end   += delta;
+    c->timestamp = io_timestamp_incr(io);
 
     cache_flush(io);
     

@@ -220,6 +220,12 @@ GapIO *gio_base(GapIO *io) {
     return io;
 }
 
+int io_timestamp_incr(GapIO *io) {
+    io = gio_base(io);
+    io->db = cache_rw(io, io->db);
+    return ++io->db->timestamp;
+}
+
 /*
  * Sets debugging to a specific level.
  * Level 0 turns off debugging output.

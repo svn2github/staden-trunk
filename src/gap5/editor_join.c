@@ -1739,6 +1739,7 @@ static int do_join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset,
     cl->nseqs   = binl->nseqs;
     cl->nanno   = binl->nanno;
     cl->nrefpos = binl->nrefpos;
+    cl->timestamp = io_timestamp_incr(io);
     return 0;
 }
 

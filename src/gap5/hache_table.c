@@ -1301,6 +1301,8 @@ void HacheTableDump(HacheTable *h, FILE *fp) {
  */
 void HacheTableRefInfo(HacheTable *h, FILE *fp) {
     int nr = 0, nu = 0, no = 0, nf = 0;
+
+    if (!fp) fp = stdout;
     
     int i;
     for (i = 0; i < h->nbuckets; i++) {
@@ -1341,6 +1343,8 @@ void HacheTableStats(HacheTable *h, FILE *fp) {
     int filled = 0;
     int clen[51];
     int count1, count2;
+
+    if (!fp) fp = stdout;
 
     for (i = 0; i <= 50; i++)
 	clen[i] = 0;

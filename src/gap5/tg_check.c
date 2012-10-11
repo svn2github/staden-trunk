@@ -147,6 +147,39 @@ static int check_seq(GapIO *io, int fix, bin_index_t *bin, range_t *r,
 	}
     }
 
+    /* Excessively slow check */
+    if (0 && r->pair_rec) {
+	int ok = 0;
+	contig_t *c;
+
+	if (r->pair_timestamp == gio_base(io)->db->timestamp) {
+	    ok = 1;
+	} else if (cache_exists(io, GT_Contig, r->pair_contig)) {
+	    c = cache_search(io, GT_Contig, r->pair_contig);
+	    if (r->pair_timestamp >= c->timestamp)
+		ok = 1;
+	}
+
+	if (ok) {
+	    tg_rec crec;
+	    int start, end;
+	    range_t r_out;
+
+	    bin_get_item_position(io, GT_Seq, r->pair_rec,
+				  &crec, &start, &end,
+				  NULL, NULL, &r_out, NULL);
+	    if (r->pair_mqual  != r_out.mqual ||
+		r->pair_contig != crec ||
+		r->pair_start  != start ||
+		r->pair_end    != end) {
+		vmessage("Seq %"PRIrec": cached pair data is incorrect\n",
+			 s->rec);
+		putchar('!');
+	    }
+	    fflush(stdout);
+	}
+    }
+
     /* TODO: Check r->pair_rec? */
 
     /* TODO: Check r->flags match s->flags */
@@ -1153,6 +1186,7 @@ int check_contig(GapIO *io, tg_rec crec, int fix, int level,
 	    c->start = bs.cstart;
 	    c->end   = bs.cend;
 	    if (fixed) (*fixed)++;
+	    c->timestamp = io_timestamp_incr(io);
 	}
     }
     

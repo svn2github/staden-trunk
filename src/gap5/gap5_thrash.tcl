@@ -435,7 +435,8 @@ if {[llength $argv] > 2} {
 for {set cycle 0} {$cycle < $ncycles} {incr cycle} {
     set r [expr int(rand()*12)]
 
-    if {$r != 3 && $r != 4 && $r != 2 && $r != 1 && $r != 11} {incr cycle -1; continue}
+    if {$r != 1 && $r != 2 && $r != 0} {incr cycle -1; continue}
+    #if {$r != 3 && $r != 4 && $r != 2 && $r != 1 && $r != 11} {incr cycle -1; continue}
 
     puts "///$cycle r=$r"
 

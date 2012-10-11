@@ -177,8 +177,10 @@ static int cmp_pair(const void *p1, const void *p2) {
 static char *pair_to_pooled_string(string_alloc_t *s_pool, pair_loc_t *p) {
     char holder[255];
     
-    sprintf(holder, " %"PRIrec" %"PRIrec" %d %"PRIrec" %d %d %d", 
-    	    p->rec, p->bin, p->idx, p->crec, p->pos, p->orient, p->flags);
+    sprintf(holder,
+	    "%"PRIrec" %"PRIrec" %d %"PRIrec" %d %d %d %d %d",
+    	    p->rec, p->bin, p->idx, p->crec, p->pos, p->orient, p->flags,
+	    p->len, p->mq);
 	    
     return string_dup(s_pool, holder);
 }
@@ -284,10 +286,11 @@ static void find_pair(GapIO *io, tg_pair_t *pair, tg_rec recno, char *tname,
     pl->bin    = bin->rec;
     pl->crec   = c->rec;
     pl->pos    = seq->len >= 0 ? seq->pos : seq->pos - seq->len - 1;
+    pl->len    = ABS(seq->len);
     pl->idx    = seq->bin_index;
     pl->orient = seq->len < 0;
     pl->flags  = seq->flags;
-    //pl->mq     = seq->mapping_qual;
+    pl->mq     = seq->mapping_qual;
     hd.p = pl;
     
     hi = HacheTableAdd(pair->phache, tname, strlen(tname), hd, &new);
@@ -297,12 +300,20 @@ static void find_pair(GapIO *io, tg_pair_t *pair, tg_rec recno, char *tname,
     /* Pair existed already */
     if (!new) {
 	pair_loc_t *po = (pair_loc_t *)hi->data.p;
+	int st, en;
 	//bin_index_t *bo;
 	
 	/* We found one so update r_out now, before flush */
+	st = po->pos;
+	en = po->pos + (po->orient ? - (po->len-1) : po->len-1);
 	r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
 	r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 	r_out->pair_rec = po->rec;
+	r_out->pair_start = MIN(st,en);
+	r_out->pair_end   = MAX(st,en);
+	r_out->pair_mqual = po->mq;
+	r_out->pair_contig = po->crec;
+	r_out->pair_timestamp = io->db->timestamp;
 	if ((po->flags & SEQ_END_MASK) == SEQ_END_REV)
 	    r_out->flags |= GRANGE_FLAG_PEND_REV;
 	if (po->flags & SEQ_COMPLEMENTED)
@@ -310,8 +321,14 @@ static void find_pair(GapIO *io, tg_pair_t *pair, tg_rec recno, char *tname,
 	
 	if (!a->fast_mode) {
 	    /* TEMP - move later*/
-	    fprintf(pair->finish, "%"PRIrec" %d %"PRIrec" %d\n",
-		    po->bin, po->idx, pl->rec, pl->flags);
+	    int st = pl->pos;
+	    int en = pl->pos + (pl->orient ? - (pl->len-1) : pl->len-1);
+
+	    fprintf(pair->finish,
+		    "%"PRIrec" %d %"PRIrec" %d %d %d %d %"PRIrec"\n",
+		    po->bin, po->idx, pl->rec, pl->flags,
+		    MIN(st, en), MAX(st, en),
+		    pl->mq, pl->crec);
 	
 	    if (po->bin > pair->max_bin) pair->max_bin = po->bin;
 	    
@@ -688,6 +705,12 @@ tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     r.flags = flags;
     r.library_rec = lib ? lib->rec : 0;
 
+    r.pair_contig    = 0;
+    r.pair_timestamp = 0;
+    r.pair_start     = 0;
+    r.pair_end       = 0;
+    r.pair_mqual     = 0;
+
     /* Add the range to a bin, and see which bin it was */
     bin = bin_add_range(io, &c, &r, &r_out, &comp, 1);
     if (bin_rec)
@@ -766,23 +789,54 @@ static int sort_pair_file(tg_pair_t *pair) {
     return 1;
 }
 
+/*
+ * If we have singletons still in our pair struct and we're using append mode
+ * then maybe they are pairs of data that was already in the database.
+ * Check for this case.
+ */
+static void merge_pairs(GapIO *io, tg_pair_t *pair) {
+    HacheIter *iter;
+    HacheItem *hi;
+    
+    iter = HacheTableIterCreate();
+
+    while ((hi = HacheTableIterNext(pair->phache, iter))) {
+	/* FIXME: sort these */
+	tg_rec srec;
+	char name[8192];
+
+	memcpy(name, hi->key, hi->key_len);
+	name[hi->key_len] = 0;
+
+	if ((srec = sequence_index_query(io, name)) > 0) {
+	    printf("%.*s can be paired with #%"PRIrec"\n",
+		   hi->key_len, hi->key, srec);
+	}
+    }
+
+    HacheTableIterDestroy(iter);
+}
+
 
 static void complete_pairs(GapIO *io, tg_pair_t *pair) {
     bin_index_t *bo;
     range_t *ro;
     tg_rec current_bin = -1;
-    char line[100];
+    char line[1024];
     int rec_count = 0;
     int total_count = 0;
     
     rewind(pair->finish);
     
-    while (fgets(line, 100, pair->finish)) {
+    while (fgets(line, 1024, pair->finish)) {
 	int idx, flags;
-	tg_rec bin, rec;
+	tg_rec bin, rec, pair_contig;
+	int pair_start, pair_end, pair_mqual;
 	
-        sscanf(line, "%"PRIrec" %d %"PRIrec" %d", &bin, &idx, &rec, &flags);
-	
+        sscanf(line, "%"PRIrec" %d %"PRIrec" %d %d %d %d %"PRIrec,
+	       &bin, &idx, &rec, &flags, &pair_start, &pair_end,
+	       &pair_mqual, &pair_contig);
+
 	if (bin != current_bin) {
 	    if (rec_count > 50000) {
 	    	total_count += rec_count;
@@ -803,6 +857,11 @@ static void complete_pairs(GapIO *io, tg_pair_t *pair) {
 	ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
 	ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 	ro->pair_rec = rec;
+	ro->pair_contig = pair_contig;
+	ro->pair_start  = pair_start;
+	ro->pair_end    = pair_end;
+	ro->pair_mqual  = pair_mqual;
+	ro->pair_timestamp = io->db->timestamp;
 	if ((flags & SEQ_END_MASK) == SEQ_END_REV)
 	    ro->flags |= GRANGE_FLAG_PEND_REV;
 	if (flags & SEQ_COMPLEMENTED)
@@ -817,7 +876,8 @@ static void complete_pairs(GapIO *io, tg_pair_t *pair) {
     fprintf(stderr, "%d pairs finished in total.\n", total_count);
     
     cache_flush(io);
-    
+
+    //merge_pairs(io, pair);
 }
 
 
@@ -891,12 +951,14 @@ static int load_data(pair_queue_t *pq) {
 	
 	if (ret <= 0) break;
 	
-	found = sscanf(line_in, "%s %"PRId64" %"PRId64" %d %"PRId64" %d %d %d",
-	    name, &pq->pair[i].rec, &pq->pair[i].bin, &pq->pair[i].idx,
-	    &pq->pair[i].crec, &pq->pair[i].pos, &pq->pair[i].orient,
-	    &pq->pair[i].flags);
+	found = sscanf(line_in, "%s %"PRId64" %"PRId64" %d %"PRId64
+		       " %d %d %d %d %d",
+		       name, &pq->pair[i].rec, &pq->pair[i].bin,
+		       &pq->pair[i].idx, &pq->pair[i].crec, &pq->pair[i].pos,
+		       &pq->pair[i].orient, &pq->pair[i].flags,
+		       &pq->pair[i].len, &pq->pair[i].mq);
 	    
-	if (found != 8) {
+	if (found != 10) {
 	    fprintf(stderr, "Error found in line: %s\n", line_in);
 	    break;
 	}
@@ -948,12 +1010,19 @@ static void get_next(pair_queue_t *que) {
 
 
 static void save_match_pair(tg_pair_t *pair, pair_loc_t *p1, pair_loc_t *p2) {
-    
-    fprintf(pair->finish, "%"PRIrec" %d %"PRIrec" %d\n",
-    	p1->bin, p1->idx, p2->rec, p2->flags);
+    int st, en;
+
+    st = p2->pos;
+    en = p2->pos + (p2->orient ? - (p2->len-1) : p2->len-1);
+    fprintf(pair->finish, "%"PRIrec" %d %"PRIrec" %d %d %d %d %"PRIrec"\n",
+	    p1->bin, p1->idx, p2->rec, p2->flags,
+	    MIN(st, en), MAX(st, en), p2->mq, p2->crec);
 	
-    fprintf(pair->finish, "%"PRIrec" %d %"PRIrec" %d\n",
-    	p2->bin, p2->idx, p1->rec, p1->flags);
+    st = p1->pos;
+    en = p1->pos + (p1->orient ? - (p1->len-1) : p1->len-1);
+    fprintf(pair->finish, "%"PRIrec" %d %"PRIrec" %d %d %d %d %"PRIrec"\n",
+	    p2->bin, p2->idx, p1->rec, p1->flags,
+	    MIN(st, en), MAX(st, en), p1->mq, p1->crec);
 }
 	
 
@@ -995,7 +1064,9 @@ static int find_saved_pairs(GapIO *io, tg_pair_t *pair) {
 	
 	if (done) {
 	    if (match) {
-		save_match_pair(pair, &pair->que[match].pair[pair->que[match].index], &pair->que[file].pair[pair->que[file].index]);
+		save_match_pair(pair,
+				&pair->que[match].pair[pair->que[match].index],
+				&pair->que[file].pair[pair->que[file].index]);
 		get_next(&pair->que[match]);
 		num_found++;
 	    }

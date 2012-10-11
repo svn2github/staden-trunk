@@ -1501,6 +1501,8 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 
     ret = cr->rec;
 
+    cr->timestamp = cl->timestamp = io_timestamp_incr(io);
+
     cache_decr(io, cl);
     cache_decr(io, cr);
 
