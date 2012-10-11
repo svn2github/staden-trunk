@@ -2136,7 +2136,7 @@ int set_displayPos(edview *xx, int pos) {
 	xx->displayPos += delta;
 
 	sprintf(buf, "%d", pos);
-	Tcl_SetVar2(xx->interp, xx->edname, "displayPos", buf,
+	Tcl_SetVar2(xx->interp, xx->seq_win, "displayPos", buf,
 		    TCL_GLOBAL_ONLY);
 
 	xx->refresh_flags = ED_DISP_XSCROLL;
@@ -2265,6 +2265,8 @@ int edSetCursorPos(edview *xx, int type, tg_rec rec, int pos, int visible) {
 		if (pos < 0 || pos > ABS(s->len))
 		    return 0;
 		xx->ed->display_cutoffs = 1;
+		Tcl_SetVar2(xx->interp, xx->edname, "Cutoffs", "1",
+			    TCL_GLOBAL_ONLY);
 	    } else {
 		return 0;
 	    }
