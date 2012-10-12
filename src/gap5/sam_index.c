@@ -2117,6 +2117,27 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
     return 0;
 }
 
+/*
+ * Initialise bio->libs hache with current libraries. Useful for tg_index -a
+ */
+static void bio_init_libs(bam_io_t *bio) {
+    GapIO *io = bio->io;
+    int i;
+
+    for (i = 0; i < io->db->Nlibraries; i++) {
+	tg_rec rec = ARR(tg_rec, io->library, i);
+	library_t *lib = cache_search(io, GT_Library, rec);
+	HacheData hd;
+
+	if (!lib)
+	    continue;
+
+	cache_incr(io, lib);
+	hd.p = lib;
+	HacheTableAdd(bio->libs, lib->name, strlen(lib->name), hd, NULL);
+    }
+}
+
 int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
     bam_io_t *bio = (bam_io_t*)calloc(1, sizeof(*bio));
     bam_file_t *fp;
@@ -2141,6 +2162,8 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
     } else {
 	bio->pair = NULL;
     }
+
+    bio_init_libs(bio);
 
     fp = bam_open(fn, mode);
     if (!fp)
