@@ -69,7 +69,7 @@ int tg_index_file_type (char *fn);
 void unescape_line(char *txt);
 
 tg_pair_t *create_pair(int queue);
-void finish_pairs(GapIO *io, tg_pair_t *pair);
+void finish_pairs(GapIO *io, tg_pair_t *pair, int link_pairs);
 void delete_pair(tg_pair_t *pair);
 long tg_get_line(char **line, long *length, FILE *fp);
 

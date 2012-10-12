@@ -616,7 +616,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     puts("");
 
     if (pair && !a->fast_mode) {    
-	finish_pairs(io, pair);
+	finish_pairs(io, pair, a->link_pairs);
     }
     
     cache_flush(io);

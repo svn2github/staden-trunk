@@ -272,7 +272,7 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
     fprintf(stderr, "-- %d reads were added.\n", k);
     
     if (!a->fast_mode) {
-    	finish_pairs(io, pair);
+    	finish_pairs(io, pair, a->link_pairs);
     }
     
     gzclose(dat_fp);

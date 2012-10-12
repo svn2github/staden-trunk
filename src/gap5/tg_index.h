@@ -27,6 +27,7 @@ typedef struct {
     int store_refpos;
     int remove_dups;
     int version;
+    int link_pairs;
 } tg_args;
 
 #define DATA_SEQ	1

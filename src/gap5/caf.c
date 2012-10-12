@@ -1399,7 +1399,7 @@ int parse_caf(GapIO *io, char *fn, tg_args *a) {
     
 
     if (pair && !a->fast_mode) {    
-	finish_pairs(io, pair);
+	finish_pairs(io, pair, a->link_pairs);
     }
     
     cache_flush(io);

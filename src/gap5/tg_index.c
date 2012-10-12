@@ -70,6 +70,7 @@ void usage(void) {
     fprintf(stderr, "\n");
     fprintf(stderr, "      -p                   Link read-pairs together (default on)\n");
     fprintf(stderr, "      -P                   Do not link read-pairs together\n");
+    fprintf(stderr, "      -L                   Do not link pairs spanning bam files or with '-a'.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "      -q value             Number of reads to queue in memory while waiting\n");                   
     fprintf(stderr, "                           for pairing.  Use to reduce memory requirements\n");
@@ -132,6 +133,7 @@ int main(int argc, char **argv) {
     a.store_refpos   = 1;
     a.remove_dups    = 1;
     a.version        = DB_VERSION;
+    a.link_pairs     = 1;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.13"SVN_VERS"\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
@@ -141,7 +143,8 @@ int main(int argc, char **argv) {
     //mallopt(M_MMAP_MAX, 0);
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBCsVbtThAmMo:pPq:nz:fd:c:gux123456789rRDv:")) != -1) {
+    while ((opt = getopt(argc, argv, "aBCsVbtThAmMo:pPq:nz:fd:c:"
+			 "gux123456789rRDv:L")) != -1) {
 	switch(opt) {
 	case 'g':
 	    a.repad = 1;
@@ -261,6 +264,10 @@ int main(int argc, char **argv) {
 	    a.version = atoi(optarg);
 	    break;
 	    
+	case 'L':
+	    a.link_pairs = 0;
+	    break;
+	    
 	default:
 	    if (opt == ':')
 		fprintf(stderr, "Missing parameter\n");
@@ -270,6 +277,8 @@ int main(int argc, char **argv) {
 	    return 1;
 	}
     }
+    if (!a.pair_reads)
+	a.link_pairs = 0;
     if (a.merge_contigs == -1)
 	a.merge_contigs = 0;
 
@@ -309,14 +318,12 @@ int main(int argc, char **argv) {
     io->min_bin_size = a.min_bin_size;
 
     
-    /* Open a temporary file for B+Tree indexing if needed */
-    a.tmp = a.no_tree ? NULL : bttmp_file_open();
-
-
-
     /* File processing loop */
     while (optind < argc) {
 	int fmt = a.fmt;
+
+	/* Open a temporary file for B+Tree indexing if needed */
+	a.tmp = a.no_tree ? NULL : bttmp_file_open();
 
 	/* Auto detect file type if appropriate */
 	if (fmt == 'a')
@@ -375,40 +382,39 @@ int main(int argc, char **argv) {
 	    err = 1;
 	    break;
 	}
-    }
 
-    /* Force final update of cached bin nseq */
-    bin_add_range(io, NULL, NULL, NULL, NULL, -1);
-    cache_flush(io);
+	/* Force final update of cached bin nseq */
+	bin_add_range(io, NULL, NULL, NULL, NULL, -1);
+	cache_flush(io);
 
-    if (err) {
-	fprintf(stderr, "\nERROR: Failed to parse input data file - exiting\n");
-	exit(1);
-    }
-
-    /* Add to our sequence name B+Tree */
-    if (a.tmp) {
-	char *name;
-	tg_rec rec;
-	int cnt = 0;
-
-	puts("Sorting sequence name index");
-	bttmp_file_sort(a.tmp);
-
-	puts("Building index: one dot per 10k reads");
-	while (name = bttmp_file_get(a.tmp, &rec)) {
-	    sequence_index_update(io, name, strlen(name), rec);
-	    if (++cnt == 10000) {
-		putchar('.'); fflush(stdout);
-		cnt = 0;
-		cache_flush(io);
-	    }
+	if (err) {
+	    fprintf(stderr, "\nERROR: Failed to parse input data file - exiting\n");
+	    exit(1);
 	}
-	putchar('\n');
-	
-	bttmp_file_close(a.tmp);
-    }
 
+	/* Add to our sequence name B+Tree */
+	if (a.tmp) {
+	    char *name;
+	    tg_rec rec;
+	    int cnt = 0;
+
+	    puts("Sorting sequence name index");
+	    bttmp_file_sort(a.tmp);
+
+	    puts("Building index: one dot per 10k reads");
+	    while (name = bttmp_file_get(a.tmp, &rec)) {
+		sequence_index_update(io, name, strlen(name), rec);
+		if (++cnt == 10000) {
+		    putchar('.'); fflush(stdout);
+		    cnt = 0;
+		    cache_flush(io);
+		}
+	    }
+	    putchar('\n');
+	
+	    bttmp_file_close(a.tmp);
+	}
+    }
 
     /* system("ps lx"); */
 

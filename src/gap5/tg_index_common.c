@@ -8,6 +8,7 @@
 
 #include <staden_config.h>
 
+#include <assert.h>
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -802,19 +803,76 @@ static void merge_pairs(GapIO *io, tg_pair_t *pair) {
 
     while ((hi = HacheTableIterNext(pair->phache, iter))) {
 	/* FIXME: sort these */
-	tg_rec srec;
+	tg_rec *rec;
+	int i, nr;
 	char name[8192];
+	seq_t *s2;
+	bin_index_t *b2;
+	range_t *r;
+	pair_loc_t *p;
+	int st, en;
+	tg_rec bin_rec, contig;
+	int bin_idx;
 
 	memcpy(name, hi->key, hi->key_len);
 	name[hi->key_len] = 0;
 
-	if ((srec = sequence_index_query(io, name)) > 0) {
-	    printf("%.*s can be paired with #%"PRIrec"\n",
-		   hi->key_len, hi->key, srec);
+	/* Hunt for all occurences of this name and see if one is singleton */
+	rec = sequence_index_query_all(io, name, 0, &nr);
+	if (!rec)
+	    continue;
+
+	//printf("%.*s can be paired with", hi->key_len, hi->key);
+	for (i = 0; i < nr; i++) {
+	    //printf(" #%"PRIrec, rec[i]);
+	    if (!(s2 = cache_search(io, GT_Seq, rec[i])))
+		continue;
+	    cache_incr(io, s2);
+	    if (!(b2 = cache_search(io, GT_Bin, s2->bin))) {
+		cache_decr(io, s2);
+		continue;
+	    }
+
+	    bin_rec = s2->bin;
+	    bin_idx = s2->bin_index;
+
+	    r = arrp(range_t, b2->rng, s2->bin_index);
+	    cache_decr(io, s2);
+
+	    assert(r->rec == s2->rec);
+	    if (r->pair_rec == 0)
+		break;
 	}
+	//printf("\n");
+
+	free(rec);
+
+	if (!r || r->pair_rec)
+	    continue;
+
+	/* We found a singleton, so link it up */
+	p = (pair_loc_t *)hi->data.p;
+	st = p->pos;
+	en = p->pos + (p->orient ? -(p->len-1) : p->len-1);
+
+	/* Link other end to us; done at end with others */
+	fprintf(pair->finish, "%"PRIrec" %d %"PRIrec" %d %d %d %d %"PRIrec"\n",
+		bin_rec, bin_idx, p->rec, p->flags,
+		MIN(st, en), MAX(st, en), p->mq, p->crec);
+
+	/* Us to other end is harder; we don't know the loc */
+	cache_incr(io, b2);
+	bin_get_item_position(io, GT_Seq, r->rec, &contig, &st, &en,
+			      NULL, NULL, NULL, NULL);
+
+	fprintf(pair->finish, "%"PRIrec" %d %"PRIrec" %d %d %d %d %"PRIrec"\n",
+		p->bin, p->idx, r->rec, r->flags, st, en, r->mqual, contig);
+
+	cache_decr(io, b2);
     }
 
     HacheTableIterDestroy(iter);
+    fflush(pair->finish);
 }
 
 
@@ -836,6 +894,8 @@ static void complete_pairs(GapIO *io, tg_pair_t *pair) {
         sscanf(line, "%"PRIrec" %d %"PRIrec" %d %d %d %d %"PRIrec,
 	       &bin, &idx, &rec, &flags, &pair_start, &pair_end,
 	       &pair_mqual, &pair_contig);
+
+	//printf("%s", line);
 
 	if (bin != current_bin) {
 	    if (rec_count > 50000) {
@@ -876,8 +936,6 @@ static void complete_pairs(GapIO *io, tg_pair_t *pair) {
     fprintf(stderr, "%d pairs finished in total.\n", total_count);
     
     cache_flush(io);
-
-    //merge_pairs(io, pair);
 }
 
 
@@ -1081,7 +1139,7 @@ static int find_saved_pairs(GapIO *io, tg_pair_t *pair) {
 }
 
 
-void finish_pairs(GapIO *io, tg_pair_t *pair) {
+void finish_pairs(GapIO *io, tg_pair_t *pair, int link_pairs) {
     int ret = 1;
     
     if (pair->que_size) {
@@ -1098,6 +1156,8 @@ void finish_pairs(GapIO *io, tg_pair_t *pair) {
     	fprintf(stderr, "No pair queue found\n");
     }
     
+    if (link_pairs)
+	merge_pairs(io, pair);
     ret = sort_pair_file(pair);
     
     if (ret) {

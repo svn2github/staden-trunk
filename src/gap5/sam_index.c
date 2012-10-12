@@ -2193,7 +2193,7 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
     vmessage("Loaded %d of %d sequences\n", bio->count, bio->total_count);
 
     if (bio->pair && !a->fast_mode) { 	
-	finish_pairs(io, bio->pair);
+	finish_pairs(io, bio->pair, a->link_pairs);
     }
  
     /* Tidy up */

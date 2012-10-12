@@ -595,7 +595,7 @@ int parse_afg(GapIO *io, char *fn, tg_args *a) {
     convert_afg(fp, fn, io, a, pair, read_index);        
     
     if (pair && !a->fast_mode) {    
-	finish_pairs(io, pair);
+	finish_pairs(io, pair, a->link_pairs);
     }
     
     cache_flush(io);
