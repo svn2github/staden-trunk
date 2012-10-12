@@ -19,9 +19,26 @@ proc InitListContigs {io parent {csh_win {}}} {
     wm title $t "Contig List"
 
     # Create our tablelist
+#    if {[$io db_version] >= 6} {
+#	tablelist $t.list \
+#	    -columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations" 20 "Scaffold" 10 "Timestamp"} \
+#	    -labelcommand tablelist::sortByColumn \
+#	    -exportselection 0 \
+#	    -stretch 0 \
+#	    -selectmode extended \
+#	    -yscrollcommand [list $t.yscroll set]
+#	$t.list columnconfigure 0 -sortmode dictionary
+#	$t.list columnconfigure 1 -sortmode integer
+#	$t.list columnconfigure 2 -sortmode integer
+#	$t.list columnconfigure 3 -sortmode integer
+#	$t.list columnconfigure 4 -sortmode command \
+#	    -formatcommand ListContigsScaffoldFormat \
+#	    -sortcommand [list ListContigsScaffoldSort $t.list]
+#	$t.list columnconfigure 5 -sortmode integer
+#    }
     if {[$io db_version] >= 5} {
 	tablelist $t.list \
-	    -columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations" 20 "Scaffold"} \
+	    -columns {30 "Name" 10 "Length" 14 "# sequences" 14 "# annotations" 20 "Scaffold"} \
 	    -labelcommand tablelist::sortByColumn \
 	    -exportselection 0 \
 	    -stretch 0 \
@@ -36,7 +53,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	    -sortcommand [list ListContigsScaffoldSort $t.list]
     } else {
 	tablelist $t.list \
-	    -columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations"} \
+	    -columns {30 "Name" 10 "Length" 14 "# sequences" 14 "# annotations"} \
 	    -labelcommand tablelist::sortByColumn \
 	    -exportselection 0 \
 	    -stretch 0 \
@@ -97,7 +114,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 
     focus [$t.list bodypath]
 
-    wm geometry $t 600x300
+    wm geometry $t 800x300
 
     set trace_cmd "ListContigsUpdate $io $t.list"
     trace variable NGList(contigs) w $trace_cmd
@@ -368,6 +385,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	set clen [$cstruct get_length]
 	set nreads [$cstruct nseqs]
 	set nanno [$cstruct nanno]
+	set time [$cstruct get_timestamp]
 	set scaffold [$cstruct get_scaffold]
 	if {$scaffold != 0} {
 	    set fstruct [$io get_scaffold $scaffold]
@@ -378,7 +396,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	    set fname "(none)/0"
 	}
 	$cstruct delete
-	$w insert end [list "$name (=$num)" $clen $nreads $nanno $fname]
+	$w insert end [list "$name (=$num)" $clen $nreads $nanno $fname $time]
     }
     if {[$w sortcolumn] != -1} {
 	$w sortbycolumn [$w sortcolumn] -[$w sortorder]

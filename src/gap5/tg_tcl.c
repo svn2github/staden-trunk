@@ -667,7 +667,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"check",        "move_seq",
 	"get_visible_start", "get_visible_end", "get_visible_length",
 	"set_visible_start", "invalidate_consensus",    "set_name",
-	"dump_graph",   "add_link",	"get_links",
+	"dump_graph",   "add_link",	"get_links",    "get_timestamp",
 	"get_scaffold", "add_to_scaffold", "remove_from_scaffold",
 	(char *)NULL,
     };
@@ -682,7 +682,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	CHECK,          MOVE_SEQ,
 	GET_VISIBLE_START, GET_VISIBLE_END, GET_VISIBLE_LENGTH,
 	SET_VISIBLE_START, INVALIDATE_CONSENSUS,        SET_NAME,
-	DUMP_GRAPH,	ADD_LINK,	GET_LINKS,
+	DUMP_GRAPH,	ADD_LINK,	GET_LINKS,      GET_TIMESTAMP,
 	GET_SCAFFOLD,   ADD_TO_SCAFFOLD,REMOVE_FROM_SCAFFOLD,
     };
 
@@ -803,6 +803,10 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	break;
     }
+
+    case GET_TIMESTAMP:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), tc->contig->timestamp);
+	break;
 
     case GET_START:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), tc->contig->start);
