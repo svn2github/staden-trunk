@@ -96,7 +96,8 @@ void contig_set_sequence_sort(int type, tg_rec rec, int start, int end);
 #define CSIR_SORT_BY_STRAND        (1<<12)
 #define CSIR_SORT_BY_BASE          (1<<13)
 #define CSIR_SORT_BY_SEQUENCE      (1<<14)
-
+#define CSIR_SORT_BY_TEMPLATE_STATUS (1<<15)
+#define CSIR_SORT_BY_LIBRARY       (1<<16)
 
 /* ---------------------------------------------------------------------- */
 

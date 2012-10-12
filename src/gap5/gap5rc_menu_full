@@ -370,6 +370,11 @@ add_radio   	{Settings.Group Readings.     By base}  	   1 0 {${w}(GroupPrimary)
     6 {editor_group_by $w}
 add_radio   	{Settings.Group Readings.     By sequence}  	   1 0 {${w}(GroupPrimary)} \
     7 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     By template status}  1 0 {${w}(GroupPrimary)} \
+    8 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     By library}          1 0 {${w}(GroupPrimary)} \
+    9 {editor_group_by $w}
+
 add_check   	{Settings.Group Readings.Secondary}	1 0 {${w}(GroupBySecondary)} \
 	{editor_group_by $w}
 add_radio   	{Settings.Group Readings.     2nd by technology}  	   1 0 {${w}(GroupSecondary)} \
@@ -384,6 +389,10 @@ add_radio   	{Settings.Group Readings.     2nd by strand} 	   1 0 {${w}(GroupSec
     5 {editor_group_by $w}
 add_radio   	{Settings.Group Readings.     2nd by base} 	   1 0 {${w}(GroupSecondary)} \
     6 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     2nd by template status}  1 0 {${w}(GroupSecondary)} \
+    8 {editor_group_by $w}
+add_radio   	{Settings.Group Readings.     2nd by library}  1 0 {${w}(GroupSecondary)} \
+    9 {editor_group_by $w}
 
  
 add_separator	{Settings.S1}

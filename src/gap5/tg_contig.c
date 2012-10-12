@@ -2021,6 +2021,45 @@ static int simple_sort_by_strand(const void *v1, const void *v2) {
 }
 
 
+static int simple_sort_by_template_status(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    int status1 = 0, status2 = 0;
+    seq_t *s1, *s2;
+    
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+	if ((s1 = cache_search(sort_io, GT_Seq, r1->rec)))
+	    status1 = sequence_get_template_info(sort_io, s1, NULL, NULL);
+
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+	if ((s2 = cache_search(sort_io, GT_Seq, r2->rec)))
+	    status2 = sequence_get_template_info(sort_io, s2, NULL, NULL);
+    
+    return status1 - status2;
+}
+
+/*
+ * Only on DB format >= 5
+ */
+static int simple_sort_by_library(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    
+    int library1 = 0;
+    int library2 = 0;
+    
+    if ((r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	library1 = r1->library_rec;
+    }
+    
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+    	library2 = r2->library_rec;
+    }
+    
+    return library1 - library2;
+}
+
+
 static int simple_sort_range_by_tech_x(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
     const rangec_t *r2 = (const rangec_t *)v2;
@@ -2082,69 +2121,85 @@ void contig_set_sequence_sort(int type, tg_rec rec, int start, int end) {
 void contig_set_default_sort(int pri, int sec) {
 
     switch (pri) {
-    	case 1:
-	    p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
+    case 1:
+	p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
 	break;
 	
-	case 2:
-	    p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
+    case 2:
+	p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
 	break;
 	
-	case 3:
-	    p_sort = CSIR_SORT_BY_X;
+    case 3:
+	p_sort = CSIR_SORT_BY_X;
 	break;
 	
-	case 4:
-	    p_sort = CSIR_SORT_BY_TEMPLATE;
+    case 4:
+	p_sort = CSIR_SORT_BY_TEMPLATE;
 	break;
 	
-	case 5:
-	    p_sort = CSIR_SORT_BY_STRAND;
+    case 5:
+	p_sort = CSIR_SORT_BY_STRAND;
 	break;
 
-	case 6:
-	    p_sort = CSIR_SORT_BY_BASE;
+    case 6:
+	p_sort = CSIR_SORT_BY_BASE;
 	break;
 	
-	case 7:
-	    p_sort = CSIR_SORT_BY_SEQUENCE;
+    case 7:
+	p_sort = CSIR_SORT_BY_SEQUENCE;
 	break;
 
-	default:
-	    p_sort = CSIR_SORT_BY_Y;
+    case 8:
+	p_sort = CSIR_SORT_BY_TEMPLATE_STATUS;
+	break;
+
+    case 9:
+	p_sort = CSIR_SORT_BY_LIBRARY;
+	break;
+
+    default:
+	p_sort = CSIR_SORT_BY_Y;
     }
     
     switch (sec) {
-   	case 1:
-	    s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
+    case 1:
+	s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
 	break;
 	
-	case 2:
-	    s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
+    case 2:
+	s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
 	break;
 	
-	case 3:
-	    s_sort = CSIR_SORT_BY_X;
+    case 3:
+	s_sort = CSIR_SORT_BY_X;
 	break;
 	
-	case 4:
-	    s_sort = CSIR_SORT_BY_TEMPLATE;
+    case 4:
+	s_sort = CSIR_SORT_BY_TEMPLATE;
 	break;
 	
-	case 5:
-	    s_sort = CSIR_SORT_BY_STRAND;
+    case 5:
+	s_sort = CSIR_SORT_BY_STRAND;
 	break;
 
-	case 6:
-	    s_sort = CSIR_SORT_BY_BASE;
+    case 6:
+	s_sort = CSIR_SORT_BY_BASE;
 	break;
 
-	case 7:
-	    s_sort = CSIR_SORT_BY_SEQUENCE;
+    case 7:
+	s_sort = CSIR_SORT_BY_SEQUENCE;
 	break;
 
-	default:
-	    s_sort = CSIR_SORT_BY_Y;
+    case 8:
+	s_sort = CSIR_SORT_BY_TEMPLATE_STATUS;
+	break;
+
+    case 9:
+	s_sort = CSIR_SORT_BY_LIBRARY;
+	break;
+
+    default:
+	s_sort = CSIR_SORT_BY_Y;
     }
 }
 
@@ -2155,12 +2210,16 @@ static int (*set_sort(int job))(const void *, const void *) {
 
     if (job & CSIR_SORT_BY_TEMPLATE) {
 	return simple_sort_range_by_template;
-    }else if (job & CSIR_SORT_BY_SEQUENCE) {
+    } else if (job & CSIR_SORT_BY_SEQUENCE) {
     	return simple_sort_by_sequence;
     } else if (job & CSIR_SORT_BY_STRAND) {
     	return simple_sort_by_strand;
     } else if (job & CSIR_SORT_BY_BASE) {
     	return simple_sort_by_base;
+    } else if (job & CSIR_SORT_BY_TEMPLATE_STATUS) {
+	return simple_sort_by_template_status;
+    } else if (job & CSIR_SORT_BY_LIBRARY) {
+	return simple_sort_by_library;
     } else if (job & CSIR_SORT_BY_XEND) {
 	if (job & CSIR_SORT_BY_CLIPPED) {
 	    return simple_sort_range_by_x_clipped_end;
