@@ -664,7 +664,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
 	"nseqs",	"anno_in_range","get_pileup",   "ref_to_padded",
 	"nrefpos",	"nanno",        "shift_base",   "move_anno",
-	"check",        "move_seq",
+	"check",        "move_seq",	"get_clipped_length",
 	"get_visible_start", "get_visible_end", "get_visible_length",
 	"set_visible_start", "invalidate_consensus",    "set_name",
 	"dump_graph",   "add_link",	"get_links",    "get_timestamp",
@@ -679,7 +679,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
 	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,     REF_TO_PADDED,
 	NREFPOS,        NANNO,	        SHIFT_BASE,     MOVE_ANNO,
-	CHECK,          MOVE_SEQ,
+	CHECK,          MOVE_SEQ,	GET_CLIPPED_LENGTH,
 	GET_VISIBLE_START, GET_VISIBLE_END, GET_VISIBLE_LENGTH,
 	SET_VISIBLE_START, INVALIDATE_CONSENSUS,        SET_NAME,
 	DUMP_GRAPH,	ADD_LINK,	GET_LINKS,      GET_TIMESTAMP,
@@ -820,6 +820,11 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     case GET_LENGTH:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp),
 		      tc->contig->end - tc->contig->start + 1);
+	break;
+
+    case GET_CLIPPED_LENGTH:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp),
+		      io_cclength(tc->io, tc->contig->rec));
 	break;
 
     case GET_VISIBLE_START: {

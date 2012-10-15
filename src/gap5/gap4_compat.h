@@ -5,6 +5,7 @@
 #define GGN_ID 0
 
 int io_clength(GapIO *io, tg_rec cnum);
+int io_cclength(GapIO *io, tg_rec cnum);
 tg_rec io_clnbr(GapIO *io, tg_rec cnum);
 tg_rec io_crnbr(GapIO *io, tg_rec cnum);
 int io_length(GapIO *io, tg_rec rnum);

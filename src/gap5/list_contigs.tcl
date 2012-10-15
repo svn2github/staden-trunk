@@ -19,24 +19,24 @@ proc InitListContigs {io parent {csh_win {}}} {
     wm title $t "Contig List"
 
     # Create our tablelist
-#    if {[$io db_version] >= 6} {
-#	tablelist $t.list \
-#	    -columns {0 "Name" 10 "Length" 14 "# sequences" 14 "# annotations" 20 "Scaffold" 10 "Timestamp"} \
-#	    -labelcommand tablelist::sortByColumn \
-#	    -exportselection 0 \
-#	    -stretch 0 \
-#	    -selectmode extended \
-#	    -yscrollcommand [list $t.yscroll set]
-#	$t.list columnconfigure 0 -sortmode dictionary
-#	$t.list columnconfigure 1 -sortmode integer
-#	$t.list columnconfigure 2 -sortmode integer
-#	$t.list columnconfigure 3 -sortmode integer
-#	$t.list columnconfigure 4 -sortmode command \
-#	    -formatcommand ListContigsScaffoldFormat \
-#	    -sortcommand [list ListContigsScaffoldSort $t.list]
-#	$t.list columnconfigure 5 -sortmode integer
-#    }
-    if {[$io db_version] >= 5} {
+    if {[$io db_version] >= 6} {
+	tablelist $t.list \
+	    -columns {0 "Name" 10 "Length" 10 "Clipped len" 14 "# sequences" 14 "# annotations" 20 "Scaffold"} \
+	    -labelcommand tablelist::sortByColumn \
+	    -exportselection 0 \
+	    -stretch 0 \
+	    -selectmode extended \
+	    -yscrollcommand [list $t.yscroll set]
+	$t.list columnconfigure 0 -sortmode dictionary
+	$t.list columnconfigure 1 -sortmode integer
+	$t.list columnconfigure 2 -sortmode integer
+	$t.list columnconfigure 3 -sortmode integer
+	$t.list columnconfigure 4 -sortmode integer
+	$t.list columnconfigure 5 -sortmode command \
+	    -formatcommand ListContigsScaffoldFormat \
+	    -sortcommand [list ListContigsScaffoldSort $t.list]
+	#$t.list columnconfigure 6 -sortmode integer
+    } elseif {[$io db_version] >= 5} {
 	tablelist $t.list \
 	    -columns {30 "Name" 10 "Length" 14 "# sequences" 14 "# annotations" 20 "Scaffold"} \
 	    -labelcommand tablelist::sortByColumn \
@@ -371,6 +371,8 @@ proc InitListContigs {io parent {csh_win {}}} {
 }
 
 ; proc ListContigsRepopulate {io w} {
+    set vers [$io db_version]
+
     if {![winfo exists $w]} return
     set top [expr {int([lindex [$w yview] 0]*[$w index end])}]
 
@@ -385,8 +387,11 @@ proc InitListContigs {io parent {csh_win {}}} {
 	set clen [$cstruct get_length]
 	set nreads [$cstruct nseqs]
 	set nanno [$cstruct nanno]
-	set time [$cstruct get_timestamp]
+	#set time [$cstruct get_timestamp]
 	set scaffold [$cstruct get_scaffold]
+	if {$vers >= 6} {
+	    set clipped_len [$cstruct get_clipped_length]
+	}
 	if {$scaffold != 0} {
 	    set fstruct [$io get_scaffold $scaffold]
 	    set ctgs [$fstruct get_contigs]
@@ -396,7 +401,11 @@ proc InitListContigs {io parent {csh_win {}}} {
 	    set fname "(none)/0"
 	}
 	$cstruct delete
-	$w insert end [list "$name (=$num)" $clen $nreads $nanno $fname $time]
+	if {$vers >= 6} {
+	    $w insert end [list "$name (=$num)" $clen $clipped_len $nreads $nanno $fname]
+	} else {
+	    $w insert end [list "$name (=$num)" $clen $nreads $nanno $fname]
+	}
     }
     if {[$w sortcolumn] != -1} {
 	$w sortbycolumn [$w sortcolumn] -[$w sortorder]

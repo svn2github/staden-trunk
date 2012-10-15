@@ -1528,10 +1528,17 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
     contig_iterator *ci;
     rangec_t *r;
+    contig_t *c;
 
-    if (start) {
+    c = cache_search(io, GT_Contig, contig);
+    cache_incr(io, c);
+
+    if (start && c->clipped_timestamp == c->timestamp) {
+	*start = c->clipped_start;
+    } else if (start) {
 	int best = INT_MAX;
 
+	//printf("Recalc start for #%"PRIrec"\n", contig);
 	ci = contig_iter_new(io, contig, 1, CITER_FIRST | CITER_ISTART |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
 	while (ci && (r = contig_iter_next(io, ci))) {
@@ -1568,9 +1575,12 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 	*start = best != INT_MAX ? best : 0;
     }
 
-    if (end) {
+    if (end && c->clipped_timestamp == c->timestamp) {
+	*end = c->clipped_end;
+    } else if (end) {
 	int best = INT_MIN;
 
+	printf("Recalc end   for #%"PRIrec"\n", contig);
 	ci = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
 	
@@ -1607,6 +1617,17 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
 	contig_iter_del(ci);
 	*end = best != INT_MIN ? best : 0;
     }
+
+    if (start && end && !io->read_only
+	&& c->timestamp != c->clipped_timestamp) {
+	if ((c = cache_rw(io, c))) {
+	    c->clipped_timestamp = c->timestamp;
+	    c->clipped_start     = *start;
+	    c->clipped_end       = *end;
+	}
+    }
+
+    cache_decr(io, c);
 
     return 0;
 }

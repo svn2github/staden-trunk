@@ -5311,11 +5311,21 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
 	    if (!in[i].bin) continue;
 	    cp += u72int(cp, (uint32_t *)&b->contig[i]->timestamp);
+
+	    /*
+	     * Clipped_timestamp isn't stored, but we keep it up to date in
+	     * memory and populate via the CLIPPED_VALID flag.
+	     */
+	    if (b->contig[i]->flags & CONTIG_FLAG_CLIPPED_VALID)
+		b->contig[i]->clipped_timestamp = b->contig[i]->timestamp;
+	    else
+		b->contig[i]->clipped_timestamp = 0;
 	}
     } else {
 	for (i = 0; i < CONTIG_BLOCK_SZ; i++) {
 	    if (!in[i].bin) continue;
 	    b->contig[i]->timestamp = 1;
+	    b->contig[i]->clipped_timestamp = 0;
 	}
     }
 
@@ -5406,6 +5416,12 @@ static int io_contig_block_write(void *dbh, cached_item *ci) {
 
 	/* Fixed sized data */
 	out[0] += intw2u7(c->bin,  out[0]);
+
+	if (c->clipped_start != c->clipped_end &&
+	    c->timestamp == c->clipped_timestamp)
+	    c->flags |=  CONTIG_FLAG_CLIPPED_VALID;
+	else
+	    c->flags &= ~CONTIG_FLAG_CLIPPED_VALID;
 
 	out[1] += int2u7(c->flags, out[1]);
 

@@ -36,6 +36,19 @@ int io_clength(GapIO *io, tg_rec cnum) {
     return contig_get_end(&c) - contig_get_start(&c) + 1;
 }
 
+/* Clipped contig length */
+int io_cclength(GapIO *io, tg_rec cnum) {
+    int start, end;
+    if (-1 == consensus_valid_range(io, cnum, &start, &end)) {
+	verror(ERR_FATAL, "io_cclength()",
+	       "Failed to load contig #%"PRIrec" in io_clength()",
+	       cnum);
+	return 0;
+    }
+
+    return end - start + 1;
+}
+
 /* Left most reading in a contig - outmoded */
 tg_rec io_clnbr(GapIO *io, tg_rec cnum) {
     tg_rec rec;
@@ -774,6 +787,8 @@ int x_clone_write   (GapIO *io, int n, void *v) { unimp("clone_write"); }
 
 /* ----------------------------------------------------------------------
  */
+#if 1
+/* Unclipped length */
 int64_t CalcTotalContigLen(GapIO *io) {
     int64_t len = 0;
     int i;
@@ -787,6 +802,20 @@ int64_t CalcTotalContigLen(GapIO *io) {
 
     return len;
 }
+#else
+/* Clipped length */
+int64_t CalcTotalContigLen(GapIO *io) {
+    int64_t len = 0;
+    int i;
+
+    for (i = 0; i < NumContigs(io); i++) {
+	tg_rec crec = arr(tg_rec, io->contig_order, i);
+	len += io_cclength(io, crec);
+    }
+
+    return len;
+}
+#endif
 
 void bell(void) {
     extern Tcl_Interp *GetInterp(void);

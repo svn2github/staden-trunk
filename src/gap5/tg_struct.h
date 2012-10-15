@@ -334,6 +334,7 @@ typedef struct {
     int nseqs;
     int nanno;
     int nrefpos;
+    int    clipped_timestamp;  /* when clipped_start/end updated */
     struct contig_block *block;
     int    idx;   /* Index to block */
     int    timestamp;
