@@ -32,7 +32,7 @@ typedef struct {
 
 
 /* determines the position of a base in terms of the entire database */
-int
+int64_t
 find_position_in_DB(GapIO *io, 
 		    tg_rec c_num, 
 		    int64_t position);

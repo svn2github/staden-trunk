@@ -901,12 +901,14 @@ proc PopUpCSContigMenu {io canvas current X Y x y} {
     if {($x == 0 && $y == 0) || [keylget gap5_defs CONTIG_SEL.EDITOR_POS_1]} {
 	set cpos 1
     } else {
-	set clen [$c get_length]
+	set clen [$c get_clipped_length]
 	foreach {x1 y1 x2 y2} [$canvas coords current] {}
 	set x [$canvas canvasx $x]
-	set cpos [expr {int(((double($x-$x1))/($x2-$x1)) * $clen)}]
-	if {$cpos < 1} {set cpos 1}
-	if {$cpos > $clen} {set cpos $clen}
+	set start [$c get_visible_start]
+	set end   [$c get_visible_end]
+	set cpos [expr {int(((double($x-$x1))/($x2-$x1)) * $clen)+$start}]
+	if {$cpos < $start} {set cpos $start}
+	if {$cpos > $end}   {set cpos $end}
     }
 
     set name [$c get_name]
@@ -1285,17 +1287,17 @@ proc ContigSelector { io } {
     
     #cursor checkbutton
     global $f.cursor
-    checkbutton $f.buttons.cursor -text crosshairs -variable $f.cursor
+    checkbutton $f.buttons.cursor -text x-hairs -variable $f.cursor
 
     #cursor local and total position labels
     set cursor_tx [keylget gap5_defs CONTIG_SEL.CURSOR1_X]
     set cursor_lx [keylget gap5_defs CONTIG_SEL.CURSOR2_X]
     set cursor_ty [keylget gap5_defs CONTIG_SEL.CURSOR1_Y]
     set cursor_ly [keylget gap5_defs CONTIG_SEL.CURSOR2_Y]
-    label $f$cursor_tx -bd 2 -relief sunken -width 6
-    label $f$cursor_lx -bd 2 -relief sunken -width 6
-    label $f$cursor_ty -bd 2 -relief sunken -width 6
-    label $f$cursor_ly -bd 2 -relief sunken -width 6
+    label $f$cursor_tx -bd 2 -relief sunken -width 8
+    label $f$cursor_lx -bd 2 -relief sunken -width 8
+    label $f$cursor_ty -bd 2 -relief sunken -width 8
+    label $f$cursor_ly -bd 2 -relief sunken -width 8
 
     ##########################################################################
     label $f.brief_dummy
@@ -1485,7 +1487,7 @@ proc GetItemInfo {io plot nearest} {
 	} elseif {[string compare [string range $tag 0 3] num_] == 0} {
 	    set c_num [string trim $tag num_]
 	    set c [$io get_contig $c_num]
-	    set msg "Contig: [$c get_name]  Length: [$c get_length]  NSeqs: [$c nseqs]  NAnno: [$c nanno]"
+	    set msg "Contig: [$c get_name]  Length: [$c get_clipped_length]/[$c get_length]  NSeqs: [$c nseqs]  NAnno: [$c nanno]"
 	    $c delete
 	    return $msg
 	}

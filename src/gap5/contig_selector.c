@@ -76,7 +76,7 @@ PlotRepeats(GapIO *io,
 	//printf("Rec %"PRIrec" pos %"PRId64"\n", order[i], cur_pos);
 	hd.i = cur_pos;
 	HashTableAdd(cstart, (char *)&order[i], sizeof(order[i]), hd, 0);
-	cur_pos += io_clength(io, order[i]);
+	cur_pos += io_cclength(io, order[i]);
     }
 
     cs_id = type_to_result(io, REG_TYPE_CONTIGSEL, 0);
@@ -234,7 +234,7 @@ display_contigs(Tcl_Interp *interp,                                   /* in */
 
     for (i = 0; i < NumContigs(io); i++){
 	if (arr(tg_rec, io->contig_order, i) > 0) {
-	    int clen = io_clength(io, arr(tg_rec, io->contig_order, i));
+	    int clen = io_cclength(io, arr(tg_rec, io->contig_order, i));
 	    if (strcmp(direction, "horizontal")==0){
 		x1 = x2;
 		x2 = clen + x2;
@@ -445,7 +445,7 @@ find_left_position(GapIO *io,
 
 	cur_contig = order[i];
 	prev_len = length;
-	length += ABS(io_clength(io, cur_contig));
+	length += ABS(io_cclength(io, cur_contig));
 #ifdef DEBUG
 	printf("i %d length %d prev %d curcontig %"PRIrec" wx %f\n",
 	       i, length, prev_len, cur_contig, wx);
@@ -464,7 +464,7 @@ find_left_position(GapIO *io,
 }
 
 /* determines the position of a base in terms of the entire database */
-int
+int64_t
 find_position_in_DB(GapIO *io,
 		    tg_rec c_num,
 		    int64_t position)
@@ -484,8 +484,8 @@ find_position_in_DB(GapIO *io,
 #endif
 	    return(cur_length + position);
 	}
-	/* cur_length += io_clength(io, cur_contig) + 1; */
-	cur_length += io_clength(io, cur_contig);
+	/* cur_length += io_cclength(io, cur_contig) + 1; */
+	cur_length += io_cclength(io, cur_contig);
     }
     return -1;
 }
@@ -513,12 +513,15 @@ CSLocalCursor(GapIO *io,
     }
 
     for (i = 0; i < num_contigs; i++) {
+	int cstart, cend;
 
 	cur_contig = order[i];
 	prev_offset = offset;
-	offset += ABS(io_clength(io, cur_contig));
+	consensus_valid_range(io, cur_contig, &cstart, &cend);
+	//offset += ABS(io_cclength(io, cur_contig));
+	offset += cend - cstart + 1;
 	if ((wx > prev_offset) && (wx <= offset+1)) {
-	    return (wx - prev_offset);
+	    return (wx - prev_offset + cstart);
 	}
     }
     /* last contig */
@@ -529,33 +532,42 @@ int
 DoClipping(GapIO *io,                                                  /* in */
 	   obj_match *match)                                      /* in, out */
 {
-    int c1_len, c2_len;
-    if (match->pos1 <= 0) {
-	match->pos1 = 1;
-	if (match->end1 <= 0) {
-	    match->end1 = 1;
-	}
-    }
-    if (match->pos2 <= 0) {
-	match->pos2 = 1;
-	if (match->end2 <= 0) {
-	    match->end2 = 1;
-	}
-    }
-    c1_len = io_clength(io, ABS(match->c1));
-    if (match->end1 > c1_len) {
-	match->end1 = c1_len;
-	if (match->pos1 > c1_len) {
-	    match->pos1 = c1_len;
-	}
-    }
-    c2_len = io_clength(io, ABS(match->c2));
-    if (match->end2 > c2_len) {
-	match->end2 = c2_len;
-	if (match->pos2 > c2_len) {
-	    match->pos2 = c2_len;
-	}
-    }
+    contig_t *c;
+    int c1_start, c1_end;
+    int c2_start, c2_end;
+    int old_len;
+
+    //c = cache_search(io, GT_Contig, ABS(match->c1));
+    //c1_start = c->start;
+    //c1_end   = c->end;
+    consensus_valid_range(io, ABS(match->c1), &c1_start, &c1_end);
+
+    if (match->pos1 < c1_start) match->pos1 = c1_start;
+    if (match->pos1 > c1_end)	match->pos1 = c1_end;
+    if (match->end1 < c1_start)	match->end1 = c1_start;
+    if (match->end1 > c1_end)	match->end1 = c1_end;
+
+    match->pos1 -= c1_start-1;
+    match->end1 -= c1_start-1;
+
+    //c = cache_search(io, GT_Contig, ABS(match->c2));
+    //c2_start = c->start;
+    //c2_end   = c->end;
+    consensus_valid_range(io, ABS(match->c2), &c2_start, &c2_end);
+
+    if (match->pos2 < c2_start)	match->pos2 = c2_start;
+    if (match->pos2 > c2_end)	match->pos2 = c2_end;
+    if (match->end2 < c2_start)	match->end2 = c2_start;
+    if (match->end2 > c2_end)	match->end2 = c2_end;
+
+    match->pos2 -= c2_start-1;
+    match->end2 -= c2_start-1;
+
+    match->length = MIN(match->end1 - match->pos1,
+			match->end2 - match->pos2) + 1;
+
+    /* Set minimum size of line, just for clarity? */
+
     return 0;
 }
 
@@ -685,7 +697,7 @@ display_cs_tags(Tcl_Interp *interp,                                   /* in */
 	}
 
 	crec = arr(tg_rec, io->contig_order, i);
-	clen = io_clength(io, crec);
+	clen = io_cclength(io, crec);
 	iter = contig_iter_new_by_type(io, crec, 1,
 				       CITER_FIRST | CITER_ISTART,
 				       CITER_CSTART, CITER_CEND,
