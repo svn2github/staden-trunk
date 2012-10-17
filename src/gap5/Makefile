@@ -254,6 +254,7 @@ ace.o: $(SRCROOT)/gap5/g-request.h
 ace.o: $(SRCROOT)/gap5/g-struct.h
 ace.o: $(SRCROOT)/gap5/g.h
 ace.o: $(SRCROOT)/gap5/hache_table.h
+ace.o: $(SRCROOT)/gap5/io_utils.h
 ace.o: $(SRCROOT)/gap5/tg_anno.h
 ace.o: $(SRCROOT)/gap5/tg_bin.h
 ace.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -264,6 +265,7 @@ ace.o: $(SRCROOT)/gap5/tg_index.h
 ace.o: $(SRCROOT)/gap5/tg_index_common.h
 ace.o: $(SRCROOT)/gap5/tg_library.h
 ace.o: $(SRCROOT)/gap5/tg_register.h
+ace.o: $(SRCROOT)/gap5/tg_scaffold.h
 ace.o: $(SRCROOT)/gap5/tg_sequence.h
 ace.o: $(SRCROOT)/gap5/tg_struct.h
 ace.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -317,6 +319,7 @@ active_tags.o: $(SRCROOT)/gap5/tg_gio.h
 active_tags.o: $(SRCROOT)/gap5/tg_iface.h
 active_tags.o: $(SRCROOT)/gap5/tg_library.h
 active_tags.o: $(SRCROOT)/gap5/tg_register.h
+active_tags.o: $(SRCROOT)/gap5/tg_scaffold.h
 active_tags.o: $(SRCROOT)/gap5/tg_sequence.h
 active_tags.o: $(SRCROOT)/gap5/tg_struct.h
 active_tags.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -346,6 +349,7 @@ afg.o: $(SRCROOT)/gap5/g-request.h
 afg.o: $(SRCROOT)/gap5/g-struct.h
 afg.o: $(SRCROOT)/gap5/g.h
 afg.o: $(SRCROOT)/gap5/hache_table.h
+afg.o: $(SRCROOT)/gap5/io_utils.h
 afg.o: $(SRCROOT)/gap5/tg_anno.h
 afg.o: $(SRCROOT)/gap5/tg_bin.h
 afg.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -356,6 +360,7 @@ afg.o: $(SRCROOT)/gap5/tg_index.h
 afg.o: $(SRCROOT)/gap5/tg_index_common.h
 afg.o: $(SRCROOT)/gap5/tg_library.h
 afg.o: $(SRCROOT)/gap5/tg_register.h
+afg.o: $(SRCROOT)/gap5/tg_scaffold.h
 afg.o: $(SRCROOT)/gap5/tg_sequence.h
 afg.o: $(SRCROOT)/gap5/tg_struct.h
 afg.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -404,6 +409,7 @@ baf.o: $(SRCROOT)/gap5/g-request.h
 baf.o: $(SRCROOT)/gap5/g-struct.h
 baf.o: $(SRCROOT)/gap5/g.h
 baf.o: $(SRCROOT)/gap5/hache_table.h
+baf.o: $(SRCROOT)/gap5/io_utils.h
 baf.o: $(SRCROOT)/gap5/tg_anno.h
 baf.o: $(SRCROOT)/gap5/tg_bin.h
 baf.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -414,6 +420,7 @@ baf.o: $(SRCROOT)/gap5/tg_index.h
 baf.o: $(SRCROOT)/gap5/tg_index_common.h
 baf.o: $(SRCROOT)/gap5/tg_library.h
 baf.o: $(SRCROOT)/gap5/tg_register.h
+baf.o: $(SRCROOT)/gap5/tg_scaffold.h
 baf.o: $(SRCROOT)/gap5/tg_sequence.h
 baf.o: $(SRCROOT)/gap5/tg_struct.h
 baf.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -432,6 +439,7 @@ break_contig.o: $(SRCROOT)/Misc/xerror.h
 break_contig.o: $(PWD)/staden_config.h
 break_contig.o: $(SRCROOT)/gap5/b+tree2.h
 break_contig.o: $(SRCROOT)/gap5/break_contig.h
+break_contig.o: $(SRCROOT)/gap5/consensus.h
 break_contig.o: $(SRCROOT)/gap5/dis_readings.h
 break_contig.o: $(SRCROOT)/gap5/g-alloc.h
 break_contig.o: $(SRCROOT)/gap5/g-connect.h
@@ -446,6 +454,7 @@ break_contig.o: $(SRCROOT)/gap5/g-request.h
 break_contig.o: $(SRCROOT)/gap5/g-struct.h
 break_contig.o: $(SRCROOT)/gap5/g.h
 break_contig.o: $(SRCROOT)/gap5/hache_table.h
+break_contig.o: $(SRCROOT)/gap5/io_utils.h
 break_contig.o: $(SRCROOT)/gap5/tg_anno.h
 break_contig.o: $(SRCROOT)/gap5/tg_bin.h
 break_contig.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -454,6 +463,7 @@ break_contig.o: $(SRCROOT)/gap5/tg_gio.h
 break_contig.o: $(SRCROOT)/gap5/tg_iface.h
 break_contig.o: $(SRCROOT)/gap5/tg_library.h
 break_contig.o: $(SRCROOT)/gap5/tg_register.h
+break_contig.o: $(SRCROOT)/gap5/tg_scaffold.h
 break_contig.o: $(SRCROOT)/gap5/tg_sequence.h
 break_contig.o: $(SRCROOT)/gap5/tg_struct.h
 break_contig.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -482,6 +492,7 @@ caf.o: $(SRCROOT)/gap5/g-request.h
 caf.o: $(SRCROOT)/gap5/g-struct.h
 caf.o: $(SRCROOT)/gap5/g.h
 caf.o: $(SRCROOT)/gap5/hache_table.h
+caf.o: $(SRCROOT)/gap5/io_utils.h
 caf.o: $(SRCROOT)/gap5/tg_anno.h
 caf.o: $(SRCROOT)/gap5/tg_bin.h
 caf.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -492,6 +503,7 @@ caf.o: $(SRCROOT)/gap5/tg_index.h
 caf.o: $(SRCROOT)/gap5/tg_index_common.h
 caf.o: $(SRCROOT)/gap5/tg_library.h
 caf.o: $(SRCROOT)/gap5/tg_register.h
+caf.o: $(SRCROOT)/gap5/tg_scaffold.h
 caf.o: $(SRCROOT)/gap5/tg_sequence.h
 caf.o: $(SRCROOT)/gap5/tg_struct.h
 caf.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -522,6 +534,7 @@ check_assembly.o: $(SRCROOT)/gap5/g-os.h
 check_assembly.o: $(SRCROOT)/gap5/g-request.h
 check_assembly.o: $(SRCROOT)/gap5/g-struct.h
 check_assembly.o: $(SRCROOT)/gap5/g.h
+check_assembly.o: $(SRCROOT)/gap5/gap4_compat.h
 check_assembly.o: $(SRCROOT)/gap5/gap_globals.h
 check_assembly.o: $(SRCROOT)/gap5/hache_table.h
 check_assembly.o: $(SRCROOT)/gap5/io_utils.h
@@ -534,11 +547,13 @@ check_assembly.o: $(SRCROOT)/gap5/tg_gio.h
 check_assembly.o: $(SRCROOT)/gap5/tg_iface.h
 check_assembly.o: $(SRCROOT)/gap5/tg_library.h
 check_assembly.o: $(SRCROOT)/gap5/tg_register.h
+check_assembly.o: $(SRCROOT)/gap5/tg_scaffold.h
 check_assembly.o: $(SRCROOT)/gap5/tg_sequence.h
 check_assembly.o: $(SRCROOT)/gap5/tg_struct.h
 check_assembly.o: $(SRCROOT)/gap5/tg_tcl.h
 check_assembly.o: $(SRCROOT)/gap5/tg_track.h
 check_assembly.o: $(SRCROOT)/gap5/tg_utils.h
+check_assembly.o: $(SRCROOT)/gap5/tk-io-reg.h
 check_assembly.o: $(SRCROOT)/gap5/tkEdNames.h
 check_assembly.o: $(SRCROOT)/gap5/tkEditor.h
 check_assembly.o: $(SRCROOT)/seq_utils/align.h
@@ -562,6 +577,7 @@ consen.o: $(SRCROOT)/Misc/xerror.h
 consen.o: $(PWD)/staden_config.h
 consen.o: $(SRCROOT)/gap5/b+tree2.h
 consen.o: $(SRCROOT)/gap5/consen.h
+consen.o: $(SRCROOT)/gap5/consensus.h
 consen.o: $(SRCROOT)/gap5/extract.h
 consen.o: $(SRCROOT)/gap5/g-alloc.h
 consen.o: $(SRCROOT)/gap5/g-connect.h
@@ -589,6 +605,7 @@ consen.o: $(SRCROOT)/gap5/tg_gio.h
 consen.o: $(SRCROOT)/gap5/tg_iface.h
 consen.o: $(SRCROOT)/gap5/tg_library.h
 consen.o: $(SRCROOT)/gap5/tg_register.h
+consen.o: $(SRCROOT)/gap5/tg_scaffold.h
 consen.o: $(SRCROOT)/gap5/tg_sequence.h
 consen.o: $(SRCROOT)/gap5/tg_struct.h
 consen.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -619,6 +636,7 @@ consensus.o: $(SRCROOT)/gap5/g-request.h
 consensus.o: $(SRCROOT)/gap5/g-struct.h
 consensus.o: $(SRCROOT)/gap5/g.h
 consensus.o: $(SRCROOT)/gap5/hache_table.h
+consensus.o: $(SRCROOT)/gap5/io_utils.h
 consensus.o: $(SRCROOT)/gap5/tg_anno.h
 consensus.o: $(SRCROOT)/gap5/tg_bin.h
 consensus.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -627,11 +645,53 @@ consensus.o: $(SRCROOT)/gap5/tg_gio.h
 consensus.o: $(SRCROOT)/gap5/tg_iface.h
 consensus.o: $(SRCROOT)/gap5/tg_library.h
 consensus.o: $(SRCROOT)/gap5/tg_register.h
+consensus.o: $(SRCROOT)/gap5/tg_scaffold.h
 consensus.o: $(SRCROOT)/gap5/tg_sequence.h
 consensus.o: $(SRCROOT)/gap5/tg_struct.h
 consensus.o: $(SRCROOT)/gap5/tg_tcl.h
 consensus.o: $(SRCROOT)/gap5/tg_track.h
 consensus.o: $(SRCROOT)/gap5/tg_utils.h
+contig_extend.o: $(SRCROOT)/Misc/array.h
+contig_extend.o: $(SRCROOT)/Misc/misc.h
+contig_extend.o: $(SRCROOT)/Misc/os.h
+contig_extend.o: $(SRCROOT)/Misc/tree.h
+contig_extend.o: $(SRCROOT)/Misc/xalloc.h
+contig_extend.o: $(SRCROOT)/Misc/xerror.h
+contig_extend.o: $(PWD)/staden_config.h
+contig_extend.o: $(SRCROOT)/gap5/b+tree2.h
+contig_extend.o: $(SRCROOT)/gap5/consensus.h
+contig_extend.o: $(SRCROOT)/gap5/contig_extend.h
+contig_extend.o: $(SRCROOT)/gap5/g-alloc.h
+contig_extend.o: $(SRCROOT)/gap5/g-connect.h
+contig_extend.o: $(SRCROOT)/gap5/g-db.h
+contig_extend.o: $(SRCROOT)/gap5/g-defs.h
+contig_extend.o: $(SRCROOT)/gap5/g-error.h
+contig_extend.o: $(SRCROOT)/gap5/g-filedefs.h
+contig_extend.o: $(SRCROOT)/gap5/g-io.h
+contig_extend.o: $(SRCROOT)/gap5/g-misc.h
+contig_extend.o: $(SRCROOT)/gap5/g-os.h
+contig_extend.o: $(SRCROOT)/gap5/g-request.h
+contig_extend.o: $(SRCROOT)/gap5/g-struct.h
+contig_extend.o: $(SRCROOT)/gap5/g.h
+contig_extend.o: $(SRCROOT)/gap5/gap4_compat.h
+contig_extend.o: $(SRCROOT)/gap5/hache_table.h
+contig_extend.o: $(SRCROOT)/gap5/io_utils.h
+contig_extend.o: $(SRCROOT)/gap5/tg_anno.h
+contig_extend.o: $(SRCROOT)/gap5/tg_bin.h
+contig_extend.o: $(SRCROOT)/gap5/tg_cache_item.h
+contig_extend.o: $(SRCROOT)/gap5/tg_contig.h
+contig_extend.o: $(SRCROOT)/gap5/tg_gio.h
+contig_extend.o: $(SRCROOT)/gap5/tg_iface.h
+contig_extend.o: $(SRCROOT)/gap5/tg_library.h
+contig_extend.o: $(SRCROOT)/gap5/tg_register.h
+contig_extend.o: $(SRCROOT)/gap5/tg_scaffold.h
+contig_extend.o: $(SRCROOT)/gap5/tg_sequence.h
+contig_extend.o: $(SRCROOT)/gap5/tg_struct.h
+contig_extend.o: $(SRCROOT)/gap5/tg_tcl.h
+contig_extend.o: $(SRCROOT)/gap5/tg_track.h
+contig_extend.o: $(SRCROOT)/gap5/tg_utils.h
+contig_extend.o: $(SRCROOT)/seq_utils/dna_utils.h
+contig_extend.o: $(SRCROOT)/tk_utils/text_output.h
 contig_selector.o: $(SRCROOT)/Misc/array.h
 contig_selector.o: $(SRCROOT)/Misc/misc.h
 contig_selector.o: $(SRCROOT)/Misc/os.h
@@ -671,6 +731,7 @@ contig_selector.o: $(SRCROOT)/gap5/tg_gio.h
 contig_selector.o: $(SRCROOT)/gap5/tg_iface.h
 contig_selector.o: $(SRCROOT)/gap5/tg_library.h
 contig_selector.o: $(SRCROOT)/gap5/tg_register.h
+contig_selector.o: $(SRCROOT)/gap5/tg_scaffold.h
 contig_selector.o: $(SRCROOT)/gap5/tg_sequence.h
 contig_selector.o: $(SRCROOT)/gap5/tg_struct.h
 contig_selector.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -718,6 +779,7 @@ cs-object.o: $(SRCROOT)/gap5/tg_gio.h
 cs-object.o: $(SRCROOT)/gap5/tg_iface.h
 cs-object.o: $(SRCROOT)/gap5/tg_library.h
 cs-object.o: $(SRCROOT)/gap5/tg_register.h
+cs-object.o: $(SRCROOT)/gap5/tg_scaffold.h
 cs-object.o: $(SRCROOT)/gap5/tg_sequence.h
 cs-object.o: $(SRCROOT)/gap5/tg_struct.h
 cs-object.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -750,6 +812,7 @@ depad_seq_tree.o: $(SRCROOT)/gap5/g-request.h
 depad_seq_tree.o: $(SRCROOT)/gap5/g-struct.h
 depad_seq_tree.o: $(SRCROOT)/gap5/g.h
 depad_seq_tree.o: $(SRCROOT)/gap5/hache_table.h
+depad_seq_tree.o: $(SRCROOT)/gap5/io_utils.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_anno.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_bin.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -758,6 +821,7 @@ depad_seq_tree.o: $(SRCROOT)/gap5/tg_gio.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_iface.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_library.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_register.h
+depad_seq_tree.o: $(SRCROOT)/gap5/tg_scaffold.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_sequence.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_struct.h
 depad_seq_tree.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -786,6 +850,7 @@ depth_track.o: $(SRCROOT)/gap5/g-struct.h
 depth_track.o: $(SRCROOT)/gap5/g.h
 depth_track.o: $(SRCROOT)/gap5/gap_range.h
 depth_track.o: $(SRCROOT)/gap5/hache_table.h
+depth_track.o: $(SRCROOT)/gap5/io_utils.h
 depth_track.o: $(SRCROOT)/gap5/tg_anno.h
 depth_track.o: $(SRCROOT)/gap5/tg_bin.h
 depth_track.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -794,6 +859,7 @@ depth_track.o: $(SRCROOT)/gap5/tg_gio.h
 depth_track.o: $(SRCROOT)/gap5/tg_iface.h
 depth_track.o: $(SRCROOT)/gap5/tg_library.h
 depth_track.o: $(SRCROOT)/gap5/tg_register.h
+depth_track.o: $(SRCROOT)/gap5/tg_scaffold.h
 depth_track.o: $(SRCROOT)/gap5/tg_sequence.h
 depth_track.o: $(SRCROOT)/gap5/tg_struct.h
 depth_track.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -809,6 +875,7 @@ dis_readings.o: $(SRCROOT)/Misc/xerror.h
 dis_readings.o: $(PWD)/staden_config.h
 dis_readings.o: $(SRCROOT)/gap5/b+tree2.h
 dis_readings.o: $(SRCROOT)/gap5/break_contig.h
+dis_readings.o: $(SRCROOT)/gap5/consensus.h
 dis_readings.o: $(SRCROOT)/gap5/dis_readings.h
 dis_readings.o: $(SRCROOT)/gap5/g-alloc.h
 dis_readings.o: $(SRCROOT)/gap5/g-connect.h
@@ -823,6 +890,7 @@ dis_readings.o: $(SRCROOT)/gap5/g-request.h
 dis_readings.o: $(SRCROOT)/gap5/g-struct.h
 dis_readings.o: $(SRCROOT)/gap5/g.h
 dis_readings.o: $(SRCROOT)/gap5/hache_table.h
+dis_readings.o: $(SRCROOT)/gap5/io_utils.h
 dis_readings.o: $(SRCROOT)/gap5/tg_anno.h
 dis_readings.o: $(SRCROOT)/gap5/tg_bin.h
 dis_readings.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -831,11 +899,13 @@ dis_readings.o: $(SRCROOT)/gap5/tg_gio.h
 dis_readings.o: $(SRCROOT)/gap5/tg_iface.h
 dis_readings.o: $(SRCROOT)/gap5/tg_library.h
 dis_readings.o: $(SRCROOT)/gap5/tg_register.h
+dis_readings.o: $(SRCROOT)/gap5/tg_scaffold.h
 dis_readings.o: $(SRCROOT)/gap5/tg_sequence.h
 dis_readings.o: $(SRCROOT)/gap5/tg_struct.h
 dis_readings.o: $(SRCROOT)/gap5/tg_tcl.h
 dis_readings.o: $(SRCROOT)/gap5/tg_track.h
 dis_readings.o: $(SRCROOT)/gap5/tg_utils.h
+dis_readings.o: $(SRCROOT)/tk_utils/text_output.h
 do_fij.o: $(SRCROOT)/Misc/array.h
 do_fij.o: $(SRCROOT)/Misc/misc.h
 do_fij.o: $(SRCROOT)/Misc/os.h
@@ -861,6 +931,7 @@ do_fij.o: $(SRCROOT)/gap5/g.h
 do_fij.o: $(SRCROOT)/gap5/hache_table.h
 do_fij.o: $(SRCROOT)/gap5/hash_lib.h
 do_fij.o: $(SRCROOT)/gap5/io_utils.h
+do_fij.o: $(SRCROOT)/gap5/newgap_structs.h
 do_fij.o: $(SRCROOT)/gap5/tg_anno.h
 do_fij.o: $(SRCROOT)/gap5/tg_bin.h
 do_fij.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -869,6 +940,7 @@ do_fij.o: $(SRCROOT)/gap5/tg_gio.h
 do_fij.o: $(SRCROOT)/gap5/tg_iface.h
 do_fij.o: $(SRCROOT)/gap5/tg_library.h
 do_fij.o: $(SRCROOT)/gap5/tg_register.h
+do_fij.o: $(SRCROOT)/gap5/tg_scaffold.h
 do_fij.o: $(SRCROOT)/gap5/tg_sequence.h
 do_fij.o: $(SRCROOT)/gap5/tg_struct.h
 do_fij.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -886,6 +958,8 @@ editor_join.o: $(PWD)/staden_config.h
 editor_join.o: $(SRCROOT)/gap5/b+tree2.h
 editor_join.o: $(SRCROOT)/gap5/consen.h
 editor_join.o: $(SRCROOT)/gap5/consensus.h
+editor_join.o: $(SRCROOT)/gap5/dis_readings.h
+editor_join.o: $(SRCROOT)/gap5/editor_join.h
 editor_join.o: $(SRCROOT)/gap5/editor_view.h
 editor_join.o: $(SRCROOT)/gap5/g-alloc.h
 editor_join.o: $(SRCROOT)/gap5/g-connect.h
@@ -910,6 +984,7 @@ editor_join.o: $(SRCROOT)/gap5/tg_gio.h
 editor_join.o: $(SRCROOT)/gap5/tg_iface.h
 editor_join.o: $(SRCROOT)/gap5/tg_library.h
 editor_join.o: $(SRCROOT)/gap5/tg_register.h
+editor_join.o: $(SRCROOT)/gap5/tg_scaffold.h
 editor_join.o: $(SRCROOT)/gap5/tg_sequence.h
 editor_join.o: $(SRCROOT)/gap5/tg_struct.h
 editor_join.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -950,6 +1025,7 @@ editor_oligo.o: $(SRCROOT)/gap5/g-struct.h
 editor_oligo.o: $(SRCROOT)/gap5/g.h
 editor_oligo.o: $(SRCROOT)/gap5/gap4_compat.h
 editor_oligo.o: $(SRCROOT)/gap5/hache_table.h
+editor_oligo.o: $(SRCROOT)/gap5/io_utils.h
 editor_oligo.o: $(SRCROOT)/gap5/primlib.h
 editor_oligo.o: $(SRCROOT)/gap5/tg_anno.h
 editor_oligo.o: $(SRCROOT)/gap5/tg_bin.h
@@ -959,6 +1035,7 @@ editor_oligo.o: $(SRCROOT)/gap5/tg_gio.h
 editor_oligo.o: $(SRCROOT)/gap5/tg_iface.h
 editor_oligo.o: $(SRCROOT)/gap5/tg_library.h
 editor_oligo.o: $(SRCROOT)/gap5/tg_register.h
+editor_oligo.o: $(SRCROOT)/gap5/tg_scaffold.h
 editor_oligo.o: $(SRCROOT)/gap5/tg_sequence.h
 editor_oligo.o: $(SRCROOT)/gap5/tg_struct.h
 editor_oligo.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -997,7 +1074,9 @@ editor_search.o: $(SRCROOT)/gap5/g-os.h
 editor_search.o: $(SRCROOT)/gap5/g-request.h
 editor_search.o: $(SRCROOT)/gap5/g-struct.h
 editor_search.o: $(SRCROOT)/gap5/g.h
+editor_search.o: $(SRCROOT)/gap5/gap4_compat.h
 editor_search.o: $(SRCROOT)/gap5/hache_table.h
+editor_search.o: $(SRCROOT)/gap5/io_utils.h
 editor_search.o: $(SRCROOT)/gap5/tg_anno.h
 editor_search.o: $(SRCROOT)/gap5/tg_bin.h
 editor_search.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1006,6 +1085,7 @@ editor_search.o: $(SRCROOT)/gap5/tg_gio.h
 editor_search.o: $(SRCROOT)/gap5/tg_iface.h
 editor_search.o: $(SRCROOT)/gap5/tg_library.h
 editor_search.o: $(SRCROOT)/gap5/tg_register.h
+editor_search.o: $(SRCROOT)/gap5/tg_scaffold.h
 editor_search.o: $(SRCROOT)/gap5/tg_sequence.h
 editor_search.o: $(SRCROOT)/gap5/tg_struct.h
 editor_search.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1059,6 +1139,7 @@ editor_view.o: $(SRCROOT)/gap5/tg_gio.h
 editor_view.o: $(SRCROOT)/gap5/tg_iface.h
 editor_view.o: $(SRCROOT)/gap5/tg_library.h
 editor_view.o: $(SRCROOT)/gap5/tg_register.h
+editor_view.o: $(SRCROOT)/gap5/tg_scaffold.h
 editor_view.o: $(SRCROOT)/gap5/tg_sequence.h
 editor_view.o: $(SRCROOT)/gap5/tg_struct.h
 editor_view.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1089,6 +1170,7 @@ export_contigs.o: $(SRCROOT)/Misc/xalloc.h
 export_contigs.o: $(SRCROOT)/Misc/xerror.h
 export_contigs.o: $(PWD)/staden_config.h
 export_contigs.o: $(SRCROOT)/gap5/b+tree2.h
+export_contigs.o: $(SRCROOT)/gap5/bam.h
 export_contigs.o: $(SRCROOT)/gap5/consensus.h
 export_contigs.o: $(SRCROOT)/gap5/export_contigs.h
 export_contigs.o: $(SRCROOT)/gap5/g-alloc.h
@@ -1109,6 +1191,7 @@ export_contigs.o: $(SRCROOT)/gap5/io_utils.h
 export_contigs.o: $(SRCROOT)/gap5/list_proc.h
 export_contigs.o: $(SRCROOT)/gap5/newgap_structs.h
 export_contigs.o: $(SRCROOT)/gap5/sam_index.h
+export_contigs.o: $(SRCROOT)/gap5/tagdb.h
 export_contigs.o: $(SRCROOT)/gap5/tg_anno.h
 export_contigs.o: $(SRCROOT)/gap5/tg_bin.h
 export_contigs.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1118,12 +1201,14 @@ export_contigs.o: $(SRCROOT)/gap5/tg_iface.h
 export_contigs.o: $(SRCROOT)/gap5/tg_index.h
 export_contigs.o: $(SRCROOT)/gap5/tg_library.h
 export_contigs.o: $(SRCROOT)/gap5/tg_register.h
+export_contigs.o: $(SRCROOT)/gap5/tg_scaffold.h
 export_contigs.o: $(SRCROOT)/gap5/tg_sequence.h
 export_contigs.o: $(SRCROOT)/gap5/tg_struct.h
 export_contigs.o: $(SRCROOT)/gap5/tg_tcl.h
 export_contigs.o: $(SRCROOT)/gap5/tg_track.h
 export_contigs.o: $(SRCROOT)/gap5/tg_utils.h
 export_contigs.o: $(SRCROOT)/seq_utils/dna_utils.h
+export_contigs.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 fasta.o: $(SRCROOT)/Misc/array.h
 fasta.o: $(SRCROOT)/Misc/misc.h
 fasta.o: $(SRCROOT)/Misc/os.h
@@ -1147,6 +1232,7 @@ fasta.o: $(SRCROOT)/gap5/g-request.h
 fasta.o: $(SRCROOT)/gap5/g-struct.h
 fasta.o: $(SRCROOT)/gap5/g.h
 fasta.o: $(SRCROOT)/gap5/hache_table.h
+fasta.o: $(SRCROOT)/gap5/io_utils.h
 fasta.o: $(SRCROOT)/gap5/tg_anno.h
 fasta.o: $(SRCROOT)/gap5/tg_bin.h
 fasta.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1157,6 +1243,7 @@ fasta.o: $(SRCROOT)/gap5/tg_index.h
 fasta.o: $(SRCROOT)/gap5/tg_index_common.h
 fasta.o: $(SRCROOT)/gap5/tg_library.h
 fasta.o: $(SRCROOT)/gap5/tg_register.h
+fasta.o: $(SRCROOT)/gap5/tg_scaffold.h
 fasta.o: $(SRCROOT)/gap5/tg_sequence.h
 fasta.o: $(SRCROOT)/gap5/tg_struct.h
 fasta.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1196,6 +1283,8 @@ fij.o: $(SRCROOT)/gap5/hash_lib.h
 fij.o: $(SRCROOT)/gap5/io_utils.h
 fij.o: $(SRCROOT)/gap5/list.h
 fij.o: $(SRCROOT)/gap5/newgap_cmds.h
+fij.o: $(SRCROOT)/gap5/newgap_structs.h
+fij.o: $(SRCROOT)/gap5/readpair.h
 fij.o: $(SRCROOT)/gap5/tg_anno.h
 fij.o: $(SRCROOT)/gap5/tg_bin.h
 fij.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1204,6 +1293,7 @@ fij.o: $(SRCROOT)/gap5/tg_gio.h
 fij.o: $(SRCROOT)/gap5/tg_iface.h
 fij.o: $(SRCROOT)/gap5/tg_library.h
 fij.o: $(SRCROOT)/gap5/tg_register.h
+fij.o: $(SRCROOT)/gap5/tg_scaffold.h
 fij.o: $(SRCROOT)/gap5/tg_sequence.h
 fij.o: $(SRCROOT)/gap5/tg_struct.h
 fij.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1250,6 +1340,7 @@ find_oligo.o: $(SRCROOT)/gap5/gap4_compat.h
 find_oligo.o: $(SRCROOT)/gap5/gap_globals.h
 find_oligo.o: $(SRCROOT)/gap5/hache_table.h
 find_oligo.o: $(SRCROOT)/gap5/io_utils.h
+find_oligo.o: $(SRCROOT)/gap5/list_proc.h
 find_oligo.o: $(SRCROOT)/gap5/tagdb.h
 find_oligo.o: $(SRCROOT)/gap5/template_display.h
 find_oligo.o: $(SRCROOT)/gap5/tg_anno.h
@@ -1260,6 +1351,7 @@ find_oligo.o: $(SRCROOT)/gap5/tg_gio.h
 find_oligo.o: $(SRCROOT)/gap5/tg_iface.h
 find_oligo.o: $(SRCROOT)/gap5/tg_library.h
 find_oligo.o: $(SRCROOT)/gap5/tg_register.h
+find_oligo.o: $(SRCROOT)/gap5/tg_scaffold.h
 find_oligo.o: $(SRCROOT)/gap5/tg_sequence.h
 find_oligo.o: $(SRCROOT)/gap5/tg_struct.h
 find_oligo.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1319,6 +1411,7 @@ find_repeats.o: $(SRCROOT)/gap5/tg_gio.h
 find_repeats.o: $(SRCROOT)/gap5/tg_iface.h
 find_repeats.o: $(SRCROOT)/gap5/tg_library.h
 find_repeats.o: $(SRCROOT)/gap5/tg_register.h
+find_repeats.o: $(SRCROOT)/gap5/tg_scaffold.h
 find_repeats.o: $(SRCROOT)/gap5/tg_sequence.h
 find_repeats.o: $(SRCROOT)/gap5/tg_struct.h
 find_repeats.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1327,6 +1420,7 @@ find_repeats.o: $(SRCROOT)/gap5/tg_utils.h
 find_repeats.o: $(SRCROOT)/gap5/tk-io-reg.h
 find_repeats.o: $(SRCROOT)/gap5/tkEdNames.h
 find_repeats.o: $(SRCROOT)/gap5/tkEditor.h
+find_repeats.o: $(SRCROOT)/seq_utils/dna_utils.h
 find_repeats.o: $(SRCROOT)/tk_utils/canvas_box.h
 find_repeats.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 find_repeats.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1467,6 +1561,7 @@ gap4_compat.o: $(SRCROOT)/gap5/tg_gio.h
 gap4_compat.o: $(SRCROOT)/gap5/tg_iface.h
 gap4_compat.o: $(SRCROOT)/gap5/tg_library.h
 gap4_compat.o: $(SRCROOT)/gap5/tg_register.h
+gap4_compat.o: $(SRCROOT)/gap5/tg_scaffold.h
 gap4_compat.o: $(SRCROOT)/gap5/tg_sequence.h
 gap4_compat.o: $(SRCROOT)/gap5/tg_struct.h
 gap4_compat.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1492,8 +1587,10 @@ gap_canvas_box.o: $(SRCROOT)/gap5/g-os.h
 gap_canvas_box.o: $(SRCROOT)/gap5/g-request.h
 gap_canvas_box.o: $(SRCROOT)/gap5/g-struct.h
 gap_canvas_box.o: $(SRCROOT)/gap5/g.h
+gap_canvas_box.o: $(SRCROOT)/gap5/gap4_compat.h
 gap_canvas_box.o: $(SRCROOT)/gap5/gap_globals.h
 gap_canvas_box.o: $(SRCROOT)/gap5/hache_table.h
+gap_canvas_box.o: $(SRCROOT)/gap5/io_utils.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_anno.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_bin.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1502,6 +1599,7 @@ gap_canvas_box.o: $(SRCROOT)/gap5/tg_gio.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_iface.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_library.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_register.h
+gap_canvas_box.o: $(SRCROOT)/gap5/tg_scaffold.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_sequence.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_struct.h
 gap_canvas_box.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1531,6 +1629,7 @@ gap_cli_arg.o: $(SRCROOT)/gap5/g-struct.h
 gap_cli_arg.o: $(SRCROOT)/gap5/g.h
 gap_cli_arg.o: $(SRCROOT)/gap5/gap_cli_arg.h
 gap_cli_arg.o: $(SRCROOT)/gap5/hache_table.h
+gap_cli_arg.o: $(SRCROOT)/gap5/io_utils.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_anno.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_bin.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1539,6 +1638,7 @@ gap_cli_arg.o: $(SRCROOT)/gap5/tg_gio.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_iface.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_library.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_register.h
+gap_cli_arg.o: $(SRCROOT)/gap5/tg_scaffold.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_sequence.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_struct.h
 gap_cli_arg.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1578,6 +1678,7 @@ gap_globals.o: $(SRCROOT)/gap5/tg_gio.h
 gap_globals.o: $(SRCROOT)/gap5/tg_iface.h
 gap_globals.o: $(SRCROOT)/gap5/tg_library.h
 gap_globals.o: $(SRCROOT)/gap5/tg_register.h
+gap_globals.o: $(SRCROOT)/gap5/tg_scaffold.h
 gap_globals.o: $(SRCROOT)/gap5/tg_sequence.h
 gap_globals.o: $(SRCROOT)/gap5/tg_struct.h
 gap_globals.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1625,6 +1726,7 @@ gap_hash.o: $(SRCROOT)/gap5/tg_gio.h
 gap_hash.o: $(SRCROOT)/gap5/tg_iface.h
 gap_hash.o: $(SRCROOT)/gap5/tg_library.h
 gap_hash.o: $(SRCROOT)/gap5/tg_register.h
+gap_hash.o: $(SRCROOT)/gap5/tg_scaffold.h
 gap_hash.o: $(SRCROOT)/gap5/tg_sequence.h
 gap_hash.o: $(SRCROOT)/gap5/tg_struct.h
 gap_hash.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1655,6 +1757,7 @@ gap_range.o: $(SRCROOT)/gap5/g.h
 gap_range.o: $(SRCROOT)/gap5/gap_cli_arg.h
 gap_range.o: $(SRCROOT)/gap5/gap_range.h
 gap_range.o: $(SRCROOT)/gap5/hache_table.h
+gap_range.o: $(SRCROOT)/gap5/io_utils.h
 gap_range.o: $(SRCROOT)/gap5/tg_anno.h
 gap_range.o: $(SRCROOT)/gap5/tg_bin.h
 gap_range.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1663,6 +1766,7 @@ gap_range.o: $(SRCROOT)/gap5/tg_gio.h
 gap_range.o: $(SRCROOT)/gap5/tg_iface.h
 gap_range.o: $(SRCROOT)/gap5/tg_library.h
 gap_range.o: $(SRCROOT)/gap5/tg_register.h
+gap_range.o: $(SRCROOT)/gap5/tg_scaffold.h
 gap_range.o: $(SRCROOT)/gap5/tg_sequence.h
 gap_range.o: $(SRCROOT)/gap5/tg_struct.h
 gap_range.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1680,6 +1784,7 @@ hash_lib.o: $(SRCROOT)/Misc/xerror.h
 hash_lib.o: $(PWD)/staden_config.h
 hash_lib.o: $(SRCROOT)/gap5/b+tree2.h
 hash_lib.o: $(SRCROOT)/gap5/consen.h
+hash_lib.o: $(SRCROOT)/gap5/fij.h
 hash_lib.o: $(SRCROOT)/gap5/g-alloc.h
 hash_lib.o: $(SRCROOT)/gap5/g-connect.h
 hash_lib.o: $(SRCROOT)/gap5/g-db.h
@@ -1695,6 +1800,7 @@ hash_lib.o: $(SRCROOT)/gap5/g.h
 hash_lib.o: $(SRCROOT)/gap5/hache_table.h
 hash_lib.o: $(SRCROOT)/gap5/hash_lib.h
 hash_lib.o: $(SRCROOT)/gap5/io_utils.h
+hash_lib.o: $(SRCROOT)/gap5/newgap_structs.h
 hash_lib.o: $(SRCROOT)/gap5/tg_anno.h
 hash_lib.o: $(SRCROOT)/gap5/tg_bin.h
 hash_lib.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1703,6 +1809,7 @@ hash_lib.o: $(SRCROOT)/gap5/tg_gio.h
 hash_lib.o: $(SRCROOT)/gap5/tg_iface.h
 hash_lib.o: $(SRCROOT)/gap5/tg_library.h
 hash_lib.o: $(SRCROOT)/gap5/tg_register.h
+hash_lib.o: $(SRCROOT)/gap5/tg_scaffold.h
 hash_lib.o: $(SRCROOT)/gap5/tg_sequence.h
 hash_lib.o: $(SRCROOT)/gap5/tg_struct.h
 hash_lib.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1711,6 +1818,7 @@ hash_lib.o: $(SRCROOT)/gap5/tg_utils.h
 hash_lib.o: $(SRCROOT)/seq_utils/align_lib.h
 hash_lib.o: $(SRCROOT)/seq_utils/dna_utils.h
 import_gff.o: $(SRCROOT)/Misc/array.h
+import_gff.o: $(SRCROOT)/Misc/dstring.h
 import_gff.o: $(SRCROOT)/Misc/misc.h
 import_gff.o: $(SRCROOT)/Misc/os.h
 import_gff.o: $(SRCROOT)/Misc/tree.h
@@ -1719,6 +1827,7 @@ import_gff.o: $(SRCROOT)/Misc/xerror.h
 import_gff.o: $(PWD)/staden_config.h
 import_gff.o: $(SRCROOT)/gap5/b+tree2.h
 import_gff.o: $(SRCROOT)/gap5/consensus.h
+import_gff.o: $(SRCROOT)/gap5/export_contigs.h
 import_gff.o: $(SRCROOT)/gap5/g-alloc.h
 import_gff.o: $(SRCROOT)/gap5/g-connect.h
 import_gff.o: $(SRCROOT)/gap5/g-db.h
@@ -1734,6 +1843,7 @@ import_gff.o: $(SRCROOT)/gap5/g.h
 import_gff.o: $(SRCROOT)/gap5/gap_cli_arg.h
 import_gff.o: $(SRCROOT)/gap5/hache_table.h
 import_gff.o: $(SRCROOT)/gap5/import_gff.h
+import_gff.o: $(SRCROOT)/gap5/io_utils.h
 import_gff.o: $(SRCROOT)/gap5/tg_anno.h
 import_gff.o: $(SRCROOT)/gap5/tg_bin.h
 import_gff.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -1742,11 +1852,13 @@ import_gff.o: $(SRCROOT)/gap5/tg_gio.h
 import_gff.o: $(SRCROOT)/gap5/tg_iface.h
 import_gff.o: $(SRCROOT)/gap5/tg_library.h
 import_gff.o: $(SRCROOT)/gap5/tg_register.h
+import_gff.o: $(SRCROOT)/gap5/tg_scaffold.h
 import_gff.o: $(SRCROOT)/gap5/tg_sequence.h
 import_gff.o: $(SRCROOT)/gap5/tg_struct.h
 import_gff.o: $(SRCROOT)/gap5/tg_tcl.h
 import_gff.o: $(SRCROOT)/gap5/tg_track.h
 import_gff.o: $(SRCROOT)/gap5/tg_utils.h
+import_gff.o: $(SRCROOT)/gap5/zfio.h
 init.o: $(SRCROOT)/Misc/array.h
 init.o: $(SRCROOT)/Misc/misc.h
 init.o: $(SRCROOT)/Misc/os.h
@@ -1768,9 +1880,9 @@ init.o: $(SRCROOT)/gap5/g-os.h
 init.o: $(SRCROOT)/gap5/g-request.h
 init.o: $(SRCROOT)/gap5/g-struct.h
 init.o: $(SRCROOT)/gap5/g.h
-init.o: $(SRCROOT)/gap5/gap-tcl.h
 init.o: $(SRCROOT)/gap5/gap_globals.h
 init.o: $(SRCROOT)/gap5/hache_table.h
+init.o: $(SRCROOT)/gap5/io_utils.h
 init.o: $(SRCROOT)/gap5/list.h
 init.o: $(SRCROOT)/gap5/newgap_cmds.h
 init.o: $(SRCROOT)/gap5/tagdb.h
@@ -1782,6 +1894,7 @@ init.o: $(SRCROOT)/gap5/tg_gio.h
 init.o: $(SRCROOT)/gap5/tg_iface.h
 init.o: $(SRCROOT)/gap5/tg_library.h
 init.o: $(SRCROOT)/gap5/tg_register.h
+init.o: $(SRCROOT)/gap5/tg_scaffold.h
 init.o: $(SRCROOT)/gap5/tg_sequence.h
 init.o: $(SRCROOT)/gap5/tg_struct.h
 init.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1823,6 +1936,7 @@ list_proc.o: $(SRCROOT)/gap5/tg_gio.h
 list_proc.o: $(SRCROOT)/gap5/tg_iface.h
 list_proc.o: $(SRCROOT)/gap5/tg_library.h
 list_proc.o: $(SRCROOT)/gap5/tg_register.h
+list_proc.o: $(SRCROOT)/gap5/tg_scaffold.h
 list_proc.o: $(SRCROOT)/gap5/tg_sequence.h
 list_proc.o: $(SRCROOT)/gap5/tg_struct.h
 list_proc.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1851,6 +1965,7 @@ maq.o: $(SRCROOT)/gap5/g-request.h
 maq.o: $(SRCROOT)/gap5/g-struct.h
 maq.o: $(SRCROOT)/gap5/g.h
 maq.o: $(SRCROOT)/gap5/hache_table.h
+maq.o: $(SRCROOT)/gap5/io_utils.h
 maq.o: $(SRCROOT)/gap5/maq.h
 maq.o: $(SRCROOT)/gap5/maqmap.h
 maq.o: $(SRCROOT)/gap5/tg_anno.h
@@ -1863,6 +1978,7 @@ maq.o: $(SRCROOT)/gap5/tg_index.h
 maq.o: $(SRCROOT)/gap5/tg_index_common.h
 maq.o: $(SRCROOT)/gap5/tg_library.h
 maq.o: $(SRCROOT)/gap5/tg_register.h
+maq.o: $(SRCROOT)/gap5/tg_scaffold.h
 maq.o: $(SRCROOT)/gap5/tg_sequence.h
 maq.o: $(SRCROOT)/gap5/tg_struct.h
 maq.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1886,10 +2002,12 @@ newgap5_cmds.o: $(SRCROOT)/gap5/break_contig.h
 newgap5_cmds.o: $(SRCROOT)/gap5/check_assembly.h
 newgap5_cmds.o: $(SRCROOT)/gap5/consen.h
 newgap5_cmds.o: $(SRCROOT)/gap5/consensus.h
+newgap5_cmds.o: $(SRCROOT)/gap5/contig_extend.h
 newgap5_cmds.o: $(SRCROOT)/gap5/contig_selector.h
 newgap5_cmds.o: $(SRCROOT)/gap5/cs-object.h
 newgap5_cmds.o: $(SRCROOT)/gap5/depth_track.h
 newgap5_cmds.o: $(SRCROOT)/gap5/dis_readings.h
+newgap5_cmds.o: $(SRCROOT)/gap5/editor_join.h
 newgap5_cmds.o: $(SRCROOT)/gap5/editor_view.h
 newgap5_cmds.o: $(SRCROOT)/gap5/export_contigs.h
 newgap5_cmds.o: $(SRCROOT)/gap5/fasta.h
@@ -1927,8 +2045,10 @@ newgap5_cmds.o: $(SRCROOT)/gap5/qualIO.h
 newgap5_cmds.o: $(SRCROOT)/gap5/quality_plot.h
 newgap5_cmds.o: $(SRCROOT)/gap5/read_depth.h
 newgap5_cmds.o: $(SRCROOT)/gap5/readpair.h
+newgap5_cmds.o: $(SRCROOT)/gap5/restriction_enzymes.h
 newgap5_cmds.o: $(SRCROOT)/gap5/sam_index.h
 newgap5_cmds.o: $(SRCROOT)/gap5/shuffle_pads.h
+newgap5_cmds.o: $(SRCROOT)/gap5/tag_plot.h
 newgap5_cmds.o: $(SRCROOT)/gap5/tagdb.h
 newgap5_cmds.o: $(SRCROOT)/gap5/template_display.h
 newgap5_cmds.o: $(SRCROOT)/gap5/tg_anno.h
@@ -1941,6 +2061,7 @@ newgap5_cmds.o: $(SRCROOT)/gap5/tg_index.h
 newgap5_cmds.o: $(SRCROOT)/gap5/tg_index_common.h
 newgap5_cmds.o: $(SRCROOT)/gap5/tg_library.h
 newgap5_cmds.o: $(SRCROOT)/gap5/tg_register.h
+newgap5_cmds.o: $(SRCROOT)/gap5/tg_scaffold.h
 newgap5_cmds.o: $(SRCROOT)/gap5/tg_sequence.h
 newgap5_cmds.o: $(SRCROOT)/gap5/tg_struct.h
 newgap5_cmds.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -1954,6 +2075,7 @@ newgap5_cmds.o: $(SRCROOT)/seq_utils/align_lib.h
 newgap5_cmds.o: $(SRCROOT)/seq_utils/align_lib_old.h
 newgap5_cmds.o: $(SRCROOT)/seq_utils/genetic_code.h
 newgap5_cmds.o: $(SRCROOT)/seq_utils/read_matrix.h
+newgap5_cmds.o: $(SRCROOT)/seq_utils/renz_utils.h
 newgap5_cmds.o: $(SRCROOT)/tk_utils/canvas_box.h
 newgap5_cmds.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 newgap5_cmds.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2002,6 +2124,7 @@ qual.o: $(SRCROOT)/gap5/g-struct.h
 qual.o: $(SRCROOT)/gap5/g.h
 qual.o: $(SRCROOT)/gap5/gap_globals.h
 qual.o: $(SRCROOT)/gap5/hache_table.h
+qual.o: $(SRCROOT)/gap5/io_utils.h
 qual.o: $(SRCROOT)/gap5/qual.h
 qual.o: $(SRCROOT)/gap5/qualP.h
 qual.o: $(SRCROOT)/gap5/tg_anno.h
@@ -2012,6 +2135,7 @@ qual.o: $(SRCROOT)/gap5/tg_gio.h
 qual.o: $(SRCROOT)/gap5/tg_iface.h
 qual.o: $(SRCROOT)/gap5/tg_library.h
 qual.o: $(SRCROOT)/gap5/tg_register.h
+qual.o: $(SRCROOT)/gap5/tg_scaffold.h
 qual.o: $(SRCROOT)/gap5/tg_sequence.h
 qual.o: $(SRCROOT)/gap5/tg_struct.h
 qual.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2041,6 +2165,7 @@ qualIO.o: $(SRCROOT)/gap5/g.h
 qualIO.o: $(SRCROOT)/gap5/gap4_compat.h
 qualIO.o: $(SRCROOT)/gap5/gap_globals.h
 qualIO.o: $(SRCROOT)/gap5/hache_table.h
+qualIO.o: $(SRCROOT)/gap5/io_utils.h
 qualIO.o: $(SRCROOT)/gap5/qual.h
 qualIO.o: $(SRCROOT)/gap5/qualP.h
 qualIO.o: $(SRCROOT)/gap5/tg_anno.h
@@ -2051,6 +2176,7 @@ qualIO.o: $(SRCROOT)/gap5/tg_gio.h
 qualIO.o: $(SRCROOT)/gap5/tg_iface.h
 qualIO.o: $(SRCROOT)/gap5/tg_library.h
 qualIO.o: $(SRCROOT)/gap5/tg_register.h
+qualIO.o: $(SRCROOT)/gap5/tg_scaffold.h
 qualIO.o: $(SRCROOT)/gap5/tg_sequence.h
 qualIO.o: $(SRCROOT)/gap5/tg_struct.h
 qualIO.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2080,6 +2206,7 @@ quality_plot.o: $(SRCROOT)/gap5/g-struct.h
 quality_plot.o: $(SRCROOT)/gap5/g.h
 quality_plot.o: $(SRCROOT)/gap5/gap_range.h
 quality_plot.o: $(SRCROOT)/gap5/hache_table.h
+quality_plot.o: $(SRCROOT)/gap5/io_utils.h
 quality_plot.o: $(SRCROOT)/gap5/quality_plot.h
 quality_plot.o: $(SRCROOT)/gap5/tg_anno.h
 quality_plot.o: $(SRCROOT)/gap5/tg_bin.h
@@ -2089,6 +2216,7 @@ quality_plot.o: $(SRCROOT)/gap5/tg_gio.h
 quality_plot.o: $(SRCROOT)/gap5/tg_iface.h
 quality_plot.o: $(SRCROOT)/gap5/tg_library.h
 quality_plot.o: $(SRCROOT)/gap5/tg_register.h
+quality_plot.o: $(SRCROOT)/gap5/tg_scaffold.h
 quality_plot.o: $(SRCROOT)/gap5/tg_sequence.h
 quality_plot.o: $(SRCROOT)/gap5/tg_struct.h
 quality_plot.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2115,6 +2243,7 @@ read_depth.o: $(SRCROOT)/gap5/g-request.h
 read_depth.o: $(SRCROOT)/gap5/g-struct.h
 read_depth.o: $(SRCROOT)/gap5/g.h
 read_depth.o: $(SRCROOT)/gap5/hache_table.h
+read_depth.o: $(SRCROOT)/gap5/io_utils.h
 read_depth.o: $(SRCROOT)/gap5/read_depth.h
 read_depth.o: $(SRCROOT)/gap5/tg_anno.h
 read_depth.o: $(SRCROOT)/gap5/tg_bin.h
@@ -2124,6 +2253,7 @@ read_depth.o: $(SRCROOT)/gap5/tg_gio.h
 read_depth.o: $(SRCROOT)/gap5/tg_iface.h
 read_depth.o: $(SRCROOT)/gap5/tg_library.h
 read_depth.o: $(SRCROOT)/gap5/tg_register.h
+read_depth.o: $(SRCROOT)/gap5/tg_scaffold.h
 read_depth.o: $(SRCROOT)/gap5/tg_sequence.h
 read_depth.o: $(SRCROOT)/gap5/tg_struct.h
 read_depth.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2168,6 +2298,7 @@ readpair.o: $(SRCROOT)/gap5/tg_gio.h
 readpair.o: $(SRCROOT)/gap5/tg_iface.h
 readpair.o: $(SRCROOT)/gap5/tg_library.h
 readpair.o: $(SRCROOT)/gap5/tg_register.h
+readpair.o: $(SRCROOT)/gap5/tg_scaffold.h
 readpair.o: $(SRCROOT)/gap5/tg_sequence.h
 readpair.o: $(SRCROOT)/gap5/tg_struct.h
 readpair.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2206,6 +2337,7 @@ restriction_enzymes.o: $(SRCROOT)/gap5/g-os.h
 restriction_enzymes.o: $(SRCROOT)/gap5/g-request.h
 restriction_enzymes.o: $(SRCROOT)/gap5/g-struct.h
 restriction_enzymes.o: $(SRCROOT)/gap5/g.h
+restriction_enzymes.o: $(SRCROOT)/gap5/gap4_compat.h
 restriction_enzymes.o: $(SRCROOT)/gap5/gap_canvas_box.h
 restriction_enzymes.o: $(SRCROOT)/gap5/gap_cli_arg.h
 restriction_enzymes.o: $(SRCROOT)/gap5/gap_globals.h
@@ -2225,6 +2357,7 @@ restriction_enzymes.o: $(SRCROOT)/gap5/tg_gio.h
 restriction_enzymes.o: $(SRCROOT)/gap5/tg_iface.h
 restriction_enzymes.o: $(SRCROOT)/gap5/tg_library.h
 restriction_enzymes.o: $(SRCROOT)/gap5/tg_register.h
+restriction_enzymes.o: $(SRCROOT)/gap5/tg_scaffold.h
 restriction_enzymes.o: $(SRCROOT)/gap5/tg_sequence.h
 restriction_enzymes.o: $(SRCROOT)/gap5/tg_struct.h
 restriction_enzymes.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2247,6 +2380,7 @@ sam_index.o: $(SRCROOT)/Misc/xerror.h
 sam_index.o: $(PWD)/staden_config.h
 sam_index.o: $(SRCROOT)/gap5/b+tree2.h
 sam_index.o: $(SRCROOT)/gap5/bam.h
+sam_index.o: $(SRCROOT)/gap5/consensus.h
 sam_index.o: $(SRCROOT)/gap5/depad_seq_tree.h
 sam_index.o: $(SRCROOT)/gap5/g-alloc.h
 sam_index.o: $(SRCROOT)/gap5/g-connect.h
@@ -2261,6 +2395,7 @@ sam_index.o: $(SRCROOT)/gap5/g-request.h
 sam_index.o: $(SRCROOT)/gap5/g-struct.h
 sam_index.o: $(SRCROOT)/gap5/g.h
 sam_index.o: $(SRCROOT)/gap5/hache_table.h
+sam_index.o: $(SRCROOT)/gap5/io_utils.h
 sam_index.o: $(SRCROOT)/gap5/sam_index.h
 sam_index.o: $(SRCROOT)/gap5/sam_pileup.h
 sam_index.o: $(SRCROOT)/gap5/tg_anno.h
@@ -2273,6 +2408,7 @@ sam_index.o: $(SRCROOT)/gap5/tg_index.h
 sam_index.o: $(SRCROOT)/gap5/tg_index_common.h
 sam_index.o: $(SRCROOT)/gap5/tg_library.h
 sam_index.o: $(SRCROOT)/gap5/tg_register.h
+sam_index.o: $(SRCROOT)/gap5/tg_scaffold.h
 sam_index.o: $(SRCROOT)/gap5/tg_sequence.h
 sam_index.o: $(SRCROOT)/gap5/tg_struct.h
 sam_index.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2313,6 +2449,7 @@ shuffle_pads.o: $(SRCROOT)/gap5/tg_gio.h
 shuffle_pads.o: $(SRCROOT)/gap5/tg_iface.h
 shuffle_pads.o: $(SRCROOT)/gap5/tg_library.h
 shuffle_pads.o: $(SRCROOT)/gap5/tg_register.h
+shuffle_pads.o: $(SRCROOT)/gap5/tg_scaffold.h
 shuffle_pads.o: $(SRCROOT)/gap5/tg_sequence.h
 shuffle_pads.o: $(SRCROOT)/gap5/tg_struct.h
 shuffle_pads.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2333,6 +2470,48 @@ stack_dump.o: $(PWD)/staden_config.h
 stack_dump.o: $(SRCROOT)/gap5/g-error.h
 stack_dump.o: $(SRCROOT)/gap5/gap-error.h
 stack_dump.o: $(SRCROOT)/gap5/stack_dump.h
+tag_plot.o: $(SRCROOT)/Misc/array.h
+tag_plot.o: $(SRCROOT)/Misc/misc.h
+tag_plot.o: $(SRCROOT)/Misc/os.h
+tag_plot.o: $(SRCROOT)/Misc/tree.h
+tag_plot.o: $(SRCROOT)/Misc/xalloc.h
+tag_plot.o: $(SRCROOT)/Misc/xerror.h
+tag_plot.o: $(PWD)/staden_config.h
+tag_plot.o: $(SRCROOT)/gap5/active_tags.h
+tag_plot.o: $(SRCROOT)/gap5/b+tree2.h
+tag_plot.o: $(SRCROOT)/gap5/g-alloc.h
+tag_plot.o: $(SRCROOT)/gap5/g-connect.h
+tag_plot.o: $(SRCROOT)/gap5/g-db.h
+tag_plot.o: $(SRCROOT)/gap5/g-defs.h
+tag_plot.o: $(SRCROOT)/gap5/g-error.h
+tag_plot.o: $(SRCROOT)/gap5/g-filedefs.h
+tag_plot.o: $(SRCROOT)/gap5/g-io.h
+tag_plot.o: $(SRCROOT)/gap5/g-misc.h
+tag_plot.o: $(SRCROOT)/gap5/g-os.h
+tag_plot.o: $(SRCROOT)/gap5/g-request.h
+tag_plot.o: $(SRCROOT)/gap5/g-struct.h
+tag_plot.o: $(SRCROOT)/gap5/g.h
+tag_plot.o: $(SRCROOT)/gap5/gap_range.h
+tag_plot.o: $(SRCROOT)/gap5/hache_table.h
+tag_plot.o: $(SRCROOT)/gap5/io_utils.h
+tag_plot.o: $(SRCROOT)/gap5/tag_plot.h
+tag_plot.o: $(SRCROOT)/gap5/tagdb.h
+tag_plot.o: $(SRCROOT)/gap5/template_draw.h
+tag_plot.o: $(SRCROOT)/gap5/tg_anno.h
+tag_plot.o: $(SRCROOT)/gap5/tg_bin.h
+tag_plot.o: $(SRCROOT)/gap5/tg_cache_item.h
+tag_plot.o: $(SRCROOT)/gap5/tg_contig.h
+tag_plot.o: $(SRCROOT)/gap5/tg_gio.h
+tag_plot.o: $(SRCROOT)/gap5/tg_iface.h
+tag_plot.o: $(SRCROOT)/gap5/tg_library.h
+tag_plot.o: $(SRCROOT)/gap5/tg_register.h
+tag_plot.o: $(SRCROOT)/gap5/tg_scaffold.h
+tag_plot.o: $(SRCROOT)/gap5/tg_sequence.h
+tag_plot.o: $(SRCROOT)/gap5/tg_struct.h
+tag_plot.o: $(SRCROOT)/gap5/tg_tcl.h
+tag_plot.o: $(SRCROOT)/gap5/tg_track.h
+tag_plot.o: $(SRCROOT)/gap5/tg_utils.h
+tag_plot.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tagdb.o: $(SRCROOT)/Misc/misc.h
 tagdb.o: $(SRCROOT)/Misc/os.h
 tagdb.o: $(SRCROOT)/Misc/parse_db.h
@@ -2362,6 +2541,7 @@ template_display.o: $(SRCROOT)/gap5/g-struct.h
 template_display.o: $(SRCROOT)/gap5/g.h
 template_display.o: $(SRCROOT)/gap5/gap_range.h
 template_display.o: $(SRCROOT)/gap5/hache_table.h
+template_display.o: $(SRCROOT)/gap5/io_utils.h
 template_display.o: $(SRCROOT)/gap5/template_display.h
 template_display.o: $(SRCROOT)/gap5/template_draw.h
 template_display.o: $(SRCROOT)/gap5/tg_anno.h
@@ -2372,6 +2552,7 @@ template_display.o: $(SRCROOT)/gap5/tg_gio.h
 template_display.o: $(SRCROOT)/gap5/tg_iface.h
 template_display.o: $(SRCROOT)/gap5/tg_library.h
 template_display.o: $(SRCROOT)/gap5/tg_register.h
+template_display.o: $(SRCROOT)/gap5/tg_scaffold.h
 template_display.o: $(SRCROOT)/gap5/tg_sequence.h
 template_display.o: $(SRCROOT)/gap5/tg_struct.h
 template_display.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2385,6 +2566,7 @@ tg_anno.o: $(SRCROOT)/Misc/tree.h
 tg_anno.o: $(SRCROOT)/Misc/xalloc.h
 tg_anno.o: $(SRCROOT)/Misc/xerror.h
 tg_anno.o: $(PWD)/staden_config.h
+tg_anno.o: $(SRCROOT)/gap5/active_tags.h
 tg_anno.o: $(SRCROOT)/gap5/b+tree2.h
 tg_anno.o: $(SRCROOT)/gap5/g-alloc.h
 tg_anno.o: $(SRCROOT)/gap5/g-connect.h
@@ -2398,7 +2580,10 @@ tg_anno.o: $(SRCROOT)/gap5/g-os.h
 tg_anno.o: $(SRCROOT)/gap5/g-request.h
 tg_anno.o: $(SRCROOT)/gap5/g-struct.h
 tg_anno.o: $(SRCROOT)/gap5/g.h
+tg_anno.o: $(SRCROOT)/gap5/gap4_compat.h
 tg_anno.o: $(SRCROOT)/gap5/hache_table.h
+tg_anno.o: $(SRCROOT)/gap5/io_utils.h
+tg_anno.o: $(SRCROOT)/gap5/tagdb.h
 tg_anno.o: $(SRCROOT)/gap5/tg_anno.h
 tg_anno.o: $(SRCROOT)/gap5/tg_bin.h
 tg_anno.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2407,11 +2592,13 @@ tg_anno.o: $(SRCROOT)/gap5/tg_gio.h
 tg_anno.o: $(SRCROOT)/gap5/tg_iface.h
 tg_anno.o: $(SRCROOT)/gap5/tg_library.h
 tg_anno.o: $(SRCROOT)/gap5/tg_register.h
+tg_anno.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_anno.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_anno.o: $(SRCROOT)/gap5/tg_struct.h
 tg_anno.o: $(SRCROOT)/gap5/tg_tcl.h
 tg_anno.o: $(SRCROOT)/gap5/tg_track.h
 tg_anno.o: $(SRCROOT)/gap5/tg_utils.h
+tg_anno.o: $(SRCROOT)/tk_utils/intrinsic_type.h
 tg_bin.o: $(SRCROOT)/Misc/array.h
 tg_bin.o: $(SRCROOT)/Misc/misc.h
 tg_bin.o: $(SRCROOT)/Misc/os.h
@@ -2420,6 +2607,7 @@ tg_bin.o: $(SRCROOT)/Misc/xalloc.h
 tg_bin.o: $(SRCROOT)/Misc/xerror.h
 tg_bin.o: $(PWD)/staden_config.h
 tg_bin.o: $(SRCROOT)/gap5/b+tree2.h
+tg_bin.o: $(SRCROOT)/gap5/consensus.h
 tg_bin.o: $(SRCROOT)/gap5/g-alloc.h
 tg_bin.o: $(SRCROOT)/gap5/g-connect.h
 tg_bin.o: $(SRCROOT)/gap5/g-db.h
@@ -2433,6 +2621,7 @@ tg_bin.o: $(SRCROOT)/gap5/g-request.h
 tg_bin.o: $(SRCROOT)/gap5/g-struct.h
 tg_bin.o: $(SRCROOT)/gap5/g.h
 tg_bin.o: $(SRCROOT)/gap5/hache_table.h
+tg_bin.o: $(SRCROOT)/gap5/io_utils.h
 tg_bin.o: $(SRCROOT)/gap5/tg_anno.h
 tg_bin.o: $(SRCROOT)/gap5/tg_bin.h
 tg_bin.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2441,6 +2630,7 @@ tg_bin.o: $(SRCROOT)/gap5/tg_gio.h
 tg_bin.o: $(SRCROOT)/gap5/tg_iface.h
 tg_bin.o: $(SRCROOT)/gap5/tg_library.h
 tg_bin.o: $(SRCROOT)/gap5/tg_register.h
+tg_bin.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_bin.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_bin.o: $(SRCROOT)/gap5/tg_struct.h
 tg_bin.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2468,6 +2658,7 @@ tg_cache.o: $(SRCROOT)/gap5/g-request.h
 tg_cache.o: $(SRCROOT)/gap5/g-struct.h
 tg_cache.o: $(SRCROOT)/gap5/g.h
 tg_cache.o: $(SRCROOT)/gap5/hache_table.h
+tg_cache.o: $(SRCROOT)/gap5/io_utils.h
 tg_cache.o: $(SRCROOT)/gap5/tg_anno.h
 tg_cache.o: $(SRCROOT)/gap5/tg_bin.h
 tg_cache.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2476,6 +2667,7 @@ tg_cache.o: $(SRCROOT)/gap5/tg_gio.h
 tg_cache.o: $(SRCROOT)/gap5/tg_iface.h
 tg_cache.o: $(SRCROOT)/gap5/tg_library.h
 tg_cache.o: $(SRCROOT)/gap5/tg_register.h
+tg_cache.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_cache.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_cache.o: $(SRCROOT)/gap5/tg_struct.h
 tg_cache.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2489,6 +2681,7 @@ tg_check.o: $(SRCROOT)/Misc/xalloc.h
 tg_check.o: $(SRCROOT)/Misc/xerror.h
 tg_check.o: $(PWD)/staden_config.h
 tg_check.o: $(SRCROOT)/gap5/b+tree2.h
+tg_check.o: $(SRCROOT)/gap5/consensus.h
 tg_check.o: $(SRCROOT)/gap5/g-alloc.h
 tg_check.o: $(SRCROOT)/gap5/g-connect.h
 tg_check.o: $(SRCROOT)/gap5/g-db.h
@@ -2502,6 +2695,7 @@ tg_check.o: $(SRCROOT)/gap5/g-request.h
 tg_check.o: $(SRCROOT)/gap5/g-struct.h
 tg_check.o: $(SRCROOT)/gap5/g.h
 tg_check.o: $(SRCROOT)/gap5/hache_table.h
+tg_check.o: $(SRCROOT)/gap5/io_utils.h
 tg_check.o: $(SRCROOT)/gap5/tg_anno.h
 tg_check.o: $(SRCROOT)/gap5/tg_bin.h
 tg_check.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2511,11 +2705,13 @@ tg_check.o: $(SRCROOT)/gap5/tg_gio.h
 tg_check.o: $(SRCROOT)/gap5/tg_iface.h
 tg_check.o: $(SRCROOT)/gap5/tg_library.h
 tg_check.o: $(SRCROOT)/gap5/tg_register.h
+tg_check.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_check.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_check.o: $(SRCROOT)/gap5/tg_struct.h
 tg_check.o: $(SRCROOT)/gap5/tg_tcl.h
 tg_check.o: $(SRCROOT)/gap5/tg_track.h
 tg_check.o: $(SRCROOT)/gap5/tg_utils.h
+tg_check.o: $(SRCROOT)/tk_utils/text_output.h
 tg_contig.o: $(SRCROOT)/Misc/array.h
 tg_contig.o: $(SRCROOT)/Misc/misc.h
 tg_contig.o: $(SRCROOT)/Misc/os.h
@@ -2539,6 +2735,8 @@ tg_contig.o: $(SRCROOT)/gap5/g-request.h
 tg_contig.o: $(SRCROOT)/gap5/g-struct.h
 tg_contig.o: $(SRCROOT)/gap5/g.h
 tg_contig.o: $(SRCROOT)/gap5/hache_table.h
+tg_contig.o: $(SRCROOT)/gap5/io_utils.h
+tg_contig.o: $(SRCROOT)/gap5/list_proc.h
 tg_contig.o: $(SRCROOT)/gap5/tg_anno.h
 tg_contig.o: $(SRCROOT)/gap5/tg_bin.h
 tg_contig.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2548,6 +2746,7 @@ tg_contig.o: $(SRCROOT)/gap5/tg_gio.h
 tg_contig.o: $(SRCROOT)/gap5/tg_iface.h
 tg_contig.o: $(SRCROOT)/gap5/tg_library.h
 tg_contig.o: $(SRCROOT)/gap5/tg_register.h
+tg_contig.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_contig.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_contig.o: $(SRCROOT)/gap5/tg_struct.h
 tg_contig.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2576,6 +2775,7 @@ tg_gio.o: $(SRCROOT)/gap5/g-request.h
 tg_gio.o: $(SRCROOT)/gap5/g-struct.h
 tg_gio.o: $(SRCROOT)/gap5/g.h
 tg_gio.o: $(SRCROOT)/gap5/hache_table.h
+tg_gio.o: $(SRCROOT)/gap5/io_utils.h
 tg_gio.o: $(SRCROOT)/gap5/tg_anno.h
 tg_gio.o: $(SRCROOT)/gap5/tg_bin.h
 tg_gio.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2585,6 +2785,7 @@ tg_gio.o: $(SRCROOT)/gap5/tg_iface.h
 tg_gio.o: $(SRCROOT)/gap5/tg_iface_g.h
 tg_gio.o: $(SRCROOT)/gap5/tg_library.h
 tg_gio.o: $(SRCROOT)/gap5/tg_register.h
+tg_gio.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_gio.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_gio.o: $(SRCROOT)/gap5/tg_struct.h
 tg_gio.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2611,6 +2812,7 @@ tg_iface_g.o: $(SRCROOT)/gap5/g-request.h
 tg_iface_g.o: $(SRCROOT)/gap5/g-struct.h
 tg_iface_g.o: $(SRCROOT)/gap5/g.h
 tg_iface_g.o: $(SRCROOT)/gap5/hache_table.h
+tg_iface_g.o: $(SRCROOT)/gap5/io_utils.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_anno.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_bin.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2620,6 +2822,7 @@ tg_iface_g.o: $(SRCROOT)/gap5/tg_iface.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_iface_g.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_library.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_register.h
+tg_iface_g.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_struct.h
 tg_iface_g.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2654,6 +2857,7 @@ tg_index.o: $(SRCROOT)/gap5/g-request.h
 tg_index.o: $(SRCROOT)/gap5/g-struct.h
 tg_index.o: $(SRCROOT)/gap5/g.h
 tg_index.o: $(SRCROOT)/gap5/hache_table.h
+tg_index.o: $(SRCROOT)/gap5/io_utils.h
 tg_index.o: $(SRCROOT)/gap5/maq.h
 tg_index.o: $(SRCROOT)/gap5/maqmap.h
 tg_index.o: $(SRCROOT)/gap5/sam_index.h
@@ -2667,6 +2871,7 @@ tg_index.o: $(SRCROOT)/gap5/tg_index.h
 tg_index.o: $(SRCROOT)/gap5/tg_index_common.h
 tg_index.o: $(SRCROOT)/gap5/tg_library.h
 tg_index.o: $(SRCROOT)/gap5/tg_register.h
+tg_index.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_index.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_index.o: $(SRCROOT)/gap5/tg_struct.h
 tg_index.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2695,6 +2900,7 @@ tg_index_common.o: $(SRCROOT)/gap5/g-request.h
 tg_index_common.o: $(SRCROOT)/gap5/g-struct.h
 tg_index_common.o: $(SRCROOT)/gap5/g.h
 tg_index_common.o: $(SRCROOT)/gap5/hache_table.h
+tg_index_common.o: $(SRCROOT)/gap5/io_utils.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_anno.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_bin.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2705,6 +2911,7 @@ tg_index_common.o: $(SRCROOT)/gap5/tg_index.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_index_common.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_library.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_register.h
+tg_index_common.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_struct.h
 tg_index_common.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2732,6 +2939,7 @@ tg_library.o: $(SRCROOT)/gap5/g-request.h
 tg_library.o: $(SRCROOT)/gap5/g-struct.h
 tg_library.o: $(SRCROOT)/gap5/g.h
 tg_library.o: $(SRCROOT)/gap5/hache_table.h
+tg_library.o: $(SRCROOT)/gap5/io_utils.h
 tg_library.o: $(SRCROOT)/gap5/tg_anno.h
 tg_library.o: $(SRCROOT)/gap5/tg_bin.h
 tg_library.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2740,6 +2948,7 @@ tg_library.o: $(SRCROOT)/gap5/tg_gio.h
 tg_library.o: $(SRCROOT)/gap5/tg_iface.h
 tg_library.o: $(SRCROOT)/gap5/tg_library.h
 tg_library.o: $(SRCROOT)/gap5/tg_register.h
+tg_library.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_library.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_library.o: $(SRCROOT)/gap5/tg_struct.h
 tg_library.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2766,6 +2975,7 @@ tg_register.o: $(SRCROOT)/gap5/g-request.h
 tg_register.o: $(SRCROOT)/gap5/g-struct.h
 tg_register.o: $(SRCROOT)/gap5/g.h
 tg_register.o: $(SRCROOT)/gap5/hache_table.h
+tg_register.o: $(SRCROOT)/gap5/io_utils.h
 tg_register.o: $(SRCROOT)/gap5/tg_anno.h
 tg_register.o: $(SRCROOT)/gap5/tg_bin.h
 tg_register.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2774,12 +2984,50 @@ tg_register.o: $(SRCROOT)/gap5/tg_gio.h
 tg_register.o: $(SRCROOT)/gap5/tg_iface.h
 tg_register.o: $(SRCROOT)/gap5/tg_library.h
 tg_register.o: $(SRCROOT)/gap5/tg_register.h
+tg_register.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_register.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_register.o: $(SRCROOT)/gap5/tg_struct.h
 tg_register.o: $(SRCROOT)/gap5/tg_tcl.h
 tg_register.o: $(SRCROOT)/gap5/tg_track.h
 tg_register.o: $(SRCROOT)/gap5/tg_utils.h
 tg_register.o: $(SRCROOT)/tk_utils/tcl_utils.h
+tg_scaffold.o: $(SRCROOT)/Misc/array.h
+tg_scaffold.o: $(SRCROOT)/Misc/misc.h
+tg_scaffold.o: $(SRCROOT)/Misc/os.h
+tg_scaffold.o: $(SRCROOT)/Misc/tree.h
+tg_scaffold.o: $(SRCROOT)/Misc/xalloc.h
+tg_scaffold.o: $(SRCROOT)/Misc/xerror.h
+tg_scaffold.o: $(PWD)/staden_config.h
+tg_scaffold.o: $(SRCROOT)/gap5/b+tree2.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-alloc.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-connect.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-db.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-defs.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-error.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-filedefs.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-io.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-misc.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-os.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-request.h
+tg_scaffold.o: $(SRCROOT)/gap5/g-struct.h
+tg_scaffold.o: $(SRCROOT)/gap5/g.h
+tg_scaffold.o: $(SRCROOT)/gap5/hache_table.h
+tg_scaffold.o: $(SRCROOT)/gap5/io_utils.h
+tg_scaffold.o: $(SRCROOT)/gap5/list_proc.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_anno.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_bin.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_cache_item.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_contig.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_gio.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_iface.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_library.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_register.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_scaffold.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_sequence.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_struct.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_tcl.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_track.h
+tg_scaffold.o: $(SRCROOT)/gap5/tg_utils.h
 tg_sequence.o: $(SRCROOT)/Misc/array.h
 tg_sequence.o: $(SRCROOT)/Misc/misc.h
 tg_sequence.o: $(SRCROOT)/Misc/os.h
@@ -2788,6 +3036,7 @@ tg_sequence.o: $(SRCROOT)/Misc/xalloc.h
 tg_sequence.o: $(SRCROOT)/Misc/xerror.h
 tg_sequence.o: $(PWD)/staden_config.h
 tg_sequence.o: $(SRCROOT)/gap5/b+tree2.h
+tg_sequence.o: $(SRCROOT)/gap5/consensus.h
 tg_sequence.o: $(SRCROOT)/gap5/g-alloc.h
 tg_sequence.o: $(SRCROOT)/gap5/g-connect.h
 tg_sequence.o: $(SRCROOT)/gap5/g-db.h
@@ -2801,6 +3050,7 @@ tg_sequence.o: $(SRCROOT)/gap5/g-request.h
 tg_sequence.o: $(SRCROOT)/gap5/g-struct.h
 tg_sequence.o: $(SRCROOT)/gap5/g.h
 tg_sequence.o: $(SRCROOT)/gap5/hache_table.h
+tg_sequence.o: $(SRCROOT)/gap5/io_utils.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_anno.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_bin.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2809,6 +3059,7 @@ tg_sequence.o: $(SRCROOT)/gap5/tg_gio.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_iface.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_library.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_register.h
+tg_sequence.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_struct.h
 tg_sequence.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2822,6 +3073,7 @@ tg_tcl.o: $(SRCROOT)/Misc/xalloc.h
 tg_tcl.o: $(SRCROOT)/Misc/xerror.h
 tg_tcl.o: $(PWD)/staden_config.h
 tg_tcl.o: $(SRCROOT)/gap5/b+tree2.h
+tg_tcl.o: $(SRCROOT)/gap5/consensus.h
 tg_tcl.o: $(SRCROOT)/gap5/g-alloc.h
 tg_tcl.o: $(SRCROOT)/gap5/g-connect.h
 tg_tcl.o: $(SRCROOT)/gap5/g-db.h
@@ -2836,6 +3088,7 @@ tg_tcl.o: $(SRCROOT)/gap5/g-struct.h
 tg_tcl.o: $(SRCROOT)/gap5/g.h
 tg_tcl.o: $(SRCROOT)/gap5/gap_cli_arg.h
 tg_tcl.o: $(SRCROOT)/gap5/hache_table.h
+tg_tcl.o: $(SRCROOT)/gap5/io_utils.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_anno.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_bin.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2845,6 +3098,7 @@ tg_tcl.o: $(SRCROOT)/gap5/tg_gio.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_iface.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_library.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_register.h
+tg_tcl.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_struct.h
 tg_tcl.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2872,6 +3126,7 @@ tg_track.o: $(SRCROOT)/gap5/g-request.h
 tg_track.o: $(SRCROOT)/gap5/g-struct.h
 tg_track.o: $(SRCROOT)/gap5/g.h
 tg_track.o: $(SRCROOT)/gap5/hache_table.h
+tg_track.o: $(SRCROOT)/gap5/io_utils.h
 tg_track.o: $(SRCROOT)/gap5/tg_anno.h
 tg_track.o: $(SRCROOT)/gap5/tg_bin.h
 tg_track.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2880,6 +3135,7 @@ tg_track.o: $(SRCROOT)/gap5/tg_gio.h
 tg_track.o: $(SRCROOT)/gap5/tg_iface.h
 tg_track.o: $(SRCROOT)/gap5/tg_library.h
 tg_track.o: $(SRCROOT)/gap5/tg_register.h
+tg_track.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_track.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_track.o: $(SRCROOT)/gap5/tg_struct.h
 tg_track.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2906,6 +3162,7 @@ tg_tracks.o: $(SRCROOT)/gap5/g-request.h
 tg_tracks.o: $(SRCROOT)/gap5/g-struct.h
 tg_tracks.o: $(SRCROOT)/gap5/g.h
 tg_tracks.o: $(SRCROOT)/gap5/hache_table.h
+tg_tracks.o: $(SRCROOT)/gap5/io_utils.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_anno.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_bin.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2914,6 +3171,7 @@ tg_tracks.o: $(SRCROOT)/gap5/tg_gio.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_iface.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_library.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_register.h
+tg_tracks.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_struct.h
 tg_tracks.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2941,6 +3199,7 @@ tg_utils.o: $(SRCROOT)/gap5/g-request.h
 tg_utils.o: $(SRCROOT)/gap5/g-struct.h
 tg_utils.o: $(SRCROOT)/gap5/g.h
 tg_utils.o: $(SRCROOT)/gap5/hache_table.h
+tg_utils.o: $(SRCROOT)/gap5/io_utils.h
 tg_utils.o: $(SRCROOT)/gap5/tg_anno.h
 tg_utils.o: $(SRCROOT)/gap5/tg_bin.h
 tg_utils.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2949,6 +3208,7 @@ tg_utils.o: $(SRCROOT)/gap5/tg_gio.h
 tg_utils.o: $(SRCROOT)/gap5/tg_iface.h
 tg_utils.o: $(SRCROOT)/gap5/tg_library.h
 tg_utils.o: $(SRCROOT)/gap5/tg_register.h
+tg_utils.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_utils.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_utils.o: $(SRCROOT)/gap5/tg_struct.h
 tg_utils.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -2975,6 +3235,7 @@ tg_view.o: $(SRCROOT)/gap5/g-request.h
 tg_view.o: $(SRCROOT)/gap5/g-struct.h
 tg_view.o: $(SRCROOT)/gap5/g.h
 tg_view.o: $(SRCROOT)/gap5/hache_table.h
+tg_view.o: $(SRCROOT)/gap5/io_utils.h
 tg_view.o: $(SRCROOT)/gap5/tg_anno.h
 tg_view.o: $(SRCROOT)/gap5/tg_bin.h
 tg_view.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -2983,6 +3244,7 @@ tg_view.o: $(SRCROOT)/gap5/tg_gio.h
 tg_view.o: $(SRCROOT)/gap5/tg_iface.h
 tg_view.o: $(SRCROOT)/gap5/tg_library.h
 tg_view.o: $(SRCROOT)/gap5/tg_register.h
+tg_view.o: $(SRCROOT)/gap5/tg_scaffold.h
 tg_view.o: $(SRCROOT)/gap5/tg_sequence.h
 tg_view.o: $(SRCROOT)/gap5/tg_struct.h
 tg_view.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -3012,6 +3274,7 @@ tk-io-reg.o: $(SRCROOT)/gap5/gap4_compat.h
 tk-io-reg.o: $(SRCROOT)/gap5/gap_cli_arg.h
 tk-io-reg.o: $(SRCROOT)/gap5/gap_globals.h
 tk-io-reg.o: $(SRCROOT)/gap5/hache_table.h
+tk-io-reg.o: $(SRCROOT)/gap5/io_utils.h
 tk-io-reg.o: $(SRCROOT)/gap5/list.h
 tk-io-reg.o: $(SRCROOT)/gap5/newgap_cmds.h
 tk-io-reg.o: $(SRCROOT)/gap5/newgap_structs.h
@@ -3023,6 +3286,7 @@ tk-io-reg.o: $(SRCROOT)/gap5/tg_gio.h
 tk-io-reg.o: $(SRCROOT)/gap5/tg_iface.h
 tk-io-reg.o: $(SRCROOT)/gap5/tg_library.h
 tk-io-reg.o: $(SRCROOT)/gap5/tg_register.h
+tk-io-reg.o: $(SRCROOT)/gap5/tg_scaffold.h
 tk-io-reg.o: $(SRCROOT)/gap5/tg_sequence.h
 tk-io-reg.o: $(SRCROOT)/gap5/tg_struct.h
 tk-io-reg.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -3055,6 +3319,7 @@ tkAppInit.o: $(SRCROOT)/gap5/g.h
 tkAppInit.o: $(SRCROOT)/gap5/gap-tcl.h
 tkAppInit.o: $(SRCROOT)/gap5/gap_globals.h
 tkAppInit.o: $(SRCROOT)/gap5/hache_table.h
+tkAppInit.o: $(SRCROOT)/gap5/io_utils.h
 tkAppInit.o: $(SRCROOT)/gap5/list.h
 tkAppInit.o: $(SRCROOT)/gap5/newgap_cmds.h
 tkAppInit.o: $(SRCROOT)/gap5/tg_anno.h
@@ -3065,6 +3330,7 @@ tkAppInit.o: $(SRCROOT)/gap5/tg_gio.h
 tkAppInit.o: $(SRCROOT)/gap5/tg_iface.h
 tkAppInit.o: $(SRCROOT)/gap5/tg_library.h
 tkAppInit.o: $(SRCROOT)/gap5/tg_register.h
+tkAppInit.o: $(SRCROOT)/gap5/tg_scaffold.h
 tkAppInit.o: $(SRCROOT)/gap5/tg_sequence.h
 tkAppInit.o: $(SRCROOT)/gap5/tg_struct.h
 tkAppInit.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -3094,6 +3360,7 @@ tkEdNames.o: $(SRCROOT)/gap5/g-request.h
 tkEdNames.o: $(SRCROOT)/gap5/g-struct.h
 tkEdNames.o: $(SRCROOT)/gap5/g.h
 tkEdNames.o: $(SRCROOT)/gap5/hache_table.h
+tkEdNames.o: $(SRCROOT)/gap5/io_utils.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_anno.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_bin.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -3102,6 +3369,7 @@ tkEdNames.o: $(SRCROOT)/gap5/tg_gio.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_iface.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_library.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_register.h
+tkEdNames.o: $(SRCROOT)/gap5/tg_scaffold.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_sequence.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_struct.h
 tkEdNames.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -3144,6 +3412,7 @@ tkEditor.o: $(SRCROOT)/gap5/g.h
 tkEditor.o: $(SRCROOT)/gap5/gap4_compat.h
 tkEditor.o: $(SRCROOT)/gap5/gap_globals.h
 tkEditor.o: $(SRCROOT)/gap5/hache_table.h
+tkEditor.o: $(SRCROOT)/gap5/io_utils.h
 tkEditor.o: $(SRCROOT)/gap5/notedb.h
 tkEditor.o: $(SRCROOT)/gap5/tagdb.h
 tkEditor.o: $(SRCROOT)/gap5/tg_anno.h
@@ -3154,6 +3423,7 @@ tkEditor.o: $(SRCROOT)/gap5/tg_gio.h
 tkEditor.o: $(SRCROOT)/gap5/tg_iface.h
 tkEditor.o: $(SRCROOT)/gap5/tg_library.h
 tkEditor.o: $(SRCROOT)/gap5/tg_register.h
+tkEditor.o: $(SRCROOT)/gap5/tg_scaffold.h
 tkEditor.o: $(SRCROOT)/gap5/tg_sequence.h
 tkEditor.o: $(SRCROOT)/gap5/tg_struct.h
 tkEditor.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -3199,6 +3469,7 @@ tman_display.o: $(SRCROOT)/gap5/g-struct.h
 tman_display.o: $(SRCROOT)/gap5/g.h
 tman_display.o: $(SRCROOT)/gap5/gap_globals.h
 tman_display.o: $(SRCROOT)/gap5/hache_table.h
+tman_display.o: $(SRCROOT)/gap5/io_utils.h
 tman_display.o: $(SRCROOT)/gap5/tg_anno.h
 tman_display.o: $(SRCROOT)/gap5/tg_bin.h
 tman_display.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -3207,6 +3478,7 @@ tman_display.o: $(SRCROOT)/gap5/tg_gio.h
 tman_display.o: $(SRCROOT)/gap5/tg_iface.h
 tman_display.o: $(SRCROOT)/gap5/tg_library.h
 tman_display.o: $(SRCROOT)/gap5/tg_register.h
+tman_display.o: $(SRCROOT)/gap5/tg_scaffold.h
 tman_display.o: $(SRCROOT)/gap5/tg_sequence.h
 tman_display.o: $(SRCROOT)/gap5/tg_struct.h
 tman_display.o: $(SRCROOT)/gap5/tg_tcl.h
@@ -3250,6 +3522,7 @@ tman_interface.o: $(SRCROOT)/gap5/g-request.h
 tman_interface.o: $(SRCROOT)/gap5/g-struct.h
 tman_interface.o: $(SRCROOT)/gap5/g.h
 tman_interface.o: $(SRCROOT)/gap5/hache_table.h
+tman_interface.o: $(SRCROOT)/gap5/io_utils.h
 tman_interface.o: $(SRCROOT)/gap5/tg_anno.h
 tman_interface.o: $(SRCROOT)/gap5/tg_bin.h
 tman_interface.o: $(SRCROOT)/gap5/tg_cache_item.h
@@ -3258,6 +3531,7 @@ tman_interface.o: $(SRCROOT)/gap5/tg_gio.h
 tman_interface.o: $(SRCROOT)/gap5/tg_iface.h
 tman_interface.o: $(SRCROOT)/gap5/tg_library.h
 tman_interface.o: $(SRCROOT)/gap5/tg_register.h
+tman_interface.o: $(SRCROOT)/gap5/tg_scaffold.h
 tman_interface.o: $(SRCROOT)/gap5/tg_sequence.h
 tman_interface.o: $(SRCROOT)/gap5/tg_struct.h
 tman_interface.o: $(SRCROOT)/gap5/tg_tcl.h
