@@ -81,7 +81,12 @@ typedef struct GapIO {
     FILE *debug_fp;
 } GapIO;
 
-static int DB_VERS(GapIO *io) {
+#ifdef HAVE_INLINE
+static inline int DB_VERS(GapIO *io)
+#else
+static int DB_VERS(GapIO *io)
+#endif
+{
     while (io->base)
 	io = io->base;
     return io->db->version;
