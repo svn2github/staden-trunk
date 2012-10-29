@@ -148,6 +148,10 @@ proc InitListContigs {io parent {csh_win {}}} {
 # members numerically sorted even though the scaffolds themselves are
 # reverse sorted.
 ; proc ListContigsScaffoldSort {w n1 n2} {
+    if {$n1 == "" && $n2 == ""} {return 0}
+    if {$n1 == ""}              {return -1}
+    if {$n2 == ""}              {return 1}
+
     regexp {(.*)/(-?[0-9]+)} $n1 _ s1 c1
     regexp {(.*)/(-?[0-9]+)} $n2 _ s2 c2
     if {$s1 != $s2} {
