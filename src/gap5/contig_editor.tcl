@@ -907,6 +907,9 @@ proc contig_editor {w args} {
     $tool.list_c.opts add command \
 	-label Edit \
 	-command "ListEdit \[set ${w}(OutputList)\]"
+    $tool.list_c.opts add command \
+	-label "View multi-column" \
+	-command "ListEditMulti \[set ${w}(OutputList)\]"
     $tool.list_c.opts add separator
     $tool.list_c.opts add command \
 	-label Clear \

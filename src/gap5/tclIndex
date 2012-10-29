@@ -63,6 +63,7 @@ set auto_index(create_editor) [list source [file join $dir contig_editor.tcl]]
 set auto_index(EditContig) [list source [file join $dir contig_editor.tcl]]
 set auto_index(JoinContig) [list source [file join $dir contig_editor.tcl]]
 set auto_index(create_or_move_editor) [list source [file join $dir contig_editor.tcl]]
+set auto_index(editor_olist_populate) [list source [file join $dir contig_editor.tcl]]
 
 set auto_index(contig_id) [list source [file join $dir contig_id.tcl]]
 set auto_index(contig_id_configure) [list source [file join $dir contig_id.tcl]]
@@ -117,6 +118,8 @@ set auto_index(TemplateREnzPlot) [list source [file join $dir gap_restriction_en
 set auto_index(TemplateREnzDisplay) [list source [file join $dir gap_restriction_enzymes.tcl]]
 
 set auto_index(InitListContigs) [list source [file join $dir list_contigs.tcl]]
+set auto_index(ListContigsScaffoldSort) [list source [file join $dir list_contigs.tcl]]
+set auto_index(ListContigsScaffoldFormat) [list source [file join $dir list_contigs.tcl]]
 
 set auto_index(ListLoad) [list source [file join $dir list_proc.tcl]]
 set auto_index(ListSave) [list source [file join $dir list_proc.tcl]]

@@ -1723,7 +1723,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_clipped_position",         "get_orient",   "get_mapping_qual",
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
 	"get_clips",    "set_clips",    "move_annos",   "get_template_orient",
-	"set_clips_no_invalidate",
+	"set_clips_no_invalidate",	"get_pair_pos",
 	(char *)NULL,
     };
 
@@ -1735,7 +1735,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_CLIPPED_POSITION,           GET_ORIENT,     GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
 	GET_CLIPS,      SET_CLIPS,      MOVE_ANNOS,     GET_TEMPLATE_ORIENT,
-	SET_CLIPS_NO_INVALIDATE,
+	SET_CLIPS_NO_INVALIDATE,	GET_PAIR_POS,
     };
 
     if (objc < 2) {
@@ -1960,6 +1960,16 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetWideIntObj(Tcl_GetObjResult(interp),
 			  sequence_get_pair(ts->io, ts->seq));
 	break;
+
+    case GET_PAIR_POS: {
+	rangec_t *r;
+	r = sequence_get_rangec(ts->io, ts->seq, 0);
+	sequence_get_range_pair_position(ts->io, r);
+	vTcl_SetResult(interp, "%"PRIrec" %"PRIrec" %d %d",
+		       r->pair_rec, r->pair_contig,
+		       r->pair_start, r->pair_end);
+	break;
+    }
 
     case GET_BASE: {
 	char base;

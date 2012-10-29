@@ -660,7 +660,12 @@ proc UpdateListListbox {t name element op} {
 proc EditList2 {t name} {
     if {![ListExists $name 0]} {bell; return 0}
     destroy $t
-    ListEdit $name
+
+    if {[yes_no_get $t.extended]} {
+	ListEditMulti $name
+    } else {
+	ListEdit $name
+    }
 }
 
 proc EditListDialog {} {
@@ -679,13 +684,19 @@ proc EditListDialog {} {
 		 	    [keylget gap5_defs EDIT_LIST.LISTNAME] edit] \
 	-command "EditList2 $t"
 
+    yes_no $t.extended \
+	-title "Extended reading list view" \
+	-orient horizontal \
+	-bd 0 \
+	-default 0
+
     okcancelhelp $t.ok \
         -ok_command "entrybox_command $t.list.entry" \
         -cancel_command "destroy $t" \
 	-help_command "show_help gap5 {List-Commands}" \
         -bd 2 -relief groove
 
-    pack $t.list $t.ok -side top -fill x
+    pack $t.list $t.extended $t.ok -side top -fill x
 } 
 
 #
@@ -1148,7 +1159,7 @@ set NGList_urd 1
 # This automatically generates reg_notify_highlight events for changes
 # to the hash.
 proc UpdateReadingDisplays {list args} {
-    global NGList io NGList_urd NGList_read_hash_$list
+    global NGList io NGList_urd NGList_read_hash_$list  NGList_size
     upvar #0 NGList_read_hash_$list hash
 
     # Optimisation for when this gets triggered LOTS of times, eg
@@ -1188,6 +1199,7 @@ proc UpdateReadingDisplays {list args} {
     }
 
     set NGList($list) [array names hash]
+    set NGList_size($list) [llength $NGList($list)]
 
     contig_notify -io $io -type BUFFER_END -cnum 0 -args {}
 
@@ -1601,4 +1613,347 @@ proc NumToName2 {io t from to} {
 
     ListCreate2 $to $l SEQID
     ListEdit $to
+}
+
+#-----------------------------------------------------------------------------
+# Upgraded multi-column reading list
+# Does an editor for this list exist already?
+proc ListEditMultiExists {name} {
+    global gap5_defs
+
+    if {![winfo exists [keylget gap5_defs EDIT_LIST.WIN]]} {
+	return ""
+    }
+	
+    foreach i [winfo children [keylget gap5_defs EDIT_LIST.WIN]_multi] {
+	global $i.CurList
+	if {[info exists $i.CurList] && [set $i.CurList] == "$name"} {
+	    return $i	    
+	}
+    }
+
+    return ""
+}
+
+proc ListEditMulti {name {read_only 0}} {
+    global gap5_defs NGList NGSpecial tcl_platform io
+    
+    if {![ListExists $name 0]} {bell; return 0}
+
+    if {![winfo exists [set w [keylget gap5_defs EDIT_LIST.WIN]_multi]]} {
+	frame $w
+    }
+
+#    # We cannot edit the special lists
+#    if {[lsearch -exact $NGSpecial $name] != -1} {
+#	set read_only 1
+#    }
+    set read_only 1
+
+    # Create the new editor if it doesn't exist
+    if {[set t [ListEditMultiExists $name]] == ""} {
+        set t "$w.[ListNextEditor]"
+        xtoplevel $t
+	wm geometry $t 990x400
+	if {$read_only} {
+	    wm title $t "Viewing list: \"$name\""
+	} else {
+	    wm title $t "Editing list: \"$name\""
+	}
+    
+        global $t.CurList
+        set $t.CurList $name
+        
+       	#wm protocol $t WM_DELETE_WINDOW "ListEditSave [list $name]; destroy $t"
+    
+        # The text display and it's scrollbars.
+	tablelist $t.list \
+	    -columns {20 Name 10 Number 15 Contig 10 Position 15 Scaffold 10 {Pair Num} 15 {Pair Contig} 10 {Pair Pos} 15 {Pair Scaf}} \
+	    -labelcommand tablelist::sortByColumn \
+	    -exportselection 0 \
+	    -selectmode extended \
+	    -yscrollcommand [list $t.scrolly set]
+	
+	$t.list columnconfigure 0 -bg #e0e0e0
+	$t.list columnconfigure 1 -sortmode integer
+	$t.list columnconfigure 3 -sortmode integer
+	$t.list columnconfigure 4 -sortmode command \
+	    -formatcommand ListContigsScaffoldFormat \
+	    -sortcommand [list ListContigsScaffoldSort $t.list]
+	$t.list columnconfigure 5 -bg #e0e0e0 -sortmode command \
+	    -sortcommand SortOptionalInteger
+	$t.list columnconfigure 6 -bg #e0e0e0
+	$t.list columnconfigure 7 -bg #e0e0e0 -sortmode command \
+	    -sortcommand SortOptionalInteger
+	$t.list columnconfigure 8 -bg #e0e0e0 -sortmode command \
+	    -formatcommand ListContigsScaffoldFormat \
+	    -sortcommand [list ListContigsScaffoldSort $t.list]
+
+        scrollbar $t.scrolly   -orient vert  -command "$t.list yview"
+
+        pack $t.scrolly -side right -fill y
+        pack $t.list -expand 1 -fill both
+    
+	# Monitor changes to this list
+	trace variable NGList($name) w "ListEditMultiUpdate $t.list [list $name]"
+	trace variable NGList($name) u "destroy $t"
+
+	# The command bar.
+	set bar [frame $t.bar]
+	pack $bar -side bottom -fill both
+
+	# Output list name + size/menu
+	set lf [frame $bar.name -bd 0]
+	xcombobox $lf.entry \
+	    -textvariable ${t}(OutputList) \
+	    -command ListEditMultiList \
+	    -postcommand "editor_olist_populate $lf.entry" \
+	    -label "Output list:" \
+	    -default $name \
+	    -width 15
+	bind $lf.entry <Any-Leave> {
+	    ListEditMultiList %W [%W get]
+	    #focus [winfo toplevel %W]
+	}
+
+	label $lf.size -text "  Size:"
+	menubutton $lf.menu \
+	    -textvariable ${t}(ListSize) \
+	    -menu $lf.menu.opts \
+	    -indicatoron 1
+	menu $lf.menu.opts -tearoff 0
+	$lf.menu.opts add command \
+	    -label Save \
+	    -command "SaveListDialog $bar.list_sv \[set ${t}(OutputList)\]"
+	$lf.menu.opts add command \
+	    -label Load \
+	    -command "LoadListDialog $bar.list_ld \[set ${t}(OutputList)\]"
+	$lf.menu.opts add command \
+	    -label Clear \
+	    -command "ListClear \[set ${t}(OutputList)\]"
+	$lf.menu.opts add command \
+	    -label Delete \
+	    -command "ListDelete \[set ${t}(OutputList)\]"
+	
+	pack $lf.entry $lf.size $lf.menu -side left -fill both
+
+	# Which end to output
+	set ef [frame $bar.end -bd 0]
+	radiobutton $ef.read \
+	    -text "Read" \
+	    -variable ${t}(End) \
+	    -value 1
+	radiobutton $ef.pair \
+	    -text "Pair" \
+	    -variable ${t}(End) \
+	    -value 2
+	radiobutton $ef.both \
+	    -text "Both" \
+	    -variable ${t}(End) \
+	    -value 3
+	global $t
+	set ${t}(End) 3
+	pack $ef.read $ef.pair $ef.both -side left -fill both
+
+	# Add, remove, set commands
+	button $bar.add -text "Add selection" \
+	    -command "ListEditMultiSave $t add"
+	button $bar.del -text "Remove selection" \
+	    -command "ListEditMultiSave $t del"
+	button $bar.set -text "Set to selection" \
+	    -command "ListEditMultiSave $t set"
+	
+	pack $lf $ef $bar.add $bar.del $bar.set -side left -expand 1
+
+    } else {
+        raise $t
+    }
+
+    # But we always update the list
+    ListEditMultiUpdate $t.list $name
+
+    bind [$t.list bodypath] <<menu>> \
+	"ListEditMultiMenu $io $t.list %x %y %X %Y"
+
+    ListEditMultiList $t.list $name
+
+    return 1
+}
+
+proc SortOptionalInteger {n1 n2} {
+    if {$n1 == "" && $n2 == ""} {
+	return 0
+    } elseif {$n1 == ""} {
+	return -1
+    } elseif {$n2 == ""} {
+	return 1
+    } else {
+	return [expr {$n1 - $n2}]
+    }
+}
+
+# Tablelist update
+proc ListEditMultiUpdate {t name args} {
+    global NGList NGListTag io
+
+    if {![winfo exists $t]} {
+        global $t.CurList
+        trace vdelete NGLists w "UpdateListListbox $t"
+	if {[info exists $t.CurList]} {
+	    unset $t.CurList
+	}
+	return
+    }
+
+    $t delete 0 end
+    if {$NGListTag($name) != ""} {
+	if {$NGListTag($name) == "SEQID"} {
+	    foreach i $NGList($name) {
+		regexp {([[:space:]]*)([^[:space:]]*)(.*)} $i _ l m r
+		set rec [db_info get_read_num $io $m]
+		set s [$io get_seq $rec]
+		set sname [$s get_name]
+		set pos [$s get_position]
+		set crec [$s get_contig]
+		set c [$io get_contig $crec]
+		set cname [$c get_name]
+		set frec [$c get_scaffold]
+		if {$frec != 0} {
+		    set f [$io get_scaffold $frec]
+		    set ctgs [$f get_contigs]
+		    set fname "[$f get_name]/[lsearch $ctgs $crec]"
+		    $f delete
+		} else {
+		    set fname "(none)/0"
+		}
+		$c delete
+
+		foreach {pair_rec pair_contig pair_start pair_end} \
+		    [$s get_pair_pos] break
+		if {$pair_rec} {
+		    set c [$io get_contig $pair_contig]
+		    set pcname [$c get_name]
+		    set frec [$c get_scaffold]
+		    if {$frec != 0} {
+			set f [$io get_scaffold $frec]
+			set ctgs [$f get_contigs]
+			set pfname "[$f get_name]/[lsearch $ctgs $crec]"
+			$f delete
+		    } else {
+			set pfname "(none)/0"
+		    }
+		    $c delete
+		    
+		    $t insert end [list $sname $rec $cname $pos $fname \
+				      $pair_rec $pcname $pair_start $pfname]
+		} else {
+		    $t insert end [list $sname $rec $cname $pos $fname]
+		}
+		$s delete
+	    }
+	} else {
+	    foreach i $NGList($name) {
+		$t insert end "$i"
+	    }
+	}
+    } else {
+	foreach i $NGList($name) {
+	    $t insert end "$i\n"
+	}
+    }
+
+    # Incase same list is both input and output
+    #    ListEditMultiList $t $name
+}
+
+proc ListEditMultiMenu {io w x y X Y} {
+    # Compute row and column clicked on
+    set l [$w bodypath] 
+    set x [expr {$x + [winfo x $l]}]
+    set y [expr {$y + [winfo y $l]}]
+    foreach {row col} [split [$w nearestcell $x $y] ,] {break}
+
+    puts row=$row,col=$col
+
+    # Find the contig identifier
+    if {$col >= 5} {
+	set rec [lindex [$w get $row] 5]
+	set pos [lindex [$w get $row] 7]
+    } else {
+	set rec [lindex [$w get $row] 1]
+	set pos [lindex [$w get $row] 3]
+    }
+    set contig [db_info get_contig_num $io #$rec]
+    puts $rec/[$w get $row]
+
+    create_popup $w.m "Commands (\#$rec)"
+    $w.m add command -label "Edit Contig" \
+	-command "edit_contig -io $io -contig $contig -reading #$rec"
+    $w.m add command -label "Template Display" \
+	-command "CreateTemplateDisplay $io $contig $pos"
+
+    tk_popup $w.m [expr $X-20] [expr $Y-10]
+}
+
+proc ListEditMultiSave {w op} {
+    global NGList
+    set t [winfo toplevel $w]
+    upvar #0 $t opt
+
+    set name [$w.bar.name.entry get]
+    set reads ""
+    if {[llength [$w.list curselection]] <= 1} {
+	set l [list [$w.list get [$w.list curselection]]]
+    } else {
+	set l [$w.list get [$w.list curselection]]
+    }
+    foreach r $l {
+	if {$opt(End) & 1} {
+	    lappend reads #[lindex $r 1]
+	}
+	if {$opt(End) & 2} {
+	    if {[lindex $r 5] != ""} {
+		lappend reads #[lindex $r 5]
+	    }
+	}
+    }
+
+    switch $op {
+	"add" {
+	    append NGList($name) " $reads"
+	    ListRemoveDuplicates $name
+	}
+
+	"del" {
+	    set n $NGList($name)
+	    foreach r $reads {
+		if {[set ind [lsearch -exact $n $r]] != -1} {
+		    set n [lreplace $n $ind $ind]
+		}
+	    }
+	    set NGList($name) $n
+	}
+
+	"set" {
+	    set NGList($name) $reads
+	}
+    }
+}
+
+proc ListEditMultiList {w l} {
+    set w [winfo toplevel $w]
+    upvar #0 $w opt
+
+    global NGList
+    if {![ListExists2 $l]} {
+	ListCreate2 $l {} SEQID
+    }
+    InitListTrace $l
+
+    global NGList_size
+    set opt(OutputList) $l
+    set opt(ListSize) [ListSize $opt(OutputList)]
+    catch {set NGList_size($opt(OutputList)) $opt(ListSize)}
+
+    $w.bar.name.menu configure -textvariable NGList_size($opt(OutputList))
 }

@@ -676,6 +676,58 @@ int sequence_get_position(GapIO *io, tg_rec snum, tg_rec *contig,
 }
 
 /*
+ * Fills out a rangec_t struct for snum.
+ * If abs_pos is true it also fills out the absolute position
+ *
+ * Returns rangec_t * on success
+ *         NULL on failure
+ */
+rangec_t *sequence_get_rangec(GapIO *io, seq_t *s, int abs_pos) {
+    static rangec_t rc;
+    range_t *r;
+
+    if (!s)
+	return NULL;
+
+    cache_incr(io, s);
+
+    if (!(r = sequence_get_range(io, s))) {
+	cache_decr(io, s);
+	return NULL;
+    }
+
+    /* Copy the struct over */
+    if (abs_pos) {
+	if (0 != sequence_get_position(io, s->rec, NULL,
+				       &rc.start, &rc.end, NULL)) {
+	    cache_decr(io, s);
+	    return NULL;
+	}
+    } else {
+	rc.start = r->start;
+	rc.end = r->end;
+    }
+    rc.rec = r->rec;
+    rc.mqual = r->mqual;
+    rc.pair_rec = r->pair_rec;
+    rc.pair_start = r->pair_start;
+    rc.pair_end = r->pair_end;
+    rc.pair_mqual = r->pair_mqual;
+    rc.pair_timestamp = r->pair_timestamp;
+    rc.flags = r->flags;
+    rc.y = r->y;
+    rc.library_rec = r->library_rec;
+    rc.orig_rec = s->bin;
+    rc.orig_ind = s->bin_index;
+
+    cache_decr(io, s);
+
+    return &rc;
+}
+
+
+
+/*
  * As per sequence_get_position() but we also return the clipped/visible
  * start and end coordinate too.
  */
@@ -1762,6 +1814,9 @@ int sequence_fix_anno_bins(GapIO *io, seq_t **s) {
 int sequence_get_range_pair_position(GapIO *io, rangec_t *r) {
     range_t r_out;
 
+    if (r->pair_rec == 0)
+	return 0; /* Not an error as it's up to date anyway */
+
     io = gio_base(io);
 
     /* If matches global time stamp then we're up to date */
@@ -1776,9 +1831,9 @@ int sequence_get_range_pair_position(GapIO *io, rangec_t *r) {
 	    return 0;
     }
 
-//    printf("%d,%d Updating pair %"PRIrec"/%"PRIrec" pos=%d in %"PRIrec,
-//	   r->pair_timestamp, io->db->timestamp,
-//	   r->rec, r->pair_rec, r->pair_start, r->pair_contig);
+    printf("%d,%d Updating pair %"PRIrec"/%"PRIrec" pos=%d in %"PRIrec,
+	   r->pair_timestamp, io->db->timestamp,
+	   r->rec, r->pair_rec, r->pair_start, r->pair_contig);
 
     /* Otherwise do a full search and update it */
     bin_get_item_position(io, GT_Seq, r->pair_rec,
@@ -1787,7 +1842,7 @@ int sequence_get_range_pair_position(GapIO *io, rangec_t *r) {
     r->pair_mqual = r_out.mqual;
     r->pair_timestamp = io->db->timestamp;
 
-//    printf(" / %d in %"PRIrec"\n", r->pair_start, r->pair_contig);
+    printf(" / %d in %"PRIrec"\n", r->pair_start, r->pair_contig);
 
     /* Copy to original bin rec too */
     if (!io->read_only) {
