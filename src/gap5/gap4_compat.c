@@ -787,7 +787,7 @@ int x_clone_write   (GapIO *io, int n, void *v) { unimp("clone_write"); }
 
 /* ----------------------------------------------------------------------
  */
-#if 1
+#if 0
 /* Unclipped length */
 int64_t CalcTotalContigLen(GapIO *io) {
     int64_t len = 0;
