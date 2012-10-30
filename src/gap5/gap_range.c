@@ -249,7 +249,7 @@ int gap_range_recalculate(gap_range_t *gr, int width, double new_wx0,
 }
 
 int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv, 
-    	    	int fwd_col, int rev_col, int single_col, int span_col,
+    	    	int fwd_col, int rev_col, int single_col, int *span_col,
 		int inconsistent_col, int force, int reads_only) {
     int i, j;
     double max_height = 0;
@@ -324,6 +324,7 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		    sequence_get_range_pair_position(gr->io, r);
 	    }
 
+	    //span = (gr->crec != r->pair_contig) ? r->pair_contig : 0;
 	    span = (gr->crec != r->pair_contig);
 		
 	    if (gr->new_filter.filter & FILTER_SPANNING && !span) continue;
@@ -362,7 +363,7 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	col = (int)(mq / 8);
 	    
 	if (single) col = single_col;
-	if (span) 	col = span_col;
+	if (span && span_col) 	col = span_col[(r->pair_contig * 15551) % 10];
 
 	if (r->library_rec) {
 	    HacheItem *hi;

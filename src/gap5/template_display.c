@@ -15,6 +15,7 @@
 #include "template_draw.h"
 #include "gap_range.h"
 #include "template_display.h"
+#include "gap_globals.h"
 
 /*
  * On windows we need to use TkPutImage instead
@@ -59,7 +60,7 @@ typedef struct TemplateDisplayItem {
     int width, height;      /* pixmap width and height */
     image_t *image;         /* image drawing goes on to */
     int single_col;         /* special colours for image below */
-    int span_col;
+    int span_col[10];
     int inconsistent_col;
     int fwd_col;
     int rev_col;
@@ -103,7 +104,10 @@ static void		translate_template(Tk_Canvas canvas,
 			    
 /* none mandatory protoypes */
 static void compute_template_bbox(Tk_Canvas canvas, TemplateDisplayItem *tdi);
-static int  initialise_template_image(TemplateDisplayItem *tdi, Display *display);
+static int  initialise_template_image(TemplateDisplayItem *tdi,
+				      Tcl_Interp *interp,
+				      Tk_Window tkwin,
+				      Display *display);
 static void redraw_template_image(TemplateDisplayItem *tdi, Display *display);
 
 
@@ -213,7 +217,10 @@ static int create_template(Tcl_Interp *interp,
     tdi->width = -1;
     tdi->height = -1;
    
-    if(initialise_template_image(tdi, Tk_Display(Tk_CanvasTkwin(canvas)))) {
+    if(initialise_template_image(tdi,
+				 interp,
+				 Tk_CanvasTkwin(canvas),
+				 Tk_Display(Tk_CanvasTkwin(canvas)))) {
 	if ((template_coords(interp, canvas, itemPtr, i, argv) == TCL_OK)) {
     	    if (configure_template(interp, canvas, itemPtr, argc - i, argv + i, 0) == TCL_OK) {
 		// possibly more initialisation here
@@ -566,9 +573,13 @@ static int template_postscript(Tcl_Interp *interp, Tk_Canvas canvas, Tk_Item *it
 
 
 /* set up the image to draw the template on */
-
-static int initialise_template_image(TemplateDisplayItem *tdi, Display *display) {
+static int initialise_template_image(TemplateDisplayItem *tdi,
+				     Tcl_Interp *interp,
+				     Tk_Window tkwin,
+				     Display *display) {
     int i;
+    XColor *c, c2;
+    char *col;
 
     if (NULL == (tdi->image = initialise_image(display))) {
 	printf("Unable to initialise image_t\n");
@@ -579,12 +590,67 @@ static int initialise_template_image(TemplateDisplayItem *tdi, Display *display)
 	add_colour(tdi->image, 64+i*5, 64+i*5, 64+i*5);
     }
 
-    tdi->background 	  = add_colour(tdi->image, 0, 0, 0);	     // black
-    tdi->span_col         = add_colour(tdi->image, 255, 165, 0);       // orange
-    tdi->single_col       = add_colour(tdi->image, 0, 0, 255);         // blue
-    tdi->inconsistent_col = add_colour(tdi->image, 255, 0, 0);         // red
-    tdi->fwd_col  = tdi->fwd_col3 = add_colour(tdi->image, 0, 139, 0);   // green4
-    tdi->rev_col  = tdi->rev_col3 = add_colour(tdi->image, 255, 0, 255); // magenta
+#define CRGB(r,g,b) (c2.red=(r), c2.green=(g), c2.blue=(b), &c2)
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.BACKGROUND");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(0, 0, 0);
+    tdi->background 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL0");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 165, 0);
+    tdi->span_col[0] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL1");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 255, 0);
+    tdi->span_col[1] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL2");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 165, 165);
+    tdi->span_col[2] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL3");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 0, 200);
+    tdi->span_col[3] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL4");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(0, 220, 0);
+    tdi->span_col[4] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL5");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(0, 115, 0);
+    tdi->span_col[5] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL6");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(0, 180, 206);
+    tdi->span_col[6] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL7");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 220, 140);
+    tdi->span_col[7] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL8");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 112, 163);
+    tdi->span_col[8] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SPANNING_COL9");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 65, 0);
+    tdi->span_col[9] 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.SINGLE_COL");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(0, 0, 255);
+    tdi->single_col 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.INCONSISTENT_COL");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 0, 0);
+    tdi->inconsistent_col = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.FWD_COL");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(0, 139, 0);
+    tdi->fwd_col 	  = add_colour(tdi->image, c->red, c->green, c->blue);
+
+    col = get_default_string(interp, gap5_defs, "TEMPLATE.REV_COL");
+    c = col ? Tk_GetColor(interp, tkwin, col) : CRGB(255, 0, 255);
+    tdi->rev_col 	  = add_colour(tdi->image, c->red, c->green, c->blue);
 
     return 1;
 }
@@ -773,8 +839,8 @@ static void redraw_template_image(TemplateDisplayItem *tdi, Display *display) {
     
     /* 1) Compute X */
     tdi->ntl = gap_range_x(tdi->gr, ax, bx, fwd_col, rev_col, 
-    	    	    	    tdi->single_col, tdi->span_col, tdi->inconsistent_col,
-		    	    force_change, tdi->reads_only);
+			   tdi->single_col, tdi->span_col, tdi->inconsistent_col,
+			   force_change, tdi->reads_only);
 			    
     /* 2) Compute Y coordinates (part 1) */
     if (tdi->ymode == 1) {

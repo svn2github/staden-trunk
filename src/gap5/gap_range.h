@@ -74,8 +74,9 @@ int  gap_range_recalculate(gap_range_t *gr, int width, double new_wx0, double ne
 void gap_range_reset(gap_range_t *gr);
 void set_filter(gap_range_t *gr, int filter, int min, int max, int mode, int accuracy);
 int  gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv, 
-    	    	int forward_col, int reverse_col, int single_col, int span_col, int inconsistent_col,
-		int force, int reads_only);
+		 int forward_col, int reverse_col, int single_col,
+		 int *span_col, int inconsistent_col,
+		 int force, int reads_only);
 
 
 #endif

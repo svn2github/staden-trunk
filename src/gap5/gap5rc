@@ -1198,6 +1198,22 @@ set_def TEMPLATE.PLOT_HEIGHT		400
 set_def TEMPLATE.LINE_WIDTH		2
 set_def TEMPLATE.LINE_BOLD		4
 
+set_def TEMPLATE.BACKGROUND		black
+set_def TEMPLATE.SPANNING_COL0		#ffa500
+set_def TEMPLATE.SPANNING_COL1		#ffff00
+set_def TEMPLATE.SPANNING_COL2		#e02060
+set_def TEMPLATE.SPANNING_COL3		#ff00c8
+set_def TEMPLATE.SPANNING_COL4		#00dd00
+set_def TEMPLATE.SPANNING_COL5		#007000
+set_def TEMPLATE.SPANNING_COL6		#00b4ce
+set_def TEMPLATE.SPANNING_COL7		#ffdc8c
+set_def TEMPLATE.SPANNING_COL8		#ff70a3
+set_def TEMPLATE.SPANNING_COL9		#ff4100
+set_def TEMPLATE.SINGLE_COL		blue
+set_def TEMPLATE.INCONSISTENT_COL	red
+set_def TEMPLATE.FWD_COL		green4
+set_def TEMPLATE.REV_COL		magenta
+
 #standalone restriction enzyme display
 set_def R_ENZ			$defs_renz
 set_def R_ENZ.RULER		$defs_ruler

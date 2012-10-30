@@ -30,7 +30,7 @@ typedef struct {
     int colour_count;  
     int colour_size;
     int single_col;    // special colours below
-    int span_col;
+    int span_col[10];
     int inconsistent_col;
     int fwd_col;
     int rev_col;
