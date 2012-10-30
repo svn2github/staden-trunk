@@ -714,6 +714,7 @@ rangec_t *sequence_get_rangec(GapIO *io, seq_t *s, int abs_pos) {
     rc.pair_end = r->pair_end;
     rc.pair_mqual = r->pair_mqual;
     rc.pair_timestamp = r->pair_timestamp;
+    rc.pair_contig = r->pair_contig;
     rc.flags = r->flags;
     rc.y = r->y;
     rc.library_rec = r->library_rec;
@@ -1831,9 +1832,9 @@ int sequence_get_range_pair_position(GapIO *io, rangec_t *r) {
 	    return 0;
     }
 
-    printf("%d,%d Updating pair %"PRIrec"/%"PRIrec" pos=%d in %"PRIrec,
-	   r->pair_timestamp, io->db->timestamp,
-	   r->rec, r->pair_rec, r->pair_start, r->pair_contig);
+    //printf("%d,%d Updating pair %"PRIrec"/%"PRIrec" pos=%d in %"PRIrec,
+    //	   r->pair_timestamp, io->db->timestamp,
+    //	   r->rec, r->pair_rec, r->pair_start, r->pair_contig);
 
     /* Otherwise do a full search and update it */
     bin_get_item_position(io, GT_Seq, r->pair_rec,
@@ -1842,7 +1843,7 @@ int sequence_get_range_pair_position(GapIO *io, rangec_t *r) {
     r->pair_mqual = r_out.mqual;
     r->pair_timestamp = io->db->timestamp;
 
-    printf(" / %d in %"PRIrec"\n", r->pair_start, r->pair_contig);
+    //printf(" / %d in %"PRIrec"\n", r->pair_start, r->pair_contig);
 
     /* Copy to original bin rec too */
     if (!io->read_only) {

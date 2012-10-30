@@ -1580,7 +1580,7 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
     } else if (end) {
 	int best = INT_MIN;
 
-	printf("Recalc end   for #%"PRIrec"\n", contig);
+	//printf("Recalc end   for #%"PRIrec"\n", contig);
 	ci = contig_iter_new(io, contig, 1, CITER_LAST | CITER_IEND |
 			     CITER_SMALL_BS, CITER_CSTART, CITER_CEND);
 	
