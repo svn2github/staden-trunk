@@ -1467,7 +1467,7 @@ static int tcl_contig_order(GapIO *io, Tcl_Interp *interp,
     int cind;
     tg_rec crec;
 
-    if (objc != 2) {
+    if (objc != 2 && objc != 3) {
 	vTcl_SetResult(interp, "wrong # args: should be "
 		       "\"%s contig_index\"\n",
 		       Tcl_GetStringFromObj(objv[0], NULL));
@@ -1475,7 +1475,13 @@ static int tcl_contig_order(GapIO *io, Tcl_Interp *interp,
     }
 
     Tcl_GetIntFromObj(interp, objv[1], &cind);
-    crec = arr(tg_rec, io->contig_order, cind);
+    if (objc == 2) {
+	crec = arr(tg_rec, io->contig_order, cind);
+    } else {
+	Tcl_GetWideIntFromObj(interp, objv[2], &crec);
+	io->contig_order = cache_rw(io, io->contig_order);
+	arr(tg_rec, io->contig_order, cind) = crec;
+    }
 
     vTcl_SetResult(interp, "%"PRIrec, crec);
     return TCL_OK;

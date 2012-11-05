@@ -441,7 +441,9 @@ proc ListContigsSave {io t} {
     # Select contig order
     set order ""
     foreach line [$t get 0 end] {
-	lappend order [lindex $line 0]
+	set n [lindex $line 0]
+	regsub {.* \((=[0-9]+)\)$} $n {\1} n
+	lappend order $n
     }
 
     save_contig_order -io $io -contigs $order
