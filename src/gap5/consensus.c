@@ -1275,7 +1275,12 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 						                S[14]+= MM;
 		break;
 
-	    case 5: /* N => should so something to non-pad vs pad scores */
+	    case 5: /* N => equal weight to all A,C,G,T but not a pad */
+		S[0] += MM; S[1 ]+= MM; S[2 ]+= MM; S[3 ]+= MM; S[4 ]+= _M;
+		            S[5 ]+= MM; S[6 ]+= MM; S[7 ]+= MM; S[8 ]+= _M;
+			                S[9 ]+= MM; S[10]+= MM; S[11]+= _M; 
+					            S[12]+= MM; S[13]+= _M; 
+						                S[14]+= __;
 		break;
 	    }
 
