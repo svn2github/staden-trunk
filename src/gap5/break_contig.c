@@ -1402,6 +1402,9 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 			 compute_pos3(io, cl->rec, cpos),
 			 contig_offset(io, &cl), 0, cl->rec, cr->rec, 0, 0);
 
+    /* Invalidate cached contig start/end positions */
+    cr->timestamp = cl->timestamp = io_timestamp_incr(io);
+
     /* Recompute end positions */
     left_end    = contig_visible_end(io, cl->rec, CITER_CEND);
     right_start = contig_visible_start(io, cr->rec, CITER_CSTART);
@@ -1501,6 +1504,7 @@ tg_rec break_contig(GapIO *io, tg_rec crec, int cpos, int break_holes) {
 
     ret = cr->rec;
 
+    /* Not sure if we still need this, but better to be safe... */
     cr->timestamp = cl->timestamp = io_timestamp_incr(io);
 
     cache_decr(io, cl);
