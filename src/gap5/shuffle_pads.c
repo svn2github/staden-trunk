@@ -186,35 +186,62 @@ int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos,
     return npads;
 }
 
+static int CONTIGL_sort_func(const void *v1, const void *v2) {
+    const CONTIGL *cl1 = *(const CONTIGL **)v1;
+    const CONTIGL *cl2 = *(const CONTIGL **)v2;
+
+    if (cl1->mseg->offset == cl2->mseg->offset) return cl1 > cl2 ? 1 : -1;
+
+    return cl1->mseg->offset - cl2->mseg->offset;
+}
+
 /*
  * Realigning the sequences may change their start positions and hence break
  * the sorted-on-position property.
  * We make sure this is maintained here.
  */
 static void resort_contigl(MALIGN *malign) {
-    CONTIGL *lastl, *cl;
-    int swapped;
+    CONTIGL *lastl, *cl, **sorted, **last;
+    int swapped, i, nele, noop = 1, last_offset = INT_MIN;
 
-    /* The list is very close to being sorted, so this is not too inefficient */
-    do {
-	swapped = 0;
-	lastl = NULL;
-	for (cl = malign->contigl; cl && cl->next; lastl = cl, cl = cl->next) {
-	    if (cl->mseg->offset > cl->next->mseg->offset) {
-		CONTIGL *n = cl->next;
+    /*
+     * This list is almost sorted already, but in excessive depth areas we
+     * need a decent sort algorithm. So convert to an array and sort.
+     */
+    for (nele = 0, cl = malign->contigl; cl; cl = cl->next, nele++) {
+	if (cl->mseg->offset < last_offset)
+	    noop = 0;
+	last_offset = cl->mseg->offset;
+    }
 
-		/* Swap cl & cl->next */
-		if (lastl)
-		    lastl->next = n;
-		else
-		    malign->contigl = n;
-		cl->next = n->next;
-		n->next = cl;
-		cl = lastl ? lastl : malign->contigl;
-		swapped = 1;
-	    }
-	}
-    } while (swapped);
+    if (noop)
+	return;
+    
+    sorted = malloc(nele * sizeof(*sorted));
+    if (!sorted)
+	return;
+
+    for (nele = 0, cl = malign->contigl; cl; cl = cl->next)
+	sorted[nele++] = cl;
+
+    qsort(sorted, nele, sizeof(*sorted), CONTIGL_sort_func);
+
+    malign->contigl = sorted[0];
+    for (i=0; i < nele-1; i++) {
+	sorted[i]->next = sorted[i+1];
+    }
+    sorted[i]->next = NULL;
+
+    free(sorted);
+
+    last_offset = INT_MIN; noop = 1;
+    for (nele = 0, cl = malign->contigl; cl; cl = cl->next, nele++) {
+	if (cl->mseg->offset < last_offset)
+	    noop = 0;
+	last_offset = cl->mseg->offset;
+    }
+
+    return;
 }
 
 typedef struct cl_list {
