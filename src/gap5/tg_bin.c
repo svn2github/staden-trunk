@@ -1676,7 +1676,15 @@ int bin_invalidate_consensus(GapIO *io, tg_rec contig, int start, int end) {
     
     if (NULL == (c = (contig_t *)cache_search(io, GT_Contig, contig)))
 	return -1;
-    
+
+    /* Also update timestamp as invalidating consensus may also imply
+     * changing consensus length. We may be able to improve on this when
+     * we know the invalidation is purely substitutions, but this is a
+     * good fallback position.
+     */
+    c = cache_rw(io, c);
+    c->timestamp = io_timestamp_incr(io);
+
     r = contig_bins_in_range(io, &c, start, end, 0, CONS_BIN_SIZE/2, &nr);
 
     for (i = 0; i < nr; i++) {
