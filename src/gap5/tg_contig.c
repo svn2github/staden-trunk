@@ -1794,15 +1794,10 @@ static int sort_range_by_y(const void *v1, const void *v2) {
 /* Variables for holding sort related values,
    not the prettiest of solutions having it here.
 */
+
 static int (*primary)(const void *, const void *);
 static int (*secondary)(const void *, const void *);
-static int p_sort;
-static int s_sort;
 static int base_sort_pos = 1;
-static int sort_sequence_type = GT_Seq;
-static tg_rec sort_sequence_rec = -1;
-static int sort_sequence_start = 1;
-static int sort_sequence_end = 1;
 
 
 // empty sort
@@ -2099,114 +2094,94 @@ void contig_set_base_sort_point(int pos) {
 }
 
 
-void contig_set_sequence_sort(int type, tg_rec rec, int start, int end) {
-    sort_sequence_type  = type;
-    sort_sequence_rec   = rec;
-    
-    /* As it is possible to select from right to left
-       we need to make sure start is smaller than end.
-       (left to right select works as expected.) */        
-    
-    if (start <= end) {
-    	sort_sequence_start = start;
-    	sort_sequence_end   = end;
-    } else {
-    	sort_sequence_start = end;
-    	sort_sequence_end   = start;
-    }
-    	
-}
-
-
-void contig_set_default_sort(int pri, int sec) {
+void contig_set_default_sort(seq_sort_t *set, int pri, int sec) {
 
     switch (pri) {
     case 1:
-	p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
+	set->p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
 	break;
 	
     case 2:
-	p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
+	set->p_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
 	break;
 	
     case 3:
-	p_sort = CSIR_SORT_BY_X;
+	set->p_sort = CSIR_SORT_BY_X;
 	break;
 	
     case 4:
-	p_sort = CSIR_SORT_BY_TEMPLATE;
+	set->p_sort = CSIR_SORT_BY_TEMPLATE;
 	break;
 	
     case 5:
-	p_sort = CSIR_SORT_BY_STRAND;
+	set->p_sort = CSIR_SORT_BY_STRAND;
 	break;
 
     case 6:
-	p_sort = CSIR_SORT_BY_BASE;
+	set->p_sort = CSIR_SORT_BY_BASE;
 	break;
 	
     case 7:
-	p_sort = CSIR_SORT_BY_SEQUENCE;
+	set->p_sort = CSIR_SORT_BY_SEQUENCE;
 	break;
 
     case 8:
-	p_sort = CSIR_SORT_BY_TEMPLATE_STATUS;
+	set->p_sort = CSIR_SORT_BY_TEMPLATE_STATUS;
 	break;
 
     case 9:
-	p_sort = CSIR_SORT_BY_LIBRARY;
+	set->p_sort = CSIR_SORT_BY_LIBRARY;
 	break;
 
     default:
-	p_sort = CSIR_SORT_BY_Y;
+	set->p_sort = CSIR_SORT_BY_Y;
     }
     
     switch (sec) {
     case 1:
-	s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
+	set->s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
 	break;
 	
     case 2:
-	s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
+	set->s_sort = CSIR_SORT_BY_X | CSIR_SORT_BY_CLIPPED;
 	break;
 	
     case 3:
-	s_sort = CSIR_SORT_BY_X;
+	set->s_sort = CSIR_SORT_BY_X;
 	break;
 	
     case 4:
-	s_sort = CSIR_SORT_BY_TEMPLATE;
+	set->s_sort = CSIR_SORT_BY_TEMPLATE;
 	break;
 	
     case 5:
-	s_sort = CSIR_SORT_BY_STRAND;
+	set->s_sort = CSIR_SORT_BY_STRAND;
 	break;
 
     case 6:
-	s_sort = CSIR_SORT_BY_BASE;
+	set->s_sort = CSIR_SORT_BY_BASE;
 	break;
 
     case 7:
-	s_sort = CSIR_SORT_BY_SEQUENCE;
+	set->s_sort = CSIR_SORT_BY_SEQUENCE;
 	break;
 
     case 8:
-	s_sort = CSIR_SORT_BY_TEMPLATE_STATUS;
+	set->s_sort = CSIR_SORT_BY_TEMPLATE_STATUS;
 	break;
 
     case 9:
-	s_sort = CSIR_SORT_BY_LIBRARY;
+	set->s_sort = CSIR_SORT_BY_LIBRARY;
 	break;
 
     default:
-	s_sort = CSIR_SORT_BY_Y;
+	set->s_sort = CSIR_SORT_BY_Y;
     }
 }
 
 
 /* return a pointer to a function */
 static int (*set_sort(int job))(const void *, const void *) {
-
 
     if (job & CSIR_SORT_BY_TEMPLATE) {
 	return simple_sort_range_by_template;
@@ -2240,12 +2215,12 @@ static int (*set_sort(int job))(const void *, const void *) {
 }
 
 
-int find_string_match_values(GapIO *io, rangec_t *r, int count) {
+static int find_string_match_values(GapIO *io, rangec_t *r, seq_sort_t *setting, int count) {
     char *seq = NULL;
-    int seq_size = (sort_sequence_end - sort_sequence_start) + 1;
+    int seq_size = (setting->end - setting->start) + 1;
     int i, j, k;
-    int c_start = sort_sequence_start;
-    int c_end   = sort_sequence_end;
+    int c_start = setting->start;
+    int c_end   = setting->end;
     
     if (NULL == (seq = (char *)malloc(seq_size * sizeof(char)))) {
     	fprintf(stderr, "Error: memory allocation failure in find_string_match_values\n");
@@ -2255,22 +2230,24 @@ int find_string_match_values(GapIO *io, rangec_t *r, int count) {
     seq[seq_size - 1] = 0;
     
     // get the selection, either from the consensus or a read
+    
+    if (setting->rec == 0) return 1;
 
-    if (sort_sequence_type == GT_Contig) {
-    	if (-1 == (calculate_consensus_simple(io, sort_sequence_rec,
-	    	     sort_sequence_start, sort_sequence_end, seq, NULL))) {
+    if (setting->type == GT_Contig) {
+    	if (-1 == (calculate_consensus_simple(io, setting->rec,
+	    	     setting->start, setting->end, seq, NULL))) {
 	    fprintf(stderr, "Error: unable to retrieve consensus data\n");
 	    free(seq);
 	    return 1;
 	}
     } else {
-    	seq_t *s = cache_search(io, GT_Seq, sort_sequence_rec);
+    	seq_t *s = cache_search(io, GT_Seq, setting->rec);
 	
 	// look for the right record in range for the pos info
 	// there is probably a better way but do this for now
 	
 	for (i = 0; i < count; i++) {
-	    if (r[i].rec == sort_sequence_rec) break;
+	    if (r[i].rec == setting->rec) break;
 	}
 	
 	if (i == count) { // rec not there, probably out of range
@@ -2285,7 +2262,7 @@ int find_string_match_values(GapIO *io, rangec_t *r, int count) {
 	c_start += r[i].start;
 	c_end   += r[i].start;;
 	
-    	for (j = sort_sequence_start; j <=  sort_sequence_end; j++) {
+    	for (j = setting->start; j <=  setting->end; j++) {
 	    char base;
 	    int cutoff;
 	    
@@ -2853,7 +2830,7 @@ void update_range_y(GapIO *io, rangec_t *r, int count) {
 }
 
 
-static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,
+static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c, seq_sort_t *sort_set,
 					 int start, int end,
 					 int first, int second,
 					 int *count, int mask, int val) {
@@ -2881,11 +2858,11 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,
     	int job;
     
     	if (first & CSIR_DEFAULT) {
-	    first |= p_sort;
+	    first |= sort_set->p_sort;
 	}
 	
 	if (second & CSIR_DEFAULT ) {
-	    second |= s_sort;
+	    second |= sort_set->s_sort;
 	}
 	
 	job = first | second;
@@ -2913,7 +2890,7 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,
 	    }
 	    
 	    if (job & CSIR_SORT_BY_SEQUENCE) {
-	    	if (find_string_match_values(io, r, *count)) {
+	    	if (find_string_match_values(io, r, sort_set, *count)) {
 		    // something wrong, possibly selection not set. Default to tech sort
 		    first ^= CSIR_SORT_BY_SEQUENCE;
 		    first |= CSIR_SORT_BY_X | CSIR_SORT_BY_SEQ_TECH;
@@ -2921,6 +2898,10 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,
 	    }
 	    
 	    sort_io = io;
+	    
+	    if (sort_set) {
+	    	contig_set_base_sort_point(sort_set->base_pos);
+	    }
 	    
 	    primary   = set_sort(first);
 	    secondary = set_sort(second);
@@ -2976,17 +2957,17 @@ static rangec_t *contig_objects_in_range(GapIO *io, contig_t **c,
 }
 
 
-rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
+rangec_t *contig_items_in_range(GapIO *io, contig_t **c, seq_sort_t *settings, int start, int end,
 				int first_order, int second_order, int *count) {
     
-    return contig_objects_in_range(io, c, start, end, first_order, second_order, count, 0, 0);
+    return contig_objects_in_range(io, c, settings, start, end, first_order, second_order, count, 0, 0);
 }
 
 
 rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count) {
     
-    return contig_objects_in_range(io, c, start, end, job, 0, count,
+    return contig_objects_in_range(io, c, NULL, start, end, job, 0, count,
     	    GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISSEQ);
 }
 
@@ -2994,14 +2975,14 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count) {
 
-    return contig_objects_in_range(io, c, start, end, job, 0, count,
+    return contig_objects_in_range(io, c, NULL, start, end, job, 0, count,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISANNO);
 }
 
 rangec_t *contig_refpos_in_range(GapIO *io, contig_t **c, int start, int end,
 				 int job, int *count) {
 
-    return contig_objects_in_range(io, c, start, end, job, 0, count,
+    return contig_objects_in_range(io, c, NULL, start, end, job, 0, count,
  				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISREFPOS);
 }
 
@@ -3695,7 +3676,7 @@ static int range_populate(GapIO *io, contig_iterator *ci,
 	ci->r = contig_refpos_in_range(io, &c, start, end,
 				       ci->sort_mode, &ci->nitems);
     else
-	ci->r = contig_items_in_range(io, &c, start, end,
+	ci->r = contig_items_in_range(io, &c, NULL, start, end,
 				      ci->sort_mode, 0, &ci->nitems);
     if (NULL == ci->r) return -1;
 

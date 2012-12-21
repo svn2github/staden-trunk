@@ -62,7 +62,7 @@ contig_t *contig_new(GapIO *io, char *name);
 /* FIXME: move this elsewhere */
 #define get_bin(io, bnum) ((bin_index_t *)cache_search((io), GT_Bin, (bnum)))
 
-rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
+rangec_t *contig_items_in_range(GapIO *io, contig_t **c, seq_sort_t *settings, int start, int end,
 				int first_order, int second_order, int *count);
 rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end, int job, int *count);
 rangec_t *contig_bins_in_range(GapIO *io, contig_t **c, int start, int end,
@@ -72,9 +72,8 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count);
 			       
-void contig_set_default_sort(int primary, int secondary);
+void contig_set_default_sort(seq_sort_t *set, int primary, int secondary);
 void contig_set_base_sort_point(int pos);
-void contig_set_sequence_sort(int type, tg_rec rec, int start, int end); 
 
 #define CSIR_PAIR                  (1<<0)
 #define CSIR_ALLOCATE_Y_SINGLE     (1<<1)

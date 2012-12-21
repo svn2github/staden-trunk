@@ -637,4 +637,23 @@ typedef struct {
     char data[1];
 } library_t;
 
+
+/*-------------------------------------------------------------------
+ * Sorting struct
+ *
+ * A place for contig editors to store the sorting/group by settings.
+ *
+ */
+ 
+typedef struct {
+    tg_rec rec;
+    int    p_sort;
+    int    s_sort;
+    int    base_pos;
+    int    type;
+    int    start;
+    int    end;
+} seq_sort_t;
+    
+
 #endif /* _TG_STRUCT_H_ */

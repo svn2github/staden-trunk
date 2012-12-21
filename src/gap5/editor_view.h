@@ -115,6 +115,9 @@ typedef struct _edview {
 
     /* Traces recently loaded */
     HacheTable *trace_hash;
+    
+    /* Seq sort settings */
+    seq_sort_t sort_settings;
 } edview;
 
 typedef struct _EdLink {

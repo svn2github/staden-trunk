@@ -990,7 +990,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 	
     xx->r_start = start;
     xx->r_end = end;
-    xx->r = contig_items_in_range(xx->io, &c, start, end,
+    xx->r = contig_items_in_range(xx->io, &c, &xx->sort_settings, start, end,
 				  CSIR_SORT_BY_Y | mode, CSIR_DEFAULT,
 				  &xx->nr);
     if (!xx->r) {
@@ -3531,7 +3531,13 @@ int edPrevDifference(edview *xx) {
 }
 
 void edview_set_sort_order(edview *xx) {
-    contig_set_default_sort(xx->ed->group_primary, xx->ed->group_secondary);
+    edview *linked;
+
+    contig_set_default_sort(&xx->sort_settings, xx->ed->group_primary, xx->ed->group_secondary);
+    
+    if ((linked = linked_editor(xx)) != NULL) {
+    	contig_set_default_sort(&linked->sort_settings, linked->ed->group_primary, linked->ed->group_secondary);
+    }
     
     if (xx->r) xx->r_start = xx->r_end; // force re-calc in edview_visible_items
 }
@@ -3717,11 +3723,20 @@ int origpos(edview *xx, tg_rec srec, int pos) {
 }
 
 void ed_set_base_sort_point(edview *xx) {
-    contig_set_base_sort_point(xx->cursor_apos);
+    xx->sort_settings.base_pos = xx->cursor_apos;
 }
 
 void ed_set_sequence_sort(edview *xx) {
-    contig_set_sequence_sort(xx->select_seq == xx->cnum ? GT_Contig : GT_Seq,
-    	    	    	     xx->select_seq, xx->select_start, xx->select_end);
+			     
+    xx->sort_settings.type = xx->select_seq == xx->cnum ? GT_Contig : GT_Seq;
+    xx->sort_settings.rec  = xx->select_seq;
+    
+    if (xx->select_start <= xx->select_end) {
+    	xx->sort_settings.start = xx->select_start;
+    	xx->sort_settings.end   = xx->select_end;
+    } else {
+    	xx->sort_settings.start = xx->select_start;
+    	xx->sort_settings.end   = xx->select_end;
+    }
 }
     
