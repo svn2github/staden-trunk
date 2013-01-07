@@ -1145,6 +1145,31 @@ int cache_flush(GapIO *io) {
 			    if (bo->contig[j]->link)
 				ArrayDestroy(bo->contig[j]->link);
 			    free(ci_ptr(bo->contig[j]));
+			    if (strcmp(bo->contig[j]->name,
+				       bn->contig[j]->name) &&
+				!io->base->base) {
+				GapIO *iob = io->base;	
+				contig_t *n = bn->contig[j];
+				contig_t *o = bo->contig[j];
+				puts("Contig renamed\n");
+
+				/* Delete old name */
+				tg_rec r = iob->iface->contig.
+				    index_del(iob->dbh, o->name, o->rec);
+				if (r != -1 &&
+				    r != iob->db->contig_name_index) {
+				    iob->db = cache_rw(io, iob->db);
+				    iob->db->contig_name_index = r;
+				}
+
+				r = iob->iface->contig.
+				    index_add(iob->dbh, n->name, n->rec);
+				if (r != -1 &&
+				    r != iob->db->contig_name_index) {
+				    iob->db = cache_rw(io, iob->db);
+				    iob->db->contig_name_index = r;
+				}
+			    }
 			}
 		    }
 

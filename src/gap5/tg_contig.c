@@ -88,6 +88,10 @@ int contig_set_bin(GapIO *io, contig_t **c, tg_rec value) {
 
 /*
  * Sets a contig name.
+ * If we try to do this on a child I/O, eg the contig editor, then we
+ * only change the name local to this structure.
+ * At the time of committing the child I/O to the parent I/O the global
+ * name index will then be updated too as part of the flushing process.
  *
  * Returns 0 on success
  *        -1 on failure
@@ -100,7 +104,7 @@ int contig_set_name(GapIO *io, contig_t **c, char *name) {
 	return -1;
 
     /* Delete old name */
-    if (n->name) {
+    if (n->name && !io->base) {
 	tg_rec r = iob->iface->contig.index_del(iob->dbh, n->name, n->rec);
 	if (r != -1 && r != io->db->contig_name_index) {
 	    io->db = cache_rw(io, io->db);
@@ -117,7 +121,7 @@ int contig_set_name(GapIO *io, contig_t **c, char *name) {
     n->name   = (char *)(&n->data);
     strcpy(n->name, name);
 
-    if (*name) {
+    if (*name && !io->base) {
 	tg_rec r = iob->iface->contig.index_add(iob->dbh, name, n->rec);
 	if (r != -1 && r != io->db->contig_name_index) {
 	    io->db = cache_rw(io, io->db);

@@ -881,6 +881,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case SET_NAME: {
 	char *name;
+
 	if (objc != 3) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
 			   "\"%s set_name new_name\"\n",
@@ -889,6 +890,21 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	}
 	name = Tcl_GetStringFromObj(objv[2], NULL);
 
+	if (!tc->io->base) {
+	    tg_rec crec = tc->contig->rec;
+	    cache_decr(tc->io, tc->contig);
+
+	    if (contig_lock_write(tc->io, tc->contig->rec) == -1) {
+		verror(ERR_WARN, "contig::set_name", "Contig is busy");
+		tc->contig = cache_search(tc->io, GT_Contig, crec);
+		cache_incr(tc->io, tc->contig);
+		break;
+	    }
+
+	    tc->contig = cache_search(tc->io, GT_Contig, crec);
+	    cache_incr(tc->io, tc->contig);
+	}
+	
 	Tcl_SetIntObj(Tcl_GetObjResult(interp),
 		      contig_set_name(tc->io, &tc->contig, name));
 	break;

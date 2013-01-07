@@ -239,21 +239,18 @@ proc io_undo_exec {w crec cmdu} {
 	    }
 
 	    C_RENAME {
-		set iob [$io base]
-		set contig [$iob get_contig $op1]
+		set contig [$io get_contig $op1]
 		$contig set_name $op2
 		$contig delete
 
-		contig_notify -io $iob -type LENGTH \
+		contig_notify -io $io -type LENGTH \
 		    -cnum [$w contig_rec] -args {}
 
 		contig_notify \
-		    -io $iob \
+		    -io $io \
 		    -type RENAME \
 		    -cnum [$w contig_rec] \
 		    -args [list name $op2]
-
-		$iob flush
 	    }
 
 	    C_SHIFT {
@@ -2848,7 +2845,7 @@ proc editor_set_start2 {ed w} {
 }
 
 proc editor_set_name {ed} {
-    set io [[$ed io] base]
+    set io [$ed io]
     set c [$io get_contig [$ed contig_rec]]
 
     set w $ed.name
@@ -2868,7 +2865,8 @@ proc editor_set_name {ed} {
 }
 
 proc editor_set_name2 {ed w} {
-    set io [[$ed io] base]
+#    set io [[$ed io] base]
+    set io [$ed io]
 
     set nm [$w.name get]
     if {$nm == ""} {

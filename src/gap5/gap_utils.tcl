@@ -181,17 +181,21 @@ proc contig_rename {io crec name {w {}} {auto 0}} {
     $c set_name $name
     $c delete
 
+    if {$w != ""} {
+	destroy $w
+    }
+
     contig_notify \
 	-io $io \
 	-type RENAME \
 	-cnum $crec \
 	-args [list name $name]
 
-    $io flush
-
-    if {$w != ""} {
-	destroy $w
+    if {[$io base] != $io} {
+	return $name
     }
+
+    $io flush
 
     return $name
 }
