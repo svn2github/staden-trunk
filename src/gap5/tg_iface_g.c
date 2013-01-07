@@ -1870,6 +1870,7 @@ static cached_item *io_contig_read(void *dbh, tg_rec rec) {
     c->nanno = 0;
     c->nrefpos = 0;
     c->timestamp = 1;
+    c->clipped_timestamp = 0;
 
     free(ch);
 
@@ -5119,6 +5120,7 @@ static cached_item *io_contig_block_read(void *dbh, tg_rec rec) {
 
 	/* Move elsewhere once we start storing this */
 	in[i].timestamp = 1;
+	in[i].clipped_timestamp = 0;
     }
 
     /* Start */
