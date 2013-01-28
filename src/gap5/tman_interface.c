@@ -114,7 +114,7 @@ DisplayContext *tman_manage_trace(
      * Is this a reuse of an existant context? If so then we need to notify
      * the editor of its removal.
      */
-    if (ed = find_edc(dc)) {
+    if (NULL != (ed = find_edc(dc))) {
 	tman_unhighlight(ed);
     } else {
 	ed = find_free_edc();
@@ -237,12 +237,13 @@ void tman_reposition_traces(edview *xx, int pos, int mini_trace) {
 void tman_unhighlight(tman_dc *edc) {
     edview *xx = edc->xx;
 
+    /* Break the link between editor and trace display contexts */
+    edc->dc = NULL;
+
     if (!xx || xx->editorState == StateDown)
 	return;
 
 //    DBsetFlags(xx, edc->seq, DB_Flags(xx, edc->seq) & ~DB_FLAG_TRACE_SHOWN);
-
-    edc->dc = NULL;
 
     edview_redraw(xx);
     //RedisplayName(xx, edc->seq);
