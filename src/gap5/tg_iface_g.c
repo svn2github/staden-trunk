@@ -2632,7 +2632,7 @@ static char *pack_rng_array(int comp_mode, int fmt,
 static GRange *unpack_rng_array(int comp_mode, int fmt,
 				unsigned char *packed,
 				int packed_sz, int *nrp) {
-    uint32_t i, off[11];
+    uint32_t i, off[12];
     int32_t i32;
     unsigned char *cp[12], *zpacked = NULL;
     GRange last, *r, *ls = &last, *lt = &last, lastr, *lr = &lastr;
