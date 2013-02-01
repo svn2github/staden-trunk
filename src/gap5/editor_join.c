@@ -1141,12 +1141,15 @@ static int extend_root_bin(GapIO *io, contig_t *c, int start, int end) {
 	bin_start = old_root->pos;
 	bin_end   = old_root->pos + old_root->size;
     }
-
+    gio_debug(io, 1, "start = %d end = %d bin_start = %d bin_end = %d\n",
+	      start, end, bin_start, bin_end);
     /* Round the new bin up to a power of 2 in length.  With luck this will
        help stop the bin structure from becoming lop-sided through long 
        sequences of joins. */
+    /* Disable for now as it can lead to excessive bin growth...
     if (start < bin_start) start = bin_end   - round_up(bin_end - start);
     if (end   > bin_end)   end   = bin_start + round_up(end - bin_start);
+    */
 
     if (NULL == (old_root = cache_rw(io, old_root))) return -1;
     
@@ -1156,8 +1159,6 @@ static int extend_root_bin(GapIO *io, contig_t *c, int start, int end) {
     if (NULL == (new_root = cache_rw(io, new_root))) return -1;
 
     if (0 != contig_set_bin(io, &c, new_id)) return -1;
-    gio_debug(io, 1, "Made new root bin %"PRIrec" for contig %"PRIrec"\n",
-	    new_id, c->rec);
 
     new_root->nseqs    = old_root->nseqs;
     new_root->nrefpos  = old_root->nrefpos;
@@ -1165,6 +1166,12 @@ static int extend_root_bin(GapIO *io, contig_t *c, int start, int end) {
     new_root->child[0] = old_root->rec;
     new_root->pos      = MIN(start, bin_start);
     new_root->size     = MAX(end, bin_end) - new_root->pos;
+
+    gio_debug(io, 1, "Made new root bin %"PRIrec" for contig %"PRIrec"\n"
+	      "Old extents %d...%d (length %d); new %d...%d (length %d)\n",
+	      new_id, c->rec, bin_start, bin_end, old_root->size,
+	      new_root->pos, new_root->pos + new_root->size, new_root->size);
+
     assert(new_root->size >= old_root->size);
     new_root->flags   |= BIN_BIN_UPDATED;
 
