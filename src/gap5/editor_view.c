@@ -3391,6 +3391,10 @@ int edGetSelection(ClientData clientData, int offset, char *buffer,
 
     start += offset;
 
+    /* Work-around for occasionally getting called with a massive value of
+       offset.  Not sure what causes it... */
+    if (offset < 0 || start > end) return 0;
+
     len = end - start+1 > bufsize ? bufsize : end - start + 1;
 
     if (len && xx->select_seq) {
