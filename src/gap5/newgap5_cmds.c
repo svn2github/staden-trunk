@@ -1910,6 +1910,7 @@ tcl_import_reads(ClientData clientData,
 	{"-store_refpos",  ARG_INT, 1, "0",    offsetof(ir_arg, a.store_refpos)},
 	{"-pair_queue",    ARG_INT, 1, "0",    offsetof(ir_arg, a.pair_queue)},
 	{"-remove_dups",   ARG_INT, 1, "1",    offsetof(ir_arg, a.remove_dups)},
+	{"-link_pairs",    ARG_INT, 1, "1",    offsetof(ir_arg, a.link_pairs)},
 	{NULL,		   0,	    0, NULL,   0}
     };
 

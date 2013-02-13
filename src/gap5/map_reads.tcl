@@ -26,7 +26,7 @@
 	close $fd
 	file delete $o_fn
 	if {$m != ""} {
-	    vmessage_tagged [read $fd] CMD_STDOUT
+	    vmessage_tagged $m CMD_STDOUT
 	}
 	if {$err != ""} {
 	    vmessage_tagged $err CMD_STDERR

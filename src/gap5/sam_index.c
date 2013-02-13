@@ -1990,6 +1990,8 @@ static int sam_add_seq(void *cd, bam_file_t *fp, pileup_t *p,
 			s->alloc_len = (s->alloc_len + 100 + np+1)*1.5;
 			s->seq  = (char *)realloc(s->seq,  s->alloc_len);
 			s->conf = (char *)realloc(s->conf, s->alloc_len);
+			s->pad  = (int *) realloc(s->pad, 
+						  s->alloc_len * sizeof(int));
 			if (!s->seq || !s->conf)
 			    return -1;
 		    }

@@ -1192,7 +1192,8 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	    l = end - sp + 1;
 	if (left < 1)
 	    left = 1;
-
+	if (right > l)
+	    right = l;
 	for (j = left-1; j < right; j++) {
 	    char base, base_l;
 	    int qual;
