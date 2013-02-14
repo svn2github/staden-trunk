@@ -476,7 +476,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	pair = create_pair(a->pair_queue);
     }
 
-    while (ai = next_ace_item(fp)) {
+    while (NULL != (ai = next_ace_item(fp))) {
 	switch (ai->type) {
 	case ACE_AS:
 	    nseqs_tot = ai->as.nreads;
@@ -570,7 +570,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    memcpy(seq.seq, ai->rd.seq, ai->rd.nbases);
 	    seq.trace_name = NULL;
 	    seq.alignment = NULL;
-	    seq.conf = seq.seq + ai->rd.nbases;
+	    seq.conf = (int8_t *) seq.seq + ai->rd.nbases;
 	    memset(seq.conf, 4, ai->rd.nbases);
 
 	    /* NB: we don't write it out yet until we see DS the line */

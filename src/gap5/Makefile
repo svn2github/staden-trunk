@@ -701,6 +701,7 @@ contig_selector.o: $(SRCROOT)/Misc/xerror.h
 contig_selector.o: $(PWD)/staden_config.h
 contig_selector.o: $(SRCROOT)/gap5/active_tags.h
 contig_selector.o: $(SRCROOT)/gap5/b+tree2.h
+contig_selector.o: $(SRCROOT)/gap5/consensus.h
 contig_selector.o: $(SRCROOT)/gap5/contig_selector.h
 contig_selector.o: $(SRCROOT)/gap5/cs-object.h
 contig_selector.o: $(SRCROOT)/gap5/g-alloc.h
@@ -1169,6 +1170,7 @@ export_contigs.o: $(SRCROOT)/Misc/tree.h
 export_contigs.o: $(SRCROOT)/Misc/xalloc.h
 export_contigs.o: $(SRCROOT)/Misc/xerror.h
 export_contigs.o: $(PWD)/staden_config.h
+export_contigs.o: $(SRCROOT)/gap5/active_tags.h
 export_contigs.o: $(SRCROOT)/gap5/b+tree2.h
 export_contigs.o: $(SRCROOT)/gap5/bam.h
 export_contigs.o: $(SRCROOT)/gap5/consensus.h
@@ -1923,6 +1925,7 @@ list_proc.o: $(SRCROOT)/gap5/g-os.h
 list_proc.o: $(SRCROOT)/gap5/g-request.h
 list_proc.o: $(SRCROOT)/gap5/g-struct.h
 list_proc.o: $(SRCROOT)/gap5/g.h
+list_proc.o: $(SRCROOT)/gap5/gap4_compat.h
 list_proc.o: $(SRCROOT)/gap5/gap_globals.h
 list_proc.o: $(SRCROOT)/gap5/hache_table.h
 list_proc.o: $(SRCROOT)/gap5/io_utils.h
@@ -1995,10 +1998,12 @@ newgap5_cmds.o: $(SRCROOT)/Misc/xerror.h
 newgap5_cmds.o: $(PWD)/staden_config.h
 newgap5_cmds.o: $(SRCROOT)/gap5/ace.h
 newgap5_cmds.o: $(SRCROOT)/gap5/active_tags.h
+newgap5_cmds.o: $(SRCROOT)/gap5/afg.h
 newgap5_cmds.o: $(SRCROOT)/gap5/b+tree2.h
 newgap5_cmds.o: $(SRCROOT)/gap5/baf.h
 newgap5_cmds.o: $(SRCROOT)/gap5/bam.h
 newgap5_cmds.o: $(SRCROOT)/gap5/break_contig.h
+newgap5_cmds.o: $(SRCROOT)/gap5/caf.h
 newgap5_cmds.o: $(SRCROOT)/gap5/check_assembly.h
 newgap5_cmds.o: $(SRCROOT)/gap5/consen.h
 newgap5_cmds.o: $(SRCROOT)/gap5/consensus.h
@@ -2425,6 +2430,7 @@ shuffle_pads.o: $(SRCROOT)/Misc/xalloc.h
 shuffle_pads.o: $(SRCROOT)/Misc/xerror.h
 shuffle_pads.o: $(PWD)/staden_config.h
 shuffle_pads.o: $(SRCROOT)/gap5/b+tree2.h
+shuffle_pads.o: $(SRCROOT)/gap5/break_contig.h
 shuffle_pads.o: $(SRCROOT)/gap5/consensus.h
 shuffle_pads.o: $(SRCROOT)/gap5/g-alloc.h
 shuffle_pads.o: $(SRCROOT)/gap5/g-connect.h
@@ -2539,6 +2545,7 @@ template_display.o: $(SRCROOT)/gap5/g-os.h
 template_display.o: $(SRCROOT)/gap5/g-request.h
 template_display.o: $(SRCROOT)/gap5/g-struct.h
 template_display.o: $(SRCROOT)/gap5/g.h
+template_display.o: $(SRCROOT)/gap5/gap_globals.h
 template_display.o: $(SRCROOT)/gap5/gap_range.h
 template_display.o: $(SRCROOT)/gap5/hache_table.h
 template_display.o: $(SRCROOT)/gap5/io_utils.h
@@ -2558,6 +2565,7 @@ template_display.o: $(SRCROOT)/gap5/tg_struct.h
 template_display.o: $(SRCROOT)/gap5/tg_tcl.h
 template_display.o: $(SRCROOT)/gap5/tg_track.h
 template_display.o: $(SRCROOT)/gap5/tg_utils.h
+template_display.o: $(SRCROOT)/tk_utils/tcl_utils.h
 template_draw.o: $(SRCROOT)/gap5/template_draw.h
 tg_anno.o: $(SRCROOT)/Misc/array.h
 tg_anno.o: $(SRCROOT)/Misc/misc.h
@@ -2599,6 +2607,7 @@ tg_anno.o: $(SRCROOT)/gap5/tg_tcl.h
 tg_anno.o: $(SRCROOT)/gap5/tg_track.h
 tg_anno.o: $(SRCROOT)/gap5/tg_utils.h
 tg_anno.o: $(SRCROOT)/tk_utils/intrinsic_type.h
+tg_anno.o: $(SRCROOT)/tk_utils/text_output.h
 tg_bin.o: $(SRCROOT)/Misc/array.h
 tg_bin.o: $(SRCROOT)/Misc/misc.h
 tg_bin.o: $(SRCROOT)/Misc/os.h
@@ -2999,6 +3008,7 @@ tg_scaffold.o: $(SRCROOT)/Misc/xalloc.h
 tg_scaffold.o: $(SRCROOT)/Misc/xerror.h
 tg_scaffold.o: $(PWD)/staden_config.h
 tg_scaffold.o: $(SRCROOT)/gap5/b+tree2.h
+tg_scaffold.o: $(SRCROOT)/gap5/consensus.h
 tg_scaffold.o: $(SRCROOT)/gap5/g-alloc.h
 tg_scaffold.o: $(SRCROOT)/gap5/g-connect.h
 tg_scaffold.o: $(SRCROOT)/gap5/g-db.h
@@ -3011,6 +3021,7 @@ tg_scaffold.o: $(SRCROOT)/gap5/g-os.h
 tg_scaffold.o: $(SRCROOT)/gap5/g-request.h
 tg_scaffold.o: $(SRCROOT)/gap5/g-struct.h
 tg_scaffold.o: $(SRCROOT)/gap5/g.h
+tg_scaffold.o: $(SRCROOT)/gap5/gap4_compat.h
 tg_scaffold.o: $(SRCROOT)/gap5/hache_table.h
 tg_scaffold.o: $(SRCROOT)/gap5/io_utils.h
 tg_scaffold.o: $(SRCROOT)/gap5/list_proc.h
@@ -3086,6 +3097,7 @@ tg_tcl.o: $(SRCROOT)/gap5/g-os.h
 tg_tcl.o: $(SRCROOT)/gap5/g-request.h
 tg_tcl.o: $(SRCROOT)/gap5/g-struct.h
 tg_tcl.o: $(SRCROOT)/gap5/g.h
+tg_tcl.o: $(SRCROOT)/gap5/gap4_compat.h
 tg_tcl.o: $(SRCROOT)/gap5/gap_cli_arg.h
 tg_tcl.o: $(SRCROOT)/gap5/hache_table.h
 tg_tcl.o: $(SRCROOT)/gap5/io_utils.h

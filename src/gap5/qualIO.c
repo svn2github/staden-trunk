@@ -262,7 +262,7 @@ int get_base_confidences(GapIO *io, tg_rec contig, int start, int end,
     contig_iterator *ci;
     rangec_t *r;
     int clen = end-start+1;
-    static char L[256];
+    static uint8_t L[256];
 
     if (!L['*']) {
 	memset(L, 4, 256);
@@ -298,18 +298,19 @@ int get_base_confidences(GapIO *io, tg_rec contig, int start, int end,
 	}
 
 	for (i = s->left-1, p = r->start + i; i < s->right; i++, p++) {
-	    char con_base = p >= start && p <= end ? con[p-start] : 'N';
+	    uint8_t con_base = p >= start && p <= end ? con[p-start] : 'N';
+	    uint8_t seq_base = s->seq[i];
 
-	    matrix[L[con_base]][L[s->seq[i]]]++;
+	    matrix[L[con_base]][L[seq_base]]++;
 
 	    /* Skip pads for now */
-	    if (con_base == '*' || s->seq[i] == '*')
+	    if (con_base == '*' || seq_base == '*')
 		continue;
 
-	    if (tolower(s->seq[i]) == tolower(con_base))
-		match_freqs[s->conf[i]]++;
+	    if (tolower(seq_base) == tolower(con_base))
+		match_freqs[(uint8_t) s->conf[i]]++;
 	    else
-		mismatch_freqs[s->conf[i]]++;
+		mismatch_freqs[(uint8_t) s->conf[i]]++;
 	}
 
 	if (s != origs)
@@ -361,7 +362,7 @@ double list_base_confidence(int *matfreqs, int *misfreqs, long matrix[6][6])
 
     /* Substitution matrix */
     {
-	char b1, b2;
+	int b1, b2;
 	long tmis = 0, tins = 0, tdel = 0;
 
 	vmessage("Substitution matrix:\n");

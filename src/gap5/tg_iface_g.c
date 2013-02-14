@@ -2393,7 +2393,6 @@ static char *pack_rng_array(int comp_mode, int fmt,
     int last_r_rec = 0;
     int last_r_mqual = 0;
     int last_r_pair_rec = 0;
-    int last_pair_mqual = 0;
     int last_pair_start = 0;
     int last_pair_contig = 0;
     int last_pair_time = 0;
@@ -2640,7 +2639,6 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
     int64_t last_r_rec = 0, last_r_pair_rec = 0;
     int32_t last_r_mqual = 0;
     int nr, np = 6 + (fmt >= 3) + 5*(fmt >= 4);
-    int last_pair_mqual = 0;
     int last_pair_start = 0;
     int last_pair_contig = 0;
     int last_pair_time = 0;
@@ -2681,7 +2679,7 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 
 	switch (fmt) {
 	case 0:
-	    cp[2] += u72int(cp[2], &i32); r[i].rec = i32;
+	    cp[2] += u72int(cp[2], (uint32_t *)&i32); r[i].rec = i32;
 	    cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
 	    if (r[i].flags & GRANGE_FLAG_UNUSED) {
 		r[i].rec = -1;
@@ -2797,21 +2795,21 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 		cp[0] += s72int (cp[0], (int32_t *)&r[i].start);
 
 		if (r[i].flags & GRANGE_FLAG_REFPOS_HAVE_ID) {
-		    cp[2] += u72intw(cp[2], (int64_t *)&r[i].rec);
+		    cp[2] += u72intw(cp[2], (uint64_t *)&r[i].rec);
 		    last_r_rec = r[i].rec;
 		} else {
 		    r[i].rec = last_r_rec;
 		}
 
 		if (r[i].flags & GRANGE_FLAG_REFPOS_HAVE_POS) {
-		    cp[3] += u72int(cp[3], (int32_t *)&r[i].mqual);
+		    cp[3] += u72int(cp[3], (uint32_t *)&r[i].mqual);
 		    last_r_mqual = r[i].mqual;
 		} else {
 		    r[i].mqual = last_r_mqual;
 		}
 
 		if (r[i].flags & GRANGE_FLAG_REFPOS_HAVE_SIZE) {
-		    cp[5] += u72intw(cp[5], (int64_t *)&r[i].pair_rec);
+		    cp[5] += u72intw(cp[5], (uint64_t *)&r[i].pair_rec);
 		    last_r_pair_rec = r[i].pair_rec;
 		} else {
 		    r[i].pair_rec = last_r_pair_rec;
@@ -2885,7 +2883,8 @@ static GRange *unpack_rng_array(int comp_mode, int fmt,
 			    r[i].pair_timestamp = i32 + last_pair_time;
 			    last_pair_time = r[i].pair_timestamp;
 
-			    cp[11] += u72int(cp[11], &r[i].pair_mqual);
+			    cp[11] += u72int(cp[11],
+					     (uint32_t *) &r[i].pair_mqual);
 
 //			    printf("#%"PRIrec" pair #%"PRIrec" ctg #%"PRIrec" %d..%d mq %d time %d flag %d\n",
 //				   r[i].rec + ls->rec, r[i].pair_rec,
@@ -3796,7 +3795,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, tg_rec rec) {
 
     /* Seq/Qual */
     seq->seq = seq->alignment + seq->alignment_len + 1;
-    seq->conf = seq->seq + seq_len;
+    seq->conf = (int8_t *) seq->seq + seq_len;
 
     /* SAM Aux - not supported in old single-seq mode */
     seq->aux_len = 0;
@@ -4619,11 +4618,10 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 
     /* Quality */
     if (reorder_by_read_group) {
-	seq_t *s;
 #ifdef FAST_REORDER
 	for (i = first_seq; i != -1; i = s->idx) {
-	    s = b->seq[i];
-	    s->conf = s->seq + ABS(s->len);
+	    seq_t *s = b->seq[i];
+	    s->conf = (int8_t *) s->seq + ABS(s->len);
 	    memcpy(s->conf, cp, ABS(s->len));
 	    cp += ABS(s->len);
 
@@ -4638,7 +4636,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 		continue;
 	    }
 
-	    s->conf = s->seq + ABS(s->len);
+	    s->conf = (int8_t *) s->seq + ABS(s->len);
 	    memcpy(s->conf, cp, ABS(s->len));
 	    cp += ABS(s->len);
 
@@ -4651,7 +4649,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 		    (i > first_seq && !s2->parent_rec))
 		    continue;
 
-		s2->conf = s2->seq + ABS(s2->len);
+		s2->conf = (int8_t *) s2->seq + ABS(s2->len);
 		memcpy(s2->conf, cp, ABS(s2->len));
 		cp += ABS(s2->len);
 
@@ -4662,7 +4660,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
     } else {
 	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	    if (!b->seq[i]) continue;
-	    b->seq[i]->conf = b->seq[i]->seq + ABS(b->seq[i]->len);
+	    b->seq[i]->conf = (int8_t *) b->seq[i]->seq + ABS(b->seq[i]->len);
 	    memcpy(b->seq[i]->conf, cp, ABS(b->seq[i]->len));
 	    cp += ABS(b->seq[i]->len);
 	}
@@ -4675,7 +4673,7 @@ static cached_item *io_seq_block_read(void *dbh, tg_rec rec) {
 	}
 	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	    if (!b->seq[i]) continue;
-	    b->seq[i]->sam_aux = b->seq[i]->conf + 
+	    b->seq[i]->sam_aux = (char *) b->seq[i]->conf + 
 		(b->seq[i]->format == SEQ_FORMAT_CNF4 ? 4 : 1)
 		* ABS(b->seq[i]->len);
 	    memcpy(b->seq[i]->sam_aux, cp, b->seq[i]->aux_len);
@@ -5570,10 +5568,9 @@ static cached_item *io_scaffold_block_read(void *dbh, tg_rec rec) {
     size_t buf_len;
     scaffold_t in[SCAFFOLD_BLOCK_SZ];
     int i;
-    int32_t s32;
-    uint64_t last, i64;
+    uint64_t i64;
     int name_len[SCAFFOLD_BLOCK_SZ];
-    int ncontigs[SCAFFOLD_BLOCK_SZ];
+    uint32_t ncontigs[SCAFFOLD_BLOCK_SZ];
     int fmt;
 
     /* Load from disk */
@@ -5758,8 +5755,6 @@ static int io_scaffold_block_write(void *dbh, cached_item *ci) {
     /* serialised scaffolds */
     last_scaffold_rec = 0;
     for (i = 0; i < SCAFFOLD_BLOCK_SZ; i++) {
-	tg_rec delta;
-	int32_t s32;
 	scaffold_t *c = b->scaffold[i];
 
 	if (!c || ArrayMax(c->contig) == 0) {

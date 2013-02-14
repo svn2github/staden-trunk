@@ -80,6 +80,7 @@
 #include "shuffle_pads.h"
 #include "consensus.h"
 #include "tg_contig.h"
+#include "break_contig.h" /* contig_visible_start(), contig_visible_end() */
 
 typedef struct {
     int pos;
@@ -858,7 +859,7 @@ int64_t malign_diffs(MALIGN *malign, int64_t *tot) {
 	}
 #else
 	/* See set_malign_lookup() */
-	static int l[128] = {
+	static int l[256] = {
 	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /*   0-15 */
 	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /*  16 */
 	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 4, 5, 5, /*  32 */
@@ -867,9 +868,17 @@ int64_t malign_diffs(MALIGN *malign, int64_t *tot) {
 	    5, 5, 5, 5, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /*  80 */
 	    5, 0, 5, 1, 5, 5, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, /*  96 */
 	    5, 5, 5, 5, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /* 112-127 */
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /* 128 */
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+	    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5  /* 255 */
 	};
 	for (i = 0; i < cl->mseg->length; i++) {
-	    char s = l[cl->mseg->seq[i]];
+	    unsigned char s = l[(uint8_t) cl->mseg->seq[i]];
 
 	    /*printf("%c", c==s ? '.' : s);*/
 	    diff_count += malign->scores[i+cl->mseg->offset][s];
@@ -1083,8 +1092,8 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 	    memcmp(s->seq + s->left-1, cl->mseg->seq, cl->mseg->length) != 0) {
 	    int newlen = s->left-1 + ABS(s->len) - s->right + cl->mseg->length;
 	    int i, j, np;
-	    char *newseq  = (char *)malloc(newlen+1);
-	    int1 *newconf = (int1 *)malloc(newlen+1);
+	    char   *newseq  = malloc(newlen+1);
+	    int8_t *newconf = malloc(newlen+1);
 
 	    /* Build new seq/conf arrays */
 	    memcpy(newseq,  s->seq,  s->left-1);
@@ -1284,7 +1293,7 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 		int new_comp = bin_get_orient(io, bin->rec);
 
 		if (new_comp != old_comp) {
-		    int tmp;
+		    //int tmp;
 		    s = cache_rw(io, s);
 		    s->len *= -1;
 		    s->flags ^= SEQ_COMPLEMENTED;
@@ -1317,12 +1326,11 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
     cache_decr(io, c);
 }
 
+#if 0
 static int isort(const void *vp1, const void *vp2) {
     return *(const int *)vp2 - *(const int *)vp1;
 }
 
-
-#if 0
 /*
  * Specifically for 454 data this reassigns confidence values to bases in
  * a run of the same base type.
@@ -1404,7 +1412,7 @@ void reassign_confidence_values(GapIO *io, int cnum) {
 
 int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 		       int band, int flush) {
-    int i, start;
+    int i; //, start;
     Array indels;
     
     set_malign_lookup(5);

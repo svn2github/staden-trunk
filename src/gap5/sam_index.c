@@ -240,8 +240,8 @@ bio_seq_t *bio_new_seq(bam_io_t *bio, pileup_t *p, int pos) {
 	i = 0;
 	s->seq_len = 0;
     } else if (seq_offset >= 0) {
-	unsigned char *seq  = (unsigned char *)bam_seq(p->b);
-	unsigned char *qual = (unsigned char *)bam_qual(p->b);
+	unsigned char *seq  = bam_seq(p->b);
+	unsigned char *qual = bam_qual(p->b);
 	char *sp = s->seq;
 	char *qp = s->conf;
 
@@ -1191,11 +1191,11 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
     *s.alignment = 0;
     s.alignment_len = 0;
     s.seq = s.alignment + s.alignment_len+1;
-    s.conf = s.seq+s.len;
+    s.conf = (int8_t *) s.seq+s.len;
     s.mapping_qual = bam_map_qual(b);
     s.format = SEQ_FORMAT_MAQ; /* pack bytes */
     s.anno = NULL;
-    s.sam_aux = s.conf + s.len;
+    s.sam_aux = (char *) s.conf + s.len;
 
     for (i = 0; i < b->len; i++) {
 	s.seq[i] = bio->a->data_type & DATA_SEQ
@@ -1288,7 +1288,7 @@ int bio_add_unmapped(bam_io_t *bio, bam_seq_t *b) {
     return 0;
 }
 
-static int hex[256] = {
+static int hex_decode[256] = {
     -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
     -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
     -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
@@ -1305,6 +1305,7 @@ static int hex[256] = {
     -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
     -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
     -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+#define hex(C) hex_decode[(uint8_t) (C)]
 
 /*
  * Parses a tag string and splits it into separate components returned in
@@ -1328,7 +1329,7 @@ static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
     *type = cp = str;
     while (*str && *str != ';' && *str != '|') {
 	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
-	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
+	    *cp++ = (hex(str[1])<<4) | hex(str[2]);
 	    str += 3;
 	} else {
 	    *cp++ = *str++;
@@ -1355,7 +1356,7 @@ static char *parse_bam_PT_tag(char *str, int *start, int *end, char *dir,
     *text = cp = str;
     while (*str && *str != '|') {
 	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
-	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
+	    *cp++ = (hex(str[1])<<4) | hex(str[2]);
 	    str += 3;
 	} else {
 	    *cp++ = *str++;
@@ -1385,7 +1386,6 @@ static char *parse_bam_CT_tag(char *str, char *dir,
 			      char **type, int *type_len,
 			      char **text, int *text_len) {
     char *cp, *orig = str;
-    int n;
 
     if (!*str)
 	return NULL;
@@ -1398,7 +1398,7 @@ static char *parse_bam_CT_tag(char *str, char *dir,
     *type = cp = str;
     while (*str && *str != ';') {
 	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
-	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
+	    *cp++ = (hex(str[1])<<4) | hex(str[2]);
 	    str += 3;
 	} else {
 	    *cp++ = *str++;
@@ -1425,7 +1425,7 @@ static char *parse_bam_CT_tag(char *str, char *dir,
     *text = cp = str;
     while (*str && *str != '|') {
 	if (*str == '%' && isxdigit(str[1]) && isxdigit(str[2])) {
-	    *cp++ = (hex[str[1]]<<4) | hex[str[2]];
+	    *cp++ = (hex(str[1])<<4) | hex(str[2]);
 	    str += 3;
 	} else {
 	    *cp++ = *str++;
@@ -1523,8 +1523,8 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     /* Construct a seq_t struct */
     s.right = bs->seq_len;
     if (p->seq_offset+1 < b->len && p->ref_skip == 0) {
-	unsigned char *b_seq  = (unsigned char *)bam_seq(p->b);
-	unsigned char *b_qual = (unsigned char *)bam_qual(p->b);
+	unsigned char *b_seq  = bam_seq(p->b);
+	unsigned char *b_qual = bam_qual(p->b);
 
 	if (bs->seq_len+b->len - (p->seq_offset+1) >= bs->alloc_len) {
 	    bs->alloc_len = bs->seq_len+b->len - (p->seq_offset+1) + 1;
@@ -1594,11 +1594,11 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     *s.alignment = 0;
     s.alignment_len = 0;
     s.seq = s.alignment + s.alignment_len+1;
-    s.conf = s.seq+s.len;
+    s.conf = (int8_t *) s.seq+s.len;
     s.mapping_qual = bam_map_qual(b);
     s.format = SEQ_FORMAT_MAQ; /* pack bytes */
     s.anno = NULL;
-    s.sam_aux = s.conf + s.len;
+    s.sam_aux = (char *) s.conf + s.len;
 
     if (bio->a->data_type & DATA_SEQ)
 	memcpy(s.seq,  bs->seq,  s.len);
@@ -1693,15 +1693,16 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     if ((tags = bam_aux_find(b, "PT"))) {
 	int start, end, type_len, text_len;
 	char dir, *type, *text, tmp;
-	char tag_type[5], *tag_text;
+	char tag_type[5];
 	tg_rec orec;
 	int otype;
 	range_t r;
 	anno_ele_t *e;
 	bin_index_t *bin;
 
-	while (tags = parse_bam_PT_tag(tags, &start, &end, &dir,
-				       &type, &type_len, &text, &text_len)) {
+	while (NULL != (tags = parse_bam_PT_tag(tags, &start, &end, &dir,
+						&type, &type_len,
+						&text, &text_len))) {
 	    //printf("Tag %d..%d dir %c type=%.*s text=%.*s\n",
 	    //	   start, end, dir, type_len, type, text_len, text);
 
@@ -1774,7 +1775,7 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
     if ((tags = bam_aux_find(p->b, "CT"))) {
 	int start, end, type_len, text_len;
 	char dir, *type, *text, tmp;
-	char tag_type[5], *tag_text;
+	char tag_type[5];
 	tg_rec orec;
 	int otype;
 	range_t r;
@@ -1784,8 +1785,9 @@ int bio_del_seq(bam_io_t *bio, pileup_t *p) {
 	start = bs->pos;
 	end   = bs->pos + bs->seq_len-1;
 
-	while (tags = parse_bam_CT_tag(tags, &dir,
-				       &type, &type_len, &text, &text_len)) {
+	while (NULL != (tags = parse_bam_CT_tag(tags, &dir,
+						&type, &type_len,
+						&text, &text_len))) {
 	    strncpy(tag_type, type, 4);
 	    tag_type[4] = 0;
 
@@ -2215,7 +2217,7 @@ int parse_sam_or_bam(GapIO *io, char *fn, tg_args *a, char *mode) {
 	    if (!(iter = HacheTableIterCreate()))
 		return -1;
 	
-	    while (hi = HacheTableIterNext(bio->libs, iter)) {
+	    while (NULL != (hi = HacheTableIterNext(bio->libs, iter))) {
 		library_t *lib = hi->data.p;
 		cache_decr(io, lib);
 	    }

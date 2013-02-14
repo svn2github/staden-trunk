@@ -13,6 +13,7 @@
 #include "hache_table.h"
 #include "gap_range.h"
 #include "gap_cli_arg.h"
+#include "tg_sequence.h"
 
 /*** Tk_ConfigSpec custom handler ***/ 
 

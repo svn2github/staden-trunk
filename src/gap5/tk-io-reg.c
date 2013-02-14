@@ -129,7 +129,7 @@ int tk_reg_get_ops(ClientData clientData, Tcl_Interp *interp,
 
     Tcl_ResetResult(interp);
     ops = ro.ops;
-    while(l = strlen(ops)) {
+    while((l = strlen(ops)) > 0) {
 	Tcl_AppendElement(interp, ops);
 	ops += l+1;
     }

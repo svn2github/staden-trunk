@@ -145,7 +145,7 @@ Tcl_AppInit(Tcl_Interp *interp)
 	 * libraries at link time. When they're all at run time this won't
 	 * be necessary.
 	 */
-	if (s = Tcl_GetVar2(interp, "packages", "gap", TCL_GLOBAL_ONLY))
+	if (NULL != (s = Tcl_GetVar2(interp, "packages", "gap", TCL_GLOBAL_ONLY)))
 	    sprintf(c, "%d", atoi(s)|2);
 	else
 	    strcpy(c, "2");

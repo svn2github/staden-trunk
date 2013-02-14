@@ -2174,7 +2174,6 @@ static int cache_item_init_scaffold(GapIO *io, void *from, tg_rec rec) {
     cached_item *ci = cache_new(GT_Scaffold, 0, 0, NULL, clen);
     tg_rec brec, sub_rec;
     scaffold_block_t *b;
-    int i;
 
     sub_rec = rec & (SCAFFOLD_BLOCK_SZ-1);
     brec    = rec >> SCAFFOLD_BLOCK_BITS;
@@ -2361,7 +2360,6 @@ int cache_item_remove(GapIO *io, int type, tg_rec rec) {
     anno_ele_block_t *ab;
     contig_block_t *cb;
     scaffold_block_t *fb;
-    cache_key_t k;
 
     if (DB_VERS(io) < 5 && type == GT_Contig)
 	return 0;
@@ -2607,7 +2605,7 @@ void cache_ref_debug_dump(GapIO *io) {
     HacheItem *hi;
     HacheTable *h = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
 
-    while (hi = HacheTableIterNext(ref_debug, iter)) {
+    while (NULL != (hi = HacheTableIterNext(ref_debug, iter))) {
 	HacheData hd;
 	HacheItem *hi2;
 	hd.i = 0;
@@ -2618,7 +2616,7 @@ void cache_ref_debug_dump(GapIO *io) {
     HacheTableIterDestroy(iter);
 
     iter = HacheTableIterCreate();
-    while (hi = HacheTableIterNext(h, iter)) {
+    while (NULL != (hi = HacheTableIterNext(h, iter))) {
 	gio_debug(io, 1, "%"PRId64"\t%s\n", hi->data.i, hi->key);
     }
     HacheTableIterDestroy(iter);

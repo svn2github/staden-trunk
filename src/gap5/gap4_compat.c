@@ -8,6 +8,7 @@
 #include "misc.h"
 #include "io_utils.h"
 #include "consensus.h"
+#include "tg_scaffold.h"
 #include "io_lib/hash_table.h"
 
 #define unimp(m) (printf("%s(): unimplemented function\n", #m), -1)

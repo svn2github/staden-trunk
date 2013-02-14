@@ -360,7 +360,7 @@ int parse_fasta_or_fastq(GapIO *io, char *fn, tg_args *a, int format) {
     while ((ent = next_seq(fp))) {
 	seq_t seq;
 	static int dummy_qual_len = 0;
-	static char *dummy_qual = NULL;
+	static int8_t *dummy_qual = NULL;
 
 	// printf("@%s\n%s\n+\n%s\n", ent->name, ent->seq, ent->qual);
 	// printf("%d\tSeq %s len %d / %d\n",

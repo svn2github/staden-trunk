@@ -75,4 +75,13 @@ int scaffold_to_agp(GapIO *io, char *fn);
  */
 int complement_scaffold(GapIO *io, tg_rec srec);
 
+/*
+ * Search for a scaffold record by name.
+ * 
+ * Returns record number on success
+ *         -1 on failure
+ */
+
+tg_rec scaffold_index_query(GapIO *io, char *name);
+
 #endif /* _TG_SCAFFOLD_H_ */

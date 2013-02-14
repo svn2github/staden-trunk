@@ -75,7 +75,7 @@ zfp *zfopen(const char *path, const char *mode) {
     zf->gz = NULL;
 
     /* Try normal fopen */
-    if (zf->fp = fopen(path, mode)) {
+    if (NULL != (zf->fp = fopen(path, mode))) {
 	unsigned char magic[2];
 	fread(magic, 1, 2, zf->fp);
 	if (!(magic[0] == 0x1f &&
@@ -96,12 +96,12 @@ zfp *zfopen(const char *path, const char *mode) {
      */
     if (access(path, R_OK) == 0) {
 	sprintf(path2, "gzip -cd < %.*s", 1000, path);
-	if (zf->fp = popen(path2, "r"))
+	if (NULL != (zf->fp = popen(path2, "r")))
 	    return zf;
     }
 
     sprintf(path2, "gzip -cd < %.*s.gz", 1000, path);
-    if (zf->fp = popen(path2, "r"))
+    if (NULL != (zf->fp = popen(path2, "r")))
 	return zf;
 
     printf("Failed on %s\n", path);

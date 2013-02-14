@@ -104,10 +104,10 @@ int edview_search_consensus(edview *xx, int dir, int strand, char *value) {
      *     <string>#<N.mismatches>#<where>.
      * <where> is 1 for readings, 2 for consensus, 3 for both.
      */
-    if (p = strchr(value, '#')) {
+    if (NULL != (p = strchr(value, '#'))) {
 	mismatches = atoi(p+1);
 	*p = 0;
-	if (p = strchr(p+1, '#'))
+	if (NULL != (p = strchr(p+1, '#')))
 	    where = atoi(p+1);
     }
 
@@ -231,10 +231,9 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
     int start, end;
     int patlen;
     char *uppert, *upperb;
-    int found = 0, at_end = 0;
+    int found = 0;
     tg_rec fseq;
-    int fpos, i, j;
-    contig_t *c;
+    int fpos, i;
     contig_iterator *iter;
     rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
     rangec_t *r;
@@ -268,10 +267,10 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
      *     <string>#<N.mismatches>#<where>.
      * <where> is 1 for readings, 2 for consensus, 3 for both.
      */
-    if (p = strchr(value, '#')) {
+    if (NULL != (p = strchr(value, '#'))) {
 	mismatches = atoi(p+1);
 	*p = 0;
-	if (p = strchr(p+1, '#'))
+	if (NULL != (p = strchr(p+1, '#')))
 	    where = atoi(p+1);
     }
 
@@ -293,7 +292,7 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
     while ((r = ifunc(xx->io, iter))) {
 	seq_t *s, *sorig;
 	char *ind, *indt = NULL, *indb = NULL, *seq;
-	int seq_len, comp, off = 0;
+	int seq_len, off = 0;
 
 	if (found && dir  && r->start > best_pos)
 	    break;
@@ -817,7 +816,7 @@ int edview_search_tag_type(edview *xx, int dir, int strand, char *value) {
 	/* Can happen legitimately when we're already at the end of contig */
 	return -1;
 
-    while (r = ifunc(xx->io, iter)) {
+    while (NULL != (r = ifunc(xx->io, iter))) {
 	if ((dir  && r->start < start) ||
 	    (!dir && r->start > end))
 	    continue;
@@ -874,7 +873,7 @@ int edview_search_tag_anno(edview *xx, int dir, int strand, char *value) {
     if (!iter)
 	return -1;
 
-    while (r = ifunc(xx->io, iter)) {
+    while (NULL != (r = ifunc(xx->io, iter))) {
 	anno_ele_t *ae;
 
 	if ((dir  && r->start < start) ||
@@ -934,7 +933,7 @@ int edview_search_tag_indel(edview *xx, int dir, int strand, char *value) {
     if (!iter)
 	return -1;
 
-    while (r = ifunc(xx->io, iter)) {
+    while (NULL != (r = ifunc(xx->io, iter))) {
 	if ((dir  && r->start < start) ||
 	    (!dir && r->start > end))
 	    continue;
@@ -990,8 +989,9 @@ int edview_search_edit(edview *xx, int dir, int strand, char *value) {
 
     while ((r = ifunc(xx->io, iter))) {
 	seq_t *s, *sorig;
-	char *seq, *qual;
-	int seq_len, comp, off = 0, i;
+	char *seq;
+	int8_t *qual;
+	int seq_len, off = 0, i;
 
 	if (found && dir  && r->start > best_pos)
 	    break;

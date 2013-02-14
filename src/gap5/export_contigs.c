@@ -17,6 +17,7 @@
 #include "dstring.h"
 #include "tagdb.h"
 #include "bam.h"
+#include "active_tags.h"
 
 /* Sequence formats */
 #define FORMAT_FASTA 0
@@ -487,7 +488,7 @@ static uint32_t *sam_depadded_cigar(char *seq, int left, int right, int olen,
 	    }
 	    op = BAM_CPAD;
 	    oplen++;
-	} else if (seq[i] == '*' && i >= left & i < right) {
+	} else if (seq[i] == '*' && i >= left && i < right) {
 	    /* gap is seq only */
 	    //if (op != BAM_CSOFT_CLIP) {
 		if (op != BAM_CDEL && oplen > 0) {
@@ -663,7 +664,7 @@ static void sam_export_cons_tag(GapIO *io, bam_file_t *bf, fifo_t *fi,
     /* sometimes 784? bottom strand ones? */
     /* Basic SAM record */
     cigar = ((end-start+1)<<4) | BAM_CMATCH;
-    bam_idx = bam_construct_seq(bam, bam_alloc,
+    bam_idx = bam_construct_seq((bam_seq_t *) bam, bam_alloc,
 				"*", 1,
 				768,
 				bam_name2ref(bf, c->name),
@@ -693,7 +694,7 @@ static void sam_export_cons_tag(GapIO *io, bam_file_t *bf, fifo_t *fi,
     ((bam_seq_t *)bam)->blk_size = &bam[bam_idx] -
 	(unsigned char *)&((bam_seq_t *)bam)->ref;
     
-    bam_put_seq(bf, bam);
+    bam_put_seq(bf, (bam_seq_t *) bam);
 }
 
 /*
@@ -723,7 +724,7 @@ static void sam_export_seq(GapIO *io, bam_file_t *bf,
     library_t *lib = NULL;
     tg_rec last_lrec = -1;
     int mqual;
-    char rg_buf[1024], *aux_ptr;
+    char rg_buf[1024];
     int first_tag = 1;
     int *depad_map = NULL;
     static unsigned char *bam = NULL;
@@ -788,7 +789,7 @@ static void sam_export_seq(GapIO *io, bam_file_t *bf,
 	tname_len = s->name_len;
 
     if (tname_len == s->name_len || tname_len == 0) {
-	if (cp = strchr(s->name, '/'))
+	if (NULL != (cp = strchr(s->name, '/')))
 	    tname_len = (int)(cp-s->name);
 	else
 	    tname_len = s->name_len;
@@ -969,7 +970,7 @@ static void sam_export_seq(GapIO *io, bam_file_t *bf,
     ref_id = bam_name2ref(bf, c->name);
     mate_ref_id = (mate_ref[0] == '=' && mate_ref[1] == '\0')
 	? ref_id : bam_name2ref(bf, mate_ref);
-    bam_idx = bam_construct_seq(bam, bam_alloc,
+    bam_idx = bam_construct_seq((bam_seq_t *) bam, bam_alloc,
 				tname, tname_len,
 				flag,
 				ref_id,
@@ -1129,7 +1130,7 @@ static void sam_export_seq(GapIO *io, bam_file_t *bf,
     ((bam_seq_t *)bam)->blk_size = &bam[bam_idx] -
 	(unsigned char *)&((bam_seq_t *)bam)->ref;
 
-    bam_put_seq(bf, bam);
+    bam_put_seq(bf, (bam_seq_t *) bam);
 
     if (s != sorig)
 	free(s);
@@ -1183,7 +1184,7 @@ static int export_contig_sam(GapIO *io, bam_file_t *bf,
 	? 1-ustart
 	: 0;
 
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	/* Add new items to fifo */
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	    seq_t *s;
@@ -1227,7 +1228,7 @@ static int export_contig_sam(GapIO *io, bam_file_t *bf,
 	}
 
 	/* And pop off when they're history */
-	while (fi = fifo_queue_head(fq)) {
+	while (NULL != (fi = fifo_queue_head(fq))) {
 	    if (fi->r.end < last_start) {
 		fifo_queue_pop(fq);
 		if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
@@ -1245,7 +1246,7 @@ static int export_contig_sam(GapIO *io, bam_file_t *bf,
     }
 
     /* Flush the rest of queues */
-    while (fi = fifo_queue_head(fq)) {
+    while (NULL != (fi = fifo_queue_head(fq))) {
 	fifo_queue_pop(fq);
 	if ((fi->r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    sam_export_cons_tag(io, bf, fi, c, offset,
@@ -1283,7 +1284,7 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
     char *name;
     int name_len;
     
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	int len = s->len < 0 ? -s->len : s->len;
 	int i, j;
@@ -1351,7 +1352,7 @@ static int export_contig_fasta(GapIO *io, FILE *fp,
     char *name;
     int name_len;
     
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	int len = s->len < 0 ? -s->len : s->len;
 
@@ -1502,7 +1503,7 @@ static int export_contig_baf(GapIO *io, FILE *fp,
     fprintf(fp, "CO=%s\nLN=%d\n\n", c->name, c->end-c->start+1);
 
     /* Seq/tag records */
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	/* Add new items to fifo */
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	    if (r->end < start || r->start > end)
@@ -1535,7 +1536,7 @@ static int export_contig_baf(GapIO *io, FILE *fp,
 	}
 
 	/* And pop off when they're history */
-	while (fi = fifo_queue_head(fq)) {
+	while (NULL != (fi = fifo_queue_head(fq))) {
 	    if (fi->r.end < last_start) {
 		fifo_queue_pop(fq);
 		baf_export_seq(io, fp, fi, tq);
@@ -1547,7 +1548,7 @@ static int export_contig_baf(GapIO *io, FILE *fp,
     }
 
     /* Flush the rest of queues */
-    while (fi = fifo_queue_head(fq)) {
+    while (NULL != (fi = fifo_queue_head(fq))) {
 	fifo_queue_pop(fq);
 	baf_export_seq(io, fp, fi, tq);
 	free(fi);
@@ -1748,7 +1749,7 @@ static int export_contig_caf(GapIO *io, FILE *fp,
 				 GRANGE_FLAG_ISANY);
 
     /* Seq/tag records */
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	/* Add new items to fifo */
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	    if (r->end < start || r->start > end)
@@ -1767,7 +1768,7 @@ static int export_contig_caf(GapIO *io, FILE *fp,
 	}
 
 	/* And pop off when they're history */
-	while (fi = fifo_queue_head(fq)) {
+	while (NULL != (fi = fifo_queue_head(fq))) {
 	    if (fi->r.end < last_start) {
 		fifo_queue_pop(fq);
 		caf_export_seq(io, fp, fi, tq, ds);
@@ -1779,7 +1780,7 @@ static int export_contig_caf(GapIO *io, FILE *fp,
     }
 
     /* Flush the rest of queues */
-    while (fi = fifo_queue_head(fq)) {
+    while (NULL != (fi = fifo_queue_head(fq))) {
 	fifo_queue_pop(fq);
 	caf_export_seq(io, fp, fi, tq, ds);
 	free(fi);
@@ -1797,7 +1798,7 @@ static int export_contig_caf(GapIO *io, FILE *fp,
     fputs(dstring_str(ds), fp);
 
     /* And the consensus tags */
-    while (fi = fifo_queue_head(cq)) {
+    while (NULL != (fi = fifo_queue_head(cq))) {
 	fifo_queue_pop(cq);
 	anno_ele_t *a;
 	char type[5];
@@ -1900,7 +1901,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
     ci = contig_iter_new(io, crec, 0, CITER_FIRST, c->start, c->end);
     last = 1;
     nBS = 0;
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	nreads++;
 	if (r->start + s->right-1 > last) {
@@ -1946,7 +1947,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
     contig_iter_del(ci);
     ci = contig_iter_new(io, crec, 0, CITER_FIRST, c->start, c->end);
     first_base--;
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	fprintf(fp, "AF %s.%c %c %d\n",
 		s->name,
@@ -1959,7 +1960,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
     contig_iter_del(ci);
     ci = contig_iter_new(io, crec, 0, CITER_FIRST, c->start, c->end);
     last = 0;
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	if (r->start + s->right-1 - first_base > last) {
 	    fprintf(fp, "BS %d %d %s.%c\n",
@@ -1974,7 +1975,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
     /* Seq records themselves */
     contig_iter_del(ci);
     ci = contig_iter_new(io, crec, 0, CITER_FIRST, c->start, c->end);
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	seq_t *origs, *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	int len = s->len < 0 ? -s->len : s->len;
 
@@ -2238,7 +2239,7 @@ static int export_tags_gff(GapIO *io, FILE *fp,
     }
 
     /* Export */
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
 	char *name, *ename, *etype;
 	int st, en;
@@ -2351,11 +2352,11 @@ static int export_tags_gff(GapIO *io, FILE *fp,
 	    size_t key_len, val_len;
 
 	    printf("ACD TAG with comm %s\n", a->comment ? a->comment : "(null)");
-	    while (cp = parse_acd_tag(cp,
-				      key, (key_len=1024, &key_len),
-				      val, (val_len=8192, &val_len))) {
+	    while (NULL != (cp = parse_acd_tag(cp,
+					       key, (key_len=1024, &key_len),
+					       val, (val_len=8192, &val_len)))){
 		printf("Key='%.*s' val='%.*s'\n",
-		       key_len, key, val_len, val);
+		       (int) key_len, key, (int) val_len, val);
 		if (key_len == 5 && strncmp(key, "score", 5) == 0) {
 		    if ((val_len > 0) &&
 			(*val == '+' || *val == '-' || isdigit(*val))) {
@@ -2410,7 +2411,7 @@ static int export_tags_gff(GapIO *io, FILE *fp,
 
 		    dstring_append_char(ds, ';');
 		    escaped = escape_hex_string(val, ",=;");
-		    dstring_appendf(ds, "%.*s=%s", key_len, key, escaped);
+		    dstring_appendf(ds, "%.*s=%s", (int) key_len, key, escaped);
 		    free(escaped);
 
 		    val[val_len] = tmp;

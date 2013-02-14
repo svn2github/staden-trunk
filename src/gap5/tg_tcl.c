@@ -22,7 +22,9 @@
 #include "tg_gio.h"
 #include "tg_check.h"
 #include "gap_cli_arg.h"
+#include "tg_struct.h"
 #include "consensus.h"
+#include "gap4_compat.h"  /* io_cclength() */
 
 extern Tcl_Command Tcl_GetCommandFromObj(Tcl_Interp *interp,
 					 Tcl_Obj *objPtr);
@@ -1369,12 +1371,12 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	l.score = 0;
 	if (objc >  3) Tcl_GetIntFromObj(interp, objv[3], &l.pos1);
 	if (objc >  4) Tcl_GetIntFromObj(interp, objv[4], &l.pos2);
-	if (objc >  5) Tcl_GetIntFromObj(interp, objv[5], &l.end1);
-	if (objc >  6) Tcl_GetIntFromObj(interp, objv[6], &l.end2);
-	if (objc >  7) Tcl_GetIntFromObj(interp, objv[7], &l.orientation);
-	if (objc >  8) Tcl_GetIntFromObj(interp, objv[8], &l.size);
-	if (objc >  9) Tcl_GetIntFromObj(interp, objv[9], &l.type);
-	if (objc > 10) Tcl_GetIntFromObj(interp, objv[3], &l.score);
+	if (objc >  5) Tcl_GetIntFromObj(interp, objv[5], (int *) &l.end1);
+	if (objc >  6) Tcl_GetIntFromObj(interp, objv[6], (int *) &l.end2);
+	if (objc >  7) Tcl_GetIntFromObj(interp, objv[7], (int *) &l.orientation);
+	if (objc >  8) Tcl_GetIntFromObj(interp, objv[8], (int *) &l.size);
+	if (objc >  9) Tcl_GetIntFromObj(interp, objv[9], (int *) &l.type);
+	if (objc > 10) Tcl_GetIntFromObj(interp, objv[10], (int *) &l.score);
 
 	/* contig_add_link calls cache_rw, but doesn't return a new ptr */
 	cache_decr(tc->io, tc->contig);
@@ -1809,11 +1811,12 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case GET_CONF:
 	if (ts->seq->format != SEQ_FORMAT_CNF4) {
-	    Tcl_SetStringObj(Tcl_GetObjResult(interp),
-			     ts->seq->conf, ABS(ts->seq->len));
+	    Tcl_SetByteArrayObj(Tcl_GetObjResult(interp),
+				(unsigned char *) ts->seq->conf,
+				ABS(ts->seq->len));
 	} else {
 	    int len = ABS(ts->seq->len);
-	    char *buf = malloc(len);
+	    int8_t *buf = malloc(len);
 	    int i;
 	    for (i = 0; i < len; i++) {
 		switch(ts->seq->seq[i]) {
@@ -1833,18 +1836,20 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 		    buf[i] = -5;
 		}
 	    }
-	    Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, len);
+	    Tcl_SetByteArrayObj(Tcl_GetObjResult(interp),
+				(unsigned char *) buf, len);
 	    free(buf);
 	}
 	break;
 
     case GET_CONF4:
 	if (ts->seq->format == SEQ_FORMAT_CNF4) {
-	    Tcl_SetStringObj(Tcl_GetObjResult(interp),
-			     ts->seq->conf, ABS(ts->seq->len)*4);
+	    Tcl_SetByteArrayObj(Tcl_GetObjResult(interp),
+				(unsigned char *) ts->seq->conf,
+				ABS(ts->seq->len)*4);
 	} else {
 	    int len = ABS(ts->seq->len);
-	    char *buf = malloc(len*4);
+	    int8_t *buf = malloc(len*4);
 	    int i;
 	    for (i = 0; i < len; i++) {
 		/* Hack for now */
@@ -1880,7 +1885,8 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 		    buf[i*4+3] = -5;
 		}
 	    }
-	    Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, len*4);
+	    Tcl_SetByteArrayObj(Tcl_GetObjResult(interp),
+				(unsigned char *) buf, len*4);
 	    free(buf);
 	}
 	break;

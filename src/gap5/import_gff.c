@@ -50,10 +50,11 @@ typedef struct {
  * (The string modified is guaranteed to never be longer than the hex encoded
  * form.)
  */
-static void decode_hex_insitu(char *str) {
+static void decode_hex_insitu(char *string) {
     static int hex[256];
     static int hex_init = 0;
-    char *out = str;
+    unsigned char *str = (unsigned char *) string;
+    unsigned char *out = str;
 
     if (!str)
 	return;
@@ -260,7 +261,7 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
 		       int plus_as_space) {
     tg_rec rec;
     int rec_type;
-    char *type, *txt, *escaped;
+    char *type, *txt; //, *escaped;
     range_t r;
     bin_index_t *bin;
     anno_ele_t *e;
@@ -268,7 +269,7 @@ static int gff_add_tag(GapIO *io, gff_entry *gff, int padded,
     int cstart, cend;
     char type_a[5];
     tg_rec seq_bin;
-    static dstring_t *ds = NULL, *ds2;
+    static dstring_t *ds = NULL; //, *ds2;
     int i, note_only = 0;
 
     if (ds)

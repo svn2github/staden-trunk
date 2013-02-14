@@ -402,7 +402,7 @@ int main(int argc, char **argv) {
 	    bttmp_file_sort(a.tmp);
 
 	    puts("Building index: one dot per 10k reads");
-	    while (name = bttmp_file_get(a.tmp, &rec)) {
+	    while (NULL != (name = bttmp_file_get(a.tmp, &rec))) {
 		sequence_index_update(io, name, strlen(name), rec);
 		if (++cnt == 10000) {
 		    putchar('.'); fflush(stdout);

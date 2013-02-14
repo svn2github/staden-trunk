@@ -190,7 +190,6 @@ static int unlink_read(GapIO *io, tg_rec rec, r_pos_t *pos, int remove) {
     contig_t *c;
     bin_index_t *bin;
     seq_t *seq;
-    int i, j, comp;
 
     //printf("%soving record #%d\n", remove ? "Rem" : "M", rec);
 
@@ -866,7 +865,7 @@ static Bitmap contig_hole_bitmap(GapIO *io, tg_rec contig,
     if (!iter) goto fail;
 
     last = end+1;
-    while (r = contig_iter_prev(io, iter)) {
+    while (NULL != (r = contig_iter_prev(io, iter))) {
 	seq_t *s = cache_search(io, GT_Seq, r->rec);
 	int cstart, cend;
 		
@@ -991,7 +990,6 @@ static int copy_contig_anno(GapIO *io, Array cmap) {
 	    anno_ele_t *a;
 	    bin_index_t *bin;
 	    int in_hole = 1;
-	    int k_start, k_end;
 
 	    if (r->start < map->src_start ||
 		r->end   > map->src_end) {
@@ -1097,7 +1095,7 @@ static int fix_contigs(GapIO *io, r_pos_t *pos, int nreads) {
 
     /* Iterate through contigs to check if extents need fixing */
     iter = HacheTableIterCreate();
-    while (hi = HacheTableIterNext(c_hash, iter)) {
+    while (NULL != (hi = HacheTableIterNext(c_hash, iter))) {
 	tg_rec crec = *(tg_rec *)hi->key;
 	contig_t *c = cache_search(io, GT_Contig, crec);
 	int new_start, *ns;
@@ -1339,7 +1337,7 @@ int disassemble_readings(GapIO *io, tg_rec *rnums, int nreads, int move,
 
     /* Ensure bins are consistent */
     iter = HacheTableIterCreate();
-    while (hi = HacheTableIterNext(bin_hash, iter)) {
+    while (NULL != (hi = HacheTableIterNext(bin_hash, iter))) {
 	tg_rec brec = *(tg_rec *)hi->key;
 	bin_index_t *bin = cache_search(io, GT_Bin, brec);
 	bin_set_used_range(io, bin);
@@ -1484,14 +1482,13 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 	}
 
 	/* Destroy contents of the contig */
-	while (r = contig_iter_next(io, iter)) {
+	while (NULL != (r = contig_iter_next(io, iter))) {
 	    if (r->flags & GRANGE_FLAG_UNUSED)
 		continue;
 	    
 	    switch (r->flags & GRANGE_FLAG_ISMASK) {
 	    case GRANGE_FLAG_ISSEQ: {
 		seq_t *s = cache_search(io, GT_Seq, r->rec);
-		seq_t *p;
 		tg_rec root;
 
 		if (!s) {
@@ -1559,7 +1556,7 @@ int disassemble_contigs(GapIO *io, tg_rec *cnums, int ncontigs) {
 
     iter = HashTableIterCreate();
     i = 0;
-    while (hi = HashTableIterNext(pairs, iter)) {
+    while (NULL != (hi = HashTableIterNext(pairs, iter))) {
 	seqs[i].r = *(tg_rec *)hi->key;
 	seqs[i++].p = hi->data.i;
     }

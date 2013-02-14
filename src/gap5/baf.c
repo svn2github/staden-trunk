@@ -231,7 +231,7 @@ baf_block *baf_next_block(zfp *fp) {
 	l->order = order++;
 	hd.p = l;
 	HacheTableAdd(b->h, (char *)&l->type, sizeof(l->type), hd, NULL);
-    } while (l = get_line(fp, NULL));
+    } while (NULL != (l = get_line(fp, NULL)));
 
     return b;
 }
@@ -243,7 +243,7 @@ void baf_block_destroy(baf_block *b) {
     if (b->h) {
 	HacheIter *iter = HacheTableIterCreate();
 	HacheItem *hi;
-	while (hi = HacheTableIterNext(b->h, iter)) {
+	while (NULL != (hi = HacheTableIterNext(b->h, iter))) {
 	    line_t *l = hi->data.p;
 	    if (l) free_line(l);
 	}
@@ -386,7 +386,7 @@ int construct_seq_from_block(tg_args *a,seq_t *s, baf_block *b, char **tname) {
     s->seq = s->alignment + s->alignment_len + 1;
     memcpy(s->seq, seq, len);
 
-    s->conf = s->seq + len;
+    s->conf = (int8_t *) s->seq + len;
     memcpy(s->conf, qual, (s->format == SEQ_FORMAT_CNF4 ? 4 : 1) * len);
 
     return 0;
@@ -427,7 +427,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
      * Anything else - reject for now
      */
     pos = 0;
-    while (b = baf_next_block(fp)) {
+    while (NULL != (b = baf_next_block(fp))) {
 	int delay_destroy = 0;
 
 	switch (b->type) {

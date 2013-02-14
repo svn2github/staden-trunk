@@ -7,6 +7,7 @@
 #include "io_utils.h"
 #include "io_lib/hash_table.h"
 #include "gap4_compat.h" /* NumContigs() */
+#include "text_output.h" /* UpdateTextOutput() */
 
 /*
  * Allocates a new annotation element.
@@ -397,20 +398,18 @@ static int delete_tag_single_contig(GapIO *io, tg_rec crec,
     }
     cache_incr(io, c);
 
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	char t[5];
-	type2str(r->mqual, t);
+	(void)type2str(r->mqual, t);
 	if (!h || HashTableSearch(h, t, 4)) {
 	    anno_ele_t *e;
 
 	    if (verbose)
 		vmessage("Removing anno %s #%"PRIrec"\tContig %s\t%d..%d\n",
 			 t, r->rec, c->name, r->start, r->end);
-	    ret |= bin_remove_item(io, &c, GT_AnnoEle, r->rec);
-	    if ((e = cache_search(io, GT_AnnoEle, r->rec)))
-		ret |= anno_ele_destroy(io, e);
-	    else
-		ret |= -1;
+	    if (bin_remove_item(io, &c, GT_AnnoEle, r->rec)) goto fail;
+	    if (NULL == (e = cache_search(io, GT_AnnoEle, r->rec))) goto fail;
+	    if (anno_ele_destroy(io, e)) goto fail;
 	}
     }
 

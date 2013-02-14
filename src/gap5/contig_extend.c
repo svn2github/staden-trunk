@@ -140,7 +140,7 @@ static int contig_extend_single(GapIO *io, tg_rec crec, int dir, int min_depth,
 	    if(s->seq[j] == 'N')
 		continue;
 
-	    freqs[k][dna_lookup[s->seq[j]]]++;
+	    freqs[k][dna_lookup[(uint8_t) s->seq[j]]]++;
 	    depth[k]++;
 	}
 
@@ -206,7 +206,6 @@ static int contig_extend_single(GapIO *io, tg_rec crec, int dir, int min_depth,
 
 	for (i = 0; i < nr; i++) {
 	    seq_t *s;
-	    int right;
 	    int r_pos;
 	    int score;
 
@@ -256,7 +255,6 @@ static int contig_extend_single(GapIO *io, tg_rec crec, int dir, int min_depth,
 		}
 	    } else {
 		int best_r = 0, j, k;
-		int len = ABS(s->len);
 
 		//printf("<%s\t", s->name);
 

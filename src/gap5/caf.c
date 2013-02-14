@@ -826,7 +826,8 @@ static long read_section_as_line(FILE *fp, long pos, char **line, int is_seq) {
     tg_get_line(&line_in, &size, fp); // skip over the header
 
     while ((length = tg_get_line(&line_in, &size, fp)) > 0) {
-    	if (isspace(line_in[0]) && !isblank(line_in[0])) break; // blank line at end of section
+    	if (isspace(line_in[0]) && line_in[0] != ' ' && line_in[0] != '\t')
+	    break; // blank line at end of section
 	
 	if (is_seq) {
 	    length = chomp(line_in);
@@ -1053,14 +1054,14 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 		     	return 1;
 		    }
 		}
-	    } else if (value = get_value("Ligation_no", line_in)) {
+	    } else if (NULL != (value = get_value("Ligation_no", line_in))) {
 		char *cp;
 		for (cp = value; *cp; cp++)
 		    if (*cp == ' ')
 			*cp = '-';
 		
 		strcpy(lig_name, value);
-	    } else if (value = get_value("Insert_size", line_in)) {
+	    } else if (NULL != (value = get_value("Insert_size", line_in))) {
 		char *cp;
 		min_size = atoi(value);
 		for (cp = value; *cp; cp++) {
@@ -1165,7 +1166,7 @@ static int read_data(FILE *fp, char *fn, GapIO *io, tg_args *a, contig_t **c,
 
 	memcpy(seq.seq, sq.seq, sq.s_len);
 
-	seq.conf = seq.seq + sq.s_len;
+	seq.conf = (int8_t *) seq.seq + sq.s_len;
 	memcpy(seq.conf, sq.qual, sq.s_len);
 	
 	// seq_t struct filled in, now to save it

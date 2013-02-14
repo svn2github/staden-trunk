@@ -47,6 +47,8 @@
 #include "maq.h"
 #include "ace.h"
 #include "baf.h"
+#include "caf.h"
+#include "afg.h"
 #include "tg_index_common.h"
 #include "dis_readings.h"
 #include "shuffle_pads.h"
@@ -265,7 +267,7 @@ ObjGetOps(ClientData clientData,
     if (NULL == ops)
 	return TCL_OK;
 
-    while (l = strlen(ops)) {
+    while ((l = strlen(ops)) > 0) {
 	Tcl_SetVar(interp, argv[1], ops, TCL_LIST_ELEMENT | TCL_APPEND_VALUE);
 	ops += l+1;
     }
@@ -360,7 +362,7 @@ tcl_load_alignment_matrix(ClientData clientData,
 	return TCL_ERROR;
     }
 
-    if (nt_matrix = create_matrix(argv[1], nt_order)) {
+    if (NULL != (nt_matrix = create_matrix(argv[1], nt_order))) {
 	init_W128(nt_matrix, nt_order, 0);
 	free_matrix(nt_matrix, nt_order);
 	return TCL_OK;
@@ -494,8 +496,6 @@ tcl_update_scaffold_order(ClientData clientData,
 			  int objc,
 			  Tcl_Obj *CONST objv[])
 {
-    int i;
-    GapIO *io;
     io_arg args;
 
     /* Parse arguments */
@@ -538,7 +538,6 @@ int tcl_scaffold_from_agp(ClientData clientData, Tcl_Interp *interp,
 			  int objc, Tcl_Obj *CONST objv[])
 {
     io_file_arg args;
-    FILE *fp;
 
     cli_args a[] = {
 	{"-io",	    	ARG_IO,  1, NULL, offsetof(io_file_arg, io)},
@@ -563,7 +562,6 @@ int tcl_scaffold_to_agp(ClientData clientData, Tcl_Interp *interp,
 			int objc, Tcl_Obj *CONST objv[])
 {
     io_file_arg args;
-    FILE *fp;
 
     cli_args a[] = {
 	{"-io",	    	ARG_IO,  1, NULL, offsetof(io_file_arg, io)},
@@ -1166,15 +1164,17 @@ int tcl_calc_quality(ClientData clientData, Tcl_Interp *interp,
     active_list_contigs_extended(args.io, args.inlist, &rargc, &rargv);
 
     if (rargc >= 1) {
-	char *buf;
+	int8_t *buf;
 	float *flt;
 	int len = rargv[0].end - rargv[0].start + 1;
 	int i;
 	
-	if (NULL == (flt = (float *)xmalloc(len * sizeof(float))))
+	if (NULL == (flt = xmalloc(len * sizeof(float))))
 	    return TCL_ERROR;
-	if (NULL == (buf = (char *)xmalloc(len)))
+	if (NULL == (buf = xmalloc(len))) {
+	    xfree(flt);
 	    return TCL_ERROR;
+	}
 
 	calculate_consensus_simple(args.io, rargv[0].contig, rargv[0].start,
 				   rargv[0].end, NULL, flt);
@@ -1185,7 +1185,8 @@ int tcl_calc_quality(ClientData clientData, Tcl_Interp *interp,
 	    buf[i] = q;
 	}
 
-	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj(buf, len));
+	Tcl_SetObjResult(interp,
+			 Tcl_NewByteArrayObj((unsigned char *) buf, len));
 
 	xfree(flt);
 	xfree(buf);
@@ -1709,7 +1710,8 @@ tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
 		      int objc, Tcl_Obj *CONST objv[])
 {
     int i, j, k, len;
-    char *in, *out;
+    int8_t *in;
+    char *out;
 
     format_sequence_arg args;
     cli_args a[] = {
@@ -1718,16 +1720,16 @@ tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
 	{"-phred", ARG_INT, 0, "0",   offsetof(format_sequence_arg, phred)},
 	{"-str",   ARG_OBJ, 1, NULL,  offsetof(format_sequence_arg, str)},
 	{"-min",   ARG_INT, 1, "0",   offsetof(format_sequence_arg, min)},
-	{"-max",   ARG_INT, 1, "255", offsetof(format_sequence_arg, max)},
+	{"-max",   ARG_INT, 1, "127", offsetof(format_sequence_arg, max)},
 	{NULL,	 0,	  0, NULL, 0}
     };
 
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    in = Tcl_GetByteArrayFromObj(args.str, &len);
+    in = (int8_t *) Tcl_GetByteArrayFromObj(args.str, &len);
 
-    out = (char *)malloc(len + 1 + (args.fold ? len / args.fold + 1 : 0));
+    out = malloc(len + 1 + (args.fold ? len / args.fold + 1 : 0));
     if (!out)
 	return TCL_ERROR;
     
@@ -1762,7 +1764,7 @@ int
 tcl_delete_tags(ClientData clientData, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
 {
-    int rargc, i;
+    int rargc;
     contig_list_t *rargv;
 
     delete_tag_arg args;
@@ -2020,7 +2022,7 @@ tcl_import_reads(ClientData clientData,
 						  ci_ptr(args.io->db),
 						  DB_INDEX_NAME);
 	}
-	while (name = bttmp_file_get(args.a.tmp, &rec)) {
+	while (NULL != (name = bttmp_file_get(args.a.tmp, &rec))) {
 	    sequence_index_update(args.io, name, strlen(name), rec);
 	}
 	
@@ -2223,9 +2225,6 @@ tcl_check_assembly(ClientData clientData, Tcl_Interp *interp,
 		   int objc, Tcl_Obj *CONST objv[]) {
     int rargc;
     contig_list_t *rargv;
-    char *name1;
-    char *name2;
-    char *name3;
     check_ass_arg args;
 
     cli_args a[] = {
@@ -2513,7 +2512,7 @@ int tcl_iter_test(ClientData clientData,
 	    ci = contig_iter_new_by_type(args.io, crec, 0, CITER_LAST,
 					 start, end, type);
 
-	    while (r = contig_iter_prev(args.io, ci)) {
+	    while (NULL != (r = contig_iter_prev(args.io, ci))) {
 		printf("X:  %"PRIrec" %d..%d\n", r->rec, r->start, r->end);
 	    }
 

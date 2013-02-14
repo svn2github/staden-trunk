@@ -48,7 +48,7 @@ int sequence_set_mapping_qual(GapIO *io, seq_t **s, uint8_t value);
 int sequence_set_name        (GapIO *io, seq_t **s, char *name);
 int sequence_set_trace_name  (GapIO *io, seq_t **s, char *trace_name);
 int sequence_set_seq         (GapIO *io, seq_t **s, char *seq);
-int sequence_set_conf        (GapIO *io, seq_t **s, char *conf);
+int sequence_set_conf        (GapIO *io, seq_t **s, int8_t *conf);
 
 int sequence_set_left_no_invalidate (GapIO *io, seq_t **s, int value);
 int sequence_set_right_no_invalidate(GapIO *io, seq_t **s, int value);
@@ -86,12 +86,12 @@ int seq_mapping_qual(GapIO *io, tg_rec rec);
 char *seq_name(GapIO *io, tg_rec rec);
 char *seq_trace_name(GapIO *io, tg_rec rec);
 char *seq_seq(GapIO *io, tg_rec rec);
-char *seq_conf(GapIO *io, tg_rec rec);
+int8_t *seq_conf(GapIO *io, tg_rec rec);
 
 /*
  * Reverses and complements a piece of DNA
  */
-void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf);
+void complement_seq_conf(char *seq, int8_t *conf, int seq_len, int nconf);
 
 seq_t *dup_seq(seq_t *s);
 size_t sequence_extra_len(seq_t *s);
@@ -104,7 +104,7 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos, char *base, double *conf,
 		       int *cutoff, int contig_orient);
 int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
 			  int contig_orient);
-int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
+int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, int8_t conf,
 			 int contig_orient);
 int sequence_delete_base(GapIO *io, seq_t **s, int pos,
 			 int contig_orient);
@@ -176,7 +176,22 @@ int sequence_get_template_info(GapIO *io, seq_t *s,
 			       tg_rec *library,
 			       int *size);
 
+/*
+ * Returns the range_t element from the bin holding this sequence.
+ * 
+ * Returns a static range_t pointer on success (valid until next call)
+ *         NULL on failure.
+ */
 range_t *sequence_get_range(GapIO *io, seq_t *s);
 rangec_t *sequence_get_rangec(GapIO *io, seq_t *s, int abs_pos);
+
+/*
+ * Fills out the r->pair_{start,end,mqual,contig} fields of a rangec_t
+ * struct and the cooresponding bin range_t element.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_get_range_pair_position(GapIO *io, rangec_t *r);
 
 #endif /* _TG_SEQUENCE_H_ */

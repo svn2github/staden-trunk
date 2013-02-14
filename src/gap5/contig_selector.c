@@ -8,6 +8,7 @@
 #include "io_utils.h"
 #include "cs-object.h"
 #include "newgap_cmds.h"
+#include "consensus.h"
 #include "contig_selector.h"
 //#include "contigEditor.h"
 #include "gap_globals.h"
@@ -532,10 +533,9 @@ int
 DoClipping(GapIO *io,                                                  /* in */
 	   obj_match *match)                                      /* in, out */
 {
-    contig_t *c;
+    //contig_t *c;
     int c1_start, c1_end;
     int c2_start, c2_end;
-    int old_len;
 
     //c = cache_search(io, GT_Contig, ABS(match->c1));
     //c1_start = c->start;
@@ -703,7 +703,7 @@ display_cs_tags(Tcl_Interp *interp,                                   /* in */
 				       CITER_CSTART, CITER_CEND,
 				       GRANGE_FLAG_ISANNO);
 
-	while (r = contig_iter_next(io, iter)) {
+	while (NULL != (r = contig_iter_next(io, iter))) {
 	    int t;
 	    x1 = cstart + r->start;
 	    x2 = cstart + r->end;

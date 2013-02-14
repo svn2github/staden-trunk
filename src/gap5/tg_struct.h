@@ -282,7 +282,9 @@ typedef struct {
     char *trace_name; /* trace name; blank => same as name */
     char *alignment;  /* alignment; blank => obvious guess from pads */
     char *seq;        /* sequence in ASCII format */
-    char *conf;       /* 1 or 4 values per base depending on flags */
+    int8_t *conf;     /* 1 or 4 values per base depending on flags
+                       * Negative values make no sense for phred scale
+                       * but do for log-odds (4 value mode) */
     char *sam_aux;    /* Auxillary records */
     struct seq_block *block; /* seq_block_t pointer and index into it */
     int idx;
@@ -355,12 +357,12 @@ typedef struct contig_block {
 typedef struct {
     tg_rec rec1, rec2;          /* records being linked (rec1 = this contig) */
     int pos1, pos2;             /* pos1 = this contig, pos2 = other contig */
-    int end1, end2;             /* pos relative to end (0=left, 1=right) */
+    uint32_t end1, end2;        /* pos relative to end (0=left, 1=right) */
                                 /* pos 100 end 1 => contig->end-100 */
                                 /* pos 100 end 0 => contig->start+100 */
-    int orientation;            /* 0 => same, 1 => reversed */
-    int size;                   /* 0 if unknown. Length of link in bp */
-    int type;                   /* CLINK_TYPE_* macros */
+    uint32_t orientation;       /* 0 => same, 1 => reversed */
+    uint32_t size;              /* 0 if unknown. Length of link in bp */
+    uint32_t type;              /* CLINK_TYPE_* macros */
     int score;                  /* eg no. read pairs, length of seq overlap */
 } contig_link_t;
 
@@ -370,9 +372,9 @@ typedef struct {
 
 typedef struct {
     tg_rec rec;
-    int gap_type; /* 0 => no gap, for last contig. Otherwise AGP codes */
-    int gap_size; /* size */
-    int evidence; /* see AGP evidence fields */
+    uint32_t gap_type; /* 0 => no gap, for last contig. Otherwise AGP codes */
+    int gap_size;      /* size */
+    uint32_t evidence; /* see AGP evidence fields */
 } scaffold_member_t;
 
 struct scaffold_block;

@@ -146,7 +146,7 @@ int actf_lock(int read_only, char *file, int new) {
     }
 #endif
 
-    if (cp = strrchr(file, '/')) {
+    if (NULL != (cp = strrchr(file, '/'))) {
 	db_name = cp+1;
 	strncpy(dir, file, cp - file + 1);
 	dir[cp-file+1] = 0;
@@ -276,7 +276,7 @@ int actf_unlock(int read_only, char *file) {
 	return 0;
 
     /* do the unlocking */
-    if (cp = strrchr(file, '/')) {
+    if (NULL != (cp = strrchr(file, '/'))) {
 	db_name = cp+1;
     } else {
 	db_name = file;

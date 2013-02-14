@@ -195,14 +195,14 @@ void broadcast_event(GapIO *io, HacheTable *h,
 
     /* Incr ref counts to ensure they're not removed, yet */
     iter = HacheTableIterCreate();
-    while (hi = HacheTableIterNext(h, iter)) {
+    while (NULL != (hi = HacheTableIterNext(h, iter))) {
 	contig_reg_t *cr = (contig_reg_t *)hi->data.p;
 	cr->ref_count++;
     }
 
     /* Do the notification */
     HacheTableIterReset(iter);
-    while (hi = HacheTableIterNext(h, iter)) {
+    while (NULL != (hi = HacheTableIterNext(h, iter))) {
 	contig_reg_t *cr = (contig_reg_t *)hi->data.p;
 	int key = *(int *)hi->key;
 
@@ -425,7 +425,7 @@ int contig_deregister(GapIO *io, tg_rec contig,
     iter = HacheTableIterCreate();
 
     next = HacheTableIterNext(io_contig_reg(io), iter);
-    while (hi = next) {
+    while (NULL != (hi = next)) {
 	next = HacheTableIterNext(io_contig_reg(io), iter);
 	r = (contig_reg_t *)hi->data.p;
 	if (r->func != func ||

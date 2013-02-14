@@ -50,6 +50,8 @@ Scaffold names must be unique. They are stored in their own index.
 #include "tg_gio.h"
 #include "list_proc.h"
 #include "io_lib/hash_table.h"
+#include "consensus.h"
+#include "gap4_compat.h" /* complement_contig() */
 
 /*
  * Sets a scaffold name.
@@ -364,7 +366,7 @@ int scaffold_to_agp(GapIO *io, char *fn) {
     for (i = 0; io->scaffold && i < ArrayMax(io->scaffold); i++) {
 	scaffold_t *f = cache_search(io, GT_Scaffold,
 				     arr(tg_rec, io->scaffold, i));
-	int start = 1, end = 1;
+	int start = 1;
 	int k = 1;
 
 	if (!f) {

@@ -139,7 +139,7 @@ typedef struct {
 #define bam_name(b)      ((char *)(&(b)->data))
 #define bam_cigar(b)     ((uint32_t *)(bam_name((b)) + bam_name_len((b))))
 #define bam_seq_len(b)   ((b)->len)
-#define bam_seq(b)       (((char *)bam_cigar((b))) + 4*bam_cigar_len(b))
+#define bam_seq(b)     (((unsigned char *)bam_cigar((b))) + 4*bam_cigar_len(b))
 #define bam_qual(b)      (bam_seq(b) + (int)(((b)->len+1)/2))
 #define bam_aux(b)       (bam_qual(b) + (b)->len)
 
@@ -187,6 +187,25 @@ char *bam_aux_find(bam_seq_t *b, char *key);
 tag_list_t *bam_find_rg(bam_file_t *b, char *id);
 int bam_aux_iter(bam_seq_t *b, char **iter_handle,
 		 char *key, char *type, bam_aux_t *val);
+
+int bam_parse_header(bam_file_t *b);
+int bam_write_header(bam_file_t *out);
+int bam_construct_seq(bam_seq_t *b, int s_size,
+		      char *qname, size_t qname_len,
+		      int flag,
+		      int rname,      // Ref ID
+		      int pos,
+		      int start, int end, // aligned start/end coords
+		      int mapq,
+		      int ncigar, uint32_t *cigar,
+		      int mrnm,       // Mate Ref ID
+		      int mpos,
+		      int isize,
+		      int len,
+		      char *seq,
+		      char *qual);
+int bam_name2ref(bam_file_t *b, char *ref);
+int bam_put_seq(bam_file_t *fp, bam_seq_t *b);
 
 /* Taken from samtools/bam.h */
 #define bam_seqi(s, i) ((s)[(i)/2] >> 4*(1-(i)%2) & 0xf)

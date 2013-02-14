@@ -123,7 +123,7 @@ void add_contig_title(char *consensus, char *project_name,
     rlen = sprintf(buf, "%"PRIrec, left_gelnumber);
 
     /* Length of project name */
-    if (cp = strchr(project_name, '.'))
+    if (NULL != (cp = strchr(project_name, '.')))
 	plen = cp - project_name;
     else
 	plen = strlen(project_name);
@@ -578,7 +578,7 @@ int end_of_good ( char *seq,
  * Having found this window, the procedure repeats with successively smaller
  * windows until the exact base is identified.
  */
-int scan_right(Hidden_params p, int1 *conf, int start_pos, int len) {
+int scan_right(Hidden_params p, int8_t *conf, int start_pos, int len) {
     int i, total, rclip;
     int lowest_total;
     int win_len = p.window_len;
@@ -635,7 +635,7 @@ int get_hidden_seq (GapIO *io, tg_rec read_number,
 }
 #endif
 
-void revconf( int1 *conf, int len ) {
+void revconf(int8_t *conf, int len ) {
     register int i, middle, j;
     int1 temp;
 
@@ -670,7 +670,7 @@ int get_hidden(GapIO *io, int contig, int max_read_length,
     SEG Seg, *seg;
     double percent_mismatch, max_percent_mismatch;
 
-    int1 *conf = NULL;
+    int8_t *conf = NULL;
     int use_conf;
 
     if (NULL == (overlap = create_overlap())) return -1;
@@ -755,8 +755,8 @@ int get_hidden(GapIO *io, int contig, int max_read_length,
 		if (use_conf) {
 
 		    length_hidden = MIN
-			(length_hidden,scan_right
-			 (p, conf, r.end, r.length)-r.end+1);
+			(length_hidden,
+			 scan_right(p, conf, r.end, r.length)-r.end+1);
 		}
 		
 		if (!use_conf) {
@@ -900,10 +900,10 @@ int get_hidden(GapIO *io, int contig, int max_read_length,
 		  }
 		  if (use_conf) {
 		      
-		      length_hidden = MIN
-			  (length_hidden,scan_right
-			   (p, conf, r.length-r.start+1, r.length)
-			   -(r.length-r.start));
+		      length_hidden
+			  = MIN(length_hidden,
+				scan_right(p, conf, r.length-r.start+1,
+					   r.length) - (r.length-r.start));
 		  }
 		  
 		  if (!use_conf) {
@@ -1042,7 +1042,7 @@ static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
     for (i = 0; i < nr; i++) {
 	seq_t *sorig = cache_search(io, GT_Seq, r[i].rec);
 	int cstart, cend;
-	int j, k, slen, lclip, ext;
+	int lclip, ext;
 
 	if (NULL == sorig) goto fail;
 	if (NULL == (s = dup_seq(sorig))) goto fail;
@@ -1066,7 +1066,7 @@ static int get_hidden_start(GapIO *io, tg_rec contig, Hidden_params p,
 	//       ext, s->seq+lclip-1);
 
 	if (ext > 0 && r[i].start + s->left-1 > start && 0) {
-	    int j, k, jx, kx, j_end;
+	    int j, k, jx, kx;
 	    char rseq[MAXGEL_PLUS], rcons[MAXGEL_PLUS];
 	    int rseq_len, rcons_len;
 
@@ -1210,7 +1210,7 @@ static int get_hidden_end(GapIO *io, tg_rec contig, Hidden_params p,
     /* All these reads extend the contig by at least one base */
     for (i = 0; i < nr; i++) {
 	int cstart, cend;
-	int j, k, slen, rclip, rfrom, ext;
+	int rclip, rfrom, ext;
 
 	sorig = s = cache_search(io, GT_Seq, r[i].rec);
 	if (NULL == s) goto fail;
@@ -1454,7 +1454,7 @@ int make_consensus( int task_mask, GapIO *io,
 	return -1;
 
     if ( task_mask & SORTCONTIGS ) {
-	if ( i = sort_contigs ( contig_list, number_of_contigs ) ) {
+	if ( sort_contigs ( contig_list, number_of_contigs ) ) {
 	    if (consensus) xfree(consensus);
 	    return -2;
 	}
@@ -1748,7 +1748,7 @@ char *set_fasta_table(void) {
 
     for (i = 0; i < codes_l; i++) {
 	int lower = tolower(codes[i]);
-	fasta_base_table[codes[i]] = lower;
+	fasta_base_table[(uint8_t) codes[i]] = lower;
 	fasta_base_table[lower] = lower;
     }
 

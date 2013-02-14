@@ -50,7 +50,7 @@ static int parse_maqmap_aux(tg_args *a,
     *s->alignment = 0;
     s->alignment_len = 0;
     s->seq = s->alignment + s->alignment_len+1;
-    s->conf = s->seq+m->size;
+    s->conf = (int8_t *) s->seq+m->size;
     //s->mapping_qual = m->map_qual;
     s->mapping_qual = m->seq[m_sz-1];
 
@@ -290,7 +290,7 @@ int parse_maqmap(GapIO *io, char *dat_fn, tg_args *a) {
 	if (!(iter = HacheTableIterCreate()))
 	    return -1;
 	
-	while (hi = HacheTableIterNext(libs, iter)) {
+	while (NULL != (hi = HacheTableIterNext(libs, iter))) {
 	    library_t *lib = hi->data.p;
 	    cache_decr(io, lib);
 	}

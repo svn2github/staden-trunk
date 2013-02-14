@@ -297,8 +297,6 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     case RECS_BETWEEN: {
-	char buf[100];
-	int x, y, type, pos;
 	tg_rec from_rec, to_rec;
 	Array a;
 	int i;

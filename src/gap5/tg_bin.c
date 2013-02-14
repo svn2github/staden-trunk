@@ -327,7 +327,9 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
     /* Now recurse down the bin hierachy searching for the smallest bin */
     offset = bin->pos;
+#ifdef CACHE_LAST_BIN
  jump:
+#endif
     cache_incr(io, bin);
 
     for (;;) {
@@ -1102,7 +1104,6 @@ int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
      * the contig start/end may also have changed. We need to check.
      */
     if (new_contig_range) {
-	int offset = bin->pos;
 	int comp = 0;
 	tg_rec bnum;
 

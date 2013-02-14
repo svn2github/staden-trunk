@@ -20,7 +20,7 @@
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
-static unsigned char lookup[256];
+static uint8_t lookup[256];
 
 #if 0
 static unsigned char lookup_done = 0;
@@ -723,7 +723,8 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 	    left = 1;
 
 	for (j = left-1; j < right; j++) {
-	    char base, base_l;
+	    char base;
+	    uint8_t base_l;
 	    int qual;
 
 	    if (sp+j > end)
@@ -731,7 +732,7 @@ static int calculate_consensus_bit(GapIO *io, tg_rec contig,
 
 	    sequence_get_base(io, &s, j+off, &base, &qual, NULL, 0);
 
-	    base_l = lookup[base];
+	    base_l = lookup[(uint8_t) base];
 	    if (base_l < 5 && qual == 100)
 		perfect[sp-start+j] |= (1<<base_l);
 	    
@@ -1195,7 +1196,8 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 	if (right > l)
 	    right = l;
 	for (j = left-1; j < right; j++) {
-	    char base, base_l;
+	    char base;
+	    uint8_t base_l;
 	    int qual;
 	    double *S, MM, __, _M, qe;
 
@@ -1210,7 +1212,7 @@ int calculate_consensus_bit_het(GapIO *io, tg_rec contig,
 		sequence_get_base(io, &s, j+off, &base, &qual, NULL, 0);
 	    }
 
-	    base_l = lookup[base];
+	    base_l = lookup[(uint8_t) base];
 	    if (base_l < 5 && qual == 100)
 		perfect[sp-start+j] |= (1<<base_l);
 	    
@@ -1855,7 +1857,7 @@ int update_uniqueness_hash(GapIO *io) {
 	calculate_consensus_simple(io, crec, c->start, c->end, cons, NULL);
 	
 	for (W = w = i = j = 0; i < len && j < WLEN-1; i++) {
-	    int c = lookup[cons[i]];
+	    uint8_t c = lookup[(uint8_t) cons[i]];
 	    if (c < 4) {
 		w = (w << 2) | c;
 		W = (W << 2) | (c ^ 3);
@@ -1863,7 +1865,7 @@ int update_uniqueness_hash(GapIO *io) {
 	    }
 	}
 	for (; i < len; i++) {
-	    int c = lookup[cons[i]];
+	    uint8_t c = lookup[(uint8_t) cons[i]];
 	    if (c < 4) {
 		w = (w << 2) | c;
 		w &= WSIZE-1;
@@ -1893,13 +1895,12 @@ int update_uniqueness_hash(GapIO *io) {
 int get_uniqueness(GapIO *io, tg_rec crec, int pos) {
     char cons[WLEN*4+1];
     int i, j, w = 0;
-    char *cp;
+    uint8_t *cp = (uint8_t *) &cons[WLEN*2];
 
-    cp = &cons[WLEN*2];
     calculate_consensus_simple(io, crec, pos-WLEN*2, pos+WLEN*2, cons, NULL);
 
     for (i = 0, j = WLEN/2; i >= -WLEN*2 && j > 0; i--) {
-	if (lookup[cp[i] < 4])
+	if (lookup[cp[i]] < 4)
 	    j--;
     }
 
@@ -1907,7 +1908,7 @@ int get_uniqueness(GapIO *io, tg_rec crec, int pos) {
 	return 0;
 
     for (; i < WLEN*2 && j < WLEN; i++) {
-	int c = lookup[cp[i]];
+	uint8_t c = lookup[cp[i]];
 	if (c < 4) {
 	    w = (w << 2) | c;
 	    j++;
@@ -1920,11 +1921,10 @@ int get_uniqueness(GapIO *io, tg_rec crec, int pos) {
 }
 
 int get_uniqueness_pos(char *str, int len, int pos) {
-    char cons[WLEN*4+1];
     int i, j, w = 0;
 
     for (i = pos, j = WLEN/2; i > 0 && j > 0; i--) {
-	if (lookup[str[i]] < 4)
+	if (lookup[(uint8_t) str[i]] < 4)
 	    j--;
     }
 
@@ -1932,7 +1932,7 @@ int get_uniqueness_pos(char *str, int len, int pos) {
 	return 0;
 
     for (; i < len && j < WLEN; i++) {
-	int c = lookup[str[i]];
+	uint8_t c = lookup[(uint8_t) str[i]];
 	if (c < 4) {
 	    w = (w << 2) | c;
 	    j++;

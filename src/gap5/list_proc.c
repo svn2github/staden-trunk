@@ -8,6 +8,7 @@
 #include "FtoC.h"
 #include "newgap_cmds.h"
 #include "misc.h"
+#include "gap4_compat.h" /* read_name_to_number() */
 
 static char **active_list_argv = NULL;
 static int active_list_argc = 0;

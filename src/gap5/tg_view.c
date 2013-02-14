@@ -357,7 +357,7 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 	unsigned char seq_a[MAX_SEQ_LEN], *seq = seq_a;
 	int j, dir = '+';
 	int left, right;
-	char *conf;
+	int8_t *conf;
 	int nc = s->format == SEQ_FORMAT_CNF4 ? 4 : 1;
 	int *L = s->format == SEQ_FORMAT_CNF4 ? lookup_4conf : lookup_1conf;
 
@@ -432,7 +432,7 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
     /* Useful debugging code to show bin locations. */
 #if 0
     free(r);
-    r = contig_bins_in_range(io, c, xpos, xpos+wid-1, &nr);
+    r = contig_bins_in_range(io, c, xpos, xpos+wid-1, 0, 0, &nr);
     /* Bins */
     for (i=0; i < nr && lno < nlines; i++, lno++) {
 	bin_index_t *bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
@@ -442,7 +442,7 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 	int l = ABS(r[i].end - r[i].start + 1);
 	char name[100];
 
-	sprintf(name, "bin-%d", bin->rec);
+	sprintf(name, "bin-%"PRIrec, bin->rec);
 	seqm = seq = malloc(l+1);
 	memset(seq, '-', l);
 

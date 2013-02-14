@@ -1564,7 +1564,7 @@ static void pair_rangec(GapIO *io, tg_rec crec, rangec_t *r, int count) {
 	/* Iterate through hash linking the pairs together */
 	iter = HacheTableIterCreate();
 
-	while (hi = HacheTableIterNext(h, iter)) {
+	while (NULL != (hi = HacheTableIterNext(h, iter))) {
 	    HacheItem *pair;
 	    int p;
 	    i = hi->data.i;
@@ -1655,7 +1655,7 @@ static void pair_rangec(GapIO *io, tg_rec crec, rangec_t *r, int count) {
     /* do the remaining unpaired reads */
     it = HacheTableIterCreate();
 
-    while (rec = HacheTableIterNext(unpaired, it)) {
+    while (NULL != (rec = HacheTableIterNext(unpaired, it))) {
 	HacheItem *pair;
 	int i = rec->data.i;
 	int p;
@@ -5487,10 +5487,9 @@ int contig_fix_nseq(GapIO *io, contig_t *c) {
  *        -1 on failure
  */
 int contig_add_link(GapIO *io, contig_link_t *abs_link) {
-    tg_rec *m;
     contig_t *c1, *c2;
     contig_link_t *l1, *l2;
-    int i, idx1, idx2;
+    int idx1, idx2;
     int pos1 = abs_link->pos1;
     int pos2 = abs_link->pos2;
 

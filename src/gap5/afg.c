@@ -466,7 +466,7 @@ static int store_contig(FILE *fp, char *fn, GapIO *io, tg_args *a,
 
 	memcpy(seq.seq, read, seq.len);
 
-	seq.conf = seq.seq + seq.len;
+	seq.conf = (int8_t *) seq.seq + seq.len;
 	memcpy(seq.conf, qual, seq.len);
 
 	// seq_t struct filled in, now to save it

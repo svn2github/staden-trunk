@@ -21,10 +21,11 @@
  * 'pos_p' and 'len_p' are filled in with the position and length of the match
  * within the consensus.
  */
-int check_uassembly_single(GapIO *io, char *con, int contig, rangec_t *r,
+int check_uassembly_single(GapIO *io, char *cons, int contig, rangec_t *r,
 			   float maxperc, int win_len, int ignore_N) {
     int start, end;
-    char *seq = NULL, tmp;
+    unsigned char *seq = NULL;
+    unsigned char *con = (unsigned char *) cons;
     int i, j, mism = 0;
     int worst, worst_pos = -1;
     seq_t *s, *sorig;
@@ -52,7 +53,7 @@ int check_uassembly_single(GapIO *io, char *con, int contig, rangec_t *r,
 	s = dup_seq(s);
 	complement_seq_t(s);
     }
-    seq = s->seq;
+    seq = (unsigned char *) s->seq;
 
     start = s->left;
     end = s->right;
@@ -169,7 +170,7 @@ void *checkass_obj_func(int job, void *jdata, obj_checkass *obj,
 	case -2: /* default */
 	case 2: /* Invoke contig editor */ {
 	    tg_rec cnum, llino;
-	    int pos, id;
+	    int pos;
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    ca->current = obj - ca->match;
@@ -414,7 +415,7 @@ int check_assembly_plot(GapIO *io, tg_rec *reads, tg_rec *conts, int *score,
  */
 int check_assembly(GapIO *io, int num_contigs, contig_list_t *contigs,
 		   int winsize, float maxperc, int ignore_N) {
-    int i, rn, sc, count = 0, allocated = 0;
+    int i, sc, count = 0, allocated = 0;
     char *con;
     tg_rec *reads = NULL, *conts = NULL;
     int *score = NULL, *length = NULL, *pos = NULL;
@@ -431,7 +432,7 @@ int check_assembly(GapIO *io, int num_contigs, contig_list_t *contigs,
 	calculate_consensus_simple(io, crec, start, end, con, NULL);
 
 	ci = contig_iter_new(io, crec, 0, CITER_FIRST, start, end);
-	while (r = contig_iter_next(io, ci)) {
+	while (NULL != (r = contig_iter_next(io, ci))) {
 	    UpdateTextOutput();
 	    sc = check_uassembly_single(io, con - start, crec, r,
 					maxperc, winsize, ignore_N);

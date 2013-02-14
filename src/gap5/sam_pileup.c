@@ -472,8 +472,8 @@ int pileup_loop(bam_file_t *fp,
 	    p->seq_offset = -1;
 	    p->first_del  = 1;
 	    p->b_strand   = bam_strand(p->b) ? 1 : 0;
-	    p->b_qual     = (unsigned char *)bam_qual(p->b);
-	    p->b_seq      = (unsigned char *)bam_seq(p->b);
+	    p->b_qual     = bam_qual(p->b);
+	    p->b_seq      = bam_seq(p->b);
 
 	    if (seq_init) {
 		int v;

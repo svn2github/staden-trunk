@@ -22,9 +22,9 @@ void sequence_reset_ptr(seq_t *s) {
     s->trace_name = s->name + s->name_len + 1;
     s->alignment = s->trace_name + s->trace_name_len + 1;
     s->seq = s->alignment + s->alignment_len + 1;
-    s->conf = s->seq + (s->len >= 0 ? s->len : -s->len);
+    s->conf = (int8_t *) s->seq + (s->len >= 0 ? s->len : -s->len);
     if (s->aux_len)
-	s->sam_aux = s->conf + 
+	s->sam_aux = (char *) s->conf + 
 	    (s->format == SEQ_FORMAT_CNF4 ? 4 : 1) *
 	    (s->len >= 0 ? s->len : -s->len);
     else
@@ -445,7 +445,7 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
 }
 
 int sequence_set_seq (GapIO *io, seq_t **s, char *seq) {return -1;}
-int sequence_set_conf(GapIO *io, seq_t **s, char *conf) {return -1;}
+int sequence_set_conf(GapIO *io, seq_t **s, int8_t *conf) {return -1;}
 
 
 /* ------------------------------------------------------------------------ 
@@ -486,7 +486,7 @@ char *seq_seq(GapIO *io, tg_rec rec) {
     return sequence_get_seq(&s);
 }
 
-char *seq_conf(GapIO *io, tg_rec rec) {
+int8_t *seq_conf(GapIO *io, tg_rec rec) {
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
     return sequence_get_conf(&s);
 }
@@ -498,9 +498,10 @@ char *seq_conf(GapIO *io, tg_rec rec) {
  * Reverses and complements a piece of DNA
  */
 static int complementary_base[256];
-void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf) {
+void complement_seq_conf(char *seq, int8_t *conf, int seq_len, int nconf) {
     int i, middle, j;
-    char temp, t[4];
+    unsigned char temp;
+    int8_t t[4];
     static int init = 0;
 
     if (!init) {
@@ -1284,12 +1285,12 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
  * Insert into position 'pos' of a sequence, where pos starts from 0
  * (before first base).
  */
-int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
+int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, int8_t conf,
 			 int contig_orient) {
     seq_t *n;
     int comp = 0;
     size_t extra_len = sequence_extra_len(*s) + 1 + sequence_conf_size(*s);
-    char *c_old;
+    int8_t *c_old;
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
@@ -1529,7 +1530,6 @@ int sequence_range_length(GapIO *io, seq_t **s) {
 	int i;
 	int bstart = INT_MAX, bend = INT_MIN;
 	contig_t *c;
-	int offset = bin->pos;
 	int comp = 0;
 	int orig_start, orig_end;
 

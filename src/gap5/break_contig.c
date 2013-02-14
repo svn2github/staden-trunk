@@ -22,7 +22,7 @@
  */
 static int remove_empty_bins_r(GapIO *io, tg_rec brec, tg_rec *first) {
     bin_index_t *bin = cache_search(io, GT_Bin, brec);
-    int i, empty[2]; /* Emptied or non-existant */
+    int empty[2]; /* Emptied or non-existant */
     int this_is_empty;
     tg_rec child[2], f[2];
 
@@ -165,7 +165,7 @@ int contig_visible_start(GapIO *io, tg_rec crec, int from) {
 	return c->start;
     }
     
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	/* Seq only */
 	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
 	    continue;
@@ -259,7 +259,7 @@ int contig_visible_end(GapIO *io, tg_rec crec, int to) {
 	return c->end;
     }
     
-    while (r = contig_iter_prev(io, ci)) {
+    while (NULL != (r = contig_iter_prev(io, ci))) {
 	/* Seq only */
 	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
 	    continue;
@@ -1099,7 +1099,7 @@ int copy_isrefpos_markers(GapIO *io, contig_t *cl, contig_t *cr,
     if (!ci)
 	return right_start;
 
-    while (rc = contig_iter_next(io, ci)) {
+    while (NULL != (rc = contig_iter_next(io, ci))) {
 	range_t r;
 
 	if ((rc->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
@@ -1175,7 +1175,7 @@ int break_check_counts(GapIO *io, tg_rec crec, int *cpos_p) {
     if (!ci)
 	return -1;
 
-    while (r = contig_iter_prev(io, ci)) {
+    while (NULL != (r = contig_iter_prev(io, ci))) {
 	seq_t *s = cache_search(io, GT_Seq, r->rec);
 	int cstart;
 	if (!s)
@@ -1206,7 +1206,7 @@ int break_check_counts(GapIO *io, tg_rec crec, int *cpos_p) {
 	return -1;
 
     new_cpos = INT_MAX;
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	seq_t *s;
 	int cstart;
 
@@ -1261,7 +1261,7 @@ int compute_pos2(GapIO *io, tg_rec crec, int cpos) {
 	return cpos;
     }
 
-    while (r = contig_iter_next(io, ci)) {
+    while (NULL != (r = contig_iter_next(io, ci))) {
 	if (r->start >= cpos)
 	    break;
 
@@ -1298,7 +1298,7 @@ int compute_pos3(GapIO *io, tg_rec crec, int cpos) {
 	return cpos;
     }
 
-    while (r = contig_iter_prev(io, ci)) {
+    while (NULL != (r = contig_iter_prev(io, ci))) {
 	if (r->end < cpos)
 	    break;
 

@@ -184,7 +184,7 @@ void edview_destroy(edview *xx) {
 	HacheIter *iter = HacheTableIterCreate();
 	HacheItem *hi;
 
-	while (hi = HacheTableIterNext(xx->trace_hash, iter)) {
+	while (NULL != (hi = HacheTableIterNext(xx->trace_hash, iter))) {
 	    if (hi->data.p)
 		read_deallocate(hi->data.p);
 	}
@@ -210,7 +210,7 @@ edview *edview_find(GapIO *io, tg_rec contig) {
 	return NULL;
 
     iter = HacheTableIterCreate();
-    while (hi = HacheTableIterNext(edview_hash, iter)) {
+    while (NULL != (hi = HacheTableIterNext(edview_hash, iter))) {
 	edview *xx = (edview *)hi->data.p;
 	if (!xx->link && xx->cnum == contig)
 	    return xx;
@@ -2965,7 +2965,7 @@ int edview_row_for_item(edview *xx, tg_rec rec, int *xmin, int *xmax) {
  *        -1 if not (with xmin/xmax unset).
  */
 int edview_abs_row_for_item(edview *xx, tg_rec rec, int *xmin, int *xmax) {
-    int i, r = -1;
+    int i;
     HacheItem *hi;
 
     if (rec == 0)
@@ -3561,17 +3561,15 @@ int depad_and_opos(char *str, int len, char *depad, int *opos) {
 /* Compute original positions array via alignments */
 int origpos(edview *xx, tg_rec srec, int pos) {
     seq_t *s = cache_search(xx->io, GT_Seq, srec);
-    int tpos;
     OVERLAP *overlap = NULL;
     ALIGN_PARAMS *params = NULL;
     int *opos = NULL, op;
     Read *r;
     char *fn;
-    align_int *S;
     char *depadded;
     int ulen, dlen, i, j, k, mis = 0;
     char *seq_out = NULL, *trace_out = NULL;
-    int seq_out_len, trace_out_len, new_i = 1;
+    int seq_out_len;
     HacheData hd;
     HacheItem *hi;
     int seq_comp;
