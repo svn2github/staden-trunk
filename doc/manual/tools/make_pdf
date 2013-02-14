@@ -109,7 +109,7 @@ while ($#ARGV >= 0) {
     binmode(FILE,":raw");
     while (<FILE>) {
 	if (/^\/CropBox/) {
-	    ($a,$b)=/^\/CropBox \[(\d+) \d+ (\d+) \d+\]/;
+	    ($a,$b)=/^\/CropBox \[(\d+(?:\.\d+)?) \d+(?:\.\d+)? (\d+(?:\.\d+)?) \d+(?:\.\d+)?\]/;
 	    $width = $b-$a;
 	}
     }
