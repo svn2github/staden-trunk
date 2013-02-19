@@ -2300,9 +2300,9 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	if (anno_get_range(te->io, te->anno->rec, &contig, 0)) {
 	    contig_t *c = cache_search(te->io, GT_Contig, contig);
 	    bin_remove_item(te->io, &c, GT_AnnoEle, te->anno->rec);
+	    /* FIXME: Need to reclaim the GT_AnnoEle record itself */
 	}
-
-	anno_ele_destroy(te->io, te->anno);
+	
 	/* Deliberate flow through to DELETE */
     }
 

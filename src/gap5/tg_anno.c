@@ -88,6 +88,7 @@ tg_rec anno_ele_add(GapIO *io, int obj_type, tg_rec obj_rec, tg_rec anno_rec,
     return r.rec;
 }
 
+#if 0 /* Obsoleted by bin_remove_item */
 /*
  * Removes an anno_ele from the gap database.
  * FIXME: need to deallocate storage too. (See docs/TODO)
@@ -133,7 +134,7 @@ int anno_ele_destroy(GapIO *io, anno_ele_t *e) {
 
     return 0;
 }
-
+#endif
 
 /*
  * Sets the comment for an annotation element.
@@ -408,8 +409,7 @@ static int delete_tag_single_contig(GapIO *io, tg_rec crec,
 		vmessage("Removing anno %s #%"PRIrec"\tContig %s\t%d..%d\n",
 			 t, r->rec, c->name, r->start, r->end);
 	    if (bin_remove_item(io, &c, GT_AnnoEle, r->rec)) goto fail;
-	    if (NULL == (e = cache_search(io, GT_AnnoEle, r->rec))) goto fail;
-	    if (anno_ele_destroy(io, e)) goto fail;
+	    /* FIXME: Need to reclaim the GT_AnnoEle record itself */
 	}
     }
 
