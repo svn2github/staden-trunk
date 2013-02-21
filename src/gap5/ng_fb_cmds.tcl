@@ -33,7 +33,7 @@ proc InitOpenAnotherDB {} {
 #open a new database
 proc NewFile {} {
     global gap5_defs io
-    
+
     # Shut down any existing displays.
     if {$io != ""} {
 	if {![quit_displays -io $io -msg "create new database"]} {
@@ -43,29 +43,29 @@ proc NewFile {} {
     }
 
     set f .new
+    global $f.browsed_path
+    set $f.browsed_path ""
+
     if {[xtoplevel $f -resizable 0] == ""} return
     wm title $f "New database"
     frame $f.files
-    entrybox $f.files.entry \
-	-title "Enter new filename" \
-	-width 15 \
-	-type CheckDBOutput
+    xentry $f.files.entry \
+	-label "Enter new database name" \
+	-width 15
+
     pack $f.files.entry -side left -expand 1 -fill both
+
     button $f.files.browse \
 	-text "Browse" \
-	-command "NewFile_browse $f.files.entry \
-                    \[tk_getSaveFile \
-                                 -filetypes {{database *.g5d}} \
-                  		 -title {New Database} \
-				 -parent $f \
-		    \]"
+	-command "NewFileBrowser_invoke $f.files.entry $f.browsed_path"
+
     pack $f.files.browse -side right -fill both
     
 
     ###########################################################################
     #OK and Cancel buttons
      okcancelhelp $f.ok_cancel \
-	-ok_command "New_OK_Pressed $f \[expandpath \[entrybox_get $f.files.entry\]\]" \
+	-ok_command "New_OK_Pressed $f \[$f.files.entry get\] $f.browsed_path" \
 	-cancel_command "destroy $f" \
 	-help_command "show_help gap5 {GapDB-New}" \
 	-bd 2 \
@@ -76,21 +76,51 @@ proc NewFile {} {
     pack $f.ok_cancel -fill x
 }
 
-proc NewFile_browse {f fname} {
-    if {$fname != ""} {
-        entrybox_delete $f 0 end
-	entrybox_insert $f 0 $fname
-	[entrybox_path $f] xview end
+proc NewFileBrowser_invoke { entry browsed_path } {
+    global $browsed_path
+
+    set types {
+	{{Gap5 databases} {.g5d}}
+    }
+    set file [tk_getSaveFile -filetypes $types \
+		  -defaultextension .g5d -parent $entry]
+        set name $file
+    if { $file != "" } {
+	if [string match [pwd]* $file] {
+	    set name [string range $file [expr [string length [pwd]]+1] end]
+	}
+	if [file exists $file] {
+	    # If file exists, tk_getSaveFile will have asked if the user
+	    # wants to replace it, so we don't want to again.
+	    set $browsed_path $name
+	} else {
+	    set $browsed_path ""
+	}
+    }
+    #if user has pressed cancel don't want to remove name from xentry
+    if {$name != ""} {
+	$entry delete 0 end
+	$entry insert 0 $name
+	$entry xview [string last / $name]
     }
 }
 
-
 ##############################################################################
-proc New_OK_Pressed { f file } {
+proc New_OK_Pressed { f entry_content browsed_path } {
+    if {[New_Open_Database $f $entry_content $browsed_path] == ""} {
+	return
+    }
+
+    PostLoadSetup
+    destroy $f
+}
+
+proc New_Open_Database { f entry_content browsed_path } {
     global gap5_defs
     global io
     global GAP_VERSION
     global licence
+    global $browsed_path
 
     if {$licence(type) == "v"} {
         set access "r"
@@ -98,29 +128,44 @@ proc New_OK_Pressed { f file } {
         set access "rw"
     }
     set create 1
+    set file [expandpath $entry_content]
+    set ask_overwrite 1
+    if { $entry_content eq [set $browsed_path] } {
+	set ask_overwrite 0
+    }
 
     if {$file == ""} {
 	bell
 	return
     }
 
-    # Parse $file to extract directory, db_name and version
+    regsub {\.(g5d|g5x)$} $file {} file
+    # Ask if the user wants to overwrite an existing database, but
+    # only if the save dialogue hasn't already.
+    if { $ask_overwrite } {
+	set overwrite [Overwrite "$file.g5d" $f]
+	if { 0 == $overwrite || 2 == $overwrite } {
+	    return
+	}
+    }
+    
+    # Parse $file to extract directory, db_name
     set dir [file dirname $file]
     set file [file tail $file]
-    regsub {\.g5d$} $file {} file
-    if {[regexp {(.*)\.(.)$} $file dummy db_name version] == 0} {
-	set db_name $file
-	set version 0
-    }
-    if {[regexp {\.} $db_name]} {
-	tk_messageBox \
-		-icon error \
-		-title "Bad filename" \
-		-message "The use of \".\" in the database name is not permitted" \
-		-type ok \
-	        -parent $f
-	return
-    }
+
+    # if {[regexp {(.*)\.(.)$} $file dummy db_name version] == 0} {
+    # 	set db_name $file
+    # 	set version 0
+    # }
+    # if {[regexp {\.} $db_name]} {
+    # 	tk_messageBox \
+    # 		-icon error \
+    # 		-title "Bad filename" \
+    # 		-message "The use of \".\" in the database name is not permitted" \
+    # 		-type ok \
+    # 	        -parent $f
+    # 	return
+    # }
 
     #if a database if already open then close it
     InitOpenAnotherDB
@@ -134,19 +179,14 @@ proc New_OK_Pressed { f file } {
     }
 
     # Do it...
-    catch {file delete -force $db_name.$version.g5d}
-    catch {file delete -force $db_name.$version.g5x}
+    catch {file delete -force $file.g5d}
+    catch {file delete -force $file.g5x}
+    catch {file delete -force $file.g5d.BUSY}
     #catch {file delete -force $db_name.$version.log}
     #catch {file delete -force $db_name.$version.BUSY}
-    set io [open_db -name $db_name -version $version -access $access \
-	    -create $create]
+    set io [g5::open_database -name $file -access $access -create $create]
 
-    wm title . "GAP v$GAP_VERSION: [db_info db_name $io]"
-    wm iconname . "GAP: [db_info db_name $io]"
-    DisableMenu_Open
-    ActivateMenu_New
-    InitLists
-    destroy $f
+    return $io
 }
 
 ##############################################################################
@@ -154,7 +194,6 @@ proc New_OK_Pressed { f file } {
 proc DB_Load { file } {
     global gap5_defs
     global io
-    global GAP_VERSION
     global licence
 
     if {$licence(type) == "v"} {
@@ -210,14 +249,6 @@ proc DB_Load { file } {
 
     set io $new_io
 
-    if {[$io read_only]} {
-	set extras "     *READ-ONLY*"
-    } else {
-	set extras ""
-    }
-    wm title . "GAP v$GAP_VERSION: [db_info db_name $io]$extras"
-    wm iconname . "GAP: [db_info db_name $io]"
-
     #change directory
     set dir [file dirname $file]
     set cur_dir [pwd]
@@ -227,6 +258,24 @@ proc DB_Load { file } {
 	vmessage "Changing directory to [pwd]"
     }
     
+    PostLoadSetup
+}
+
+proc PostLoadSetup { } {
+    # Post-load set-up of menus, lists, contig globals and the contig selector.
+    global io
+    global gap5_defs
+    global GAP_VERSION
+
+    # Set window title
+    if {[$io read_only]} {
+	set extras "     *READ-ONLY*"
+    } else {
+	set extras ""
+    }
+    wm title . "GAP v$GAP_VERSION: [db_info db_name $io]$extras"
+    wm iconname . "GAP: [db_info db_name $io]"
+
     #check to see if the database is empty. If it is, open as if used the
     #'New' option and remove contig selector if it exists
     #else set up contig globals, contig_selector and all menus
@@ -261,5 +310,5 @@ proc DB_Load { file } {
     }
     Menu_Check_RO $io
     InitLists
-    #UpdateListContigs $io [keylget gap5_defs CONTIG_SEL.WIN]
+    #UpdateListContigs $io [keylget gap5_defs CONTIG_SEL.WIN]    
 }

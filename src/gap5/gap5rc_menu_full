@@ -59,71 +59,80 @@ add_menu Help		1 0 right
 # Bit 2: With a database open...		(on/off)
 # Bit 3: ...which contains data			(on/off)
 # Bit 4: Read only				(off)
+#
+# Only a few combinations actually make sense.  Here are some:
+#  1  2    Items that should be available from start-up.
+#  4  6    Database open; no need for data; can be read-only
+#  4 22    Database open; no need for data; must be read-write
+#  8 14    Database open; data must be present; can be read-only
+#  8 30    Database open; data must be present; must be read-write
 
-#add_command	{File.New}			 1 2 {NewFile}
-add_command	{File.Open}			 1 2 {Gap_Open \$io}
-if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
-    add_command     {File.Import from BioLIMS}	12 22 {ImportBiolims \$io}
-}
-add_command	{File.Check database}		12 6 {CheckDatabase \$io}
+add_cascade	{File.New}			 1  2
+add_command     {File.New.Empty Database}        1  2 {NewFile}
+add_command     {File.New.From Imported File}    1  2 \
+    {ImportSequences \$io new}
+add_command	{File.Open}			 1  2 {Gap_Open \$io}
+add_command	{File.Check database}		 8 14 {CheckDatabase \$io}
 #add_command	{File.Copy database}		 8 10 {CopyDatabase \$io}
 #add_command	{File.Copy readings}		 8 26 {CopyReads \$io}
-add_command	{File.Change directory}		 1 2 {ChangeDirectory} e
+add_command	{File.Change directory}		 1  2 {ChangeDirectory} e
 #if {$tcl_platform(platform) == "unix"} {
 #    add_command	{File.Send to}			 8 10 {SendTo \$io} e
 #}
 add_separator	{File.S1}
-if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
-    add_command     {File.Export to BioLIMS}	 8 10 {ExportBiolims \$io}
-}
-add_command     {File.Export sequences}          8 10 {ExportSequences \$io} 
-add_command     {File.Import Tags from GFF}	 8 26 {ImportGFF \$io}
-add_command     {File.Export Tags to GFF}        8 10 {ExportTags \$io} 
-add_command     {File.Export Scaffolds to AGP}   8 26 {ExportAGP \$io}
-add_command     {File.Import Scaffolds from AGP} 8 26 {ImportAGP \$io}
-add_command	{File.Save consensus}		 8 10 {NormalDialog \$io}
+# add_cascade     {File.Import Sequences}         13 15 
+# add_command     {File.Import Sequences.New Database}  9 11 \
+#    {ImportSequences \$io new}
+add_command     {File.Import Sequences}          4 22 \
+    {ImportSequences \$io merge}
+add_command     {File.Export sequences}          8 14 {ExportSequences \$io} 
+add_command     {File.Import Tags from GFF}	 8 30 {ImportGFF \$io}
+add_command     {File.Export Tags to GFF}        8 14 {ExportTags \$io} 
+add_command     {File.Export Scaffolds to AGP}   8 14 {ExportAGP \$io}
+add_command     {File.Import Scaffolds from AGP} 8 30 {ImportAGP \$io}
+add_command	{File.Save consensus}		 8 14 {NormalDialog \$io}
 add_separator	{File.S2}
 #add_command	{File.Extract readings}		 8 10 {ExtractReadings \$io} e
 add_command	{File.Exit}			 1 2 {Gap_Exit \$io}
 
-add_command	{Edit.Edit Contig}		 8 10 {EditContig \$io}
-add_command	{Edit.Join Contig}		 8 10 {JoinContig \$io}
-add_command	{Edit.Complement a contig or scaffold} 8 26 {ComplementContig \$io}
+add_command	{Edit.Edit Contig}		 8 14 {EditContig \$io}
+add_command	{Edit.Join Contig}		 8 14 {JoinContig \$io}
+add_command	{Edit.Complement a contig or scaffold} 8 30 {ComplementContig \$io}
 #add_command	{Edit.Order contigs}		 8 10 {OrderContigs \$io}
 #add_command	{Edit.Quality Clip}		 8 26 {QualityClip \$io} e
 #add_command	{Edit.Difference Clip}		 8 26 {DifferenceClip \$io} e
 #add_command	{Edit.N-base Clip}		 8 26 {NClip \$io} e
 #add_command	{Edit.Quality clip contig ends}	 8 26 {QClipEnds \$io} e
 #add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io}
-add_command	{Edit.Break a contig}		 8 26 {BreakContig \$io}
-add_command     {Edit.Remove contig holes}       8 26 {RemoveContigHoles \$io}
-add_command	{Edit.Delete contigs}		 8 26 {DisContigs \$io}
-add_command     {Edit.Delete tags}		 8 26 {DeleteTags \$io}
-add_command	{Edit.Bulk rename contig}	 8 10 {ContigRenameBulk \$io}
+add_command	{Edit.Break a contig}		 8 30 {BreakContig \$io}
+add_command     {Edit.Remove contig holes}       8 30 {RemoveContigHoles \$io}
+add_command	{Edit.Delete contigs}		 8 30 {DisContigs \$io}
+add_command     {Edit.Delete tags}		 8 30 {DeleteTags \$io}
+add_command	{Edit.Bulk rename contig}	 8 30 {ContigRenameBulk \$io}
 add_separator	{Edit.S1}
-add_command	{Edit.Remove pads columns}	 8 26 {RemovePadColumns \$io} e
-add_command	{Edit.Shuffle pads}		 8 26 {ShufflePads \$io} e
-add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io}
-add_command     {Edit.Extend Contigs}            8 26 {ContigExtend \$io}
+add_command	{Edit.Remove pads columns}	 8 30 {RemovePadColumns \$io} e
+add_command	{Edit.Shuffle pads}		 8 30 {ShufflePads \$io} e
+add_command	{Edit.Disassemble readings}	 8 30 {DisReadings \$io}
+add_command     {Edit.Extend Contigs}            8 30 {ContigExtend \$io}
 #add_command	{Edit.Enter tags}		 8 26 {EnterTags \$io} e
 #add_command	{Edit.Edit Notebooks}	 	 8 10 {NoteSelector \$io database}
 #add_command	{Edit.Doctor Database}		12 6 {AlterRelationships \$io} e
 
-add_command	{View.Contig selector}		 8 10 {ContigSelector \$io}
-add_command     {View.Contig list}		 8 10 {InitListContigs \$io ""}
+add_command	{View.Contig selector}		 8 14 {ContigSelector \$io}
+add_command     {View.Contig list}		 8 14 {InitListContigs \$io ""}
 add_separator	{View.S1}
-add_command	{View.Results manager}		 8 10 {ListResults \$io}
+add_command	{View.Results manager}		 8 14 {ListResults \$io}
 add_separator	{View.S2}
-add_command	{View.Find internal joins}	 8 10 {FindInternalJoins \$io}
-add_command	{View.Find read pairs}		 8 10 {FindReadPairs \$io}
-add_command	{View.Find repeats}		 8 10 {FindRepeats \$io}
-add_command	{View.Check assembly}		 8 10 {CheckAssembly \$io}
-add_command	{View.Sequence search}		 8 10 {FindOligos \$io}
+add_command	{View.Find internal joins}	 8 14 {FindInternalJoins \$io}
+add_command	{View.Find read pairs}		 8 14 {FindReadPairs \$io}
+add_command	{View.Find repeats}		 8 14 {FindRepeats \$io}
+add_command	{View.Check assembly}		 8 14 {CheckAssembly \$io}
+add_command	{View.Sequence search}		 8 14 {FindOligos \$io}
 add_separator	{View.S3}
-add_command	{View.Database information}	 8 10 {PrintDatabaseInfo \$io}
-add_command	{View.Template Display}		 8 10 {TemplateDisplay \$io}
+add_command	{View.Database information}	 4  6 {PrintDatabaseInfo \$io}
+add_command	{View.Template Display}		 8 14 {TemplateDisplay \$io}
 #add_command	{View.Show relationships}	 8 10 {ShowRelationships \$io}
-add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
+add_command	{View.Restriction enzyme map}	 8 14 {GapRestrictionEnzymeDialogue \$io}
 #add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
 #add_command	{View.Quality plot}		 8 10 {QualityPlotDisplay \$io}
 #add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io conf}
@@ -132,21 +141,21 @@ add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$
 #add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
 #add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
 #add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
-add_command	{View.List Consensus Confidence} 8 10 {ListConfidence \$io}
-add_command	{View.List Base Confidence}	 8 10 {ListBaseConfidence \$io}
-add_command     {View.List Libraries}            8 10 {ListLibraries \$io}
+add_command	{View.List Consensus Confidence} 8 14 {ListConfidence \$io}
+add_command	{View.List Base Confidence}	 8 14 {ListBaseConfidence \$io}
+add_command     {View.List Libraries}            8 14 {ListLibraries \$io}
 #add_command     {View.Contig Navigation}         1 2 {ViewNavigationData \$io}
 
-add_command	{Options.Consensus algorithm}	1 2 {ConfigureCutoffs}
-#add_command	{Options.Set maxseq/maxdb}	1 2 {SetMaxseq \$io}
-add_command	{Options.Set fonts}		1 2 {SetFonts}
+add_command	{Options.Consensus algorithm}	1  2 {ConfigureCutoffs}
+#add_command	{Options.Set maxseq/maxdb}	1  2 {SetMaxseq \$io}
+add_command	{Options.Set fonts}		1  2 {SetFonts}
 if { $tcl_platform(platform) != "windows" } {
-    add_command	{Options.Colours}		1 2 {ConfigureColours}
+    add_command	{Options.Colours}		1  2 {ConfigureColours}
 }
-add_command	{Options.Configure menus}	1 2 {ConfigureMenus}
-add_command	{Options.Set genetic code}	1 2 {SetGeneticCode} {e}
-add_command	{Options.Alignment scores}	1 2 {SetAlignmentScores} {e}
-add_command	{Options.Trace file location}  12 3 {SetRawData \$io} {e}
+add_command	{Options.Configure menus}	1  2 {ConfigureMenus}
+add_command	{Options.Set genetic code}	1  2 {SetGeneticCode} {e}
+add_command	{Options.Alignment scores}	1  2 {SetAlignmentScores} {e}
+add_command	{Options.Trace file location}   4  6 {SetRawData \$io} {e}
 #add_command	{Options.Template Status} \
 #			     		 1 2 {SetTemplateStatusConfig} {e}
 
@@ -157,32 +166,32 @@ add_command	{Options.Trace file location}  12 3 {SetRawData \$io} {e}
 #add_command	{Experiments.Prefinish}		     8 10 {prefinish \$io}
 #add_command	{Experiments.Pick PCR Primers}	     8 10 {::pcr_primers::GUI \$io}
 
-add_command	{Lists.View/Edit}	        12 6 {EditListDialog}
-add_command	{Lists.Create}			12 6 {CreateListDialog}
-add_command	{Lists.Delete}			12 6 {DeleteListDialog}
-add_command	{Lists.Copy}			12 6 {CopyListDialog}
-add_command	{Lists.Load}			12 6 {LoadListDialog}
-add_command	{Lists.Save}			12 6 {SaveListDialog}
+add_command	{Lists.View/Edit}	         4  6 {EditListDialog}
+add_command	{Lists.Create}			 4  6 {CreateListDialog}
+add_command	{Lists.Delete}			 4  6 {DeleteListDialog}
+add_command	{Lists.Copy}			 4  6 {CopyListDialog}
+add_command	{Lists.Load}			 4  6 {LoadListDialog}
+add_command	{Lists.Save}			 4  6 {SaveListDialog}
 if { $tcl_platform(platform) != "windows" } {
-    add_command	{Lists.Print}			12 6 {PrintListDialog}
+    add_command	{Lists.Print}			 4  6 {PrintListDialog}
 }
 add_separator	{Lists.S1}
 #add_command	{Lists.Highlight readings list}	 8 10 {InputSelectReadingList \$io}
-add_command     {Lists.Pair reading list}	 8 10 {PairReadings \$io}
-add_command	{Lists.Contigs to readings}	 8 10 {ContigsToReadings \$io}
+add_command     {Lists.Pair reading list}	 8 14 {PairReadings \$io}
+add_command	{Lists.Contigs to readings}	 8 14 {ContigsToReadings \$io}
 #add_command	{Lists.Minimal coverage}	 8 10 {MinimalCoverage \$io} e
 #add_command	{Lists.Unattached readings}	 8 10 {UnattachedReadings \$io} e
 #add_separator   {Lists.S2} 
-add_command {Lists.Search sequence names} 12 6 {SearchSeqDialog \$io} 
+add_command {Lists.Search sequence names}  8 14 {SearchSeqDialog \$io} 
 #add_command {Lists.Search template names} 12 6 {SearchTemplateDialog \$io} 
 #add_command {Lists.Search annotation contents} 12 6 {SearchAnnoDialog \$io} 
-add_command	{Lists.Read #Numbers to Names}	 8 10 {NumToName \$io}
+add_command	{Lists.Read #Numbers to Names}	 8 14 {NumToName \$io}
 
 add_command	{Assembly.Import Fasta/Fastq as single-read contigs} \
-						12 22 {AssemblySingle \$io}
-add_cascade	{Assembly.Map Reads}		12 22
-add_command	{Assembly.Map Reads.Bwa aln}    12 22 {MapReads_bwa_aln \$io}
-add_command	{Assembly.Map Reads.Bwa bwasw} 12 22 {MapReads_bwa_bwasw \$io}
+						 4 22 {AssemblySingle \$io}
+add_cascade	{Assembly.Map Reads}		 8 30
+add_command	{Assembly.Map Reads.Bwa aln}     8 30 {MapReads_bwa_aln \$io}
+add_command	{Assembly.Map Reads.Bwa bwasw}   8 30 {MapReads_bwa_bwasw \$io}
 
 #add_command	{Assembly.Normal shotgun assembly} \
 #			12 22 {AutoAssemble \$io 1}

@@ -116,7 +116,9 @@ proc DatabaseInfo {io} {
     append i [format "No. Refpos markers  %12d\n" $nm]
     append i "\n"
     append i [format "Total contig length %12d\n" $tcl]
-    append i [format "Avg. contig length  %14.1f\n" [expr double($tcl)/$nc]]
+    if { $nc != 0 } {
+	append i [format "Avg. contig length  %14.1f\n" [expr double($tcl)/$nc]]
+    }
 
     return $i
 }

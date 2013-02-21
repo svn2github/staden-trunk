@@ -162,7 +162,10 @@ set auto_index(InitListTrace) [list source [file join $dir list_proc.tcl]]
 set auto_index(message_box) [list source [file join $dir message_box.tcl]]
 
 set auto_index(NewFile) [list source [file join $dir ng_fb_cmds.tcl]]
+set auto_index(NewFileBrowser_invoke) [list source [file join $dir ng_fb_cmds.tcl]]
+set auto_index(New_Open_Database) [list source [file join $dir ng_fb_cmds.tcl]]
 set auto_index(DB_Load) [list source [file join $dir ng_fb_cmds.tcl]]
+set auto_index(PostLoadSetup) [list source [file join $dir ng_fb_cmds.tcl]]
 set auto_index(InitOpenAnotherDB) [list source [file join $dir ng_fb_cmds.tcl]]
 set auto_index(viewer_mode) [list source [file join $dir ng_fb_cmds.tcl]]
 
@@ -280,6 +283,8 @@ set auto_index(nice_num) [list source [file join $dir depth.tcl]]
 set auto_index(ListResults) [list source [file join $dir result_manager.tcl]]
 set auto_index(result_list_update) [list source [file join $dir result_manager.tcl]]
 set auto_index(consistency_result_list_update) [list source [file join $dir result_manager.tcl]]
+
+set auto_index(ImportSequences) [list source [file join $dir import_contigs.tcl]]
 
 set auto_index(ExportSequences) [list source [file join $dir export_contigs.tcl]]
 set auto_index(ExportTags) [list source [file join $dir export_contigs.tcl]]
