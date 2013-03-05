@@ -634,6 +634,11 @@ MALIGN *build_malign(GapIO *io, tg_rec cnum, int start, int end) {
 	contig->mseg = create_mseg();
 
 	sorig = s = cache_search(io, GT_Seq, r->rec);
+	/* Check for out-of-bounds clip points.  It shouldn't happen, but
+	   gap5 databases have been seen with this problem, and we
+	   don't want to crash if there are any. */
+	if (s->left < 1)            s->left = 1;
+	if (s->right > ABS(s->len)) s->right = ABS(s->len);
 
 	/* Fix reads of zero length */
 	if (s->right < s->left) {
