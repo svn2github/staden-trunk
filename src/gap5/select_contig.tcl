@@ -80,7 +80,7 @@ proc CheckDBFilename {filename {p .}} {
 #check the reading name exists in the database
 #return 0 for success
 #return 1 for failure
-proc CheckEntryName { io entry name _start _end _vstart _vend _num } {
+proc CheckEntryName { io entry name _start _end _vstart _vend _num { msgbox 1 }} {
 
     upvar $_start  start
     upvar $_end    end
@@ -92,20 +92,22 @@ proc CheckEntryName { io entry name _start _end _vstart _vend _num } {
     set num [cname2crec $io $name]
  
     if { $num == -1 || ! [$io rec_exists 17 $num ]} {
-	update
-	tk_messageBox \
+	if { $msgbox } {
+	    update
+	    tk_messageBox \
 		-icon error \
 		-title "Bad entry" \
 		-message "Reading name does not exist in the database" \
 		-type ok \
 		-parent $entry
-	# The focus below has been removed as it causes oddities with
-	# multiple error messages. It's an interaction between the odd
-	# behaviour of tk_dialog (it uses widthdraw, update, etc) and
-	# the leave/focus-out bindings on the contig_id. Be warned that
-	# this current solution works, but it's tricky to understand.
-	# focus $entry
-	$entry icursor end
+	    # The focus below has been removed as it causes oddities with
+	    # multiple error messages. It's an interaction between the odd
+	    # behaviour of tk_dialog (it uses widthdraw, update, etc) and
+	    # the leave/focus-out bindings on the contig_id. Be warned that
+	    # this current solution works, but it's tricky to understand.
+	    # focus $entry
+	    $entry icursor end
+	}
 	return -1
     } else {
 	set c [$io get_contig $num]
@@ -120,12 +122,19 @@ proc CheckEntryName { io entry name _start _end _vstart _vend _num } {
 
 ##############################################################################
 #if the user alters the contig name then update the start & end of contig
-proc UpdateContigLimits { io start end entry} {
+proc UpdateContigLimits { io start end entry { msgbox 1 } } {
     set name [$entry get]
     set st 0; set en 0; set vst 0; set ven 0;
     set contig_num 0
+    if { $name ne "" } {
+	set invalid [CheckEntryName $io $entry $name \
+		       st en vst ven contig_num $msgbox]
+    } else {
+	set invalid 1
+    }
 
-    if { [CheckEntryName $io $entry $name st en vst ven contig_num] == 0 } {
+
+    if { $invalid == 0 } {
 	$start configure -from $st -to $en
 	$end   configure -from $st -to $en
 	#if {[$start get] < $vst} { $start set $vst }
@@ -136,6 +145,8 @@ proc UpdateContigLimits { io start end entry} {
 	$end   set $ven
 	update idletasks
     }
+
+    return $invalid
 }
 
 ##############################################################################
