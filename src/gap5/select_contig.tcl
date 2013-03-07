@@ -91,7 +91,7 @@ proc CheckEntryName { io entry name _start _end _vstart _vend _num } {
 
     set num [cname2crec $io $name]
  
-    if { $num == -1 } {
+    if { $num == -1 || ! [$io rec_exists 17 $num ]} {
 	update
 	tk_messageBox \
 		-icon error \

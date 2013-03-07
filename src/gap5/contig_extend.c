@@ -68,6 +68,7 @@ static int contig_extend_single(GapIO *io, tg_rec crec, int dir, int min_depth,
     }
 
     c = cache_search(io, GT_Contig, crec);
+    if (NULL == c) return -1;
     cache_incr(io, c);
 
     if (consensus_valid_range(io, crec, NULL, &end) != 0) {

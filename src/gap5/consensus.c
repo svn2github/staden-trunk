@@ -1539,6 +1539,7 @@ int consensus_valid_range(GapIO *io, tg_rec contig, int *start, int *end) {
     contig_t *c;
 
     c = cache_search(io, GT_Contig, contig);
+    if (NULL == c) return -1;
     cache_incr(io, c);
 
     if (start && c->clipped_timestamp == c->timestamp) {

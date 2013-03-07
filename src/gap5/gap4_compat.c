@@ -460,7 +460,6 @@ static int lget_contig_num_base(GapIO *io,
 				int listArgc, char **listArgv,       /* IN  */
 				int *rargc, contig_list_t **rargv) { /* OUT */
     int i, j, count=0;
-    char *p;
     HashTable *h = HashTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_POOL_ITEMS);
 
     if (NULL == h) return -1;
@@ -478,9 +477,10 @@ static int lget_contig_num_base(GapIO *io,
 	int iargc;
 	char **iargv = NULL;
 	char *ctg_name;
-	tg_rec num;
+	tg_rec num, rnum;
 	HashData hd;
 	int new;
+	contig_t *c;
 
 	if (TCL_OK == Tcl_SplitList(NULL, listArgv[j], &iargc, &iargv)
 	    && iargc > 0) {
@@ -498,10 +498,14 @@ static int lget_contig_num_base(GapIO *io,
 	}
     
 	/* Translate =cnum, #rnum and contig names into numbers */
-	if (ctg_name[0] == '#' && (num = atorec(&ctg_name[1])) > 0) {
-	    (*rargv)[i].contig = rnumtocnum(io, num);
+	if (ctg_name[0] == '#'
+	    && (rnum = atorec(&ctg_name[1])) > 0
+	    && (num = rnumtocnum(io, rnum)) > 0) {
+	    (*rargv)[i].contig = num;
 	    count++;
-	} else if (ctg_name[0] == '=' && (num = atorec(&ctg_name[1])) > 0) {
+	} else if (ctg_name[0] == '='
+		   && (num = atorec(&ctg_name[1])) > 0
+		   && (c = cache_search(io, GT_Contig, num)) != NULL) {
 	    (*rargv)[i].contig = num;
 	    count++;
 	} else if ((num = contig_name_to_number(io, ctg_name)) > 0) {
