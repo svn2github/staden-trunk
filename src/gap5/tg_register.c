@@ -37,19 +37,17 @@
 #include "xalloc.h"
 #include "tcl_utils.h"
 
+/* Debugging aid */
+#define LOG_FILE
+#ifdef LOG_FILE
+#  include "text_output.h"
+#endif
+
 /*
  *-----------------------------------------------------------------------------
  * (De)registration functions
  *-----------------------------------------------------------------------------
  */
-
-/* Debugging aid */
-//#define LOG_FILE
-#ifdef LOG_FILE    
-static void log_file(FILE *fp, char *buf) {
-    puts(buf);
-}
-#endif
 
 /*
  * Initialise the contig register lists
@@ -361,8 +359,9 @@ int contig_register(GapIO *io, tg_rec contig,
 	qn.line = buf;
 	buf[0] = 0;
 	func(io, contig, fdata, (reg_data *)&qn);
-	sprintf(buf2, "> Register id=%d cnum=%d func=%p data=%p :%.900s",
-		id, contig, func, fdata, buf);
+	snprintf(buf2, sizeof(buf2),
+		 "> Register id=%d cnum=%"PRIrec" func=%p data=%p :%.900s",
+		 id, contig, func, fdata, buf);
 	log_file(NULL, buf2);
 	last_id = id;
     }
@@ -797,7 +796,7 @@ int contig_register_join(GapIO *io, tg_rec cfrom, tg_rec cto) {
 #ifdef LOG_FILE    
     {
 	char buf[1024];
-	sprintf(buf, "> Register_join done");
+	snprintf(buf, sizeof(buf), "> Register_join done");
 	log_file(NULL, buf);
     }
 #endif

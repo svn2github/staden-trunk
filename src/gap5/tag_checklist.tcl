@@ -324,7 +324,7 @@ proc DeleteTags {io} {
 	set tag_types ""; # All
     }
 
-    delete_tags -io $io -contigs $list -tag_types $tag_types -verbose 1
+    log_call delete_tags -io $io -contigs $list -tag_types $tag_types -verbose 1
     destroy $t
 }
 

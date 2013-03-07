@@ -1757,6 +1757,14 @@ int join_contigs(GapIO *io, tg_rec clrec, tg_rec crrec, int offset) {
     GapIO *child_io;
     int cr_contains_stuff = 1;
     
+    {
+	char msg[256];
+	snprintf(msg, sizeof(msg),
+		 "join_contigs(%p, %"PRIrec", %"PRIrec", %d)",
+		 io, clrec, crrec, offset);
+	log_file(NULL, msg);
+    }
+
     /* Force joins at the top-level IO */
     while (io->base)
 	io = io->base;

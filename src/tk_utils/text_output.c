@@ -14,6 +14,7 @@
 #include <tk.h>
 #include <time.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "os.h"
 
@@ -62,6 +63,7 @@ static int info_win;
 static Tcl_DString message;
 
 static int logging = 1;
+static int log_open = 0;
 static int log_vmessage_st = 0;
 
 void start_message(void)
@@ -116,12 +118,13 @@ void log_file(const char *fn, const char *message) {
     char tbuf[100];
     static char hname[256];
     static int hname_done = 0;
-    time_t t = time(NULL);
-
-    strftime(tbuf, sizeof(tbuf)-1, "%a %d %b %H:%M:%S %Y", localtime(&t));
+    time_t t;
 
     if (!logging)
 	return;
+
+    t = time(NULL);
+    strftime(tbuf, sizeof(tbuf)-1, "%a %d %b %H:%M:%S %Y", localtime(&t));
 
     if (!hname_done) {
 #ifdef _WIN32
@@ -133,28 +136,31 @@ void log_file(const char *fn, const char *message) {
 	hname_done = 1;
     }
 
-    if (fn) {
-	if (fn && *fn == 0) {
-	    if (fp) {
-		if (message) {
-		    fseeko(fp, 0, SEEK_END);
-		    fprintf(fp, "%s [%d@%s] %s\n",
-			    tbuf, (int)getpid(), hname, message);
-		}
-		fclose(fp);
-		fp = NULL;
-	    }
-	} else {
-	    if (fp)
-		fclose(fp);
-	    fp = fopen(fn, "a");
-	}
+    if (fn && *fn != '\0') {
+	if (fp) fclose(fp);
+	fp = fopen(fn, "a");
+	log_open = fp ? 1 : 0;
     }
-
     if (fp && message) {
+	const char *m = message;
+	const char *eol;
+
 	fseeko(fp, 0, SEEK_END);
-	fprintf(fp, "%s [%d@%s] %s\n", tbuf, (int)getpid(), hname, message);
+
+	while (*m && NULL != (eol = strchr(m, '\n'))) {
+	    fprintf(fp, "%s [%d@%s] %.*s\n",
+		    tbuf, (int)getpid(), hname, (int) (eol - m), m);
+	    m = eol + 1;
+	}
+	if (*m) {
+	    fprintf(fp, "%s [%d@%s] %s\n", tbuf, (int)getpid(), hname, m);
+	}
 	fflush(fp);
+    }
+    if (fn && *fn == '\0') {
+	fclose(fp);
+	fp = NULL;
+	log_open = 0;
     }
 }
 
@@ -162,9 +168,12 @@ void log_file(const char *fn, const char *message) {
  * Controls whether vmessage output should also be written to the log file
  * (in addition to vfuncheader and verror messages).
  * A value of 0 means do not log. Any other values implies logging.
+ * Returns the previous setting.
  */
-void log_vmessage(int log) {
+int log_vmessage(int log) {
+    int prev = log_vmessage_st;
     log_vmessage_st = log;
+    return prev;
 }
 
 static void tout_update_stream(int fd, const char *buf, int header,
@@ -510,6 +519,9 @@ int TextOutput_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "error_bell", tcl_error_bell,
                       (ClientData) NULL,
                       NULL);
+    Tcl_CreateObjCommand(interp, "log_str", tcl_log_str, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "log_call", tcl_log_call, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "log_vmessage", tcl_log_vmessage, NULL, NULL);
 
     Tcl_LinkVar(interp, "logging", (char *)&logging, TCL_LINK_INT);
     
@@ -641,6 +653,7 @@ int tcl_vmessage(ClientData clientData, Tcl_Interp *interp,
     else
 	strcpy(p, "");
 
+    if (log_vmessage_st) log_file(NULL, p2);
     tout_update_stream(1, p2, 0, NULL);
 
     if (p2 != buf)
@@ -662,6 +675,24 @@ int tcl_vmessage_tagged(ClientData clientData, Tcl_Interp *interp,
     if (strcmp(argv[1], "-nonewline") == 0) {
 	newline = 0;
 	start_argc++;
+    }
+
+    if (log_vmessage_st && log_open) {
+	char buf[8192];
+	char *p = buf;
+	size_t len = 0;
+	for (i = start_argc; i < argc-1; i+=2) len += strlen(argv[i]);
+	if (len > sizeof(buf) - 1) p = malloc(len);
+	if (p) {
+	    char *out = p;
+	    for (i = start_argc; i < argc-1; i+=2) {
+		char *in = argv[i];
+		while (*in) *out++ = *in++;
+	    }
+	    *out++ = '\0';
+	    log_file(NULL, p);
+	    if (p != buf) free(p);
+	}
     }
 
     for (i = start_argc; i < argc-1; i+=2) {
@@ -792,6 +823,87 @@ int tcl_error_bell(ClientData clientData, Tcl_Interp *interp,
     }
 
     noisy = atoi(argv[1]);
+    return TCL_OK;
+}
+
+/*
+ * Log TCL calls
+ */
+int tcl_log_str(ClientData clientData, Tcl_Interp *interp,
+		 int objc, Tcl_Obj *CONST objv[]) {
+    char small_buf[1024];
+    char *buf;
+    char *pos;
+    size_t buf_len = 3 * objc + 1;
+    int string_len;
+    int i;
+    
+    if (log_open) {
+	/* Find total length */
+	for (i = 0; i < objc; i++) {
+	    Tcl_GetStringFromObj(objv[i], &string_len);
+	    buf_len += string_len;
+	}
+	
+	/* Construct the log message */
+	pos = buf = buf_len < sizeof(small_buf) ? small_buf : malloc(buf_len);
+	if (NULL == buf) return TCL_OK;
+	for (i = 0; i < objc; i++) {
+	    char *str = Tcl_GetStringFromObj(objv[i], &string_len);
+	    size_t j;
+	    int spaces = 0 != string_len ? 0 : 1;
+	    if (string_len > buf_len) break;
+	    for (j = 0; j < string_len; j++) {
+		if (isspace(str[j])) {
+		    spaces = 1;
+		    break;
+		}
+	    }
+	    if (spaces) *pos++ = '{';
+	    memcpy(pos, str, string_len);
+	    pos += string_len;
+	    if (spaces) *pos++ = '}';
+	    *pos++ = ' ';
+	    buf_len -= string_len + 2 * spaces + 1;
+	}
+	if (pos > buf) {
+	    *(--pos) = '\0';
+	    log_file(NULL, buf);
+	}
+	if (buf != small_buf) free(buf);
+    }
+    return TCL_OK;
+}
+
+int tcl_log_call(ClientData clientData, Tcl_Interp *interp,
+		 int objc, Tcl_Obj *CONST objv[]) {
+
+    tcl_log_str(clientData, interp, objc, objv);
+
+    if (interp) {
+	return Tcl_EvalObjv(interp, objc - 1, objv + 1, 0);
+    }
+    return TCL_OK;
+}
+
+int tcl_log_vmessage(ClientData clientData, Tcl_Interp *interp,
+		     int objc, Tcl_Obj *CONST objv[]) {
+    int state;
+    Tcl_Obj *result = NULL;
+
+    if (objc != 2) {
+	Tcl_SetResult(interp,
+		      "wrong # args: should be \"log_vmessage [0|1]\"\n",
+		      TCL_STATIC);
+	return TCL_ERROR;
+    }
+    if (Tcl_GetIntFromObj(interp, objv[1], &state) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    state = log_vmessage(state);
+    result = Tcl_NewIntObj(state);
+    if (NULL == result) return TCL_ERROR;
+    Tcl_SetObjResult(interp, result);
     return TCL_OK;
 }
 
@@ -1027,6 +1139,7 @@ void vfuncparams(const char *fmt, ...) {
     if (paramsp != params)
 	xfree(paramsp);
 }
+
 
 /*
  *-----------------------------------------------------------------------------

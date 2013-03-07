@@ -50,7 +50,7 @@ proc BC_OK_Pressed {io t id holes pos} {
 	return
     }
 
-    if {[catch {break_contig \
+    if {[catch {log_call break_contig \
 		    -io $io \
 		    -contig $crec \
 		    -pos $pos \

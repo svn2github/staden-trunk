@@ -192,12 +192,12 @@ proc InitListContigs {io parent {csh_win {}}} {
 	-command "CreateTemplateDisplay $io $crec"
     if {!$read_only} {
 	$w.m add command -label "Complement contig" \
-	    -command "complement_contig -io $io -contigs =$crec"
+	    -command "log_call complement_contig -io $io -contigs =$crec"
 	set scaf [lindex [$w get @$x,$y] 4]
 	set scaf [lindex [regexp -inline {(.*)/.*} $scaf] 1]
 	if {$scaf != "(none)"} {
 	    $w.m add command -label "Complement scaffold" \
-		-command "complement_scaffold -io $io -scaffolds [list $scaf]"
+		-command "log_call complement_scaffold -io $io -scaffolds [list $scaf]"
 	}
 	$w.m add separator
 	$w.m add command -label "Rename contig" \
@@ -226,11 +226,23 @@ proc InitListContigs {io parent {csh_win {}}} {
     $c delete
     
     okcancelhelp $w.ok \
-	-ok_command "contig_rename $io $crec \[$w.name get\] $w; ListContigsRepopulate $io $t" \
+	-ok_command "ListContigsRename_OK $t $w $io $crec" \
 	-cancel_command "destroy $w" \
 	-help_command "show_help gap5 Rename-Contig"
 
     pack $w.name $w.ok -side top -fill both
+}
+
+; proc ListContigsRename_OK { t w io crec } {
+    set value [$w.name get]
+    if {[regexp {\s+} $value]} {
+	tk_messageBox -icon warning -type ok -parent $w \
+	    -title "Rename Contig" \
+	    -message "Sorry, contig names may not contain spaces"
+	return
+    }
+    log_call contig_rename $io $crec $value $w
+    ListContigsRepopulate $io $t
 }
 
 ##############################################################################
@@ -255,7 +267,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	-default $fname
     
     okcancelhelp $w.ok \
-	-ok_command "contig_add_to_scaffold $io $crec \[$w.name get\] $w; ListContigsRepopulate $io $t" \
+	-ok_command "log_call contig_add_to_scaffold $io $crec \[$w.name get\] $w; ListContigsRepopulate $io $t" \
 	-cancel_command "destroy $w" \
 	-help_command "show_help gap5 Scaffolds"
 
@@ -272,8 +284,7 @@ proc InitListContigs {io parent {csh_win {}}} {
     foreach {row col} [split [$w nearestcell $x $y] ,] {break}
 
     # Find the contig identifier
-    set ident [lindex [lindex [$w get $row] 0] 1]
-    set ident [string range $ident 2 end-1]
+    set ident [lindex [regexp -inline {\(=(\d+)\)$} [lindex [$w get $row] 0]] 1]
 
     ListContigsPopupMenu $io $ident $w $x $y $X $Y
 }		
@@ -290,7 +301,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 
     set contigs ""
     foreach item [$w curselection] {
-	set ident [lindex [lindex [$w get $item] 0] 0]
+	set ident [lindex [regexp -inline {^(.*) \(=\d+\)$} [lindex [$w get $item] 0]] 1]
 	#set cnum [db_info get_contig_num $io $ident]
 	lappend contigs $ident
     }
@@ -302,10 +313,10 @@ proc InitListContigs {io parent {csh_win {}}} {
     set contigs {}
     set end [$w index end]
     for {set item 0} {$item <= $end} {incr item} {
-	set ident [lindex [lindex [$w get $item] 0] 0]
+	set ident [lindex [regexp -inline {^(.*) \(=\d+\)$} [lindex [$w get $item] 0]] 1]
 	lappend contigs $ident
     }
-    ListCreate2 contigs $contigs NGListTag(contigs)
+    ListCreate2 contigs $contigs $NGListTag(contigs)
 }
 
 ##############################################################################
@@ -321,7 +332,7 @@ proc InitListContigs {io parent {csh_win {}}} {
     # Map names to list indices
     set index 0
     foreach item [$w get 0 end] {
-	set name [lindex [lindex $item 0] 0]
+	set name [lindex [regexp -inline {^(.*) \(=\d+\)$} [lindex $item 0]] 1]
 	set ind($name) $index
 	incr index
     }

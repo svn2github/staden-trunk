@@ -1,6 +1,15 @@
+#if !defined(__MINGW32__) && !defined(_MSC_VER)
+/* Uncomment to enable .log files */
+/* #   define DO_LOGGING */
+#endif
 #include <assert.h>
 #include <string.h>
-
+#ifdef DO_LOGGING
+#   include <unistd.h>     /* For getuid */
+#   include <sys/types.h>
+#   include <pwd.h>        /* For getpwuid */
+#   include "text_output.h"
+#endif
 #include "tg_gio.h"
 #include "misc.h"
 #include "actf.h"
@@ -37,6 +46,29 @@ int gio_set_db_version(int vers) {
     db_version = vers;
     return 0;
 }
+
+#ifdef DO_LOGGING
+/* Start logging */
+static void open_log_file(GapIO *io, char *fn) {
+    char log_buf[1024];
+    char *user;
+    char *logfn;
+    struct passwd *pw;
+    int uid = getuid();
+    size_t name_len = strlen(fn) + 5;
+
+    pw = getpwuid(uid);
+    user = pw ? pw->pw_name : "unknown";
+    snprintf(log_buf, sizeof(log_buf), "opening %s r%c by %s(%d)",
+	     fn, io->read_only ? 'o' : 'w', user, uid);
+    logfn = malloc(name_len);
+    if (NULL != logfn) {
+	snprintf(logfn, name_len, "%s%s", fn, ".log");
+	log_file(logfn, log_buf);
+	free(logfn);
+    }
+}
+#endif
 
 /*
  * Open a database, optionally in read-only mode and creating if desired too.
@@ -143,6 +175,10 @@ GapIO *gio_open(char *fn, int ro, int create) {
 
     //update_uniqueness_hash(io);
 
+#ifdef DO_LOGGING
+    open_log_file(io, fn);
+#endif
+
     return io;
 }
 
@@ -157,6 +193,15 @@ void gio_close(GapIO *io) {
 	free(io);
 	return;
     }
+
+#ifdef DO_LOGGING
+    {
+	char buf[256];
+	snprintf(buf, sizeof(buf), "closing database %s ...",
+		 io->name ? io->name : "");
+	log_file(NULL, buf);
+    }
+#endif
 
     cache_decr(io, io->db);
     cache_decr(io, io->contig_order);
@@ -173,6 +218,10 @@ void gio_close(GapIO *io) {
     io->iface->disconnect(io->dbh);
 
     actf_unlock(io->read_only, io->name);
+
+#ifdef DO_LOGGING
+    log_file(NULL, "...closed.");
+#endif
 
     if (io->name)
 	free(io->name);

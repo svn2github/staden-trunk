@@ -1811,7 +1811,11 @@ proc ListEditMultiUpdate {t name args} {
 	    foreach i $NGList($name) {
 		regexp {([[:space:]]*)([^[:space:]]*)(.*)} $i _ l m r
 		set rec [db_info get_read_num $io $m]
-		set s [$io get_seq $rec]
+		if {[$io rec_exists 18 $rec] == 0} {
+		    $t insert end "$i"
+		    continue
+		}
+		set s [$io get_sequence $rec]
 		set sname [$s get_name]
 		set pos [$s get_position]
 		set crec [$s get_contig]
@@ -1873,7 +1877,7 @@ proc ListEditMultiMenu {io w x y X Y} {
     set y [expr {$y + [winfo y $l]}]
     foreach {row col} [split [$w nearestcell $x $y] ,] {break}
 
-    puts row=$row,col=$col
+    # puts row=$row,col=$col
 
     # Find the contig identifier
     if {$col >= 5} {
@@ -1884,7 +1888,7 @@ proc ListEditMultiMenu {io w x y X Y} {
 	set pos [lindex [$w get $row] 3]
     }
     set contig [db_info get_contig_num $io #$rec]
-    puts $rec/[$w get $row]
+    # puts $rec/[$w get $row]
 
     create_popup $w.m "Commands (\#$rec)"
     $w.m add command -label "Edit Contig" \

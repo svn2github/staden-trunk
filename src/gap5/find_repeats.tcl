@@ -170,7 +170,7 @@ proc Find_Rep_OK_Pressed {io f infile id sel_task sel_mode add_tags min_rpt\
 
     # If repeats are found, this also sets the tag_list variable
     SetBusy
-    find_repeats \
+    log_call find_repeats \
 	-io $io \
 	-direction $sel_task \
         -min_match $min_rpt\

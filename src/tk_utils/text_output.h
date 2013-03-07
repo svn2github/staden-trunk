@@ -28,7 +28,12 @@ int tcl_vfuncgroup(ClientData clientData, Tcl_Interp *interp,
 		    int argc, char **argv);
 int tcl_error_bell(ClientData clientData, Tcl_Interp *interp,
 		   int argc, char **argv);
-
+int tcl_log_str(ClientData clientData, Tcl_Interp *interp,
+		 int objc, Tcl_Obj *CONST objv[]);
+int tcl_log_call(ClientData clientData, Tcl_Interp *interp,
+		 int objc, Tcl_Obj *CONST objv[]);
+int tcl_log_vmessage(ClientData clientData, Tcl_Interp *interp,
+		     int objc, Tcl_Obj *CONST objv[]);
 /*
  * Usage: verror(priority, format, args...);
  * NB: don't pass more than 8K per call
@@ -80,7 +85,8 @@ void log_file(const char *fn, const char *message);
  * Controls whether vmessage output should also be written to the log file 
  * (in addition to vfuncheader and verror messages). 
  * A value of 0 means do not log. Any other values implies logging. 
+ * Returns the previous setting.
  */ 
-void log_vmessage(int log);
+int log_vmessage(int log);
 
 #endif

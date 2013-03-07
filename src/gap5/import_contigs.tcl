@@ -161,7 +161,7 @@ proc ImportSequences2 { old_io f job } {
 
     vmessage "Importing reads..."
 
-    import_reads              \
+    log_call import_reads              \
 	-io $io               \
 	-file $infile         \
 	-format $fmt          \

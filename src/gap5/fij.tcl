@@ -454,7 +454,7 @@ proc FIJ_OK_Pressed { f io infile1 id1 infile2 id2 blocks min_overlap
 
 
     SetBusy
-    find_internal_joins -io $io \
+    log_call find_internal_joins -io $io \
 	    -min_overlap $min_overlap \
 	    -max_pmismatch $max_mis \
 	    -word_length $word_length \

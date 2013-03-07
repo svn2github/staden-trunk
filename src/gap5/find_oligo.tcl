@@ -197,7 +197,7 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hid
 
     # If repeats are found, this also sets the tag_list variable
     SetBusy
-    find_oligo -io $io \
+    log_call find_oligo -io $io \
             -min_pmatch $mis_match \
 	    -contigs $list \
 	    -seq $sequence \

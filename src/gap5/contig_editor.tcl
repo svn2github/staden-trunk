@@ -95,6 +95,8 @@ proc io_undo_exec {w crec cmdu} {
     upvar \#0 contigIO_$crec cio
     global $w
 
+    log_str io_undo_exec $w $crec $cmdu
+
     set io [$w io]
 
     foreach cmd $cmdu {
@@ -652,7 +654,7 @@ proc JoinContig2 {io t id1 id2} {
     if {[set crec2 [contig_id_rec $id2]] == ""} return
 
     destroy $t
-    join_contig -io $io \
+    log_call join_contig -io $io \
 	-contig  $crec1 -reading  $read1 -pos  1 \
 	-contig2 $crec2 -reading2 $read2 -pos2 1
     SetContigGlobals $io $read1
@@ -684,12 +686,12 @@ proc JoinContig {io} {
 
 # The top-level interface called from TCL
 proc edit_contig {args} {
-    eval contig_editor [next_editor] $args
+    eval log_call contig_editor [next_editor] $args
 }
 
 # The top-level interface called from TCL
 proc join_contig {args} {
-    eval contig_editor [next_editor] $args
+    eval log_call contig_editor [next_editor] $args
 }
 
 # Move or create an editor at contig rec, cursor rec and position.
@@ -1084,7 +1086,7 @@ proc editor_save {w} {
     upvar \#0 $w opt
 
     foreach ed $opt(all_editors) {
-	if {[$ed save] != 0} {
+	if {[log_call $ed save] != 0} {
 	    bell
 	}
     }
@@ -1128,7 +1130,7 @@ proc editor_join {w} {
 
     if {$ret == "yes"} {
 	foreach ed $opt(all_editors) {
-	    if {[$ed save] != 0} {
+	    if {[log_call $ed save] != 0} {
 		bell
 		return
 	    }
@@ -1142,7 +1144,7 @@ proc editor_join {w} {
 	catch {destroy $opt(editor2)[keylget gap5_defs TRACE_DISPLAY.WIN]}
 	update idletasks
 
-	$ed join
+	log_call $ed join
     }
 
     editor_exit $w
@@ -1152,6 +1154,8 @@ proc editor_join {w} {
 #         false if we cannot exit (user hit cancel, or failed to save).
 proc editor_exit {w {get_lock 0}} {
     global $w
+
+    log_str editor_exit $w $get_lock
 
     if {[winfo exists $w.save_dialog]} return
 
@@ -1172,7 +1176,7 @@ proc editor_exit {w {get_lock 0}} {
 	    if {$ret == "cancel"} {
 		return 0
 	    } elseif {$ret == "yes"} {
-		if {[$ed save] != 0} {
+		if {[log_call $ed save] != 0} {
 		    bell
 		    return 0
 		}
@@ -1864,7 +1868,7 @@ proc editor_olist_switch {w l} {
 #-----------------------------------------------------------------------------
 # Undo support
 proc store_undo {w cmdu cmdr} {
-    io_store_undo [$w contig_rec] $cmdu $cmdr
+    log_call io_store_undo [$w contig_rec] $cmdu $cmdr
 }
 
 proc editor_undo {top} {
@@ -2028,6 +2032,8 @@ proc editor_undo_info {top {clear 0}} {
 # Returns original read pos as it is needed for undo
 proc editor_shift_seq {io rec dir {move_anno 1}} {
     # Dir 1 => right, -1 => left
+    log_str editor_shift_seq $io $rec $dir $move_anno
+
     set seq [$io get_sequence $rec]
     set rpos [$seq get_position]
     set cnum [$seq get_contig]
@@ -2048,6 +2054,8 @@ proc editor_shift_seq {io rec dir {move_anno 1}} {
 }
 
 proc editor_edit_base {w call where} {
+    log_str editor_edit_base $w $call $where
+
     upvar $w opt
 
     set io [$w io]
@@ -2079,6 +2087,7 @@ proc editor_edit_base {w call where} {
 # End 0 means insert to left side, keeping right alignment static.
 # End 1 is an insertion to right, keeping left side static.
 proc editor_insert_gap {w where {end 1}} {
+    log_str editor_insert_gap $w $where $end
     upvar $w opt
 
     set io [$w io]
@@ -2265,6 +2274,7 @@ proc editor_handle_tag_insertion {io srec pos} {
 # Do not confuse with end 0/1, which controls whether the left or right
 # portion of the alignment is fixed. Also see editor_insert_gap.
 proc editor_delete_base {w where {end 1} {dir 0} {powerup 0}} {
+    log_str editor_delete_base $w $where $end $dir $powerup
     upvar $w opt
 
     set io [$w io]
@@ -2382,6 +2392,7 @@ proc editor_delete_base {w where {end 1} {dir 0} {powerup 0}} {
 }
 
 proc editor_shift {w where dir} {
+    log_str editor_shift $w $where $dir
     upvar $w opt
 
     set io [$w io]
@@ -2447,6 +2458,7 @@ proc editor_shift {w where dir} {
 }
 
 proc editor_set_confidence {w where qual} {
+    log_str editor_set_confidence $w $where $qual
     upvar $w opt
 
     set io [$w io]
@@ -2476,6 +2488,7 @@ proc editor_set_confidence {w where qual} {
 }
 
 proc editor_increment_confidence {w where amount} {
+    log_str editor_increment_confidence $w $where $amount
     upvar $w opt
 
     set io [$w io]
@@ -2508,6 +2521,7 @@ proc editor_increment_confidence {w where amount} {
 }
 
 proc editor_move_seq {w where direction} {
+    log_str editor_move_seq $w $where $direction
     upvar $w opt
 
     set io [$w io]
@@ -2557,6 +2571,7 @@ proc editor_move_seq {w where direction} {
 }
 
 proc editor_clip_seq {w where end} {
+    log_str editor_clip_seq $w $where $end
     upvar $w opt
 
     set io [$w io]
@@ -2616,6 +2631,7 @@ proc editor_clip_seq {w where end} {
 }
 
 proc editor_clip_contig {w where end} {
+    log_str editor_clip_contig $w $where $end
     upvar $w opt
 
     set io [$w io]
@@ -2825,7 +2841,7 @@ proc editor_set_start2 {ed w} {
     set io [$ed io]
     set c [$io get_contig [$ed contig_rec]]
     set old_pos [$c get_visible_start]
-    $c set_visible_start $pos
+    log_call $c set_visible_start $pos
 
     # Adjust scrollbar and editor cursor
     $ed xview [expr {[$ed xview]-($old_pos - $pos)}]
@@ -2873,12 +2889,18 @@ proc editor_set_name2 {ed w} {
 	bell
 	return
     }
+    if {[regexp {\s+} $nm]} {
+	tk_messageBox -icon warning -type ok -parent $w \
+	    -title "Set Contig Name" \
+	    -message "Sorry, contig names may not contain spaces"
+	return
+    }
 
     set c [$io get_contig [$ed contig_rec]]
     set old_name [$c get_name]
     $c delete
 
-    if {[contig_rename $io [$ed contig_rec] $nm $w] == ""} {
+    if {[log_call contig_rename $io [$ed contig_rec] $nm $w] == ""} {
 	bell
 	return
     }
@@ -2891,7 +2913,7 @@ proc editor_set_name2 {ed w} {
 proc editor_template_display {ed} {
     set io [[$ed io] base]
     set xpos [expr {[$ed xview]-13000}]; # a hack as T.disp pos is left edge
-    CreateTemplateDisplay $io [$ed contig_rec] $xpos
+    log_call CreateTemplateDisplay $io [$ed contig_rec] $xpos
 
     # Force cursor to be visible
     after idle "after 100 {$ed set_cursor [$ed get_cursor relative] 0}"
@@ -2940,7 +2962,7 @@ proc editor_align_cutoff {ed} {
 #	set cio(io) $io
 #	parray cio
 
-	shuffle_pads \
+	log_call shuffle_pads \
 	    -io $io \
 	    -contigs "{=[$ed contig_rec] $start $end}" \
 	    -flush 0 \
@@ -2963,6 +2985,9 @@ proc editor_align_cutoff {ed} {
     $s delete
     set cstart [expr {$start+$pos}]
     set cend   [expr {$end  +$pos}]
+
+    log_str realign_selection $io "#$rec" $start $end "($cstart .. $cend)"
+
     set cons [calc_consensus \
 		  -io $io \
 		  -contigs [list [list =[$ed contig_rec] $cstart $cend]]]
@@ -3180,7 +3205,7 @@ proc editor_break_contig {ed} {
 	return
     }
 
-    $ed save
+    log_call $ed save
 
     set io $cio(base)
 
@@ -3190,7 +3215,7 @@ proc editor_break_contig {ed} {
 	return
     }
 
-    set cr [break_contig \
+    set cr [log_call break_contig \
 		-io $io \
 		-contig $arec \
 		-pos $apos \
@@ -3395,7 +3420,7 @@ proc tag_editor_delete {w where} {
 	set rec $where
     }
 
-    U_tag_change $w $rec ""
+    log_call U_tag_change $w $rec ""
 #    set tag [[$w io] get_anno_ele $rec]
 #    $tag remove
 
@@ -3451,7 +3476,7 @@ proc tag_editor_callback {w rec cmd args} {
 #		}
 #		$t delete
 #	    }
-	    U_tag_change $w $rec [array get d]
+	    log_call U_tag_change $w $rec [array get d]
 
 	    $w redraw
 	    destroy $f
@@ -3476,7 +3501,7 @@ proc tag_editor_callback {w rec cmd args} {
 	    if {$w2 != $w} {
 		# Move to a different contig, so delete from here
 		# and add to there (add => rec -1)
-		U_tag_change $w $rec ""
+		log_call U_tag_change $w $rec ""
 		set rec -1
 	    }
 	    foreach {otype orec start end} [$w2 select get] break;
@@ -3484,7 +3509,7 @@ proc tag_editor_callback {w rec cmd args} {
 	    set d(orec)  $orec
 	    set d(start) $start
 	    set d(end)   $end
-	    U_tag_change $w2 $rec [array get d]
+	    log_call U_tag_change $w2 $rec [array get d]
 	    $w2 redraw
 	    if {$w != $w2} {
 		$w redraw
@@ -3508,7 +3533,7 @@ proc tag_editor_callback {w rec cmd args} {
 	    set d(start) $start
 	    set d(end)   $end
 	    set d(rec)   -1
-	    U_tag_change $w2 -1 [array get d]
+	    log_call U_tag_change $w2 -1 [array get d]
 	    $w2 redraw
 	    destroy $f
 	}
@@ -3637,7 +3662,7 @@ proc editor_select_dialog {ed sel pair} {
 
     okcancelhelp $t.ok \
 	-bd 2 -relief groove \
-	-ok_command "editor_select_reads $ed $sel    \
+	-ok_command "log_call editor_select_reads $ed $sel    \
                          \[yes_no_get $t.contained\] \
                          \[entrybox_get $t.start\]   \
                          \[entrybox_get $t.end\]     \
@@ -3996,7 +4021,7 @@ proc editor_oligo_report {ed t} {
 	$w.list delete 0 end
     }
 
-    set oligos [$ed select_oligo $direction \
+    set oligos [log_call $ed select_oligo $direction \
 		    $search_ahead_val $search_back_val \
 		    $read_length_val $p3_params]
 
@@ -4157,10 +4182,11 @@ Score		[set ${w}(quality)]
 Date_picked	[clock format [clock seconds]]
 Sequence	[set ${w}(sequence)]"
 
-    U_tag_change $ed -1 [array get d]
+    log_call U_tag_change $ed -1 [array get d]
 }
 
 proc editor_move_pad {w dir {powerup 0}} {
+    log_str editor_move_pad $w $dir $powerup
     upvar $w opt
 
     set io [$w io]
@@ -4173,6 +4199,7 @@ proc editor_move_pad {w dir {powerup 0}} {
     }
 
     foreach {type rec pos} $where break;
+    log_str "## editor_move_pad type = $type rec = $rec pos = $pos"
 
     if {$type != 18} { 
 	bell

@@ -36,10 +36,10 @@ proc ComplementContig2 {io t id} {
     update idletasks
 
     if {[db_info get_scaffold_num $io $c] > 0} {
-	complement_scaffold -io $io -scaffolds "$c"
+	log_call complement_scaffold -io $io -scaffolds "$c"
     } else {
 	set cnum [db_info get_contig_num $io $c]
-	complement_contig -io $io -contigs "$c"
+	log_call complement_contig -io $io -contigs "$c"
 	SetContigGlobals $io [left_gel $io $cnum]
     }
 }
@@ -104,6 +104,12 @@ proc ContigRenameBulk2 {io w} {
 	bell
 	return
     }
+    if {[regexp {\s+} $replace]} {
+	tk_messageBox -icon warning -type ok -parent $w \
+	    -title "Bulk Rename Contig" \
+	    -message "Sorry, the replacement pattern may not contain spaces"
+	return
+    }
 
     # Convert pattern from C-shell style filename glob to regexp
     regsub -all {\.} $pattern {\\.} pattern
@@ -137,7 +143,7 @@ proc ContigRenameBulk2 {io w} {
 		incr start
 		continue
 	    }
-	    set name2 [contig_rename $io $cnum $name2 {} 1]
+	    set name2 [log_call contig_rename $io $cnum $name2 {} 1]
 	    vmessage -nonewline "Renaming contig $name to "
 	    vmessage_tagged "$name2" SEQID
 	    incr start

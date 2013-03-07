@@ -64,6 +64,10 @@ proc CheckDatabase2 {io w} {
     $io flush
 
     SetBusy
+
+    # Store messages in the log file if we're writing one.
+    set prev_vmlog [log_vmessage 1]
+
     if {$list == "*all*"} {
 	$io check $fix $level
     } else {
@@ -95,6 +99,8 @@ proc CheckDatabase2 {io w} {
 	    vmessage "*** Attempted to fix      : $fixed ***"
 	}
     }
+
+    log_vmessage $prev_vmlog
 
     $io flush
 

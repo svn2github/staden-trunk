@@ -307,7 +307,7 @@ proc tag_editor_save {com data w} {
     }
 
     set d(anno) $anno
-    eval $com save
+    eval log_call $com save
 }
 
 proc tag_editor_moveorcopy {method com data anno} {

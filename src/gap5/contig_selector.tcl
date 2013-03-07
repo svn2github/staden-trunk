@@ -101,7 +101,7 @@ proc itemDrop {io f csh_win x} {
     set x [$csh_win canvasx $x]
     set order_list [GetContigList]
 
-    update_contig_order -io $io -id [set $f.cs_id] -contigs "$order_list" -x $x
+    log_call update_contig_order -io $io -id [set $f.cs_id] -contigs "$order_list" -x $x
 
     #for the moment, clear the "contigs" list upon completion of the drag
     ClearContigSelection $io $csh_win
@@ -870,7 +870,7 @@ proc popup_cs_contig_3 {io canvas obj} {
 
     destroy $canvas.m
 
-    complement_contig -io $io -contigs "=$c_num"
+    log_call complement_contig -io $io -contigs "=$c_num"
     #SetContigGlobals $io $c_num
 }
 

@@ -66,7 +66,7 @@ proc AssemblySingle2 {io w} {
     destroy $w
     SetBusy
 
-    import_reads \
+    log_call import_reads \
 	-io $io \
 	-append 1 \
 	-file $fn \

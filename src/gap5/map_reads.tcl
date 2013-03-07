@@ -229,7 +229,7 @@ proc MapReads_bwa_aln2 {io w} {
     
     # Import
     vmessage "Importing reads..."
-    import_reads \
+    log_call import_reads \
 	-io $io \
 	-append 1 \
 	-merge_contigs 1 \
@@ -398,7 +398,7 @@ proc MapReads_bwa_bwasw2 {io w} {
     }
     
     # Import
-    import_reads \
+    log_call import_reads \
 	-io $io \
 	-append 1 \
 	-merge_contigs 1 \

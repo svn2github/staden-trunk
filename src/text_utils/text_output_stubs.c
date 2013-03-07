@@ -86,4 +86,6 @@ void vfuncgroup(int group, const char *fmt, ...) {
 /* Dummy function for text_output lib, but used in tk_utils */
 /* ARGSUSED */
 void log_file(const char *fn, const char *message) {}
-void log_vmessage(int log) {}
+int log_vmessage(int log) {
+    return 0;
+}

@@ -461,119 +461,76 @@ static int lget_contig_num_base(GapIO *io,
 				int *rargc, contig_list_t **rargv) { /* OUT */
     int i, j, count=0;
     char *p;
-    HashTable *h;
+    HashTable *h = HashTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_POOL_ITEMS);
+
+    if (NULL == h) return -1;
 
     /* allocate: +1 ensures that we never alloc zero bytes */
     if (NULL == (*rargv = (contig_list_t *)xmalloc(1 + listArgc *
-						   sizeof(contig_list_t))))
+						   sizeof(contig_list_t)))) {
+	HashTableDestroy(h, 0);
 	return -1;
+    }
 
     /* Scan through list finding the reading indentifiers and start/ends */
-    for (j = 0; j < listArgc; j++) {
-	/* Find end of identifier */
-	for (p = listArgv[j]; *p && !isspace(*p); p++)
-	    ;
-
-	if (*p) {
-	    *p = 0;
-	    p++;
-	    /* look for start and end */
-	    switch(sscanf(p, "%d %d",
-			  &(*rargv)[j].start,
-			  &(*rargv)[j].end)) {
-	    case 1:
-		(*rargv)[j].end = INT_MAX;
-		break;
-	    case 0:
-	    case -1:
-		(*rargv)[j].start = INT_MAX;
-		(*rargv)[j].end = INT_MAX;
-	    }
-	} else {
-	    *p = 0;
-	    (*rargv)[j].start = INT_MAX;
-	    (*rargv)[j].end = INT_MAX;
-	}
-
-	/* If identifier is #num, then translation is trivial */
-    }
-
-    /* Translate #cnum and #rnum into numbers */
-    for (j=0; j<listArgc; j++) {
-	if (listArgv[j][0] == '#') {
-	    tg_rec num = atorec(&listArgv[j][1]);
-	    if (num > 0) {
-		(*rargv)[j].contig = rnumtocnum(io, num);
-		count++;
-	    } else {
-		(*rargv)[j].contig = 0;
-	    }
-	} else if (listArgv[j][0] == '=') {
-	    tg_rec num = atorec(&listArgv[j][1]);
-	    if (num > 0) {
-		(*rargv)[j].contig = num;
-		count++;
-	    } else {
-		(*rargv)[j].contig = 0;
-	    }
-	} else {
-	    (*rargv)[j].contig = 0;
-	}
-    }
-
-    /* Convert names to numbers */
-    /* Translate reading names to reading numbers */
-    for (j = 0; j < listArgc; j++) {
-	if (0 == (*rargv)[j].contig) {
-	    tg_rec cnum = contig_name_to_number(io, listArgv[j]);
-	    if (cnum) {
-		(*rargv)[j].contig = cnum;
-		count++;
-	    } else {
-		verror(ERR_WARN, "lget_contig_num_base()",
-		       "Unknown contig name %s", listArgv[j]);
-	    }
-	}
-    }
-
-
-    /* Remove duplicates */
-    h = HashTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_POOL_ITEMS);
     for (i = j = 0; j < listArgc; j++) {
+	/* See if list item can be split into {contig start end} */
+	int iargc;
+	char **iargv = NULL;
+	char *ctg_name;
+	tg_rec num;
 	HashData hd;
 	int new;
 
-	if ((*rargv)[j].contig == 0)
+	if (TCL_OK == Tcl_SplitList(NULL, listArgv[j], &iargc, &iargv)
+	    && iargc > 0) {
+	    ctg_name = iargv[0];
+	    if (!(iargc > 2 && 1 == sscanf(iargv[2], "%d", &(*rargv)[i].end))) {
+		(*rargv)[i].end = INT_MAX;
+	    }
+	    if (!(iargc > 1 && 1 == sscanf(iargv[1], "%d", &(*rargv)[i].start))) {
+		(*rargv)[i].start = INT_MAX;
+	    }
+	} else {
+	    ctg_name = listArgv[j];
+	    (*rargv)[i].start = INT_MAX;
+	    (*rargv)[i].end = INT_MAX;
+	}
+    
+	/* Translate =cnum, #rnum and contig names into numbers */
+	if (ctg_name[0] == '#' && (num = atorec(&ctg_name[1])) > 0) {
+	    (*rargv)[i].contig = rnumtocnum(io, num);
+	    count++;
+	} else if (ctg_name[0] == '=' && (num = atorec(&ctg_name[1])) > 0) {
+	    (*rargv)[i].contig = num;
+	    count++;
+	} else if ((num = contig_name_to_number(io, ctg_name)) > 0) {
+	    (*rargv)[i].contig = num;
+	    count++;
+	} else {
+	    verror(ERR_WARN, "lget_contig_num_base()",
+		   "Unknown contig name %s", ctg_name);
+	    (*rargv)[i].contig = 0;
+	}
+	if (iargv) Tcl_Free((char *) iargv);
+
+	/* Skip over failures */
+	if ((*rargv)[i].contig <= 0)
 	    continue;
 
+	/* Check for duplicates */
 	hd.i = 1;
-	HashTableAdd(h, (char *)&(*rargv)[j].contig, sizeof(tg_rec),
-		     hd, &new);
-
-	if (new) {
-	    (*rargv)[i++] = (*rargv)[j];
+	if (NULL == HashTableAdd(h, (char *)&(*rargv)[i].contig,
+				 sizeof(tg_rec), hd, &new)) {
+	    /* Out of memory... */
+	    xfree(*rargv);
+	    HashTableDestroy(h, 0);
+	    return -1;
 	}
+	if (new) i++;  /* Not seen already, so keep it */
     }
+
     HashTableDestroy(h, 0);
-    listArgc = i;
-
-    /*
-     * Handle case when we've failed to find some; we just shuffle down to
-     * fill any holes in the rargv structure.
-     */
-    for (i=j=0; j<listArgc; j++) {
-	if ((*rargv)[j].contig != 0) {
-	    (*rargv)[i++] = (*rargv)[j];
-	}
-    }
-
-
-    /* Check for failures */
-    for (i=j=0; j<listArgc; j++) {
-	if ((*rargv)[j].contig > 0) {
-	    (*rargv)[i++] = (*rargv)[j];
-	}
-    }
 
     *rargc = i;
     return 0;

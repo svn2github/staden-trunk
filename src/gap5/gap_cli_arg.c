@@ -8,6 +8,13 @@
 
 #include "gap_cli_arg.h"
 
+/* Uncomment the next line to turn on logging for most of the tcl -> c 
+   interface.  Probably too much information for normal use. */
+/* #define LOG_FILE */
+#ifdef LOG_FILE
+#   include "text_output.h"
+#endif
+
 static void parse_args_set(cli_args *a, char *store, char *val) {
     if (a->type == ARG_STR) {
 	*((char **)&store[a->offset]) = val;
@@ -89,6 +96,9 @@ int gap_parse_obj_args(cli_args *args, void *store, int objc,
     cli_args *a;
     int ret;
 
+#ifdef LOG_FILE
+    tcl_log_str(NULL, NULL, objc, objv);
+#endif
     /* Initialise defaults */
     for (a = args; a->command; a++)
 	if (a->def) /* String default values */

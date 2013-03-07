@@ -103,7 +103,7 @@ proc OK_Pressed_DisReading { io f cs infile id sel_task constags } {
 	return
     }
 
-    set result [disassemble_readings \
+    set result [log_call disassemble_readings \
 		    -io $io \
 		    -readings $list \
 		    -move $iopt \
@@ -191,7 +191,7 @@ proc OK_Pressed_EdDisReading { io list f sel_task constags } {
 	# Someone's too busy to shutdown?
 	return
     }
-    set result [disassemble_readings \
+    set result [log_call disassemble_readings \
 		    -io $io \
 		    -readings $list \
 		    -move $iopt \
@@ -270,7 +270,7 @@ proc OK_Pressed_DisContig { io f cs infile id } {
 	return
     }
 
-    set result [disassemble_contigs \
+    set result [log_call disassemble_contigs \
 		    -io $io \
 		    -contigs $list]
     #if database is empty, destroy contig selector and set menus back to
@@ -335,7 +335,7 @@ proc RemoveContigHoles2 {io t} {
     }
     destroy $t
 
-    break_contig_holes -io $io -contigs $list
+    log_call break_contig_holes -io $io -contigs $list
 
     if {[db_info num_contigs $io] == 0} {
 	set cs_win [keylget gap5_defs CONTIG_SEL.WIN]

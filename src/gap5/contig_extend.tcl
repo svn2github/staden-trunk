@@ -60,7 +60,7 @@ proc ContigExtend2 {io f} {
     set match_score [$f.match_score get]
     set mismatch_score [$f.mismatch_score get]
 
-    contig_extend \
+    log_call contig_extend \
 	-io $io \
 	-contigs $list \
 	-min_depth $min_depth \

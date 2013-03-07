@@ -52,7 +52,7 @@ proc ShufflePads {io} {
     destroy $t
 
     SetBusy
-    shuffle_pads -io $io -contigs $list -band $band_size
+    log_call shuffle_pads -io $io -contigs $list -band $band_size
     ClearBusy
 
     ContigInitReg $io
@@ -110,7 +110,7 @@ proc RemovePadColumns {io} {
     destroy $t
 
     SetBusy
-    remove_pad_columns -io $io -contigs $list -percent_pad $percent_pad
+    log_call remove_pad_columns -io $io -contigs $list -percent_pad $percent_pad
     ClearBusy
 
     ContigInitReg $io

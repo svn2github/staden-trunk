@@ -84,7 +84,7 @@ proc CheckAssembly2 {io t lorf id maxperc u_winsize ignore_N} {
     update idletasks
     ContigComparator $io
 
-    check_assembly \
+    log_call check_assembly \
 	-io $io \
 	-max_pmismatch $mperc \
 	-contigs $list \

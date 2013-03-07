@@ -50,6 +50,6 @@ void log_file(const char *fn, const char *message);
  * (in addition to vfuncheader and verror messages). 
  * A value of 0 means do not log. Any other values implies logging. 
  */ 
-void log_vmessage(int log);
+int log_vmessage(int log);
 
 #endif
