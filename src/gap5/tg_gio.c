@@ -55,15 +55,21 @@ static void open_log_file(GapIO *io, char *fn) {
     char *logfn;
     struct passwd *pw;
     int uid = getuid();
-    size_t name_len = strlen(fn) + 5;
+    size_t name_len = strlen(fn);
 
     pw = getpwuid(uid);
     user = pw ? pw->pw_name : "unknown";
     snprintf(log_buf, sizeof(log_buf), "opening %s r%c by %s(%d)",
 	     fn, io->read_only ? 'o' : 'w', user, uid);
-    logfn = malloc(name_len);
+    logfn = malloc(name_len + 5);
     if (NULL != logfn) {
-	snprintf(logfn, name_len, "%s%s", fn, ".log");
+	memcpy(logfn, fn, name_len + 1);
+	if (0 == strcmp(logfn + name_len - 4, ".g5d")
+	    || 0 == strcmp(logfn + name_len - 4, ".g5x")) {
+	    /* chop off suffix */
+	    name_len -= 4;
+	}
+	strcpy(logfn + name_len, ".log");
 	log_file(logfn, log_buf);
 	free(logfn);
     }
