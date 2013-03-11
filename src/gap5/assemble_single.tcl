@@ -79,4 +79,5 @@ proc AssemblySingle2 {io w} {
     catch {glob file delete $prefix.fastq}
 
     ClearBusy
+    PostLoadSetup
 }
