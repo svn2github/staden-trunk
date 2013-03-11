@@ -1144,7 +1144,6 @@ int cache_flush(GapIO *io) {
 			} else if (bo->contig[j]) {
 			    if (bo->contig[j]->link)
 				ArrayDestroy(bo->contig[j]->link);
-			    free(ci_ptr(bo->contig[j]));
 			    if (strcmp(bo->contig[j]->name,
 				       bn->contig[j]->name) &&
 				!io->base->base) {
@@ -1170,6 +1169,7 @@ int cache_flush(GapIO *io) {
 				    iob->db->contig_name_index = r;
 				}
 			    }
+			    free(ci_ptr(bo->contig[j]));
 			}
 		    }
 
