@@ -705,6 +705,7 @@ tg_rec save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     r.pair_rec = 0;
     r.flags = flags;
     r.library_rec = lib ? lib->rec : 0;
+    r.y     = 0;
 
     r.pair_contig    = 0;
     r.pair_timestamp = 0;
