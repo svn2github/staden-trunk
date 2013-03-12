@@ -39,6 +39,6 @@ proc ImportGFF2 {io f} {
 	return
     }
 
-    import_gff -io $io -infile $fn -padded [set $f.Padded]
+    log_call import_gff -io $io -infile $fn -padded [set $f.Padded]
     destroy $f
 }

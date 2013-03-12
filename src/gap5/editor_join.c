@@ -414,6 +414,17 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     xx2 = xx->link->xx;
     offset = xx2[1]->displayPos - xx2[0]->displayPos;
 
+    {
+	char msg[256];
+	snprintf(msg, sizeof(msg),
+		 "edJoinAlign fixed_left=%d fixed_right=%d "
+		 "=%"PRIrec"@%d =%"PRIrec"@%d\n",
+		 fixed_left, fixed_right,
+		 xx2[0]->cnum, xx2[0]->displayPos,
+		 xx2[1]->cnum, xx2[1]->displayPos);
+	log_file(NULL, msg);
+    }
+
     /* Compute overlap position and sizes */
     consensus_valid_range(xx2[0]->io, xx2[0]->cnum, &l0, &r0);
     consensus_valid_range(xx2[1]->io, xx2[1]->cnum, &l1, &r1);
