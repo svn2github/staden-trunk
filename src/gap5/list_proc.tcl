@@ -381,19 +381,21 @@ proc ListNextEditor {} {
 # Does an editor for this list exist already?
 proc ListEditExists {name} {
     global gap5_defs
-
-    if {![winfo exists [keylget gap5_defs EDIT_LIST.WIN]]} {
+    set ed_list [keylget gap5_defs EDIT_LIST.WIN]
+    global $ed_list
+    upvar \#0 $ed_list el_array
+    
+    if {![array exists el_array] || ![info exists el_array($name)]} {
 	return ""
     }
-	
-    foreach i [winfo children [keylget gap5_defs EDIT_LIST.WIN]] {
-	global $i.CurList
-	if {[info exists $i.CurList] && [set $i.CurList] == "$name"} {
-	    return $i	    
-	}
+    
+    if {![winfo exists $el_array($name)]} {
+	# Someone closed the window behind our backs
+	unset el_array($name)
+	return ""
     }
 
-    return ""
+    return $el_array($name)
 }
 
 # Saves a list editor - if needed
@@ -433,9 +435,10 @@ proc ListEditUpdate {t name args} {
 	    }
 	}
     } else {
-	foreach i $NGList($name) {
-	    $t insert end "$i\n"
-	}
+	#foreach i $NGList($name) {
+	#    $t insert end "$i\n"
+	#}
+	$t insert end [join $NGList($name) "\n"] "" "\n"
     }
 }
 
@@ -461,14 +464,28 @@ proc ListEditBrowse { t name } {
     ListEditUpdate $t.list $name
 }
 
+proc ListEditClose { t name { save 1 } } {
+    global gap5_defs NGList
+    set ed_list [keylget gap5_defs EDIT_LIST.WIN]
+    global $ed_list
+    upvar \#0 $ed_list el_array
+
+    trace remove variable NGList($name) write "ListEditUpdate $t.list [list $name]"
+
+    if { $save } { ListEditSave [list $name] }
+    unset el_array($name)
+
+    destroy $t
+}
+
 proc ListEdit {name {read_only 0}} {
     global gap5_defs NGList NGSpecial tcl_platform
     
     if {![ListExists $name 0]} {bell; return 0}
 
-    if {![winfo exists [set w [keylget gap5_defs EDIT_LIST.WIN]]]} {
-	frame $w
-    }
+    set ed_list [keylget gap5_defs EDIT_LIST.WIN]
+    global $ed_list
+    upvar \#0 $ed_list el_array
 
     # We cannot edit the special lists
     if {[lsearch -exact $NGSpecial $name] != -1} {
@@ -477,7 +494,7 @@ proc ListEdit {name {read_only 0}} {
 
     # Create the new editor if it doesn't exist
     if {[set t [ListEditExists $name]] == ""} {
-        set t "$w.[ListNextEditor]"
+        set t "${ed_list}_[ListNextEditor]"
         xtoplevel $t
 	if {$read_only} {
 	    wm title $t "Viewing list: \"$name\""
@@ -492,7 +509,7 @@ proc ListEdit {name {read_only 0}} {
         frame $t.mbar -relief raised -bd 2
 	button $t.mbar.quit \
 	    -text Ok \
-	    -command "ListEditSave [list $name];destroy $t"
+	    -command "ListEditClose $t [list $name]"
 	button $t.mbar.clear \
 	    -text Clear \
 	    -command "ListClear [list $name]"
@@ -517,7 +534,7 @@ proc ListEdit {name {read_only 0}} {
 	    $t.mbar.browse configure -state disabled
 	}
 
-       	wm protocol $t WM_DELETE_WINDOW "ListEditSave [list $name]; destroy $t"
+	wm protocol $t WM_DELETE_WINDOW "ListEditClose $t [list $name]"
     
         # The text display and it's scrollbars.
         text $t.list -width 30 -wrap none\
@@ -557,7 +574,10 @@ proc ListEdit {name {read_only 0}} {
 
 	# Monitor changes to this list
 	trace variable NGList($name) w "ListEditUpdate $t.list [list $name]"
-	trace variable NGList($name) u "destroy $t"
+	trace variable NGList($name) u "ListEditClose $t [list $name] 0"
+
+	# Put the window in our array of list windows
+	set el_array($name) $t
     } else {
         raise $t
     }
@@ -658,10 +678,15 @@ proc UpdateListListbox {t name element op} {
 # Edit a list
 #
 proc EditList2 {t name} {
+    global NGListTag
+
     if {![ListExists $name 0]} {bell; return 0}
     destroy $t
 
-    if {[yes_no_get $t.extended]} {
+    if {[yes_no_get $t.extended] \
+	    && $name ne "contigs" \
+	    && $name ne "allcontigs" \
+	    && $NGListTag($name) != ""} {
 	ListEditMulti $name
     } else {
 	ListEdit $name
@@ -671,11 +696,7 @@ proc EditList2 {t name} {
 proc EditListDialog {} {
     global gap5_defs
 
-    if {![winfo exists [set w [keylget gap5_defs EDIT_LIST.WIN]]]} {
-	frame $w
-    }
-
-    set t [keylget gap5_defs EDIT_LIST.WIN].dialog
+    set t [keylget gap5_defs EDIT_LIST.WIN]_dialog
 
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Edit list"
@@ -1054,6 +1075,7 @@ proc UpdateContigList { io list } {
 	if {$i < 0} {
 	    set c [$io get_contig $rev($i)]
 	    lappend n_list [$c get_name]
+	    $c delete
 	} else {
 	    lappend n_list [lindex $c_list $i]
 	}
@@ -1112,6 +1134,7 @@ proc UpdateContigListNoToggle { io list } {
 	set pos [lsearch $n_list $item]
 	set c [$io get_contig $item]
 	set name [$c get_name]
+	$c delete
 	if {$pos == -1} {
 	    #not found item in list therefore add it
 	    lappend n_list $item
@@ -1620,19 +1643,32 @@ proc NumToName2 {io t from to} {
 # Does an editor for this list exist already?
 proc ListEditMultiExists {name} {
     global gap5_defs
+    set ed_list_multi [keylget gap5_defs EDIT_LIST.WIN]_multi
+    global $ed_list_multi
+    upvar \#0 $ed_list_multi elm_array
 
-    if {![winfo exists [keylget gap5_defs EDIT_LIST.WIN]]} {
+    if {![array exists elm_array] || ![info exists elm_array($name)]} {
 	return ""
     }
-	
-    foreach i [winfo children [keylget gap5_defs EDIT_LIST.WIN]_multi] {
-	global $i.CurList
-	if {[info exists $i.CurList] && [set $i.CurList] == "$name"} {
-	    return $i	    
-	}
+
+    if {![winfo exists $elm_array($name)]} {
+	# Someone closed the window behind our backs
+	unset elm_array($name)
+	return ""
     }
 
-    return ""
+    return $elm_array($name)
+}
+
+proc ListEditMultiClose { t name } {
+    global gap5_defs
+    set ed_list_multi [keylget gap5_defs EDIT_LIST.WIN]_multi
+    global $ed_list_multi
+    upvar \#0 $ed_list_multi elm_array
+
+    unset elm_array($name)
+
+    destroy $t
 }
 
 proc ListEditMulti {name {read_only 0}} {
@@ -1640,9 +1676,9 @@ proc ListEditMulti {name {read_only 0}} {
     
     if {![ListExists $name 0]} {bell; return 0}
 
-    if {![winfo exists [set w [keylget gap5_defs EDIT_LIST.WIN]_multi]]} {
-	frame $w
-    }
+    set ed_list_multi [keylget gap5_defs EDIT_LIST.WIN]_multi
+    global $ed_list_multi
+    upvar \#0 $ed_list_multi elm_array
 
 #    # We cannot edit the special lists
 #    if {[lsearch -exact $NGSpecial $name] != -1} {
@@ -1652,7 +1688,7 @@ proc ListEditMulti {name {read_only 0}} {
 
     # Create the new editor if it doesn't exist
     if {[set t [ListEditMultiExists $name]] == ""} {
-        set t "$w.[ListNextEditor]"
+        set t "${ed_list_multi}_[ListNextEditor]"
         xtoplevel $t
 	wm geometry $t 990x400
 	if {$read_only} {
@@ -1665,7 +1701,8 @@ proc ListEditMulti {name {read_only 0}} {
         set $t.CurList $name
         
        	#wm protocol $t WM_DELETE_WINDOW "ListEditSave [list $name]; destroy $t"
-    
+	wm protocol $t WM_DELETE_WINDOW "ListEditMultiClose $t [list $name]"
+
         # The text display and it's scrollbars.
 	tablelist $t.list \
 	    -columns {20 Name 10 Number 15 Contig 10 Position 15 Scaffold 10 {Pair Num} 15 {Pair Contig} 10 {Pair Pos} 15 {Pair Scaf}} \
@@ -1696,7 +1733,7 @@ proc ListEditMulti {name {read_only 0}} {
     
 	# Monitor changes to this list
 	trace variable NGList($name) w "ListEditMultiUpdate $t.list [list $name]"
-	trace variable NGList($name) u "destroy $t"
+	trace variable NGList($name) u "ListEditMultiClose $t [list $name]"
 
 	# The command bar.
 	set bar [frame $t.bar]
@@ -1764,7 +1801,9 @@ proc ListEditMulti {name {read_only 0}} {
 	    -command "ListEditMultiSave $t set"
 	
 	pack $lf $ef $bar.add $bar.del $bar.set -side left -expand 1
-
+	
+	# Put the window in our array of multi-list windows
+	set elm_array($name) $t
     } else {
         raise $t
     }
@@ -1890,6 +1929,11 @@ proc ListEditMultiMenu {io w x y X Y} {
     set contig [db_info get_contig_num $io #$rec]
     # puts $rec/[$w get $row]
 
+    if { $contig <= 0 } {
+	# Not a valid read
+	return
+    }
+
     create_popup $w.m "Commands (\#$rec)"
     $w.m add command -label "Edit Contig" \
 	-command "edit_contig -io $io -contig $contig -reading #$rec"
@@ -1913,11 +1957,15 @@ proc ListEditMultiSave {w op} {
     }
     foreach r $l {
 	if {$opt(End) & 1} {
-	    lappend reads #[lindex $r 1]
+	    set val [lindex $r 1]
+	    if { $val != "" } {
+		lappend reads "#$val"
+	    }
 	}
 	if {$opt(End) & 2} {
-	    if {[lindex $r 5] != ""} {
-		lappend reads #[lindex $r 5]
+	    set val [lindex $r 5]
+	    if { $val != ""} {
+		lappend reads "#$val"
 	    }
 	}
     }

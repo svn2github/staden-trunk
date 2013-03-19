@@ -128,7 +128,7 @@ proc 1.5Dplot {w io wid hei {cnum {}} {pos {}}} {
 		       -io $io \
 		       -contig $cnum \
 		       -command "1.5plot_contig_event $w" \
-		       -flags [list QUERY_NAME CURSOR_NOTIFY DELETE COMPLEMENT LENGTH JOIN_TO]]
+		       -flags [list QUERY_NAME CURSOR_NOTIFY DELETE COMPLEMENT LENGTH JOIN_TO QUIT]]
     wm protocol $w WM_DELETE_WINDOW "1.5plot_exit $w"
 
     redraw_plot $w
@@ -242,6 +242,11 @@ proc 1.5plot_contig_event {w type id cdata args} {
 
 	DELETE {
 	    1.5plot_exit $w
+	}
+
+	QUIT {
+	    1.5plot_exit $w
+	    return 1
 	}
 
 	JOIN_TO {

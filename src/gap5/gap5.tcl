@@ -392,10 +392,9 @@ proc Gap_Open { io } {
 	    DBClose
 	    DB_Load $file
 	}
-    } else {
-	Gap_Exit $io
     }
 }
+
 ##############################################################################
 #set up main tcl menu bar
 #NB: cs isn't obviously used here, but create_menus uses it (via uplevel)

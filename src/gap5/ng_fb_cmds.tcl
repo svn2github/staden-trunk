@@ -5,15 +5,32 @@
 # This file is part of the Staden Package. See the Staden Package copyright
 # notice for information on the restrictions for usage and distribution, and
 # for a disclaimer of all warranties.
-#
+
+
+# Clean up old windows that are hanging around when closing the database.
+# This prevents accidental re-use of old $io handles, causing gap5 to crash
+
+;proc CleanUpOldWindows { } {
+    set kids [winfo children .]
+    array set toplevels {}
+    foreach win $kids {
+	set toplevels([winfo toplevel $win]) 1
+    }
+    foreach top [array names toplevels] {
+	if { $top ne "." } { destroy $top }
+    }
+}
+
 proc DBClose {} {
     global io
+
+    CleanUpOldWindows
 
     if {$io != ""} {
 	$io close
 	set io ""
     }
-
+    
     DisableMenu_Open
 }
 
@@ -24,6 +41,7 @@ proc InitOpenAnotherDB {} {
 	# Someone's too busy to shutdown?
 	return 0
     }
+    CleanUpOldWindows
     update idletasks
 
     return 1
@@ -40,6 +58,7 @@ proc NewFile {} {
 	    # Someone's too busy to shutdown?
 	    return
 	}
+	CleanUpOldWindows
     }
 
     set f .new

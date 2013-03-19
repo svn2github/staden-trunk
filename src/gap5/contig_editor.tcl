@@ -1164,6 +1164,7 @@ proc editor_exit {w {get_lock 0}} {
 	if {![[set ${w}(io)] read_only] && [$ed edits_made]} {
 	    if {$ret == ""} {
 		# Ask once only and apply to both in join editor
+		raise $w
 		set ret [tk_messageBox \
 			     -icon question \
 			     -title "Save changes" \
