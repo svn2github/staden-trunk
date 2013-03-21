@@ -532,26 +532,40 @@ proc contig_register_callback {ed type id args} {
 		set arg($k) $v
 	    }
 
+	    upvar \#0 $w opt
+
 	    # NB: What happens when we have contig 1 and contig 2 open, plus
 	    # a join editor on 1+2 which we then join. We end up with two
 	    # $io objects both for the same contig.
 	    #
 	    # We can ignore this whole problem as we can only join
 	    # after saving.
-	    #io_detach $arg(contig_num)
-	    set ${w}(io) [io_child [set ${w}(io_base)] $arg(contig)]
-	    $ed io [set ${w}(io)]
+	    
+	    # Get the child IO for the new contig number
+	    set new_io [io_child $opt(io_base) $arg(contig)]
 
 	    # Update the editor cached contig record details
-	    set ${w}(-contig) $arg(contig)
+	    $ed io $new_io
 	    $ed change_contig $arg(contig)
+
+	    # Fix up first contig editor, if necessary
+	    if { $opt(-contig) == $arg(contig_num) } {
+		set opt(io) $new_io
+		set opt(-contig) $arg(contig)
+	    }
+
+	    # Fix up second, if it exists and refers to the changed contig
+	    if {[info exists opt(-contig2)] \
+		    && $opt(-contig2) == $arg(contig_num)} {
+		set opt(io2) $new_io
+		set opt(-contig2) $arg(contig)
+	    }
+
+	    # Remove old undo / redo stacks
 	    upvar \#0 contigIO_$arg(contig) cio
 	    set cio(Undo) ""
 	    set cio(Redo) ""
-	    set cio(io) [$ed io]
-	    set cio(crec) $arg(contig)
-	    incr cio(ref)
-	    
+
 	    # If cursor was on the old contig record, move it to the
 	    # new contig instead.
 	    foreach {type rec pos} [$ed get_cursor relative] break
@@ -562,7 +576,6 @@ proc contig_register_callback {ed type id args} {
 	    }
 
 	    # Correct the window title
-	    upvar \#0 $w opt
 
 	    set c [$opt(io) get_contig $opt(-contig)]
 	    if {[info exists opt(-contig2)]} {
@@ -573,6 +586,9 @@ proc contig_register_callback {ed type id args} {
 		wm title $w "Edit: [$c get_name]"
 	    }
 	    $c delete
+
+	    # Detach from old contig IO
+	    io_detach $arg(contig_num)
 
 	    # Finally adjust the display.
 	    set pos [$ed xview]
