@@ -171,7 +171,7 @@ int contig_offset(GapIO *io, contig_t **c) {
 static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 			       int pos, int apos, int start_of_contig,
 			       int offset, int aoffset, char base, int conf,
-			       int comp, HacheTable *hash) {
+			       int nbases, int comp, HacheTable *hash) {
     int i, ins = 0;
     bin_index_t *bin;
     HacheData hd;
@@ -263,9 +263,14 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		    if (!no_ins) {
 			//printf("INS %"PRIrec" at %d\n", r->rec,
 			//       pos - MIN(r->start, r->end));
-			sequence_insert_base(io, &s,
-					     pos - MIN(r->start, r->end),
-					     base, conf, 0);
+			//int i;
+			//for (i = 0; i < nbases; i++)
+			//    sequence_insert_base(io, &s,
+			//			 pos - MIN(r->start, r->end),
+			//			 base, conf, 0);
+			sequence_insert_bases(io, &s,
+					      pos - MIN(r->start, r->end),
+					      base, conf, nbases, 0);
 			if (hash) {
 			    //printf("1 Mov %"PRIrec"\n", r->rec);
 			    hd.i = MAX(NMIN(r_start, r_end), apos);
@@ -273,7 +278,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 					  sizeof(r->rec), hd, NULL);
 			}
 			//printf("1 %"PRIrec"->end++\n", r->rec);
-			r->end++;
+			r->end+=nbases;
 			ins = 1;
 		    }
 		}
@@ -290,8 +295,8 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 					      sizeof(r->rec), hd, NULL);
 			    }
 			    //printf("2 %"PRIrec"->start/end++\n", r->rec);
-			    r->start++;
-			    r->end++;
+			    r->start+=nbases;
+			    r->end+=nbases;
 			    ins = 1;
 			}
 		    } else {
@@ -304,8 +309,8 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 					      sizeof(r->rec), hd, NULL);
 			    }
 			    //printf("3 %"PRIrec"->start/end++\n", r->rec);
-			    r->start++;
-			    r->end++;
+			    r->start+=nbases;
+			    r->end+=nbases;
 			    ins = 1;
 			}
 		    }
@@ -313,7 +318,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    } else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 		if (base && !(r->flags & GRANGE_FLAG_TAG_SEQ)) {
 		    //printf("grow anno %"PRIrec"\n", r->rec);
-		    r->end++;
+		    r->end+=nbases;
 		    ins = 1;
 		}
 	    }
@@ -328,8 +333,8 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    if ( (r->flags&GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		/* Move */
 		//printf("4 %"PRIrec"->start/end++\n", r->rec);
-		r->start++;
-		r->end++;
+		r->start+=nbases;
+		r->end+=nbases;
 		ins = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
 
@@ -341,8 +346,8 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 		}
 	    } else if (!(r->flags & GRANGE_FLAG_TAG_SEQ)) {
 		/* Consensus tag */
-		r->start++;
-		r->end++;
+		r->start+=nbases;
+		r->end+=nbases;
 		ins = 1;
 		bin->flags |= BIN_RANGE_UPDATED;
 	    }
@@ -351,7 +356,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 
     /* Adjust the bin dimensions */
     {
-	bin->size++;
+	bin->size+=nbases;
 	ins = 1;
 	if (bin->rng && ArrayMax(bin->rng)) {
 	    int start = INT_MAX;
@@ -395,7 +400,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 					   start_of_contig,
 					   MIN(ch->pos, ch->pos + ch->size-1),
 					   NMIN(ch->pos, ch->pos + ch->size-1),
-					   base, conf, comp, hash);
+					   base, conf, nbases, comp, hash);
 		/* Children to the right of this one need pos updating too */
 	    } else if (pos < MIN(ch->pos, ch->pos + ch->size-1)) {
 		ch = get_bin(io, bin->child[i]);
@@ -429,7 +434,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
  */
 static int contig_insert_tag2(GapIO *io, tg_rec crec, tg_rec bnum,
 			      int pos, int apos, int start_of_contig,
-			      int offset, int aoffset,
+			      int offset, int aoffset, int nbases,
 			      int comp, HacheTable *hash) {
     int i;
     bin_index_t *bin;
@@ -498,20 +503,20 @@ static int contig_insert_tag2(GapIO *io, tg_rec crec, tg_rec bnum,
 	    if (comp) {
 		if (NMAX(r->start, r->end) <= (int64_t)hi->data.i) {
 		    //puts("mov2");
-		    r->start++;
-		    r->end++;
+		    r->start+=nbases;
+		    r->end+=nbases;
 		} else if (NMIN(r->start, r->end) <= (int64_t)hi->data.i) {
 		    //puts("grow2");
-		    r->end++;
+		    r->end+=nbases;
 		}
 	    } else {
 		if (NMIN(r->start, r->end) >= (int64_t)hi->data.i) {
 		    //puts("mov1");
-		    r->start++;
-		    r->end++;
+		    r->start+=nbases;
+		    r->end+=nbases;
 		} else if (NMAX(r->start, r->end) >= (int64_t)hi->data.i) {
 		    //puts("grow1");
-		    r->end++;
+		    r->end+=nbases;
 		}
 	    }
 
@@ -564,7 +569,7 @@ static int contig_insert_tag2(GapIO *io, tg_rec crec, tg_rec bnum,
 				   start_of_contig,
 				   MIN(ch->pos, ch->pos + ch->size-1),
 				   NMIN(ch->pos, ch->pos + ch->size-1),
-				   comp, hash);
+				   nbases, comp, hash);
 	    }
 	}
     }
@@ -575,7 +580,7 @@ static int contig_insert_tag2(GapIO *io, tg_rec crec, tg_rec bnum,
 }
 
 int contig_insert_base_common(GapIO *io, contig_t **c,
-			      int pos, char base, int conf) {
+			      int pos, char base, int conf, int nbases) {
     contig_t *n;
     int rpos, add_indel = 1;
     bin_index_t *bin;
@@ -616,11 +621,11 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
     ret = contig_insert_base2(io, n->rec, contig_get_bin(c), pos, pos,
 			      pos == n->start,
 			      contig_offset(io, c), contig_offset(io, c),
-			      base, conf, 0, hash);
+			      base, conf, nbases, 0, hash);
     ret |= contig_insert_tag2(io, n->rec, contig_get_bin(c), pos, pos,
 			      pos == n->start,
 			      contig_offset(io, c), contig_offset(io, c),
-			      0, hash);
+			      nbases, 0, hash);
 
     contig_visible_start(io, (*c)->rec, CITER_CSTART);
     contig_visible_end(io, (*c)->rec, CITER_CEND);
@@ -722,7 +727,7 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
      */
 
     /* Best guess */
-    contig_set_end(io, c, contig_get_end(c)+1);
+    contig_set_end(io, c, contig_get_end(c)+nbases);
 
     /* Verify */
     consensus_unclipped_range(io, (*c)->rec, &cstart, &cend);
@@ -740,7 +745,13 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 }
 
 int contig_insert_base(GapIO *io, contig_t **c, int pos, char base, int conf) {
-    return contig_insert_base_common(io, c, pos, base, conf) >= 0 ? 0 : -1;
+    return contig_insert_base_common(io, c, pos, base, conf, 1) >= 0 ? 0 : -1;
+}
+
+int contig_insert_bases(GapIO *io, contig_t **c, int pos, char base, int conf,
+			int nbases) {
+    return contig_insert_base_common(io, c, pos, base, conf, nbases)
+	>= 0 ? 0 : -1;
 }
 
 /*
@@ -1446,7 +1457,7 @@ int contig_delete_pad(GapIO *io, contig_t **c, int pos) {
  */
 int contig_shift_base(GapIO *io, contig_t **c, int pos, int dir) {
     if (dir > 0)
-	return contig_insert_base_common(io, c, pos, 0, 0);
+	return contig_insert_base_common(io, c, pos, 0, 0, 1);
     else
 	return contig_delete_base_common(io, c, pos+1, 1, 0);
 }

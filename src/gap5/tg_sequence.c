@@ -1411,6 +1411,147 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, int8_t conf,
 }
 
 /*
+ * Insert into position 'pos' of a sequence, where pos starts from 0
+ * (before first base).
+ */
+int sequence_insert_bases(GapIO *io, seq_t **s, int pos,
+			  char base, int8_t conf, int nbases,
+			  int contig_orient) {
+    seq_t *n;
+    int comp = 0, i, b, o_len;
+    size_t extra_len = sequence_extra_len(*s) + nbases +
+	nbases * sequence_conf_size(*s);
+    int8_t *c_old;
+
+    if (!(n = cache_rw(io, *s)))
+	return -1;
+    *s = n;
+
+    sequence_invalidate_consensus(io, n);
+
+    n = cache_item_resize(n, sizeof(*n) + extra_len);
+    if (NULL == n)
+	return -1;
+    *s = n;
+
+    if (contig_orient) {
+	pos = sequence_orient_pos(io, &n, pos, &comp);
+	if (comp)
+	    pos++;
+    } else {
+	pos = n->len < 0
+	    ? -n->len - pos
+	    : pos;
+    }
+
+    if (pos > ABS(n->len) || pos < 0) {
+	fprintf(stderr, "Attempted to write to position %d in seq #%"
+		PRIrec" of length ABS(%d).\n", pos, n->rec, n->len);
+	return -1;
+
+    }
+
+    /* Reset internal pointers assuming new length */
+    o_len = ABS(n->len);
+    if (n->len < 0)
+	n->len-=nbases;
+    else
+	n->len+=nbases;
+    c_old = n->conf;
+    sequence_reset_ptr(n);
+
+    /* Shift */
+    memmove(&n->seq[pos+nbases], &n->seq[pos],
+	    (o_len-pos) + o_len * sequence_conf_size(*s));
+
+    c_old+=nbases;
+
+    if ((int)(extra_len - ((char *)&n->conf[sequence_conf_size(n)*(pos)]
+			   + nbases - (char *)&n->data)) < 0) {
+	fprintf(stderr, "Attempted to write past allocated memory in "
+		"sequence_insert_base()\n");
+	return 0;
+    }
+
+    memmove(&c_old[sequence_conf_size(n)*pos+nbases],
+	    &n->conf[sequence_conf_size(n)*pos],
+	    (o_len-pos) * sequence_conf_size(n));
+
+    /* Compute conf if needed */
+    if (n->format == SEQ_FORMAT_CNF1) {
+	if (conf == -1) {
+	    /* Min of surrounding bases */
+	    if (pos > 0 && pos+nbases < ABS(n->len))
+		conf = MIN(n->conf[pos-1], n->conf[pos+nbases]);
+	    else if (pos > 0)
+		conf = n->conf[pos-1];
+	    else if (pos+nbases < ABS(n->len))
+		conf = n->conf[pos+nbases];
+	    else
+		conf = 0;
+	}
+    }
+	    
+    /* Set */
+    b = comp ? complementary_base[(unsigned char)base] : base;
+    for (i = 0; i < nbases; i++)
+	n->seq[pos+i] = b;
+    if (n->format == SEQ_FORMAT_CNF4) {
+	int c[4];
+	double remainder = -4.34294482*log(2+3*pow(10, conf/10.0));
+	switch (base) {
+	case 'A': case 'a':
+	    c[0] = comp ? remainder : conf;
+	    c[1] = remainder;
+	    c[2] = remainder;
+	    c[3] = comp ? conf : remainder;
+	    break;
+	case 'C': case 'c':
+	    c[0] = remainder;
+	    c[1] = comp ? remainder : conf;
+	    c[2] = comp ? conf : remainder;
+	    c[3] = remainder;
+	    break;
+	case 'G': case 'g':
+	    c[0] = remainder;
+	    c[1] = comp ? conf : remainder;
+	    c[2] = comp ? remainder : conf;
+	    c[3] = remainder;
+	    break;
+	case 'T': case 't':
+	    c[0] = comp ? conf : remainder;
+	    c[1] = remainder;
+	    c[2] = remainder;
+	    c[3] = comp ? remainder : conf;
+	    break;
+	default:
+	    c[0] = -5;
+	    c[1] = -5;
+	    c[2] = -5;
+	    c[3] = -5;
+	    break;
+	}
+	for (i = 0; i < nbases; i++) {
+	    n->conf[(pos+i)*4+0] = c[0];
+	    n->conf[(pos+i)*4+1] = c[1];
+	    n->conf[(pos+i)*4+2] = c[2];
+	    n->conf[(pos+i)*4+3] = c[3];
+	}
+    } else {
+	for (i = 0; i < nbases; i++)
+	    n->conf[pos+i] = conf;
+    }
+
+    if (pos < n->left-1)
+	n->left+=nbases;
+
+    if (pos <= n->right)
+	n->right+=nbases;
+
+    return 0;
+}
+
+/*
  * Delete position 'pos' of a sequence, where pos starts from 0
  *
  * If check_base is not zero we also double check that the base being removed

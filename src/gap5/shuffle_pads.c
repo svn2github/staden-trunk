@@ -1066,9 +1066,7 @@ void update_io(GapIO *io, tg_rec cnum, MALIGN *malign, Array indels) {
 	int j;
 
 	if (id->size > 0) {
-	    for (j = 0; j < id->size; j++) {
-		contig_insert_base(io, &c, id->pos+1, '*', -1);
-	    }
+	    contig_insert_bases(io, &c, id->pos+1, '*', -1, id->size);
 	} else {
 	    for (j = 0; j < -id->size; j++) {
 		contig_delete_pad(io, &c, id->pos+1);

@@ -106,6 +106,9 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
 			  int contig_orient);
 int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, int8_t conf,
 			 int contig_orient);
+int sequence_insert_base2(GapIO *io, seq_t **s, int pos,
+			  char base, int8_t conf, int nbases,
+			  int contig_orient);
 int sequence_delete_base(GapIO *io, seq_t **s, int pos,
 			 int contig_orient);
 int sequence_delete_base2(GapIO *io, seq_t **s, int pos, int contig_orient,
