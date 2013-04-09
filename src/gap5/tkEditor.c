@@ -1183,7 +1183,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     case _CHANGE_CONTIG:
 	if (argc == 3)
-	    ed->xx->cnum = atorec(argv[2]);
+	    edview_renumber(ed->xx, atorec(argv[2]));
 	break;
 
     case _SELECT_OLIGO: {

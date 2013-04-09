@@ -146,6 +146,11 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
 void edview_destroy(edview *xx);
 
 /*
+ * Changes the contig number in the edview struct.
+ */
+void edview_renumber(edview *xx, tg_rec new_contig);
+
+/*
  * Finds an existing editor widget for a specific contig.
  * Returns edview on success
  *         NULL on failure

@@ -3,6 +3,8 @@
 #include <ctype.h>
 #include <X11/Xatom.h> /* XA_PRIMARY - included in Tk distribrution */
 #include <assert.h>
+#include <string.h>
+#include <errno.h>
 
 #include "editor_view.h"
 #include "tkSheet.h"
@@ -142,7 +144,8 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
 	HacheData hd;
 
 	if (!edview_hash)
-	    edview_hash = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
+	    edview_hash =
+		HacheTableCreate(16, HASH_DYNAMIC_SIZE|HASH_ALLOW_DUP_KEYS);
 	
 	hd.p = xx;
 	HacheTableAdd(edview_hash, (char *)&contig, sizeof(tg_rec), hd, NULL);
@@ -157,6 +160,8 @@ edview *edview_new(GapIO *io, tg_rec contig, tg_rec crec, int cpos,
  * Deallocates an edview
  */
 void edview_destroy(edview *xx) {
+    HacheItem *hi;
+
     xx->editorState = StateDown;
     if (xx->link) {
 	xx->link->xx[0]->editorState = StateDown;
@@ -182,7 +187,6 @@ void edview_destroy(edview *xx) {
 
     if (xx->trace_hash) {
 	HacheIter *iter = HacheTableIterCreate();
-	HacheItem *hi;
 
 	while (NULL != (hi = HacheTableIterNext(xx->trace_hash, iter))) {
 	    if (hi->data.p)
@@ -192,9 +196,50 @@ void edview_destroy(edview *xx) {
 	HacheTableIterDestroy(iter);
     }
 
-    HacheTableRemove(edview_hash, (char *)&xx->cnum, sizeof(tg_rec), 0);
+    /* Remove this instance from edview_hash */
+    for (hi = HacheTableSearch(edview_hash, (char *)&xx->cnum, sizeof(tg_rec));
+	 NULL != hi;
+	 hi = HacheTableNext(hi, (char *)&xx->cnum, sizeof(tg_rec))) {
+	if (hi->data.p == xx) {
+	    HacheTableDel(edview_hash, hi, 0);
+	    break;
+	}
+    }
 
     xfree(xx);
+}
+
+/*
+ * Changes the contig number in the edview struct.
+ */
+
+void edview_renumber(edview *xx, tg_rec new_contig) {
+    HacheItem *hi;
+    HacheData hd;
+    
+    /* Remove this instance from edview_hash */
+    for (hi = HacheTableSearch(edview_hash, (char *)&xx->cnum, sizeof(tg_rec));
+	 NULL != hi;
+	 hi = HacheTableNext(hi, (char *)&xx->cnum, sizeof(tg_rec))) {
+	if (hi->data.p == xx) {
+	    HacheTableDel(edview_hash, hi, 0);
+	    break;
+	}
+    }
+
+    /* Renumber the contig */
+    xx->cnum = new_contig;
+
+    /* Put it back into the hash */
+    hd.p = xx;
+    if (NULL == HacheTableAdd(edview_hash, (char *)&new_contig, sizeof(tg_rec),
+			      hd, NULL)) {
+	/* Failing to re-add the edview pointer probably isn't too bad,
+	   so just log that it happened and carry on... */
+	verror(ERR_WARN, "edview_renumber",
+	       "Failed to put edview pointer back into edview_hash: %s",
+	       strerror(errno));
+    }
 }
 
 /*
@@ -203,20 +248,14 @@ void edview_destroy(edview *xx) {
  *         NULL on failure
  */
 edview *edview_find(GapIO *io, tg_rec contig) {
-    HacheIter *iter;
     HacheItem *hi;
 
     if (!edview_hash)
 	return NULL;
 
-    iter = HacheTableIterCreate();
-    while (NULL != (hi = HacheTableIterNext(edview_hash, iter))) {
-	edview *xx = (edview *)hi->data.p;
-	if (!xx->link && xx->cnum == contig)
-	    return xx;
-    }
-    HacheTableIterDestroy(iter);
-
+    hi = HacheTableSearch(edview_hash, (char *)&contig, sizeof(tg_rec));
+    if (hi) return (edview *) hi->data.p;
+    
     return NULL;
 }
 
