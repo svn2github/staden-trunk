@@ -254,12 +254,10 @@ void *find_oligo_obj_func2(int job,
 
     case OBJ_GET_BRIEF:
 	sprintf(buf,
-		"Oligo: %c#%"PRIrec"@%d with %c#%"PRIrec"@%d, "
+		"Oligo: %c=%"PRIrec"@%d with %c=%"PRIrec"@%d, "
 		"len %d, match %2.2f%%",
-		obj->c1 > 0 ? '+' : '-',
-		io_clnbr(find_oligo->io, ABS(obj->c1)), obj->pos1,
-		obj->c2 > 0 ? '+' : '-',
-		io_clnbr(find_oligo->io, ABS(obj->c2)), obj->pos2,
+		obj->c1 > 0 ? '+' : '-', ABS(obj->c1), obj->pos1,
+		obj->c2 > 0 ? '+' : '-', ABS(obj->c2), obj->pos2,
 		obj->length, (float)obj->score / obj->length * 100.0);
 	return buf;
     }
