@@ -411,7 +411,7 @@ static int contig_insert_base2(GapIO *io, tg_rec crec, tg_rec bnum,
 
 		//printf("Mov bin %"PRIrec"\n", ch->rec);
 
-		ch->pos++;
+		ch->pos+=nbases;
 		if (ch->nseqs)
 		    ins=1;
 		ch->flags |= BIN_BIN_UPDATED;
@@ -592,6 +592,7 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
     HacheTable *hash = NULL;
     int ret;
     int cstart, cend;
+    int nbases2 = nbases;
 
     if (pos < (*c)->start || pos > (*c)->end)
 	return 0;
@@ -637,7 +638,7 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
     rpos -= dir; /* Compensate for complemented contigs */
 
     /* Add a pad marker too for reference adjustments */
-    if (find_refpos_marker(io, (*c)->rec, pos + 1,
+    if (find_refpos_marker(io, (*c)->rec, pos + 1, // or pos + nbases?
 			   &bin_rec, &bin_idx, &rc) == 0) {
 	assert((rc.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISREFPOS);
 	if ((rc.flags & GRANGE_FLAG_REFPOS_INDEL) == GRANGE_FLAG_REFPOS_DEL) {
@@ -648,7 +649,7 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 	    bin = cache_rw(io, bin);
 	    r = arrp(range_t, bin->rng, bin_idx);
 
-	    if (rc.pair_rec <= 1) {
+	    if (rc.pair_rec <= nbases) {
 		//printf("Remove DEL of size %d\n", rc.pair_rec);
 		r->flags |= GRANGE_FLAG_UNUSED;
 		r->rec = bin->rng_free;
@@ -656,13 +657,15 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 		bin_incr_nrefpos(io, bin, -1);
 		if (bin->start_used == r->start || bin->end_used == r->end)
 		    bin_set_used_range(io, bin);
+		nbases2 -= rc.pair_rec;
 	    } else {
 		//printf("Decrement DEL of size %d\n", rc.pair_rec);
-		r->pair_rec--;
+		r->pair_rec -= nbases;
+		nbases2 = 0;
 	    }
 
 	    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
-	    add_indel = 0;
+	    add_indel =  nbases2 ? 1 : 0;
 	}
 	ref_id = rc.rec;
     }
@@ -679,7 +682,7 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 	    bin = cache_rw(io, bin);
 	    r = arrp(range_t, bin->rng, bin_idx);
 
-	    if (rc.pair_rec <= 1) {
+	    if (rc.pair_rec <= nbases2) {
 		//printf("Remove DEL of size %d\n", rc.pair_rec);
 		r->flags |= GRANGE_FLAG_UNUSED;
 		r->rec = bin->rng_free;
@@ -687,32 +690,37 @@ int contig_insert_base_common(GapIO *io, contig_t **c,
 		bin_incr_nrefpos(io, bin, -1);
 		if (bin->start_used == r->start || bin->end_used == r->end)
 		    bin_set_used_range(io, bin);
+		nbases2 -= rc.pair_rec;
 	    } else {
 		//printf("Decrement DEL of size %d\n", rc.pair_rec);
-		r->pair_rec--;
+		r->pair_rec -= nbases2;
+		nbases2 = 0;
 	    }
 
 	    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
-	    add_indel = 0;
+	    add_indel =  nbases2 ? 1 : 0;
 	}
 	ref_id = rc.rec;
     }
 
     if (dir != -1 && add_indel) {
 	range_t r;
+	int i;
 
-	//printf("Adding insertion REFPOS at %d/%d\n", pos, rpos);
-	r.start    = pos;
-	r.end      = pos;
-	r.rec      = ref_id;
-	r.pair_rec = 0;
-	r.mqual    = rpos;
+	for (i = 0; i < nbases2; i++) {
+	    //printf("Adding insertion REFPOS at %d/%d\n", pos, rpos);
+	    r.start    = pos;
+	    r.end      = pos;
+	    r.rec      = ref_id;
+	    r.pair_rec = 0;
+	    r.mqual    = rpos;
 
-	/* Dir needs checking */
-	r.flags    = GRANGE_FLAG_ISREFPOS
-	           | GRANGE_FLAG_REFPOS_INS
-	           | GRANGE_FLAG_REFPOS_FWD;
-	bin_add_range(io, c, &r, NULL, NULL, 0);
+	    /* Dir needs checking */
+	    r.flags    = GRANGE_FLAG_ISREFPOS
+		| GRANGE_FLAG_REFPOS_INS
+		| GRANGE_FLAG_REFPOS_FWD;
+	    bin_add_range(io, c, &r, NULL, NULL, 0);
+	}
     }
 
     /*
