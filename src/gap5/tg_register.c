@@ -748,7 +748,7 @@ int contig_register_join(GapIO *io, tg_rec cfrom, tg_rec cto) {
 	    rt = (contig_reg_t *)hit->data.p;
 	    if (rf->id == rt->id)
 		break;
-	    hit = HacheTableNext(hit, (char *)&cfrom, sizeof(cto));
+	    hit = HacheTableNext(hit, (char *)&cto, sizeof(cto));
 	}
 
 	next = HacheTableNext(hif, (char *)&cfrom, sizeof(cfrom));
